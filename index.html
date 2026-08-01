@@ -592,7 +592,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-18</div>
+      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-21</div>
     </div>
   </div>
 </div>
@@ -3388,14 +3388,31 @@ async function _readCloud(tries){
   throw last
 }
 
-async function cloudReload(){
-  if(!fbDb||!_sectionCode){_errBanner('Firebase холбогдоогүй','Дахин нэвтэрнэ үү');return}
-  showToast('⏳ Үүлнээс татаж байна...',2500);
+// ── Автомат сэргээлт: татаж чадаагүй бол өөрөө дахин оролдоно ──
+let _autoTry=0,_autoTimer=null;
+function _scheduleAutoLoad(){
+  if(_cloudLoaded||!fbDb||!_sectionCode)return;
+  if(_autoTry>=10)return;
+  const delays=[1500,3000,5000,8000,12000,18000,25000,35000,45000,60000];
+  const d=delays[_autoTry]||45000;
+  _autoTry++;
+  clearTimeout(_autoTimer);
+  _autoTimer=setTimeout(function(){cloudReload(true)},d)
+}
+// Сүлжээ сэргэхэд шууд оролдоно
+window.addEventListener('online',function(){if(!_cloudLoaded){_autoTry=0;cloudReload(true)}});
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&!_cloudLoaded&&fbDb&&_sectionCode){_autoTry=0;cloudReload(true)}
+});
+
+async function cloudReload(silent){
+  if(!fbDb||!_sectionCode){if(!silent)_errBanner('Firebase холбогдоогүй','Дахин нэвтэрнэ үү');return}
+  if(!silent)showToast('⏳ Үүлнээс татаж байна...',2500);
   try{
     const doc=await _readCloud(2);
-    if(!doc.exists){_errBanner('Баримт олдсонгүй','sections/'+_sectionCode);return}
+    if(!doc.exists){if(!silent)_errBanner('Баримт олдсонгүй','sections/'+_sectionCode);_scheduleAutoLoad();return}
     const raw=doc.data()&&doc.data().db;
-    if(!raw){_errBanner('db талбар хоосон','sections/'+_sectionCode);return}
+    if(!raw){if(!silent)_errBanner('db талбар хоосон','sections/'+_sectionCode);_scheduleAutoLoad();return}
     DB=_unpackDB(raw);_migrateDB();
     if(!DB.folders)DB.folders=[];
     _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
@@ -3404,9 +3421,13 @@ async function cloudReload(){
     renderHome();
     const nf=(DB.folders||[]).length;
     const nt=(DB.folders||[]).reduce(function(a,f){return a+((f.tracks||[]).length)},0);
-    showToast('✓ Татагдлаа: '+nf+' паспорт · '+nt+' зам',3000)
+    _autoTry=0;clearTimeout(_autoTimer);
+    showToast('✓ Татагдлаа: '+nf+' паспорт · '+nt+' зам',2500);
+    return true
   }catch(e){
-    _errBanner('Татаж чадсангүй',(e&&(e.code||e.message))||'тодорхойгүй')
+    if(!silent)_errBanner('Татаж чадсангүй',(e&&(e.code||e.message))||'тодорхойгүй');
+    else _errBanner('Дахин холбогдож байна...','Автоматаар оролдож байна ('+_autoTry+'/10)');
+    _scheduleAutoLoad()
   }
 }
 
@@ -3434,7 +3455,8 @@ async function _afterLoginInner(){
   }catch(e){
     console.error('Firestore read err:',e);
     try{const s=localStorage.getItem('sg_der_v3');if(s)DB=_unpackDB(JSON.parse(s))}catch(e2){}
-    _errBanner('Үүлэн өгөгдөл татаж чадсангүй',(e&&(e.code||e.message))||'тодорхойгүй');
+    _errBanner('Дахин холбогдож байна...','Автоматаар оролдож байна');
+    _scheduleAutoLoad();
   }
   const _eb=document.getElementById('errBanner');
   if(_eb&&_eb.textContent.indexOf('татаж байна')>=0)_eb.remove();
@@ -3445,6 +3467,7 @@ async function _afterLoginInner(){
   renderHome();
   startRealtimeSync();
   showToast('✓ '+_sectionCode+' нэвтэрлээ',2000);
+  if(!_cloudLoaded||!_dbHasData(DB)){_autoTry=0;_scheduleAutoLoad()}
   // Хуучин localStorage өгөгдөл шалгах — үүлэнд өгөгдөл байхгүй үед л санал болгоно
   setTimeout(_checkLocalImport,1500);
 }
@@ -3520,6 +3543,7 @@ function _importLocalData(localDB){
 }
 
 function doLogout(){
+  _autoTry=99;clearTimeout(_autoTimer);
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
   if(fbAuth)fbAuth.signOut().catch(()=>{});
   _currentUser=null;_sectionCode=null;_isAdmin=false;
@@ -3541,7 +3565,9 @@ function startRealtimeSync(){
       if(!remote)return;
       const _r=_unpackDB(remote);
       if(_cloudHadData&&!_dbHasData(_r))return;   // хоосон шинэчлэлт үл тоомсорлоно
-      DB=_r;if(_dbHasData(DB))_cloudHadData=true;
+      DB=_r;
+      if(_dbHasData(DB)){_cloudHadData=true;_cloudLoaded=true;_autoTry=0;clearTimeout(_autoTimer);
+        const _eb2=document.getElementById('errBanner');if(_eb2)_eb2.remove()}
       if(!DB.folders)DB.folders=[];
       if(activeFolderId){
         const f=DB.folders.find(x=>x.id===activeFolderId);
@@ -3845,11 +3871,24 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.01·18';
+const APP_BUILD='2026.08.01·21';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
 let _hCount=0, _inPop=false, _hPops=0, _hPushes=0, _hErr='', _exiting=false;
+
+function _histGuard(){
+  if(_inPop||_exiting)return;
+  let added=0;
+  while(_hCount<H_TARGET&&added<H_TARGET){
+    try{history.pushState({app:1,i:_hCount+1},'')}
+    catch(e){_hErr=(e&&e.message||'e').slice(0,18);break}
+    _hCount++;added++;_hPushes++
+  }
+}
+_histGuard();
+
+function _histRestore(){_inPop=false;_histGuard()}
 
 window.addEventListener('popstate',function(){
   if(_exiting)return;
