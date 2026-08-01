@@ -592,7 +592,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-13</div>
+      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-14</div>
     </div>
   </div>
 </div>
@@ -3341,11 +3341,23 @@ async function doLogin(){
     else if(err.code==='auth/too-many-requests')msg='Хэт олон оролдлого — 5 минут хүлээнэ үү';
     else if(err.code==='auth/network-request-failed')msg='Интернет холболт алдаатай байна';
     else if(err.code==='auth/invalid-email')msg='Email формат буруу: '+email;
-    else msg=err.code+': '+err.message;
+    else msg=(err.code||'')+' '+(err.message||'');
     showErr(msg);
   }
 }
 
+
+function _errBanner(title,detail){
+  try{
+    const ex=document.getElementById('errBanner');if(ex)ex.remove();
+    const d=document.createElement('div');d.id='errBanner';
+    d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99998;background:#B3261E;color:#fff;'+
+      'padding:9px 34px 9px 12px;font:600 12px/1.4 -apple-system,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.3)';
+    d.innerHTML='⚠ '+title+'<br><span style="font-weight:400;opacity:.9;font-size:11px">'+detail+'</span>'+
+      '<button onclick="this.parentElement.remove()" style="position:absolute;top:5px;right:8px;background:none;border:none;color:#fff;font-size:19px;cursor:pointer;line-height:1">×</button>';
+    document.body.appendChild(d)
+  }catch(e){}
+}
 
 async function _afterLogin(){
   if(_isAdmin){showView('adminView');await loadAdminView();return}
@@ -3361,9 +3373,8 @@ async function _afterLogin(){
     }
   }catch(e){
     console.error('Firestore read err:',e);
-    // localStorage-с унших
     try{const s=localStorage.getItem('sg_der_v3');if(s)DB=_unpackDB(JSON.parse(s))}catch(e2){}
-    showToast('⚠ Үүлэн өгөгдөл уншихад алдаа — локал өгөгдөл ашиглаж байна',3000);
+    _errBanner('Үүлэн өгөгдөл татаж чадсангүй',(e&&(e.code||e.message))||'тодорхойгүй');
   }
   _migrateDB();
   if(!DB.folders)DB.folders=[];
@@ -3770,7 +3781,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.01·13';
+const APP_BUILD='2026.08.01·14';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
