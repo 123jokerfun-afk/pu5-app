@@ -592,7 +592,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-15</div>
+      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-16</div>
     </div>
   </div>
 </div>
@@ -652,6 +652,9 @@ button{font-family:inherit}
     <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
       <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <button class="add-track-btn" onclick="cloudReload()" style="border-color:#7BD3A0;color:#0F8A4C;margin-bottom:8px">
+        <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg> Үүлнээс дахин татах
+      </button>
       <button class="add-track-btn" onclick="openAddFolder()" style="border-color:var(--blue-mid);color:var(--blue)">
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Шинэ паспорт нэмэх
       </button>
@@ -3368,6 +3371,28 @@ function _errBanner(title,detail){
   }catch(e){}
 }
 
+async function cloudReload(){
+  if(!fbDb||!_sectionCode){_errBanner('Firebase холбогдоогүй','Дахин нэвтэрнэ үү');return}
+  showToast('⏳ Үүлнээс татаж байна...',2500);
+  try{
+    const doc=await fbDb.collection('sections').doc(_sectionCode).get();
+    if(!doc.exists){_errBanner('Баримт олдсонгүй','sections/'+_sectionCode);return}
+    const raw=doc.data()&&doc.data().db;
+    if(!raw){_errBanner('db талбар хоосон','sections/'+_sectionCode);return}
+    DB=_unpackDB(raw);_migrateDB();
+    if(!DB.folders)DB.folders=[];
+    _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
+    activeFolderId=null;DB.tracks=[];
+    const ex=document.getElementById('errBanner');if(ex)ex.remove();
+    renderHome();
+    const nf=(DB.folders||[]).length;
+    const nt=(DB.folders||[]).reduce(function(a,f){return a+((f.tracks||[]).length)},0);
+    showToast('✓ Татагдлаа: '+nf+' паспорт · '+nt+' зам',3000)
+  }catch(e){
+    _errBanner('Татаж чадсангүй',(e&&(e.code||e.message))||'тодорхойгүй')
+  }
+}
+
 async function _afterLogin(){
   if(_isAdmin){showView('adminView');await loadAdminView();return}
   showView('homeView');
@@ -3796,7 +3821,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.01·15';
+const APP_BUILD='2026.08.01·16';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
