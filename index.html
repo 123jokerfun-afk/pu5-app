@@ -592,7 +592,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-16</div>
+      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-18</div>
     </div>
   </div>
 </div>
@@ -1072,6 +1072,7 @@ function _initFB(){
     fbApp=firebase.initializeApp(FB_CONFIG);
     fbAuth=firebase.auth();
     fbDb=firebase.firestore();
+    try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){console.warn('lp:',e)}
     return true
   }catch(e){console.error('FB init:',e);return false}
 }
@@ -3325,12 +3326,14 @@ async function doLogin(){
       fbApp=firebase.initializeApp(FB_CONFIG);
       fbAuth=firebase.auth();
       fbDb=firebase.firestore();
+      try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){}
     }catch(err){
       // Аль хэдийн init хийгдсэн байж болно
       try{
         fbApp=firebase.app();
         fbAuth=firebase.auth();
         fbDb=firebase.firestore();
+        try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){}
       }catch(err2){showErr('Firebase холболт алдаатай: '+err2.message);return}
     }
   }
@@ -3371,11 +3374,25 @@ function _errBanner(title,detail){
   }catch(e){}
 }
 
+function _withTimeout(p,ms,label){
+  return Promise.race([p,new Promise(function(_,rej){
+    setTimeout(function(){rej(new Error((label||'Хүсэлт')+' хугацаа хэтэрлээ ('+ms/1000+'с)'))},ms)})])
+}
+async function _readCloud(tries){
+  let last=null;
+  for(let i=0;i<(tries||3);i++){
+    try{
+      return await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),12000,'Үүлнээс унших')
+    }catch(e){last=e;if(i<(tries||3)-1)await new Promise(function(r){setTimeout(r,1200)})}
+  }
+  throw last
+}
+
 async function cloudReload(){
   if(!fbDb||!_sectionCode){_errBanner('Firebase холбогдоогүй','Дахин нэвтэрнэ үү');return}
   showToast('⏳ Үүлнээс татаж байна...',2500);
   try{
-    const doc=await fbDb.collection('sections').doc(_sectionCode).get();
+    const doc=await _readCloud(2);
     if(!doc.exists){_errBanner('Баримт олдсонгүй','sections/'+_sectionCode);return}
     const raw=doc.data()&&doc.data().db;
     if(!raw){_errBanner('db талбар хоосон','sections/'+_sectionCode);return}
@@ -3393,12 +3410,17 @@ async function cloudReload(){
   }
 }
 
+let _afterBusy=false;
 async function _afterLogin(){
+  if(_afterBusy)return;_afterBusy=true;
+  try{await _afterLoginInner()}finally{_afterBusy=false}
+}
+async function _afterLoginInner(){
   if(_isAdmin){showView('adminView');await loadAdminView();return}
   showView('homeView');
-  showToast('⏳ Өгөгдөл ачаалж байна...',2000);
+  _errBanner('⏳ Үүлнээс өгөгдөл татаж байна...','Хүлээнэ үү');
   try{
-    const doc=await fbDb.collection('sections').doc(_sectionCode).get();
+    const doc=await _readCloud(3);
     if(doc.exists&&doc.data()&&doc.data().db){
       DB=_unpackDB(doc.data().db);
       _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
@@ -3414,6 +3436,8 @@ async function _afterLogin(){
     try{const s=localStorage.getItem('sg_der_v3');if(s)DB=_unpackDB(JSON.parse(s))}catch(e2){}
     _errBanner('Үүлэн өгөгдөл татаж чадсангүй',(e&&(e.code||e.message))||'тодорхойгүй');
   }
+  const _eb=document.getElementById('errBanner');
+  if(_eb&&_eb.textContent.indexOf('татаж байна')>=0)_eb.remove();
   _migrateDB();
   if(!DB.folders)DB.folders=[];
   const ts=document.getElementById('tracksSection');if(ts)ts.style.display='none';
@@ -3821,7 +3845,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.01·16';
+const APP_BUILD='2026.08.01·18';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
