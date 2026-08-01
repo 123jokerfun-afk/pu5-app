@@ -592,7 +592,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-14</div>
+      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-15</div>
     </div>
   </div>
 </div>
@@ -1026,6 +1026,7 @@ const FB_DOMAIN = 'railway.mn';
 const ADMIN_CODE = 'ADMIN';
 
 let fbApp=null,fbAuth=null,fbDb=null;
+let _cloudLoaded=false,_cloudHadData=false;
 
 // ── Өгөгдөл шахах: дэр бүрийг 1 үсэг болгоно (n/b/t/x) → 10 дахин бага ──
 const _SLMAP={normal:'n',bad:'b',tbd:'t',bad_tbd:'x'};
@@ -1109,11 +1110,19 @@ function loadDB(){
     _migrateDB();return
   }
 }
+function _dbHasData(d){
+  try{return (d.folders||[]).some(function(f){return (f.tracks||[]).length>0})||((d.tracks||[]).length>0)}
+  catch(e){return false}
+}
 function saveDB(){
   if(activeFolderId){const f=DB.folders.find(x=>x.id===activeFolderId);if(f)f.tracks=DB.tracks}
   const packed=_packDB(DB);
   try{localStorage.setItem('sg_der_v3',JSON.stringify(packed))}catch(e){}
   if(!fbDb||!_sectionCode)return;
+  if(!_cloudLoaded){console.warn('Үүлнээс уншаагүй тул бичихгүй');return}
+  if(_cloudHadData&&!_dbHasData(DB)){
+    _errBanner('Хоосон өгөгдөл хадгалахаас сэргийллээ','Үүлэн дэх өгөгдөл хамгаалагдлаа');
+    return}
   clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{
     _localWriting=true;
@@ -3367,9 +3376,13 @@ async function _afterLogin(){
     const doc=await fbDb.collection('sections').doc(_sectionCode).get();
     if(doc.exists&&doc.data()&&doc.data().db){
       DB=_unpackDB(doc.data().db);
+      _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
+      if(!_cloudHadData)_errBanner('Үүлэн дээр өгөгдөл хоосон байна','sections/'+_sectionCode+' — паспорт олдсонгүй');
     } else {
       DB={location:_sectionCode,tracks:[],v:3,folders:[],
         rpt:{cls:'3',sec:'6',secName:_sectionCode,season:'хавар',year:new Date().getFullYear()+'',date:new Date().toISOString().slice(0,10)}};
+      _cloudLoaded=true;_cloudHadData=false;
+      _errBanner('Үүлэн дээр бичлэг олдсонгүй','sections/'+_sectionCode+' баримт байхгүй');
     }
   }catch(e){
     console.error('Firestore read err:',e);
@@ -3477,7 +3490,9 @@ function startRealtimeSync(){
       if(snap.metadata&&snap.metadata.hasPendingWrites)return; // өөрийн бичилт — алгасна
       const remote=snap.data().db;
       if(!remote)return;
-      DB=_unpackDB(remote);
+      const _r=_unpackDB(remote);
+      if(_cloudHadData&&!_dbHasData(_r))return;   // хоосон шинэчлэлт үл тоомсорлоно
+      DB=_r;if(_dbHasData(DB))_cloudHadData=true;
       if(!DB.folders)DB.folders=[];
       if(activeFolderId){
         const f=DB.folders.find(x=>x.id===activeFolderId);
@@ -3781,7 +3796,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.01·14';
+const APP_BUILD='2026.08.01·15';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
