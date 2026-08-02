@@ -592,7 +592,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.01-21</div>
+      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.02-22</div>
     </div>
   </div>
 </div>
@@ -1011,6 +1011,21 @@ button{font-family:inherit}
   </div></div>
 </div>
 
+<div class="overlay" id="appConfirmModal" style="z-index:600;align-items:center;justify-content:center">
+  <div class="sheet" style="border-radius:26px;width:calc(100% - 48px);max-width:380px">
+    <div class="sheet-inner" style="padding:26px 22px 22px">
+      <div style="width:50px;height:50px;border-radius:15px;background:var(--orange-bg);display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+        <svg class="ic" viewBox="0 0 24 24" width="24" height="24"><path d="M12 9v4M12 17h.01M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L14.7 3.86a2 2 0 00-3.4 0z" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div id="appConfirmMsg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.5;white-space:pre-line"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" id="appConfirmCancelBtn">Болих</button>
+        <button class="btn-ok" id="appConfirmOkBtn">Тийм</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════
 // FIREBASE CONFIG
@@ -1245,6 +1260,20 @@ function goTrack(){
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function openModal(id){hap(6);document.getElementById(id).classList.add('open')}
 function showToast(msg,dur=2000){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
+function appConfirm(msg,okLabel='Тийм'){
+  return new Promise(resolve=>{
+    hap(6);
+    document.getElementById('appConfirmMsg').textContent=msg;
+    const okBtn=document.getElementById('appConfirmOkBtn');
+    const cancelBtn=document.getElementById('appConfirmCancelBtn');
+    okBtn.textContent=okLabel;
+    const modal=document.getElementById('appConfirmModal');
+    const done=result=>{modal.classList.remove('open');okBtn.onclick=null;cancelBtn.onclick=null;resolve(result)};
+    okBtn.onclick=()=>done(true);
+    cancelBtn.onclick=()=>done(false);
+    modal.classList.add('open')
+  })
+}
 
 // ══════════════════════════════════════════════
 // HOME
@@ -1452,9 +1481,9 @@ function addTrack(){
   _selectedPrevRef=null;renderHome()
 }
 function openTrack(id){activeTrackId=id;showView('trackView');renderTrackView()}
-function deleteTrack(){
+async function deleteTrack(){
   const t=activeTrack();if(!t)return;
-  if(!confirm(`${t.num}-р замыг устгах уу? Бүх өгөгдөл устана.`))return;
+  if(!await appConfirm(`${t.num}-р замыг устгах уу? Бүх өгөгдөл устана.`))return;
   DB.tracks=DB.tracks.filter(x=>x.id!==activeTrackId);saveDB();goHome()
 }
 
@@ -1523,8 +1552,8 @@ function sectionCard(s,t){
   </div>`
 }
 
-function deleteSection(tid,sid){
-  if(!confirm('Энэ үеийг устгах уу?'))return;
+async function deleteSection(tid,sid){
+  if(!await appConfirm('Энэ үеийг устгах уу?'))return;
   const t=getTrack(tid);if(!t)return;
   t.sections=t.sections.filter(s=>s.id!==sid);saveDB();renderTrackView()
 }
@@ -1570,10 +1599,10 @@ function saveOverride(){
   const pct=wood>0?(bad/wood*100):0;
   showToast(`✓ "${sec.label}" → ${pct.toFixed(1)}% хадгалагдлаа`)
 }
-function clearOverride(){
+async function clearOverride(){
   const t=activeTrack();if(!t||!_ovSecId)return;
   const sec=t.sections.find(s=>s.id===_ovSecId);if(!sec)return;
-  if(!confirm('Гараар оруулсан өгөгдлийг арилгаад бүртгэлийн тооцоог ашиглах уу?'))return;
+  if(!await appConfirm('Гараар оруулсан өгөгдлийг арилгаад бүртгэлийн тооцоог ашиглах уу?'))return;
   delete sec.manual;saveDB();closeModal('overrideModal');renderTrackView();showToast('Бүртгэлийн тооцоог ашиглаж байна')
 }
 
@@ -1892,7 +1921,7 @@ function syncManual(sec,type,delta){
   else if(type==='tbd')m.tbd=Math.max(0,(m.tbd||0)+delta);
   else if(type==='bad_tbd')m.bad_tbd=Math.max(0,(m.bad_tbd||0)+delta);
 }
-function record(type){
+async function record(type){
   const sec=activeSec();if(!sec)return;
   hap(type==='normal'?10:18);
   if(_verifMode){recordVerif(type);return}
@@ -1909,7 +1938,7 @@ function record(type){
       const msg=prevIsTbd
         ?`#${pos+1}: өмнөх судалгаанд ТБД байсан (${TYPES[prevType].label}), одоо "${TYPES[type].label}" бүртгэлээ.\nЗасварлах уу?`
         :`#${pos+1}: өмнөх судалгаанд ТБД байгаагүй (${TYPES[prevType].label}), одоо "${TYPES[type].label}" бүртгэлээ.\nЗасварлах уу?`;
-      if(confirm(msg)){
+      if(await appConfirm(msg)){
         syncManual(sec,type,-1);sec.sleepers[pos].type=prevType;syncManual(sec,prevType,+1);
         showToast(`#${pos+1} → ${TYPES[prevType].label} болголоо`)
       }
@@ -1941,9 +1970,9 @@ function editSleeper(newType){
   sec.sleepers[editIdx].type=newType;
   saveDB();closeModal('editSleeperModal');renderRecordView();showToast(`#${editIdx+1} → ${TYPES[newType].label}`)
 }
-function deleteSleeper(){
+async function deleteSleeper(){
   const sec=activeSec();if(!sec||editIdx<0)return;
-  if(!confirm(`#${editIdx+1} дэрийг устгах уу?`))return;
+  if(!await appConfirm(`#${editIdx+1} дэрийг устгах уу?`))return;
   const oldType=sec.sleepers[editIdx].type;syncManual(sec,oldType,-1);
   sec.sleepers.splice(editIdx,1);saveDB();closeModal('editSleeperModal');renderRecordView();showToast('Устгалаа')
 }
@@ -3089,10 +3118,10 @@ function closeFolder(){
   document.getElementById('tracksSection').style.display='none';
   renderHome()
 }
-function deleteFolder(fid,e){
+async function deleteFolder(fid,e){
   if(e)e.stopPropagation();
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
-  if(!confirm(`"${f.name}" паспортыг устгах уу? Бүх замын өгөгдөл устана.`))return;
+  if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх замын өгөгдөл устана.`))return;
   DB.folders=DB.folders.filter(x=>x.id!==fid);
   if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
   saveDB();renderHome()
@@ -3182,7 +3211,7 @@ function renderVerifLog(sec){
   // Verification горимд drum-г ашиглах (нэмэлт badge-тай)
   renderRecordLog(sec)
 }
-function recordVerif(type){
+async function recordVerif(type){
   const sec=activeSec();if(!sec)return;
   const idx=_verifCursor;
   if(idx>=sec.sleepers.length){
@@ -3197,7 +3226,7 @@ function recordVerif(type){
   const match=orig.type===type;
   _verifLog.push({origIdx:idx,newType:type,match});
   if(!match){
-    if(confirm(`#${idx+1} дэр: бүртгэлд "${TYPES[orig.type].label}" байна, одоо "${TYPES[type].label}" бүртгэлээ.\nЗасварлах уу?`)){
+    if(await appConfirm(`#${idx+1} дэр: бүртгэлд "${TYPES[orig.type].label}" байна, одоо "${TYPES[type].label}" бүртгэлээ.\nЗасварлах уу?`)){
       syncManual(sec,orig.type,-1);syncManual(sec,type,+1);
       sec.sleepers[idx].type=type;saveDB();showToast(`✓ #${idx+1} → ${TYPES[type].label} засагдлаа`)
     }
@@ -3280,7 +3309,7 @@ function autoFillPrevTBD(newFolderId){
   });
   saveDB();showToast(`✓ Өмнөх паспортын ТБД байршил тохируулагдлаа`)
 }
-function offerAutoTBD(newFolderId){
+async function offerAutoTBD(newFolderId){
   const idx=DB.folders.findIndex(f=>f.id===newFolderId);
   if(idx<=0)return;
   const prevFolder=DB.folders[idx-1];
@@ -3288,7 +3317,7 @@ function offerAutoTBD(newFolderId){
   let hasTbd=false;
   prevFolder.tracks.forEach(t=>t.sections.forEach(s=>{if(s.sleepers.some(sl=>sl.type==='tbd'||sl.type==='bad_tbd'))hasTbd=true}));
   if(!hasTbd)return;
-  if(confirm(`"${prevFolder.name}" паспортын ТБД байршлуудыг шинэ паспортад автоматаар тохируулах уу?`)){
+  if(await appConfirm(`"${prevFolder.name}" паспортын ТБД байршлуудыг шинэ паспортад автоматаар тохируулах уу?`)){
     autoFillPrevTBD(newFolderId)
   }
 }
@@ -3472,7 +3501,7 @@ async function _afterLoginInner(){
   setTimeout(_checkLocalImport,1500);
 }
 
-function _checkLocalImport(){
+async function _checkLocalImport(){
   try{
     // Бүх боломжит түлхүүрүүдийг шалгах
     let s=localStorage.getItem('sg_der_v3');
@@ -3490,13 +3519,13 @@ function _checkLocalImport(){
     console.log('Import: cloud үе:',cloudSecs,'local үе:',localSecs);
     if(cloudSecs>=localSecs&&cloudSecs>0){console.log('Import: үүлэнд аль хэдийн байна');return}
     let stats=localFolders?(localFolders+' паспорт, '+localSecs+' үе'):(localTracks+' зам, '+localSecs+' үе');
-    if(confirm('📥 Энэ утсанд хуучин бүртгэлийн өгөгдөл олдлоо ('+stats+').\n\n'+_sectionCode+' акаунт руу шилжүүлэх үү?')){
+    if(await appConfirm('📥 Энэ утсанд хуучин бүртгэлийн өгөгдөл олдлоо ('+stats+').\n\n'+_sectionCode+' акаунт руу шилжүүлэх үү?')){
       _importLocalData(localDB)
     }
   }catch(e){console.error('Local import check:',e);showToast('Import алдаа: '+e.message)}
 }
 
-function manualLocalImport(){
+async function manualLocalImport(){
   try{
     let s=localStorage.getItem('sg_der_v3');
     if(!s)s=localStorage.getItem('sg_der_v3_'+_sectionCode);
@@ -3516,7 +3545,7 @@ function manualLocalImport(){
     const lsecs=(localDB.folders||[]).reduce((a,f)=>a+(f.tracks||[]).reduce((a2,t)=>a2+(t.sections||[]).length,0),0)
       +(localDB.tracks||[]).reduce((a2,t)=>a2+(t.sections||[]).length,0);
     if(!lf&&!lt){showToast('❌ Өгөгдөл хоосон байна');return}
-    if(confirm('📥 Олдлоо: '+(lf||lt)+' '+(lf?'паспорт':'зам')+', '+lsecs+' үе.\n\n'+_sectionCode+' руу импортлох уу?')){
+    if(await appConfirm('📥 Олдлоо: '+(lf||lt)+' '+(lf?'паспорт':'зам')+', '+lsecs+' үе.\n\n'+_sectionCode+' руу импортлох уу?')){
       _importLocalData(localDB)
     }
   }catch(e){showToast('Алдаа: '+e.message)}
@@ -3871,7 +3900,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.01·21';
+const APP_BUILD='2026.08.02·22';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
