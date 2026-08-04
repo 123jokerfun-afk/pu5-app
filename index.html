@@ -3064,18 +3064,19 @@ async function exportColoredExcel(){
 // ══════════════════════════════════════════════
 (function(){
   const manifest={name:'Замын 3-р анги ПУ-5',short_name:'ПУ-5',
-    description:'Төмөр замын дэр шалгалт бүртгэх систем',start_url:'.',display:'standalone',
+    // manifest нь blob: хаягаар өгөгддөг тул харьцангуй ('.') start_url задардаггүй —
+    // хөтөч "URL is invalid" гэж алгасдаг байв. Тиймээс бүтэн хаягийг өгнө.
+    description:'Төмөр замын дэр шалгалт бүртгэх систем',
+    start_url:location.href.split(/[?#]/)[0],display:'standalone',
     background_color:'#FFF9EC',theme_color:'#FF9932',orientation:'portrait-primary',
     icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23FF9932'/%3E%3Crect x='60' y='220' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='100' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3C/svg%3E",sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
   const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
   const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);document.head.appendChild(link);
-  if('serviceWorker' in navigator && !isIOS()){
-    try{
-      const sw=`const CACHE='der-v2';const ASSETS=[self.location.href];self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))});self.addEventListener('activate',e=>{e.waitUntil(clients.claim())});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));return res})))});`;
-      const swBlob=new Blob([sw],{type:'application/javascript'});
-      navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{})
-    }catch(e){}
-  }
+  // Тайлбар: өмнө нь энд Service Worker бүртгэдэг код байсан. Тэр нь SW-г blob:
+  // хаягаас бүртгэхийг оролддог байсан бөгөөд хөтөч үүнийг зөвшөөрдөггүй тул
+  // хэзээ ч ажиллаж байгаагүй (алдаа нь catch дотор чимээгүй унтардаг байв).
+  // Түүнчлэн тухайн SW нь кэшийг шинэчилдэггүй бичигдсэн тул хэрэв ажилласан
+  // бол аппыг хуучин хувилбар дээр бүрмөсөн гацаах эрсдэлтэй байсан.
 })();
 
 // ══════════════════════════════════════════════
@@ -3924,7 +3925,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.04·24';
+const APP_BUILD='2026.08.04·25';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
