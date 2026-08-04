@@ -3863,9 +3863,11 @@ async function adminExportExcel(){
   ov.addEventListener('touchstart',dismiss,{passive:true});
   // Видео дуусахад
   vid.addEventListener('ended',dismiss);
-  // Видео ачаалагдахгүй бол (файл байхгүй г.м) — 2.5с дараа алгасна
+  // Видео ачаалагдахгүй бол (файл байхгүй г.м) — алгасна
   vid.addEventListener('error',dismiss);
-  setTimeout(()=>{if(vid.readyState<2&&!dismissed)dismiss()},2500);
+  // Удаан (3G/4G) сүлжээнд ~2МБ видео бэлдэхэд хэдэн секунд шаардлагатай тул
+  // хэтэрхий эрт (өмнө нь 2.5с) алгасаж, видеог харуулалгүй үлдээдэг байсныг засав
+  setTimeout(()=>{if(vid.readyState<2&&!dismissed)dismiss()},8000);
   // Autoplay блоклогдвол
   const p=vid.play();
   if(p&&p.catch)p.catch(()=>{setTimeout(dismiss,1200)});
@@ -3900,7 +3902,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.02·22';
+const APP_BUILD='2026.08.04·23';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
