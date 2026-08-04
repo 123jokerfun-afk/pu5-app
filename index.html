@@ -3863,14 +3863,14 @@ async function adminExportExcel(){
   ov.addEventListener('touchstart',dismiss,{passive:true});
   // Видео дуусахад
   vid.addEventListener('ended',dismiss);
-  // Видео ачаалагдахгүй бол (файл байхгүй г.м) — 2.5с дараа алгасна
+  // Видео ачаалагдахгүй бол (файл байхгүй, кодек дэмжигдэхгүй г.м) — шууд алгасна
   vid.addEventListener('error',dismiss);
-  setTimeout(()=>{if(vid.readyState<2&&!dismissed)dismiss()},2500);
-  // Autoplay блоклогдвол
+  // Autoplay блоклогдвол (жишээ нь desktop-ийн хатуу policy) — шууд алгасна
   const p=vid.play();
-  if(p&&p.catch)p.catch(()=>{setTimeout(dismiss,1200)});
-  // Аюулгүйн дээд хязгаар — 20 секунд
-  setTimeout(dismiss,20000);
+  if(p&&p.catch)p.catch(dismiss);
+  // Аюулгүйн дээд хязгаар — видео ямар нэг шалтгаанаар 'ended' болон 'error' алийг нь ч
+  // шидэхгүй өлгөгдвөл 25 секундын дараа албадан алгасна (видео удаан ачаалж байгаа ч энэ хугацаанд дуустал нь хүлээнэ)
+  setTimeout(dismiss,25000);
 })();
 
 // ══════════════════════════════════════════════
