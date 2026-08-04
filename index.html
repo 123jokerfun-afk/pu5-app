@@ -532,7 +532,8 @@ button{font-family:inherit}
 <!-- INTRO -->
 <div id="introOverlay" style="position:fixed;inset:0;z-index:9999;background:#DBE1D4;
   display:flex;align-items:center;justify-content:center;opacity:1;transition:opacity .5s ease">
-  <video id="introVid" src="intro.mp4" muted playsinline autoplay preload="auto"
+  <!-- src-г JS тавина: далд сангаас (Cache Storage) эсвэл сүлжээнээс -->
+  <video id="introVid" muted playsinline preload="auto"
     style="width:100%;height:100%;object-fit:contain"></video>
   <div style="position:absolute;bottom:calc(30px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
     font-size:12px;font-weight:600;color:rgba(60,70,55,.55);pointer-events:none;
@@ -3852,11 +3853,14 @@ async function adminExportExcel(){
   const ov=document.getElementById('introOverlay');
   const vid=document.getElementById('introVid');
   if(!ov||!vid)return;
-  let dismissed=false;
+  const SRC='intro.mp4',CACHE='intro-v1';
+  let dismissed=false,blobUrl='',fillCache=null;
   function dismiss(){
     if(dismissed)return;dismissed=true;
     ov.style.opacity='0';
-    setTimeout(()=>{ov.remove()},520)
+    setTimeout(()=>{ov.remove();if(blobUrl)URL.revokeObjectURL(blobUrl)},520);
+    // Эхний удаад интро дууссаны дараа далд санд хуулна (сүлжээг зэрэг дүүргэхгүйн тулд)
+    if(fillCache){fillCache();fillCache=null}
   }
   // Дэлгэцийн хаана ч дарсан алгасна
   ov.addEventListener('click',dismiss);
@@ -3868,11 +3872,29 @@ async function adminExportExcel(){
   // Удаан (3G/4G) сүлжээнд ~2МБ видео бэлдэхэд хэдэн секунд шаардлагатай тул
   // хэтэрхий эрт (өмнө нь 2.5с) алгасаж, видеог харуулалгүй үлдээдэг байсныг засав
   setTimeout(()=>{if(vid.readyState<2&&!dismissed)dismiss()},8000);
-  // Autoplay блоклогдвол
-  const p=vid.play();
-  if(p&&p.catch)p.catch(()=>{setTimeout(dismiss,1200)});
   // Аюулгүйн дээд хязгаар — 20 секунд
   setTimeout(dismiss,20000);
+
+  function play(src){
+    if(dismissed)return;
+    vid.src=src;
+    const p=vid.play();
+    // Autoplay блоклогдвол
+    if(p&&p.catch)p.catch(()=>{setTimeout(dismiss,1200)})
+  }
+
+  // Видеог аппын далд өгөгдлийн санд (Cache Storage) хадгална. Энэ сан нь
+  // утасны файл менежер, галерейд харагдахгүй бөгөөд дараагийн удаа
+  // сүлжээгүй байсан ч интро шууд тоглоно.
+  (async function(){
+    try{
+      const c=await caches.open(CACHE);
+      const hit=await c.match(SRC);
+      if(hit){blobUrl=URL.createObjectURL(await hit.blob());play(blobUrl);return}
+      play(SRC);
+      fillCache=()=>{c.add(SRC).catch(()=>{})}
+    }catch(e){play(SRC)}
+  })();
 })();
 
 // ══════════════════════════════════════════════
@@ -3902,7 +3924,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.04·23';
+const APP_BUILD='2026.08.04·24';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
