@@ -3925,7 +3925,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.04·25';
+const APP_BUILD='2026.08.04·26';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
@@ -4019,6 +4019,57 @@ try{
 })();
 initScreenSwipe();
 initRipple();
+
+// ══════════════════════════════════════════════
+// АВТОМАТ ШИНЭЧЛЭЛТ ШАЛГАГЧ
+// ══════════════════════════════════════════════
+(function(){
+  // version.txt дотор "2026.08.04-25", APP_BUILD дотор "2026.08.04·25" гэж
+  // ялгаатай тусгаарлагч ашигладаг тул нэг хэлбэрт оруулж харьцуулна
+  const norm=s=>String(s).trim().replace(/·/g,'-');
+  const LOCAL=norm(APP_BUILD);
+  const TRY_KEY='_updReload';
+  let lastCheck=0,notified=false;
+  // sessionStorage зарим орчинд алдаа шиддэг тул хамгаалалттай уншиж бичнэ
+  const sGet=k=>{try{return sessionStorage.getItem(k)}catch(e){return null}};
+  const sSet=(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}};
+
+  async function check(startup){
+    if(Date.now()-lastCheck<60000)return;
+    lastCheck=Date.now();
+    let remote;
+    try{
+      // Кэш алгасаж үргэлж сүлжээнээс шинэ утга авна
+      const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});
+      if(!r.ok)return;
+      remote=norm(await r.text())
+    }catch(e){return}   // сүлжээгүй / file:// горим — чимээгүй өнгөрнө
+    if(!remote||remote===LOCAL)return;
+
+    if(startup){
+      // Эхлэлд хэрэглэгч ажлаа эхлээгүй тул шууд сэргээх нь аюулгүй.
+      // Сэргээсний дараа ч хуучин файл ирвэл (CDN хоцролт г.м) дахин
+      // давтахгүйн тулд оролдлогыг тэмдэглэж, зөвхөн мэдэгдэнэ.
+      if(sGet(TRY_KEY)===remote){
+        showToast('Шинэчлэлт татагдсангүй — түр хүлээгээд дахин нээнэ үү',4000);
+        return
+      }
+      sSet(TRY_KEY,remote);
+      // HTTP кэшийг тойрч шинэ index.html-г татаад дараа нь сэргээнэ
+      try{await fetch(location.href,{cache:'reload'})}catch(e){}
+      location.reload()
+    } else if(!notified){
+      // Ажиллаж байх үед хүчээр сэргээвэл бөглөж буй өгөгдөл алдагдана —
+      // тиймээс зөвхөн мэдэгдэж, сэргээх эсэхийг хэрэглэгч шийднэ
+      notified=true;
+      showToast('Шинэ хувилбар гарлаа — аппаа хаагаад дахин нээнэ үү',5000)
+    }
+  }
+
+  check(true);
+  // Апп руу буцаж орох бүрд шалгана (60 секундэд нэгээс олонгүй)
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)check(false)});
+})();
 </script>
 </body>
 </html>
