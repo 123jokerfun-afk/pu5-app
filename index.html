@@ -567,15 +567,25 @@ button{font-family:inherit}
       <!-- Нууц үг -->
       <div style="margin-bottom:22px">
         <label style="display:block;font-size:14px;font-weight:700;color:#B5741A;margin-bottom:8px;
-          text-shadow:0 1px 6px rgba(255,255,255,.7)">Нууц үгээ хийнүүдээ:</label>
-        <input id="loginPass" type="password" placeholder=""
-          style="width:100%;padding:15px 18px;border:2px solid #E8B44A;border-radius:16px;
-          background:rgba(255,252,246,.88);color:#3A2A12;font-size:18px;font-weight:700;outline:none;
-          -webkit-text-fill-color:#3A2A12;box-shadow:0 3px 14px rgba(160,105,25,.18);
-          box-sizing:border-box;transition:border-color .2s,box-shadow .2s"
-          onfocus="this.style.borderColor='#FF9932';this.style.boxShadow='0 3px 20px rgba(255,153,50,.35)'"
-          onblur="this.style.borderColor='#E8B44A';this.style.boxShadow='0 3px 14px rgba(160,105,25,.18)'"
-          onkeydown="if(event.key==='Enter')doLogin()">
+          text-shadow:0 1px 6px rgba(255,255,255,.7)">Нууц үг:</label>
+        <div style="position:relative">
+          <input id="loginPass" type="password" placeholder=""
+            style="width:100%;padding:15px 46px 15px 18px;border:2px solid #E8B44A;border-radius:16px;
+            background:rgba(255,252,246,.88);color:#3A2A12;font-size:18px;font-weight:700;outline:none;
+            -webkit-text-fill-color:#3A2A12;box-shadow:0 3px 14px rgba(160,105,25,.18);
+            box-sizing:border-box;transition:border-color .2s,box-shadow .2s"
+            onfocus="this.style.borderColor='#FF9932';this.style.boxShadow='0 3px 20px rgba(255,153,50,.35)'"
+            onblur="this.style.borderColor='#E8B44A';this.style.boxShadow='0 3px 14px rgba(160,105,25,.18)'"
+            onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" id="passToggle" onclick="togglePassVis()" aria-label="Нууц үг харах"
+            style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;
+            border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+            color:#B5741A;opacity:.75">
+            <svg id="passToggleIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <!-- НЭВТРЭХ товч -->
@@ -592,7 +602,11 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.02-22</div>
+      <div style="text-align:center;margin-top:14px">
+        <div id="buildTag" data-v="2026.08.04-23" style="display:inline-block;font-size:10px;font-weight:700;
+          color:rgba(80,50,15,.75);background:rgba(255,252,246,.6);padding:4px 10px;
+          border-radius:99px;box-shadow:0 1px 6px rgba(160,105,25,.12)">BUILD 2026.08.04-23</div>
+      </div>
     </div>
   </div>
 </div>
@@ -3325,6 +3339,19 @@ async function offerAutoTBD(newFolderId){
 // ══════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════
+function togglePassVis(){
+  const inp=document.getElementById('loginPass');
+  const ic=document.getElementById('passToggleIcon');
+  if(!inp||!ic)return;
+  hap(6);
+  if(inp.type==='password'){
+    inp.type='text';
+    ic.innerHTML='<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a18.6 18.6 0 0 1 4.22-5.19M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 7 11 7a18.6 18.6 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>';
+  }else{
+    inp.type='password';
+    ic.innerHTML='<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
 async function doLogin(){
   const code=(document.getElementById('loginCode').value||'').trim().toUpperCase();
   const pass=(document.getElementById('loginPass').value||'').trim();
@@ -3900,7 +3927,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.02·22';
+const APP_BUILD='2026.08.04·23';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
