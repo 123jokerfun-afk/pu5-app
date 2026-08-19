@@ -525,6 +525,40 @@ button{font-family:inherit}
 .pring circle{transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),stroke .4s ease}
 /* Icon */
 .ic{display:inline-block;vertical-align:-2px;flex-shrink:0}
+/* ── Солигдсон дэр ── */
+/* Гүйлгэдэг сонгогч (сар / өдөр) */
+.wheel-row{display:flex;gap:10px;align-items:stretch;margin:10px 0 4px}
+.wheel-col{flex:1;position:relative}
+.wheel-lbl{font-size:11px;font-weight:800;color:var(--ink3);text-align:center;margin-bottom:4px;
+  text-transform:uppercase;letter-spacing:.05em}
+.wheel{height:150px;overflow-y:auto;scroll-snap-type:y mandatory;border:1.5px solid var(--border);
+  border-radius:var(--rm);background:var(--bg);-webkit-overflow-scrolling:touch;position:relative}
+.wheel::-webkit-scrollbar{display:none}
+.wheel{scrollbar-width:none}
+.wh-item{height:42px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;
+  font-size:17px;font-weight:700;color:var(--ink4);transition:color .12s,transform .12s}
+.wh-item.wh-sel{color:var(--gold-deep);font-size:21px;font-weight:900;transform:scale(1.04)}
+/* Сонгогдсон мөрийг тодруулах хүрээ */
+.wheel-band{position:absolute;left:0;right:0;top:54px;height:42px;pointer-events:none;
+  border-top:1.5px solid var(--gold-deep);border-bottom:1.5px solid var(--gold-deep);
+  background:rgba(255,210,63,.10);border-radius:6px}
+.wheel-year{text-align:center;font-size:13px;font-weight:800;color:var(--ink2);
+  background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rm);padding:10px;margin-bottom:2px}
+/* Бүртгэлийн мөрөнд харагдах улаан огноо */
+.repl-date{font-size:9px;padding:2px 5px;border-radius:5px;font-weight:800;flex-shrink:0;
+  background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-variant-numeric:tabular-nums}
+/* Тайлангийн жагсаалт */
+.rp-track{margin-bottom:14px}
+.rp-track-hd{font-size:13px;font-weight:900;color:var(--ink);padding:8px 12px;background:var(--bg);
+  border-radius:10px 10px 0 0;border:1.5px solid var(--border);border-bottom:none}
+.rp-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border);
+  border-bottom:none;font-size:12px;background:var(--card)}
+.rp-row:last-of-type{border-bottom:1.5px solid var(--border)}
+.rp-sub{display:flex;justify-content:space-between;padding:8px 12px;background:var(--g100);
+  border:1.5px solid var(--border);border-radius:0 0 10px 10px;font-size:12px;font-weight:800;color:var(--g700)}
+.rp-total{display:flex;justify-content:space-between;padding:14px 16px;margin-top:6px;
+  background:linear-gradient(135deg,#FFD23F,#FF8E3C);color:#fff;border-radius:var(--rm);
+  font-size:15px;font-weight:900;box-shadow:0 5px 20px rgba(255,153,50,.35)}
 </style>
 </head>
 <body>
@@ -664,6 +698,7 @@ button{font-family:inherit}
     <div class="home-section">
       <div class="sec-lbl" style="margin-top:6px">Замууд</div>
       <div class="tracks-grid stagger" id="tracksGrid"></div>
+      <div id="replFolderWrap" style="margin-top:10px"></div>
       <button class="add-track-btn" onclick="openAddTrack()">
         <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Зам нэмэх
       </button>
@@ -784,7 +819,47 @@ button{font-family:inherit}
       <button class="etb etb-t" onclick="editSleeper('tbd')"><span class="etb-icon">■</span>ТБД</button>
       <button class="etb etb-bt" onclick="editSleeper('bad_tbd')"><span class="etb-icon">✕</span>Тэнцэхгүй ТБД</button>
     </div>
+    <button class="etb" id="replBtn" onclick="openReplModal()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
     <button class="etb etb-del" onclick="deleteSleeper()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг устгах</button>
+  </div></div>
+</div>
+
+<!-- СОЛИГДСОН ДЭР: огноо + төрөл сонгох -->
+<div class="overlay" id="replModal">
+  <div class="sheet"><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="replTitle">Сольсон огноо</div>
+      <button onclick="closeModal('replModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;font-weight:600">Сар, өдрийг дээш доош гүйлгэж сонгоно уу</div>
+    <div class="wheel-year" id="replYear">—</div>
+    <div class="wheel-row">
+      <div class="wheel-col">
+        <div class="wheel-lbl">Сар</div>
+        <div style="position:relative"><div class="wheel" id="whMonth"></div><div class="wheel-band"></div></div>
+      </div>
+      <div class="wheel-col">
+        <div class="wheel-lbl">Өдөр</div>
+        <div style="position:relative"><div class="wheel" id="whDay"></div><div class="wheel-band"></div></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin:12px 0 6px;font-weight:600">Тавьсан дэрийн төрөл:</div>
+    <div class="edit-grid" style="margin:0">
+      <button class="etb etb-n" onclick="saveRepl('normal')"><span class="etb-icon">✓</span>Модон</button>
+      <button class="etb etb-t" onclick="saveRepl('tbd')"><span class="etb-icon">■</span>Хэвийн ТБД</button>
+    </div>
+    <button class="etb etb-del" id="replClearBtn" onclick="clearRepl()" style="display:none"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Сольсон тэмдэглэгээг арилгах</button>
+  </div></div>
+</div>
+
+<!-- СОЛИГДСОН ДЭР: тайлан -->
+<div class="overlay" id="replReportModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0">Солигдсон дэр</div>
+      <button onclick="closeModal('replReportModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div id="replReportBody"></div>
   </div></div>
 </div>
 
@@ -1152,6 +1227,68 @@ function saveDB(){
       .catch(e=>{console.error('Save err:',e);_localWriting=false})
   },1500)
 }
+// ── Солигдсон дэр ──
+// Дэр бүр хадгалахдаа 1 үсэг болж шахагддаг тул дэр дээр талбар нэмэх боломжгүй.
+// Тиймээс үеийн түвшинд { дэрийн индекс: {d:'YYYY-MM-DD', t:'normal'|'tbd'} } гэж хадгална.
+// Энэ нь _packDB-д хөндөгдөхгүй тул шахалт хэвээрээ үлдэнэ.
+function getRepl(sec,idx){return sec&&sec.repl?sec.repl[idx]||null:null}
+function setReplAt(sec,idx,d,t){if(!sec.repl)sec.repl={};sec.repl[idx]={d,t}}
+function clearReplAt(sec,idx){if(sec&&sec.repl)delete sec.repl[idx]}
+// Дэр устгахад дараагийн бүх индекс 1-ээр ухарна — тэмдэглэгээг мөн шилжүүлэхгүй бол
+// огноо өөр дэр дээр буруу харагдана
+function shiftReplAfterDelete(sec,removed){
+  if(!sec||!sec.repl)return;
+  const out={};
+  Object.keys(sec.repl).forEach(k=>{
+    const i=parseInt(k,10);
+    if(i===removed)return;              // устсан дэрийн тэмдэглэгээ хамт арилна
+    out[i>removed?i-1:i]=sec.repl[k]
+  });
+  sec.repl=out
+}
+// Монголын цагийн бүс (UTC+8) — төхөөрөмжийн бүс ямар ч байсан МУ-ын өнөөдрийг өгнө
+function mnToday(){
+  const d=new Date(Date.now()+8*3600000);
+  return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate()}
+}
+function daysInMonth(y,m){return new Date(y,m,0).getDate()}
+function fmtReplDate(s){
+  // '2026-08-19' → '2026.08.19'
+  return typeof s==='string'?s.replace(/-/g,'.'):''
+}
+// Паспортуудыг он сар өдрийн дарааллаар (эрт → хожуу)
+function foldersByDate(){
+  return (DB.folders||[]).slice().sort((a,b)=>
+    String(a.date||a.year||'').localeCompare(String(b.date||b.year||'')))
+}
+// Тухайн үеийн дэр бүрийн ХҮЧИНТЭЙ сольсон тэмдэглэгээг гаргана.
+// Эхлээд энэ паспортын өөрийн тэмдэглэгээ, дараа нь өмнөх паспортууд руу
+// хожуугаас эрт рүү ухарч хайна — ингэснээр сольсон огноо дараа дараагийн
+// паспорт бүрт дахин солих хүртэл хэвээр харагдана.
+// Өмнөх паспортууд руу буцаж харагдахгүй (зөвхөн урагш дамжина).
+function resolveReplMap(track,sec){
+  const out={};
+  if(!track||!sec)return out;
+  const own=sec.repl||{};
+  Object.keys(own).forEach(k=>{out[k]={rec:own[k],own:true}});
+  const all=foldersByDate();
+  const cur=all.findIndex(f=>f.id===activeFolderId);
+  if(cur<0)return out;
+  for(let i=cur-1;i>=0;i--){
+    const pt=(all[i].tracks||[]).find(t=>t.num===track.num);
+    if(!pt)continue;
+    const ps=(pt.sections||[]).find(s=>s.label===sec.label);
+    if(!ps||!ps.repl)continue;
+    Object.keys(ps.repl).forEach(k=>{if(!(k in out))out[k]={rec:ps.repl[k],own:false}})
+  }
+  return out
+}
+// Нэг дэрийн хүчинтэй тэмдэглэгээ (өөрийн эсвэл өмнөх паспортоос уламжилсан)
+function effectiveRepl(track,sec,idx){
+  const m=resolveReplMap(track,sec);
+  return m[idx]||null
+}
+
 function getTrack(id){return DB.tracks.find(t=>t.id===id)}
 function getSection(tid,sid){const t=getTrack(tid);return t&&t.sections.find(s=>s.id===sid)}
 function activeTrack(){return getTrack(activeTrackId)}
@@ -1302,6 +1439,7 @@ function renderHome(){
       if(p<1)requestAnimationFrame(anim)})(performance.now())
   } else hp.textContent='—';
   renderFolders();
+  renderReplFolder();
   const grid=document.getElementById('tracksGrid');
   if(!activeFolderId){if(grid)grid.innerHTML='';return}
   if(!DB.tracks.length){grid.innerHTML='<div style="grid-column:span 2;text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';return}
@@ -1331,6 +1469,68 @@ function renderHome(){
       </div>
     </div>`
   }).join('')
+}
+
+// ══════════════════════════════════════════════
+// СОЛИГДСОН ДЭР — тайлан
+// ══════════════════════════════════════════════
+// Идэвхтэй паспортын бүх зам/үеийг тойрч, сольсон гэж тэмдэглэсэн дэрүүдийг цуглуулна
+function collectRepl(){
+  const out=[];
+  DB.tracks.forEach(t=>{
+    const rows=[];
+    (t.sections||[]).forEach(s=>{
+      if(!s.repl)return;
+      Object.keys(s.repl).forEach(k=>{
+        const i=parseInt(k,10),r=s.repl[k];
+        if(!r||!r.d)return;
+        rows.push({sec:s.label||'—',idx:i+1,date:r.d,type:r.t})
+      })
+    });
+    // Үе → дэрийн дугаараар эрэмбэлнэ
+    rows.sort((a,b)=>a.sec===b.sec?a.idx-b.idx:String(a.sec).localeCompare(String(b.sec),'mn'));
+    if(rows.length)out.push({num:t.num,rows})
+  });
+  return out
+}
+function replTotalCount(){
+  return collectRepl().reduce((s,t)=>s+t.rows.length,0)
+}
+function renderReplFolder(){
+  const wrap=document.getElementById('replFolderWrap');if(!wrap)return;
+  const n=activeFolderId?replTotalCount():0;
+  if(!n){wrap.innerHTML='';return}
+  wrap.innerHTML=`<div class="folder-card" style="border-color:var(--red);background:var(--red-bg)" onclick="hap();openReplReport()">
+    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:var(--red)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+    <div class="folder-info">
+      <div class="folder-name" style="color:var(--red)">Солигдсон дэр</div>
+      <div class="folder-meta">Нийт ${n} дэр · дарж жагсаалтыг харах</div>
+    </div>
+  </div>`
+}
+function openReplReport(){
+  const data=collectRepl();
+  const body=document.getElementById('replReportBody');
+  if(!data.length){
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Солигдсон дэр алга</div>';
+    openModal('replReportModal');return
+  }
+  let total=0,html='';
+  data.forEach(t=>{
+    total+=t.rows.length;
+    html+=`<div class="rp-track"><div class="rp-track-hd">${t.num}-р зам</div>`;
+    t.rows.forEach(r=>{
+      html+=`<div class="rp-row">
+        <span style="flex:1;font-weight:700;color:var(--ink2)">${r.sec}</span>
+        <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
+        <span class="repl-date">${fmtReplDate(r.date)}</span>
+      </div>`
+    });
+    html+=`<div class="rp-sub"><span>${t.num}-р замын дүн</span><span>${t.rows.length} дэр</span></div></div>`
+  });
+  html+=`<div class="rp-total"><span>Бүх замын нийт</span><span>${total} дэр</span></div>`;
+  body.innerHTML=html;
+  openModal('replReportModal')
 }
 
 function editLocation(){document.getElementById('locInput').value=DB.location;openModal('locModal')}
@@ -1838,6 +2038,8 @@ function renderRecordLog(sec,focusIdx){
   }
 
   const total=Math.max(n,prevSec?prevSec.sleepers.length:0);
+  // Сольсон огноог нэг удаа тооцно (өмнөх паспортуудаас уламжилсныг оруулаад)
+  const replMap=resolveReplMap(t,sec);
   let html='';
   for(let i=0;i<total;i++){
     const isRec=i<n;
@@ -1859,9 +2061,12 @@ function renderRecordLog(sec,focusIdx){
           (same?'✓':df?'≠!':'≠')+' '+ptp.label+'</span>';
       }
       const tc={normal:'dr-normal',bad:'dr-bad',tbd:'dr-tbd',bad_tbd:'dr-bad-tbd'}[sl.type]||'';
+      // Сольсон дэр бол огноог улаан хүрээтэй жижиг хайрцагт харуулна
+      const rp=replMap[i];
+      const rb=rp?'<span class="repl-date">'+fmtReplDate(rp.rec.d)+'</span>':'';
       html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
-        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+pb+
+        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+rb+pb+
         '<span class="dr-edit">'+ic('edit',12)+'</span></div>';
     } else {
       const gs=prevSec.sleepers[i],gtp=TYPES[gs.type];
@@ -1951,6 +2156,7 @@ async function record(type){
 function undoLast(){
   hap(18);const sec=activeSec();if(!sec||!sec.sleepers.length){showToast('Буцаах зүйл алга');return}
   const last=sec.sleepers[sec.sleepers.length-1];sec.sleepers.pop();
+  clearReplAt(sec,sec.sleepers.length);   // буцаасан дэрийн сольсон тэмдэглэгээ хамт арилна
   syncManual(sec,last.type,-1);saveDB();renderRecordView();showToast('Буцаалаа')
 }
 
@@ -1962,6 +2168,12 @@ function openEditSleeper(idx){
   const sec=activeSec();if(!sec||!sec.sleepers[idx])return;
   editIdx=idx;
   document.getElementById('editSleeperTitle').textContent=`#${idx+1} дэр засах · одоо: ${TYPES[sec.sleepers[idx].type].label}`;
+  // Аль хэдийн сольсон бол товч дээр огноог нь харуулна.
+  // Өмнөх паспортоос уламжилсан бол тэрийг нь тусад нь мэдэгдэнэ.
+  const rp=effectiveRepl(activeTrack(),sec,idx),rb=document.getElementById('replBtn');
+  if(rb)rb.lastChild.textContent=!rp?' Энэ дэрийг сольсон'
+    :rp.own?` Сольсон: ${fmtReplDate(rp.rec.d)} — засах`
+           :` Өмнө сольсон: ${fmtReplDate(rp.rec.d)} — дахин солих`;
   openModal('editSleeperModal')
 }
 function editSleeper(newType){
@@ -1971,11 +2183,100 @@ function editSleeper(newType){
   sec.sleepers[editIdx].type=newType;
   saveDB();closeModal('editSleeperModal');renderRecordView();showToast(`#${editIdx+1} → ${TYPES[newType].label}`)
 }
+// ── СОЛИГДСОН ДЭР: огноо сонгох ──
+const _WH_IH=42;            // мөрийн өндөр (CSS-тэй тааруулсан)
+let _replM=1,_replD=1,_replY=2026;
+function _wheelFill(el,values,sel){
+  el.innerHTML='<div style="height:54px"></div>'+
+    values.map(v=>'<div class="wh-item">'+v+'</div>').join('')+
+    '<div style="height:54px"></div>';
+  _wheelMark(el,sel);
+}
+function _wheelMark(el,i){
+  const items=el.querySelectorAll('.wh-item');
+  for(let j=0;j<items.length;j++)items[j].classList.toggle('wh-sel',j===i)
+}
+function _wheelIdx(el,len){
+  return Math.max(0,Math.min(len-1,Math.round(el.scrollTop/_WH_IH)))
+}
+function _wheelBind(el,getLen,onPick){
+  let t;
+  el.addEventListener('scroll',function(){
+    clearTimeout(t);
+    t=setTimeout(function(){
+      const i=_wheelIdx(el,getLen());
+      _wheelMark(el,i);
+      el.scrollTo({top:i*_WH_IH,behavior:'smooth'});
+      onPick(i)
+    },110)
+  },{passive:true})
+}
+function _replSyncDays(keepDay){
+  const el=document.getElementById('whDay');
+  const dim=daysInMonth(_replY,_replM);
+  if(_replD>dim)_replD=dim;
+  const days=[];for(let i=1;i<=dim;i++)days.push(i);
+  _wheelFill(el,days,_replD-1);
+  el.scrollTop=(_replD-1)*_WH_IH;
+}
+function openReplModal(){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  const ex=getRepl(sec,editIdx);
+  const t=mnToday();
+  _replY=t.y;                            // он тухайн оноороо — солигдохгүй
+  if(ex&&/^\d{4}-\d{2}-\d{2}$/.test(ex.d)){
+    const p=ex.d.split('-');
+    _replM=parseInt(p[1],10);_replD=parseInt(p[2],10)
+  } else {_replM=t.m;_replD=t.d}
+  document.getElementById('replTitle').textContent=`#${editIdx+1} дэр — сольсон огноо`;
+  document.getElementById('replYear').textContent=_replY+' он';
+  document.getElementById('replClearBtn').style.display=ex?'block':'none';
+  closeModal('editSleeperModal');
+  openModal('replModal');
+  // Цонх нээгдсэний дараа л scrollTop үйлчилнэ (нуугдсан үед хэмжээ 0 байдаг)
+  setTimeout(function(){
+    const mEl=document.getElementById('whMonth'),dEl=document.getElementById('whDay');
+    const months=[];for(let i=1;i<=12;i++)months.push(i);
+    _wheelFill(mEl,months,_replM-1);
+    mEl.scrollTop=(_replM-1)*_WH_IH;
+    _replSyncDays();
+    if(!mEl._bound){
+      mEl._bound=1;
+      _wheelBind(mEl,function(){return 12},function(i){
+        _replM=i+1;_replSyncDays()          // сар солигдвол өдрийн тоо дахин тооцогдоно
+      });
+      _wheelBind(dEl,function(){return daysInMonth(_replY,_replM)},function(i){_replD=i+1})
+    }
+  },40)
+}
+function saveRepl(newType){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  const p=n=>(n<10?'0':'')+n;
+  const date=_replY+'-'+p(_replM)+'-'+p(_replD);
+  const oldType=sec.sleepers[editIdx].type;
+  // Сонгосон төрлөөр дэрийн төрлийг солино (модон → Хэвийн, ТБД → ТБД)
+  if(oldType!==newType){
+    syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
+    sec.sleepers[editIdx].type=newType
+  }
+  setReplAt(sec,editIdx,date,newType);
+  saveDB();closeModal('replModal');renderRecordView();renderHome();
+  showToast(`#${editIdx+1} сольсон · ${fmtReplDate(date)}`)
+}
+function clearRepl(){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  clearReplAt(sec,editIdx);
+  saveDB();closeModal('replModal');renderRecordView();renderHome();
+  showToast('Тэмдэглэгээ ариллаа')
+}
+
 async function deleteSleeper(){
   const sec=activeSec();if(!sec||editIdx<0)return;
   if(!await appConfirm(`#${editIdx+1} дэрийг устгах уу?`))return;
   const oldType=sec.sleepers[editIdx].type;syncManual(sec,oldType,-1);
-  sec.sleepers.splice(editIdx,1);saveDB();closeModal('editSleeperModal');renderRecordView();showToast('Устгалаа')
+  sec.sleepers.splice(editIdx,1);
+  shiftReplAfterDelete(sec,editIdx);      // үлдсэн тэмдэглэгээг зөв дэр дээр байлгана
+  saveDB();closeModal('editSleeperModal');renderRecordView();showToast('Устгалаа')
 }
 
 // ══════════════════════════════════════════════
@@ -3925,7 +4226,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.04·26';
+const APP_BUILD='2026.08.19·27';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
