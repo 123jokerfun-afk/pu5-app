@@ -1246,10 +1246,20 @@ function shiftReplAfterDelete(sec,removed){
   });
   sec.repl=out
 }
-// Монголын цагийн бүс (UTC+8) — төхөөрөмжийн бүс ямар ч байсан МУ-ын өнөөдрийг өгнө
+// Огноо үргэлж Монголын цагийн бүсээр (Asia/Ulaanbaatar) — сонголт байхгүй,
+// төхөөрөмжийн бүс ямар ч байсан МУ-ын өнөөдрийг өгнө.
+// Цагийн бүсийн нэрээр авдаг тул МУ-ын цагийн зөрүү хэзээ нэгэн цагт өөрчлөгдвөл ч зөв хэвээр.
+// Хэрэв хөтөч дэмжихгүй бол харьяа (төхөөрөмжийн) бүс рүү шилжинэ.
 function mnToday(){
-  const d=new Date(Date.now()+8*3600000);
-  return{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate()}
+  try{
+    const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',
+      year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+    const g=t=>{const x=p.find(v=>v.type===t);return x?parseInt(x.value,10):NaN};
+    const y=g('year'),m=g('month'),d=g('day');
+    if(y&&m&&d)return{y,m,d}
+  }catch(e){}
+  const d=new Date();
+  return{y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()}
 }
 function daysInMonth(y,m){return new Date(y,m,0).getDate()}
 function fmtReplDate(s){
@@ -4226,7 +4236,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.19·27';
+const APP_BUILD='2026.08.19·28';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
