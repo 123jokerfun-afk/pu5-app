@@ -419,9 +419,24 @@ button{font-family:inherit}
 .prev-track-opt:active{background:var(--blue-bg);border-color:var(--blue-mid)}
 .prev-track-opt.selected{background:var(--blue-bg);border-color:var(--blue-mid)}
 .ref-ghost{opacity:.35;pointer-events:none;filter:grayscale(.3)}
+/* Өмнөх судалгааны товч мэдээлэл — нарийн дэлгэцэд ч эвдрэхгүй байхаар wrap хийнэ */
 .ref-banner{background:var(--blue-bg);border-bottom:2px solid var(--blue-mid);
-  padding:8px 14px;font-size:12px;font-weight:700;color:var(--blue);
-  display:flex;align-items:center;justify-content:space-between;gap:8px}
+  padding:8px 14px;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap}
+.rb-main{flex:1 1 160px;min-width:0}
+.rb-title{font-size:10px;font-weight:800;color:var(--blue);text-transform:uppercase;
+  letter-spacing:.05em;display:flex;align-items:center;gap:4px;margin-bottom:5px}
+.rb-chips{display:flex;flex-wrap:wrap;gap:5px}
+.rb-chip{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;
+  background:var(--card);border:1px solid rgba(29,78,216,.18);color:var(--ink2);white-space:nowrap}
+.rb-btn{background:var(--blue-mid);color:#fff;border:none;border-radius:8px;padding:8px 12px;
+  font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;
+  display:inline-flex;align-items:center;gap:5px}
+/* Байршлын дэлгэрэнгүй самбар */
+.rf-hd{font-size:11px;font-weight:800;color:var(--blue);margin-bottom:7px;
+  display:flex;align-items:center;gap:5px}
+.rf-legend{font-size:10px;color:var(--ink3);margin-top:8px;font-weight:600;
+  display:flex;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(29,78,216,.15);padding-top:7px}
 .ref-item{display:flex;align-items:center;background:var(--bg);border-radius:var(--rm);
   padding:8px 14px;margin-bottom:4px;gap:8px;opacity:.4;border:1px solid var(--border)}
 .ref-item.ref-tbd{border-left:3px solid var(--red);background:var(--red-bg);opacity:.5}
@@ -1877,15 +1892,18 @@ function renderRefBanner(t,sec){
   const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
   const pg=document.getElementById('recordView').querySelector('.pg-hdr');
   const banner=document.createElement('div');banner.id='refBanner';banner.className='ref-banner';
-  // Өмнөх ТБД байршлуудыг харуулах
-  const tbdPositions=prevSec.sleepers.map((sl,i)=>sl.type==='tbd'||sl.type==='bad_tbd'?`#${i+1}`:null).filter(Boolean);
-  const tbdStr=tbdPositions.length?tbdPositions.slice(0,8).join(' ')+(tbdPositions.length>8?`…(+${tbdPositions.length-8})`:''):'байхгүй';
-  banner.innerHTML=`<div style="flex:1;min-width:0">
-    <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em">${ic("clipboard",12)} Өмнөх судалгаа:</span>
-    <span style="font-size:11px;margin-left:6px">${pa.total} дэр · ТБД: ${pa.tbd+pa.bad_tbd} · <span style="color:${pCol};font-weight:800">${pct.toFixed(1)}%</span></span>
-    <div style="font-size:10px;color:var(--blue);margin-top:2px">ТБД байршил: ${tbdStr}</div>
+  // Товч дүнг чипээр — дэлгэрэнгүй байршлыг "Байршил" товчоор тусад нь нээнэ
+  const nTbd=pa.tbd+pa.bad_tbd, nBad=pa.bad+pa.bad_tbd;
+  banner.innerHTML=`<div class="rb-main">
+    <div class="rb-title">${ic("clipboard",12)} Өмнөх судалгаа</div>
+    <div class="rb-chips">
+      <span class="rb-chip">${pa.total} дэр</span>
+      <span class="rb-chip" style="color:var(--red);border-color:rgba(240,66,107,.3)">ТБД ${nTbd}</span>
+      <span class="rb-chip" style="color:var(--orange);border-color:rgba(245,166,35,.35)">Тэнцэхгүй ${nBad}</span>
+      <span class="rb-chip" style="color:${pCol}">${pct.toFixed(1)}%</span>
+    </div>
   </div>
-  <button onclick="toggleRefOverlay()" id="refToggleBtn" style="background:var(--blue-mid);color:#fff;border:none;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Харах</button>`;
+  <button onclick="toggleRefOverlay()" id="refToggleBtn" class="rb-btn">${_refBtnLabel()}</button>`;
   pg.after(banner)
 }
 function renderRecordView(){
@@ -3559,10 +3577,17 @@ function endVerification(){
 
 // ── Өмнөх лавлагаа overlay ──
 let _refOverlayOn=false;
+// Товчны бичвэр. ЧУХАЛ: SVG агуулдаг тул textContent биш innerHTML-ээр тавина —
+// эс тэгвэл SVG код текст болж харагдаад товч уртсаж, хажуугийн бичвэрийг шахна.
+function _refBtnLabel(){
+  return _refOverlayOn
+    ?'<svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Хаах'
+    :'<svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Байршил'
+}
 function toggleRefOverlay(){
   _refOverlayOn=!_refOverlayOn;
   const btn=document.getElementById('refToggleBtn');
-  if(btn)btn.textContent=_refOverlayOn?'<svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Хаах':'<svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Харах';
+  if(btn)btn.innerHTML=_refBtnLabel();
   renderRefOverlay()
 }
 function renderRefOverlay(){
@@ -3584,13 +3609,14 @@ function renderRefOverlay(){
     const col={bad:'var(--orange)',tbd:'var(--red)',bad_tbd:'var(--dred)'}[sl.type];
     return`<span style="display:inline-flex;align-items:center;gap:3px;background:${bg};color:${col};border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;margin:2px">#${i+1}${icon}</span>`
   }).filter(Boolean).join('');
-  ov.innerHTML=`<div style="font-size:11px;font-weight:800;color:var(--blue);margin-bottom:6px">
-    📋 Өмнөх: ${pa.total} дэр · ТБД ${pa.tbd+pa.bad_tbd} · Тэнцэхгүй ${pa.bad+pa.bad_tbd} · ${pct.toFixed(1)}%
+  // Самбар нь зөвхөн БАЙРШЛЫГ харуулна — тоон дүн нь дээрх banner дээр бий,
+  // хоёр газар давхардуулахгүй
+  const nProblem=pa.bad+pa.tbd+pa.bad_tbd;
+  ov.innerHTML=`<div class="rf-hd">${ic("clipboard",12)} Өмнөх судалгааны асуудалтай байршил (${nProblem})</div>
+  <div style="display:flex;flex-wrap:wrap;gap:3px;max-height:120px;overflow-y:auto">
+    ${rows||'<span style="font-size:11px;color:var(--ink4);font-weight:600">Асуудалтай дэр байгаагүй</span>'}
   </div>
-  <div style="display:flex;flex-wrap:wrap;gap:2px;max-height:120px;overflow-y:auto">
-    ${rows||'<span style="font-size:11px;color:var(--ink4)">Тэнцэхгүй дэр байхгүй байсан</span>'}
-  </div>
-  <div style="font-size:10px;color:var(--ink3);margin-top:6px;font-weight:500">~ Тэнцэхгүй мод &nbsp;■ ТБД &nbsp;✕ Тэнцэхгүй ТБД</div>`;
+  <div class="rf-legend"><span>~ Тэнцэхгүй мод</span><span>■ ТБД</span><span>✕ Тэнцэхгүй ТБД</span></div>`;
   logWrap.insertBefore(ov,logWrap.firstChild)
 }
 
@@ -4236,7 +4262,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.19·28';
+const APP_BUILD='2026.08.20·29';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
