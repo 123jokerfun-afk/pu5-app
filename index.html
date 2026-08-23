@@ -224,8 +224,6 @@ button{font-family:inherit}
 .drow.dr-bad{background:var(--orange-bg);border-color:#F5C272}
 .drow.dr-tbd{background:var(--red-bg);border-color:#F5A0A0}
 .drow.dr-bad-tbd{background:var(--dred-bg);border-color:#E0A0A0}
-.drow.dr-ghost{background:var(--bg);border-color:var(--border2);border-style:dashed;cursor:default}
-.drow.dr-tbd-ghost{background:#FEF5F5;border-color:#F5A0A0;border-style:dashed;cursor:default}
 .drow.dr-in{box-shadow:0 5px 22px rgba(255,150,40,.3),0 0 0 1.5px rgba(255,168,50,.55);
   filter:saturate(1.2) contrast(1.04)}
 .drow{transition:filter .18s ease,box-shadow .18s ease}
@@ -414,29 +412,7 @@ button{font-family:inherit}
 .verif-banner{background:var(--orange-bg);border-bottom:2px solid var(--orange-mid);
   padding:8px 14px;font-size:12px;font-weight:700;color:var(--orange);
   display:flex;align-items:center;justify-content:space-between}
-.prev-track-opt{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rm);
-  padding:12px 14px;cursor:pointer;transition:all .12s}
-.prev-track-opt:active{background:var(--blue-bg);border-color:var(--blue-mid)}
-.prev-track-opt.selected{background:var(--blue-bg);border-color:var(--blue-mid)}
 .ref-ghost{opacity:.35;pointer-events:none;filter:grayscale(.3)}
-/* Өмнөх судалгааны товч мэдээлэл — нарийн дэлгэцэд ч эвдрэхгүй байхаар wrap хийнэ */
-.ref-banner{background:var(--blue-bg);border-bottom:2px solid var(--blue-mid);
-  padding:8px 14px;display:flex;align-items:center;justify-content:space-between;
-  gap:10px;flex-wrap:wrap}
-.rb-main{flex:1 1 160px;min-width:0}
-.rb-title{font-size:10px;font-weight:800;color:var(--blue);text-transform:uppercase;
-  letter-spacing:.05em;display:flex;align-items:center;gap:4px;margin-bottom:5px}
-.rb-chips{display:flex;flex-wrap:wrap;gap:5px}
-.rb-chip{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;
-  background:var(--card);border:1px solid rgba(29,78,216,.18);color:var(--ink2);white-space:nowrap}
-.rb-btn{background:var(--blue-mid);color:#fff;border:none;border-radius:8px;padding:8px 12px;
-  font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;
-  display:inline-flex;align-items:center;gap:5px}
-/* Байршлын дэлгэрэнгүй самбар */
-.rf-hd{font-size:11px;font-weight:800;color:var(--blue);margin-bottom:7px;
-  display:flex;align-items:center;gap:5px}
-.rf-legend{font-size:10px;color:var(--ink3);margin-top:8px;font-weight:600;
-  display:flex;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(29,78,216,.15);padding-top:7px}
 .ref-item{display:flex;align-items:center;background:var(--bg);border-radius:var(--rm);
   padding:8px 14px;margin-bottom:4px;gap:8px;opacity:.4;border:1px solid var(--border)}
 .ref-item.ref-tbd{border-left:3px solid var(--red);background:var(--red-bg);opacity:.5}
@@ -472,9 +448,9 @@ button{font-family:inherit}
 
 /* Товч дарах хариу үйлдэл — бүх интерактив элемент */
 .track-card,.folder-card,.sec-card,.exp-btn,.icon-btn,.btn-ok,.btn-cancel,
-.add-track-btn,.add-sec-btn,.etb,.pb,.sec-edit-btn,.round-btn,.nav-btn,.prev-track-opt{
+.add-track-btn,.add-sec-btn,.etb,.pb,.sec-edit-btn,.round-btn,.nav-btn{
   transition:transform .16s cubic-bezier(.34,1.4,.5,1),box-shadow .16s ease,background .16s ease}
-.track-card:active,.folder-card:active,.sec-card:active,.prev-track-opt:active{transform:scale(.975)}
+.track-card:active,.folder-card:active,.sec-card:active{transform:scale(.975)}
 .exp-btn:active,.icon-btn:active,.btn-ok:active,.btn-cancel:active,
 .add-track-btn:active,.add-sec-btn:active,.etb:active,.pb:active,
 .sec-edit-btn:active,.round-btn:active,.nav-btn:active{transform:scale(.94)}
@@ -523,10 +499,10 @@ button{font-family:inherit}
 .stagger>*:nth-child(n+9){animation-delay:.34s}
 /* Press feedback — бүх дарагдах элемент */
 .track-card,.sec-card,.folder-card,.exp-btn,.icon-btn,.add-track-btn,.add-sec-btn,
-.btn-ok,.btn-cancel,.etb,.pb,.hero-edit,.round-btn,.nav-btn,.sec-edit-btn,.prev-track-opt{
+.btn-ok,.btn-cancel,.etb,.pb,.hero-edit,.round-btn,.nav-btn,.sec-edit-btn{
   transition:transform .16s cubic-bezier(.3,1.4,.5,1),box-shadow .16s ease,background .16s ease;
   -webkit-tap-highlight-color:transparent}
-.track-card:active,.sec-card:active,.folder-card:active,.prev-track-opt:active{transform:scale(.975)}
+.track-card:active,.sec-card:active,.folder-card:active{transform:scale(.975)}
 .exp-btn:active,.icon-btn:active,.add-track-btn:active,.add-sec-btn:active,
 .btn-ok:active,.btn-cancel:active,.etb:active,.pb:active,.hero-edit:active,.sec-edit-btn:active{transform:scale(.94)}
 .round-btn:active{transform:scale(.9)}
@@ -1031,11 +1007,6 @@ button{font-family:inherit}
 <div class="overlay" id="addTrackModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div class="sheet-title">Зам нэмэх</div>
-    <div id="prevTracksSection" style="margin-bottom:12px;display:none">
-      <div style="font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Өмнөх паспортын замаас сонгох</div>
-      <div id="prevTracksList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto"></div>
-      <div style="text-align:center;padding:8px 0;font-size:11px;color:var(--ink4);font-weight:600">— эсвэл —</div>
-    </div>
     <div style="font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Шинэ зам нэмэх</div>
     <div class="ff"><label>Замын төрөл</label>
       <div class="edit-grid" style="margin:0">
@@ -1681,9 +1652,6 @@ function backFromTrack(){
 }
 function goTrack(){
   _navBack=true;
-  const rb=document.getElementById('refBanner');if(rb)rb.remove();
-  const ro=document.getElementById('refOverlay');if(ro)ro.remove();
-  _refOverlayOn=false;
   showView('trackView');renderTrackView()
 }
 function closeModal(id){document.getElementById(id).classList.remove('open')}
@@ -2165,54 +2133,7 @@ function openAddTrack(){
   document.getElementById('atKmTo').value='';
   _atKind='station';_atMat='tbd';_atFast=STATION_DEFAULT_FAST;
   pickTrackKind('station');pickTrackMat('tbd');_renderFastGrid();updateKmHint();
-  // Өмнөх паспортуудаас замын жагсаалт авах
-  const prevSec=document.getElementById('prevTracksSection');
-  const prevList=document.getElementById('prevTracksList');
-  // Идэвхтэй хавтсаас өмнөх хавтсуудыг олох
-  const curIdx=DB.folders.findIndex(f=>f.id===activeFolderId);
-  const prevFolders=curIdx>0?DB.folders.slice(0,curIdx):[];
-  // Бүх өмнөх хавтсаас замуудыг цуглуулж нийлүүлэх
-  const prevMap={};// trackNum → {best stats, folder}
-  prevFolders.forEach(folder=>{
-    folder.tracks.forEach(t=>{
-      if(!prevMap[t.num]||true){// сүүлийн паспортыг авна
-        const ta=analyzeTrackStatic(t);
-        prevMap[t.num]={track:t,folder,ta}
-      }
-    })
-  });
-  const prevTracks=Object.values(prevMap);
-  // Идэвхтэй хавтаст аль хэдийн байгаа замуудыг шүүх
-  const existingNums=new Set((DB.tracks||[]).map(t=>t.num));
-  const available=prevTracks.filter(x=>!existingNums.has(x.track.num));
-  if(available.length){
-    prevSec.style.display='block';
-    prevList.innerHTML=available.map(({track:t,folder:f,ta})=>{
-      const pct=ta.total>0?(ta.totalBad/ta.total*100):0;
-      const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
-      return`<div class="prev-track-opt" onclick="selectPrevTrack(${t.num},'${f.id}',this)">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:15px;font-weight:800">${trackLabel(t)}</span>
-          <span style="font-size:11px;font-weight:700;color:${pCol}">${pct.toFixed(1)}%</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:3px;font-weight:600">
-          ${f.name} · ${t.sections.length} үе · ${ta.total} дэр · ТБД: ${ta.tbd+ta.bad_tbd}
-        </div>
-        <div style="font-size:10px;color:var(--blue);margin-top:3px;font-weight:700">↩ Энэ замын өмнөх ТБД байршлыг ашиглах</div>
-      </div>`
-    }).join('')
-  } else {
-    prevSec.style.display='none'
-  }
-  _selectedPrevRef=null;
   openModal('addTrackModal')
-}
-let _selectedPrevRef=null;
-function selectPrevTrack(trackNum,folderId,el){
-  document.querySelectorAll('.prev-track-opt').forEach(e=>e.classList.remove('selected'));
-  el.classList.add('selected');
-  _selectedPrevRef={trackNum,folderId};
-  document.getElementById('atNum').value=trackNum;
 }
 // "12-р үе · нэмэлт" → 12. Дугааргүй бол Infinity (эцэст нь очно)
 function secNum(label){
@@ -2253,7 +2174,7 @@ function addTrack(){
       if(_atMat==='tbd')tr.fast=_atFast;
       DB.tracks.push(tr);added++
     }
-    sortTracks();saveDB();closeModal('addTrackModal');_selectedPrevRef=null;renderHome();
+    sortTracks();saveDB();closeModal('addTrackModal');renderHome();
     showToast(dup.length
       ?`${added} км нэмэгдлээ (${dup.length} км аль хэдийн байсан)`
       :`${added} км · ${added*MAIN_UE_PER_KM} үе үүслээ`);
@@ -2265,13 +2186,8 @@ function addTrack(){
   if(!num){showToast('Замын дугаар оруулна уу');return}
   if(DB.tracks.find(t=>!isMainTrack(t)&&t.num===num)){showToast(`${num}-р зам аль хэдийн байна`);return}
   const newTrack={id:uid(),num,kind:'station',note,sections:[]};
-  // Өмнөх замын лавлагаа хадгалах
-  if(_selectedPrevRef&&_selectedPrevRef.trackNum===num){
-    newTrack.prevRef={folderId:_selectedPrevRef.folderId,trackNum:num};
-  }
   DB.tracks.push(newTrack);
-  sortTracks();saveDB();closeModal('addTrackModal');
-  _selectedPrevRef=null;renderHome()
+  sortTracks();saveDB();closeModal('addTrackModal');renderHome()
 }
 // Өртөөний зам эхэлж, дараа нь гол зам — тус бүр дугаараар нь
 function sortTracks(){
@@ -2324,8 +2240,6 @@ function sectionCard(s,t){
   const isMain=isMainTrack(t);
   const ma=isMain?analyzeMainSection(s,t):null;
   const pct=isMain?ma.pct:(a.total>0?(a.totalBad/a.total*100):0);
-  const prevSec=getPrevSection(t,s.label);
-  const prevA=prevSec?analyzeSection(prevSec):null;
   const pctColor=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
   const barCol=pct>=25?'var(--red)':pct>=15?'var(--orange-mid)':'var(--g500)';
   const isConn=s.type==='connecting';
@@ -2356,11 +2270,7 @@ function sectionCard(s,t){
       ${a.total>0?`<span class="sec-pct" style="color:${pctColor};font-size:13px;font-weight:900">${pct.toFixed(1)}%</span>`:''}
     </div>
     ${a.total>0?`<div class="sec-pbar"><div class="sec-pbar-fill" style="width:${Math.min(100,pct*2)}%;background:${barCol}"></div></div>`:''}
-    ${!a.total&&!hasOverride&&prevA?`<div class="sec-card-empty" style="color:var(--blue);background:var(--blue-bg);border-radius:6px;padding:4px 8px">
-      ${ic("clipboard",12)} Өмнөх: ${prevA.total} дэр · ТБД ${prevA.tbd+prevA.bad_tbd} · ${(prevA.total>0?(prevA.totalBad/prevA.total*100):0).toFixed(1)}%
-    </div>`:''}
-    ${!a.total&&!hasOverride&&!prevA?`<div class="sec-card-empty">📝 Хоосон — дарж бүртгэлд орно</div>`:''}
-    ${a.total>0&&prevA?`<div style="font-size:10px;color:var(--blue);margin-top:4px;padding-left:4px;font-weight:600">${ic("clipboard",12)} Өмнөх: ${prevA.total} дэр · ТБД ${prevA.tbd+prevA.bad_tbd}</div>`:''}
+    ${!a.total&&!hasOverride?`<div class="sec-card-empty">📝 Хоосон — дарж бүртгэлд орно</div>`:''}
   </div>`
 }
 
@@ -2468,31 +2378,7 @@ function openSection(secId){
   document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
   showView('recordView');renderRecordView();
   // Өмнөх лавлагаа banner харуулах
-  renderRefBanner(t,sec);
   setTimeout(updateNavBtns,50)
-}
-function renderRefBanner(t,sec){
-  const existing=document.getElementById('refBanner');if(existing)existing.remove();
-  const prevSec=getPrevSection(t,sec.label);
-  if(!prevSec)return;
-  const pa=analyzeSection(prevSec);
-  const pct=pa.total>0?(pa.totalBad/pa.total*100):0;
-  const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
-  const pg=document.getElementById('recordView').querySelector('.pg-hdr');
-  const banner=document.createElement('div');banner.id='refBanner';banner.className='ref-banner';
-  // Товч дүнг чипээр — дэлгэрэнгүй байршлыг "Байршил" товчоор тусад нь нээнэ
-  const nTbd=pa.tbd+pa.bad_tbd, nBad=pa.bad+pa.bad_tbd;
-  banner.innerHTML=`<div class="rb-main">
-    <div class="rb-title">${ic("clipboard",12)} Өмнөх судалгаа</div>
-    <div class="rb-chips">
-      <span class="rb-chip">${pa.total} дэр</span>
-      <span class="rb-chip" style="color:var(--red);border-color:rgba(240,66,107,.3)">ТБД ${nTbd}</span>
-      <span class="rb-chip" style="color:var(--orange);border-color:rgba(245,166,35,.35)">Тэнцэхгүй ${nBad}</span>
-      <span class="rb-chip" style="color:${pCol}">${pct.toFixed(1)}%</span>
-    </div>
-  </div>
-  <button onclick="toggleRefOverlay()" id="refToggleBtn" class="rb-btn">${_refBtnLabel()}</button>`;
-  pg.after(banner)
 }
 // Дээд талын тоолуур + төрлийн товчийг шинэчилнэ (жагсаалтыг хөндөхгүй)
 function updateRecCounters(sec){
@@ -2532,9 +2418,7 @@ function renderRecordView(){
   const sec=activeSec();if(!sec)return;
   updateRecCounters(sec);
   renderRecordLog(sec);
-  // Ref banner шинэчлэх
-  const t=activeTrack();
-  if(t)renderRefBanner(t,sec)
+
 }
 // ── 3D DRUM параметрүүд ──
 const DRUM_VISIBLE=7;   // нийт харагдах дэрийн тоо (хоёр талдаа)
@@ -2681,39 +2565,22 @@ function renderRecordLog(sec,focusIdx){
   const wrap=document.getElementById('rvLog');
   if(!wrap||!sec)return;
   const t=activeTrack();
-  const prevSec=t?getPrevSection(t,sec.label):null;
   const n=sec.sleepers.length;
 
   // Баталгаажуулах горимд хоосон бол өмнөх шигээ мессеж (бүртгэх хайрцаг хэрэггүй)
-  if(!n&&!prevSec&&_verifMode){
+  if(!n&&_verifMode){
     wrap.innerHTML='<div class="log-empty"><span class="log-empty-icon">'+ic('clipboard',34)+
       '</span>Товшиж эхлэх эсвэл гулсуулах<div class="log-empty-hint">Бүртгэсэн дэрийг дарж засах боломжтой</div></div>';
     DRM.reel=null;DRM.vp=null;DRM.rows=[];return
   }
 
-  const total=Math.max(n,prevSec?prevSec.sleepers.length:0);
+  const total=n;
   // Сольсон огноог нэг удаа тооцно (өмнөх паспортуудаас уламжилсныг оруулаад)
   const replMap=resolveReplMap(t,sec);
   let html='';
   for(let i=0;i<total;i++){
-    const isRec=i<n;
-    const isGhost=!isRec&&prevSec&&i<prevSec.sleepers.length;
-    if(!isRec&&!isGhost)break;
-    if(isRec){
-      const sl=sec.sleepers[i],tp=TYPES[sl.type];
-      let pb='';
-      if(prevSec&&i<prevSec.sleepers.length){
-        const ps=prevSec.sleepers[i],ptp=TYPES[ps.type];
-        const same=ps.type===sl.type;
-        const pT=ps.type==='tbd'||ps.type==='bad_tbd';
-        const cT=sl.type==='tbd'||sl.type==='bad_tbd';
-        const df=pT!==cT;
-        pb='<span style="font-size:9px;padding:2px 5px;border-radius:5px;font-weight:700;flex-shrink:0;'+
-          'background:'+(same?'var(--g100)':df?'var(--red-bg)':'var(--orange-bg)')+';'+
-          'color:'+(same?'var(--g700)':df?'var(--red)':'var(--orange)')+';'+
-          'border:1px solid '+(same?'var(--g300)':df?'#F5A0A0':'#F5C272')+'">'+
-          (same?'✓':df?'≠!':'≠')+' '+ptp.label+'</span>';
-      }
+    const sl=sec.sleepers[i],tp=TYPES[sl.type];
+    {
       const tc={normal:'dr-normal',bad:'dr-bad',tbd:'dr-tbd',bad_tbd:'dr-bad-tbd'}[sl.type]||'';
       // Сольсон дэр бол огноог улаан хүрээтэй жижиг хайрцагт харуулна
       const rp=replMap[i];
@@ -2722,22 +2589,13 @@ function renderRecordLog(sec,focusIdx){
       const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
-        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+pb+
+        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+
         '<span class="dr-edit">'+ic('edit',12)+'</span></div>';
-    } else {
-      const gs=prevSec.sleepers[i],gtp=TYPES[gs.type];
-      const isTbd=gs.type==='tbd'||gs.type==='bad_tbd';
-      html+='<div class="drow '+(isTbd?'dr-tbd-ghost':'dr-ghost')+'" data-i="'+i+'" data-rec="0">'+
-        '<span class="dr-num" style="color:var(--ink5)">#'+(i+1)+'</span>'+
-        '<span class="drum-badge"><span class="'+gtp.cls+'" style="opacity:.55">'+gtp.label+'</span></span>'+
-        '<span style="font-size:9px;color:var(--ink5);margin-left:auto;font-weight:600">өмнөх</span></div>';
     }
   }
 
-  // Дараагийн бүртгэлийн хоосон хайрцаг. Өгөгдөлд хадгалагдахгүй — үеэс гарахад
-  // өөрөө алга болно. Өмнөх судалгааны сүүдэр мөр байвал тэр нь энэ үүргийг гүйцэтгэнэ.
-  const hasGhostSlot=prevSec&&n<prevSec.sleepers.length;
-  if(!_verifMode&&!hasGhostSlot){
+  // Дараагийн бүртгэлийн хоосон хайрцаг. Өгөгдөлд хадгалагдахгүй — үеэс гарахад өөрөө алга болно.
+  if(!_verifMode){
     html+='<div class="drow dr-slot" data-i="'+n+'" data-rec="0" data-slot="1">'+
       '<span class="dr-num">#'+(n+1)+'</span>'+
       '<span class="dr-slot-lbl">бүртгэх…</span></div>';
@@ -2745,8 +2603,7 @@ function renderRecordLog(sec,focusIdx){
 
   wrap.innerHTML='<div class="drum-frame" id="drumFrame"></div>'+
     '<div class="drum-viewport" id="drumVP"><div class="drum-reel" id="drumReel">'+html+'</div></div>'+
-    (prevSec?'<div class="drum-hint">бүдэгхэн = өмнөх судалгаа</div>'
-      :(!n?'<div class="drum-hint">товшиж эхлэх эсвэл гулсуулах</div>':''));
+    (!n?'<div class="drum-hint">товшиж эхлэх эсвэл гулсуулах</div>':'');
 
   DRM.vp=document.getElementById('drumVP');
   DRM.reel=document.getElementById('drumReel');
@@ -2781,10 +2638,6 @@ function _drumScroll(){}
 function _drumUpdateRows(){}
 function _initDrumTouch(){}
 
-function renderRefOverlayLive(sec,prevSec){
-  if(!_refOverlayOn||!prevSec)return;
-  renderRefOverlay()
-}
 function syncManual(sec,type,delta){
   if(!sec.manual)return;
   const m=sec.manual;
@@ -2803,7 +2656,6 @@ async function record(type,fastOverride){
   hap(type==='normal'?10:18);
   if(_verifMode){recordVerif(type);return}
   const t=activeTrack();
-  const prevSec=t?getPrevSection(t,sec.label):null;
   const cur=drumCursor();
 
   // Бүртгэх үед ҮРГЭЛЖ ОДООГИЙН сонгосон төрлөөр орно (жойстикийн "ТБД APC"
@@ -2830,7 +2682,7 @@ async function record(type,fastOverride){
     sec.sleepers[cur].type=type;
     setFastAt(sec,cur,curFast,curMat,t);
     saveDB();updateRecCounters(sec);
-    renderRecordLog(sec,cur+1);renderRefOverlayLive(sec,prevSec);
+    renderRecordLog(sec,cur+1);
     showToast(`#${cur+1} → ${sleeperLabel(sec,cur,t)}`);
     return
   }
@@ -2840,24 +2692,9 @@ async function record(type,fastOverride){
   sec.sleepers.push({type,ts:Date.now()});
   setFastAt(sec,pos,curFast,curMat,t);
   syncManual(sec,type,+1);saveDB();
-  if(prevSec&&pos<prevSec.sleepers.length){
-    const prevType=prevSec.sleepers[pos].type;
-    const prevIsTbd=prevType==='tbd'||prevType==='bad_tbd';
-    const newIsTbd=type==='tbd'||type==='bad_tbd';
-    if(prevIsTbd!==newIsTbd){
-      const msg=prevIsTbd
-        ?`#${pos+1}: өмнөх судалгаанд ТБД байсан (${TYPES[prevType].label}), одоо "${TYPES[type].label}" бүртгэлээ.\nЗасварлах уу?`
-        :`#${pos+1}: өмнөх судалгаанд ТБД байгаагүй (${TYPES[prevType].label}), одоо "${TYPES[type].label}" бүртгэлээ.\nЗасварлах уу?`;
-      if(await appConfirm(msg)){
-        syncManual(sec,type,-1);sec.sleepers[pos].type=prevType;syncManual(sec,prevType,+1);
-        showToast(`#${pos+1} → ${TYPES[prevType].label} болголоо`)
-      }
-    }
-  }
   updateRecCounters(sec);   // өмнө нь тоолуур бүртгэх бүрт шинэчлэгддэггүй байв
   // Дараагийн хоосон хайрцаг руу шилжинэ
-  renderRecordLog(sec, sec.sleepers.length);
-  renderRefOverlayLive(sec,prevSec)
+  renderRecordLog(sec, sec.sleepers.length)
 }
 function undoLast(){
   hap(18);const sec=activeSec();if(!sec||!sec.sleepers.length){showToast('Буцаах зүйл алга');return}
@@ -3275,7 +3112,6 @@ function analyzeTrack(t){
   t.sections.forEach(s=>{const a=analyzeSection(s);['normal','bad','tbd','bad_tbd','total'].forEach(k=>r[k]+=a[k])});
   r.totalBad=r.bad+r.bad_tbd;r.pct=r.total>0?(r.totalBad/r.total*100):0;return r
 }
-function analyzeTrackStatic(t){return analyzeTrack(t)}
 
 // ── Тэнцэхгүй дэр илрүүлэх ──
 function isBadSleeper(type){return type==='bad'||type==='bad_tbd'}
@@ -4261,9 +4097,7 @@ function addFolder(){
   const date=document.getElementById('afDate').value||new Date().toISOString().slice(0,10);
   const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[]};
   DB.folders.push(folder);saveDB();closeModal('addFolderModal');
-  openFolder(folder.id);
-  // Өмнөх паспортад ТБД байвал автоматаар тохируулах уу? асуух
-  setTimeout(()=>offerAutoTBD(folder.id),300)
+  openFolder(folder.id)
 }
 function openFolder(fid){
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
@@ -4312,21 +4146,6 @@ function renderFolders(){
       </div>
     </div>`
   }).join('')
-}
-
-// ══════════════════════════════════════════════
-// PREV REFERENCE HELPER
-// ══════════════════════════════════════════════
-function getPrevTrackRef(track){
-  if(!track||!track.prevRef)return null;
-  const f=DB.folders.find(x=>x.id===track.prevRef.folderId);
-  if(!f)return null;
-  return f.tracks.find(t=>t.num===track.prevRef.trackNum)||null;
-}
-function getPrevSection(track,sectionLabel){
-  const prevTrack=getPrevTrackRef(track);
-  if(!prevTrack)return null;
-  return prevTrack.sections.find(s=>s.label===sectionLabel)||null;
 }
 
 // ══════════════════════════════════════════════
@@ -4405,92 +4224,6 @@ function endVerification(){
   const banner=document.getElementById('verifBanner');if(banner)banner.remove();
   const wrap=document.getElementById('rvLog');if(wrap)wrap.innerHTML='';
   showToast('✅ Баталгаажуулах дууслаа');renderRecordView()
-}
-
-// ── Өмнөх лавлагаа overlay ──
-let _refOverlayOn=false;
-// Товчны бичвэр. ЧУХАЛ: SVG агуулдаг тул textContent биш innerHTML-ээр тавина —
-// эс тэгвэл SVG код текст болж харагдаад товч уртсаж, хажуугийн бичвэрийг шахна.
-function _refBtnLabel(){
-  return _refOverlayOn
-    ?'<svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Хаах'
-    :'<svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Байршил'
-}
-function toggleRefOverlay(){
-  _refOverlayOn=!_refOverlayOn;
-  const btn=document.getElementById('refToggleBtn');
-  if(btn)btn.innerHTML=_refBtnLabel();
-  renderRefOverlay()
-}
-function renderRefOverlay(){
-  const existing=document.getElementById('refOverlay');if(existing)existing.remove();
-  if(!_refOverlayOn)return;
-  const t=activeTrack();const sec=activeSec();if(!t||!sec)return;
-  const prevSec=getPrevSection(t,sec.label);if(!prevSec)return;
-  const pa=analyzeSection(prevSec);
-  // Overlay div — log wrap дээр
-  const logWrap=document.getElementById('rvLog');if(!logWrap)return;
-  const ov=document.createElement('div');ov.id='refOverlay';
-  ov.style.cssText='position:sticky;top:0;z-index:5;background:var(--blue-bg);border:1px solid rgba(29,78,216,.2);border-radius:var(--rm);margin:0 0 10px;padding:10px 12px;';
-  const pct=pa.total>0?(pa.totalBad/pa.total*100):0;
-  // ТБД байршлуудын жагсаалт
-  const rows=prevSec.sleepers.map((sl,i)=>{
-    if(sl.type==='normal')return'';
-    const icon={bad:'~',tbd:'■',bad_tbd:'✕'}[sl.type]||'?';
-    const bg={bad:'var(--orange-bg)',tbd:'var(--red-bg)',bad_tbd:'var(--dred-bg)'}[sl.type];
-    const col={bad:'var(--orange)',tbd:'var(--red)',bad_tbd:'var(--dred)'}[sl.type];
-    return`<span style="display:inline-flex;align-items:center;gap:3px;background:${bg};color:${col};border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;margin:2px">#${i+1}${icon}</span>`
-  }).filter(Boolean).join('');
-  // Самбар нь зөвхөн БАЙРШЛЫГ харуулна — тоон дүн нь дээрх banner дээр бий,
-  // хоёр газар давхардуулахгүй
-  const nProblem=pa.bad+pa.tbd+pa.bad_tbd;
-  ov.innerHTML=`<div class="rf-hd">${ic("clipboard",12)} Өмнөх судалгааны асуудалтай байршил (${nProblem})</div>
-  <div style="display:flex;flex-wrap:wrap;gap:3px;max-height:120px;overflow-y:auto">
-    ${rows||'<span style="font-size:11px;color:var(--ink4);font-weight:600">Асуудалтай дэр байгаагүй</span>'}
-  </div>
-  <div class="rf-legend"><span>~ Тэнцэхгүй мод</span><span>■ ТБД</span><span>✕ Тэнцэхгүй ТБД</span></div>`;
-  logWrap.insertBefore(ov,logWrap.firstChild)
-}
-
-// ══════════════════════════════════════════════
-// AUTO-TBD: өмнөх паспортын ТБД байршлуудыг автоматаар тохируулах
-// ══════════════════════════════════════════════
-function autoFillPrevTBD(newFolderId){
-  const newFolder=DB.folders.find(f=>f.id===newFolderId);if(!newFolder)return;
-  // Өмнөх хамгийн сүүлийн паспортыг олно (newFolder-с өмнөх)
-  const idx=DB.folders.findIndex(f=>f.id===newFolderId);
-  if(idx<=0)return;
-  const prevFolder=DB.folders[idx-1];
-  // Шинэ хавтасны замуудыг өмнөхтэй тааруулна
-  newFolder.tracks.forEach(nt=>{
-    const pt=prevFolder.tracks.find(t=>t.num===nt.num);if(!pt)return;
-    nt.sections.forEach(ns=>{
-      const ps=pt.sections.find(s=>s.label===ns.label);if(!ps)return;
-      // ps-н ТБД байршлуудыг ns-д нэмнэ (хэрэв хоосон бол)
-      if(ns.sleepers.length>0)return;// Аль хэдийн бүртгэлтэй бол алгасна
-      const tbdPositions=ps.sleepers.map((sl,i)=>({idx:i,type:sl.type})).filter(x=>x.type==='tbd'||x.type==='bad_tbd');
-      if(!tbdPositions.length)return;
-      // ТБД байршлуудыг шинэ үеийн эхэнд тохируулна
-      const maxPos=Math.max(...tbdPositions.map(x=>x.idx));
-      for(let i=0;i<=maxPos;i++){
-        const tbd=tbdPositions.find(x=>x.idx===i);
-        ns.sleepers.push({type:tbd?tbd.type:'normal',ts:Date.now(),autoTbd:!!tbd})
-      }
-    })
-  });
-  saveDB();showToast(`✓ Өмнөх паспортын ТБД байршил тохируулагдлаа`)
-}
-async function offerAutoTBD(newFolderId){
-  const idx=DB.folders.findIndex(f=>f.id===newFolderId);
-  if(idx<=0)return;
-  const prevFolder=DB.folders[idx-1];
-  // Өмнөх паспортад ТБД байгаа эсэхийг шалгана
-  let hasTbd=false;
-  prevFolder.tracks.forEach(t=>t.sections.forEach(s=>{if(s.sleepers.some(sl=>sl.type==='tbd'||sl.type==='bad_tbd'))hasTbd=true}));
-  if(!hasTbd)return;
-  if(await appConfirm(`"${prevFolder.name}" паспортын ТБД байршлуудыг шинэ паспортад автоматаар тохируулах уу?`)){
-    autoFillPrevTBD(newFolderId)
-  }
 }
 
 // ══════════════════════════════════════════════
@@ -5100,7 +4833,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·40';
+const APP_BUILD='2026.08.23·41';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
