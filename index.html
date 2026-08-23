@@ -540,6 +540,19 @@ button{font-family:inherit}
 .pring circle{transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),stroke .4s ease}
 /* Icon */
 .ic{display:inline-block;vertical-align:-2px;flex-shrink:0}
+/* ── Зам төрөл / бэхэлгээ сонгох ── */
+.kind-btn,.mat-btn,.fast-btn{padding:12px 8px;border-radius:var(--rm);border:2px solid var(--border);
+  background:var(--bg);font-size:13px;font-weight:800;color:var(--ink2);cursor:pointer;transition:all .12s}
+.kind-btn.selected,.mat-btn.selected,.fast-btn.selected{
+  background:var(--blue-bg);border-color:var(--blue-mid);color:var(--blue)}
+.fast-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fast-btn{padding:11px 6px;font-size:12px}
+/* Замын карт дээрх гол зам тэмдэг */
+.track-kind-tag{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+  background:var(--blue-bg);color:var(--blue);border:1px solid rgba(29,78,216,.25);white-space:nowrap}
+/* Дэрийн мөрөнд бэхэлгээ */
+.fast-tag{font-size:9px;padding:2px 5px;border-radius:5px;font-weight:800;flex-shrink:0;
+  background:var(--blue-bg);color:var(--blue);border:1px solid rgba(29,78,216,.25)}
 /* ── Солигдсон дэр ── */
 /* Гүйлгэдэг сонгогч (сар / өдөр) */
 .wheel-row{display:flex;gap:10px;align-items:stretch;margin:10px 0 4px}
@@ -786,6 +799,11 @@ button{font-family:inherit}
         <div class="cnt-n" style="color:var(--dred)" id="cnt-bad_tbd">0</div><div class="cnt-l">Тэнц.ТБД</div>
       </div>
     </div>
+    <!-- Дэрийн төрөл + бөөнөөр оруулах -->
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="rb-btn" style="flex:1;justify-content:center;background:var(--card);color:var(--blue);border:1.5px solid var(--blue-mid)" onclick="hap();openSecType()" id="secTypeBtn">Төрөл: —</button>
+      <button class="rb-btn" style="flex:1;justify-content:center" onclick="hap();openBulkModal()">Нийт дэр оруулах</button>
+    </div>
   </div>
   <div class="log-wrap" id="rvLog"></div>
   <div class="rec-bottom">
@@ -801,7 +819,7 @@ button{font-family:inherit}
       <div class="joy-hint jh-top">↑ Тэнцэхгүй</div>
       <div class="joy-hint jh-right">ТБД →</div>
       <div class="joy-hint jh-left">← Тэнц.ТБД</div>
-      <div class="joy-hint jh-bot">товш = Хэвийн</div>
+      <div class="joy-hint jh-bot">↓ ТБД APC</div>
       <div class="joy-btn" id="joyBtn">
         <div class="joy-icon" id="joyIcon">●</div>
         <div class="joy-lbl" id="joyLbl">Хэвийн</div>
@@ -837,6 +855,56 @@ button{font-family:inherit}
     </div>
     <button class="etb" id="replBtn" onclick="openReplModal()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
     <button class="etb etb-del" onclick="deleteSleeper()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг устгах</button>
+  </div></div>
+</div>
+
+<!-- ҮЕИЙН ТӨРӨЛ: материал + бэхэлгээ өөрчлөх -->
+<div class="overlay" id="secTypeModal">
+  <div class="sheet"><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="secTypeTitle">Дэрийн төрөл</div>
+      <button onclick="closeModal('secTypeModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Энэ үед бүртгэх дэрийн төрөл. Сонгосноос хойш өөрчлөх хүртэл энэ төрлөөр бүртгэнэ.</div>
+    <div class="ff"><label>Материал</label>
+      <div class="edit-grid" style="margin:0">
+        <button type="button" class="etb mat-btn" id="stMatTbd" onclick="pickSecMat('tbd')">ТБД</button>
+        <button type="button" class="etb mat-btn" id="stMatWood" onclick="pickSecMat('wood')">Модон дэр</button>
+      </div>
+    </div>
+    <div class="ff" id="stFastBox"><label>Бэхэлгээний төрөл</label>
+      <div class="fast-grid" id="stFastGrid"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('secTypeModal')">Болих</button>
+      <button class="btn-ok" onclick="saveSecType()">Хадгалах</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ҮЕД НИЙТ ДЭР ОРУУЛАХ -->
+<div class="overlay" id="bulkModal">
+  <div class="sheet"><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="bulkTitle">Нийт дэр оруулах</div>
+      <button onclick="closeModal('bulkModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;font-weight:600" id="bulkHint"></div>
+    <div class="ff"><label>Энэ үеийн нийт дэрийн тоо</label>
+      <input type="number" id="bulkN" min="0" max="200" placeholder="жишээ: 46" oninput="updateBulkPreview()">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setBulkN(46)">46</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setBulkN(40)">40</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setBulkN(50)">50</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setBulkN(23)">23</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setBulkN(20)">20</button>
+    </div>
+    <div id="bulkPreview" style="font-size:12px;font-weight:700;color:var(--ink2);background:var(--bg);border:1px solid var(--border);border-radius:var(--rm);padding:10px;margin-bottom:4px"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('bulkModal')">Болих</button>
+      <button class="btn-ok" onclick="applyBulk()">Бүртгэх</button>
+    </div>
   </div></div>
 </div>
 
@@ -899,8 +967,30 @@ button{font-family:inherit}
       <div style="text-align:center;padding:8px 0;font-size:11px;color:var(--ink4);font-weight:600">— эсвэл —</div>
     </div>
     <div style="font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Шинэ зам нэмэх</div>
+    <div class="ff"><label>Замын төрөл</label>
+      <div class="edit-grid" style="margin:0">
+        <button type="button" class="etb kind-btn selected" id="atKindStation" onclick="pickTrackKind('station')">Өртөө зам</button>
+        <button type="button" class="etb kind-btn" id="atKindMain" onclick="pickTrackKind('main')">Гол зам</button>
+      </div>
+    </div>
     <div class="ff"><label>Замын дугаар</label><input type="number" id="atNum" placeholder="2, 3, 4, 5..." min="1"></div>
-    <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="atNote" placeholder="жишээ: Гол зам"></div>
+    <!-- Зөвхөн гол замд -->
+    <div id="atMainBox" style="display:none">
+      <div class="ff"><label>Хэсгийн нийт км</label>
+        <input type="number" id="atKm" placeholder="жишээ: 3" min="0.1" step="0.1" oninput="updateKmHint()">
+        <div id="atKmHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:5px">1 км тутамд 40 үе үүснэ (дараа нь нэмж болно)</div>
+      </div>
+      <div class="ff"><label>Дэрийн материал</label>
+        <div class="edit-grid" style="margin:0">
+          <button type="button" class="etb mat-btn selected" id="atMatTbd" onclick="pickTrackMat('tbd')">ТБД</button>
+          <button type="button" class="etb mat-btn" id="atMatWood" onclick="pickTrackMat('wood')">Модон дэр</button>
+        </div>
+      </div>
+      <div class="ff" id="atFastBox"><label>Бэхэлгээний төрөл</label>
+        <div class="fast-grid" id="atFastGrid"></div>
+      </div>
+    </div>
+    <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="atNote" placeholder="..."></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('addTrackModal')">Болих</button>
       <button class="btn-ok" onclick="addTrack()">Нэмэх</button>
@@ -1203,6 +1293,52 @@ const TYPE_COLORS={normal:'linear-gradient(145deg,var(--g500),var(--g600))',
   tbd:'linear-gradient(145deg,var(--red-mid),var(--red))',
   bad_tbd:'linear-gradient(145deg,#C0392B,var(--dred))'};
 
+// ── Зам төрөл: өртөө / гол зам ──
+// Гол замын дэр ихэвчлэн төмөр бетон (ТБД) бөгөөд бэхэлгээний төрөлтэй.
+// Бэхэлгээг дэр бүр дээр биш, үеийн түвшинд хадгална (дэр нь 1 үсэг болж
+// шахагддаг тул). Зөвхөн үеийн үндсэн төрлөөс ЗӨРӨХ дэрийг fmap-д тэмдэглэнэ —
+// ингэснээр 100+ үетэй гол зам ч өгөгдөл багатай хэвээр байна.
+const FASTENINGS=['APC','CZ','ЖБР','ПАНДРОЛ'];
+const MATS={tbd:'ТБД',wood:'Модон'};
+const STATION_DEFAULT_FAST='CZ';   // өртөөний замын ТБД автоматаар CZ
+const MAIN_UE_PER_KM=40;           // 1 км = багадаа 40 үе (дараа нь нэмж болно)
+
+function isMainTrack(t){return !!t&&t.kind==='main'}
+// Үеийн үндсэн материал / бэхэлгээ — тохируулаагүй бол замынхаа тохиргоог авна
+function secMat(sec,t){return (sec&&sec.mat)||(t&&t.mat)||'tbd'}
+function secFast(sec,t){return (sec&&sec.fast)||(t&&t.fast)||STATION_DEFAULT_FAST}
+// Тухайн дэрийн бэхэлгээ (зөрсөн бол fmap-аас, үгүй бол үеийн үндсэн)
+function fastOf(sec,idx,t){
+  if(sec&&sec.fmap&&sec.fmap[idx])return sec.fmap[idx];
+  return secFast(sec,t)
+}
+function setFastAt(sec,idx,f,t){
+  if(!sec)return;
+  if(!f||f===secFast(sec,t)){if(sec.fmap)delete sec.fmap[idx];return}
+  if(!sec.fmap)sec.fmap={};
+  sec.fmap[idx]=f
+}
+function clearFastAt(sec,idx){if(sec&&sec.fmap)delete sec.fmap[idx]}
+// Дэр устгахад бэхэлгээний индексийг мөн шилжүүлнэ
+function shiftFmapAfterDelete(sec,removed){
+  if(!sec||!sec.fmap)return;
+  const out={};
+  Object.keys(sec.fmap).forEach(k=>{
+    const i=parseInt(k,10);
+    if(i===removed)return;
+    out[i>removed?i-1:i]=sec.fmap[k]
+  });
+  sec.fmap=out
+}
+function isTbdType(tp){return tp==='tbd'||tp==='bad_tbd'}
+// Дэрийн бүтэн нэр: "Хэвийн ТБД (APC)" / "Тэнцэхгүй" гэх мэт
+function sleeperLabel(sec,idx,t){
+  const sl=sec&&sec.sleepers&&sec.sleepers[idx];
+  if(!sl)return'';
+  const base=TYPES[sl.type]?TYPES[sl.type].label:'';
+  return isTbdType(sl.type)?`${base} (${fastOf(sec,idx,t)})`:base
+}
+
 function uid(){return Date.now()+'-'+Math.random().toString(36).slice(2,7)}
 function _migrateDB(){
   if(!DB.folders)DB.folders=[];
@@ -1479,6 +1615,10 @@ function renderHome(){
       <div style="display:flex;align-items:baseline;gap:4px">
         <div class="track-card-num">${t.num}</div><div class="track-card-unit">-р зам</div>
       </div>
+      ${isMainTrack(t)?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+        <span class="track-kind-tag">Гол зам${t.km?' · '+t.km+' км':''}</span>
+        <span class="track-kind-tag" style="background:var(--bg);color:var(--ink3);border-color:var(--border)">${t.mat==='wood'?'Модон':'ТБД'+(t.fast?' '+t.fast:'')}</span>
+      </div>`:''}
       ${t.note?`<div class="track-card-note">${t.note}</div>`:''}
       <div class="track-card-chips" style="margin-top:8px">
         <span class="chip" style="background:var(--bg);color:var(--ink3)">Нийт: ${a.total}</span>
@@ -1642,9 +1782,45 @@ function saveReportSettings(){
 // ══════════════════════════════════════════════
 // TRACKS
 // ══════════════════════════════════════════════
+// ── Зам нэмэх: төрөл / материал / бэхэлгээ сонгох ──
+let _atKind='station',_atMat='tbd',_atFast=STATION_DEFAULT_FAST;
+function pickTrackKind(k){
+  _atKind=k;hap(6);
+  document.getElementById('atKindStation').classList.toggle('selected',k==='station');
+  document.getElementById('atKindMain').classList.toggle('selected',k==='main');
+  document.getElementById('atMainBox').style.display=k==='main'?'block':'none'
+}
+function pickTrackMat(m){
+  _atMat=m;hap(6);
+  document.getElementById('atMatTbd').classList.toggle('selected',m==='tbd');
+  document.getElementById('atMatWood').classList.toggle('selected',m==='wood');
+  // Модон дэр бэхэлгээгүй
+  document.getElementById('atFastBox').style.display=m==='tbd'?'block':'none'
+}
+function pickTrackFast(f){
+  _atFast=f;hap(6);
+  document.querySelectorAll('#atFastGrid .fast-btn').forEach(b=>
+    b.classList.toggle('selected',b.dataset.f===f))
+}
+function _renderFastGrid(){
+  const g=document.getElementById('atFastGrid');if(!g)return;
+  g.innerHTML=FASTENINGS.map(f=>
+    `<button type="button" class="fast-btn${f===_atFast?' selected':''}" data-f="${f}" onclick="pickTrackFast('${f}')">${f}</button>`).join('')
+}
+function updateKmHint(){
+  const km=parseFloat(document.getElementById('atKm').value)||0;
+  const n=Math.round(km*MAIN_UE_PER_KM);
+  document.getElementById('atKmHint').textContent=km>0
+    ?`${n} үе үүснэ (1 км = ${MAIN_UE_PER_KM} үе) — дараа нь нэмж болно`
+    :`1 км тутамд ${MAIN_UE_PER_KM} үе үүснэ (дараа нь нэмж болно)`
+}
+
 function openAddTrack(){
   document.getElementById('atNum').value='';
   document.getElementById('atNote').value='';
+  document.getElementById('atKm').value='';
+  _atKind='station';_atMat='tbd';_atFast=STATION_DEFAULT_FAST;
+  pickTrackKind('station');pickTrackMat('tbd');_renderFastGrid();updateKmHint();
   // Өмнөх паспортуудаас замын жагсаалт авах
   const prevSec=document.getElementById('prevTracksSection');
   const prevList=document.getElementById('prevTracksList');
@@ -1699,13 +1875,28 @@ function addTrack(){
   if(!num){showToast('Замын дугаар оруулна уу');return}
   if(DB.tracks.find(t=>t.num===num)){showToast(`${num}-р зам аль хэдийн байна`);return}
   const newTrack={id:uid(),num,note:document.getElementById('atNote').value.trim(),sections:[]};
+  newTrack.kind=_atKind;
+  if(_atKind==='main'){
+    const km=parseFloat(document.getElementById('atKm').value)||0;
+    if(km<=0){showToast('Хэсгийн нийт км оруулна уу');return}
+    newTrack.km=km;
+    newTrack.mat=_atMat;
+    if(_atMat==='tbd')newTrack.fast=_atFast;
+    // 1 км = багадаа 40 үе. Дараа нь "Үе нэмэх"-ээр нэмж болно (60 хүртэл байдаг)
+    const n=Math.max(1,Math.round(km*MAIN_UE_PER_KM));
+    for(let i=1;i<=n;i++){
+      newTrack.sections.push({id:uid(),type:'normal',label:`${i}-р үе`,note:'',
+        sleepers:[],date:new Date().toLocaleDateString('mn-MN')})
+    }
+  }
   // Өмнөх замын лавлагаа хадгалах
   if(_selectedPrevRef&&_selectedPrevRef.trackNum===num){
     newTrack.prevRef={folderId:_selectedPrevRef.folderId,trackNum:num};
   }
   DB.tracks.push(newTrack);
   DB.tracks.sort((a,b)=>a.num-b.num);saveDB();closeModal('addTrackModal');
-  _selectedPrevRef=null;renderHome()
+  _selectedPrevRef=null;renderHome();
+  if(_atKind==='main')showToast(`${newTrack.sections.length} үе үүслээ`)
 }
 function openTrack(id){activeTrackId=id;showView('trackView');renderTrackView()}
 async function deleteTrack(){
@@ -1907,11 +2098,19 @@ function renderRefBanner(t,sec){
   <button onclick="toggleRefOverlay()" id="refToggleBtn" class="rb-btn">${_refBtnLabel()}</button>`;
   pg.after(banner)
 }
+// Дээд талын тоолуур + төрлийн товчийг шинэчилнэ (жагсаалтыг хөндөхгүй)
+function updateRecCounters(sec){
+  sec=sec||activeSec();if(!sec)return;
+  const counts={normal:0,bad:0,tbd:0,bad_tbd:0};
+  sec.sleepers.forEach(s=>{if(counts[s.type]!==undefined)counts[s.type]++});
+  ['normal','bad','tbd','bad_tbd'].forEach(k=>countTo(document.getElementById('cnt-'+k),counts[k],380));
+  const tb=document.getElementById('secTypeBtn');
+  if(tb){const t=activeTrack();
+    tb.textContent=secMat(sec,t)==='wood'?'Төрөл: Модон дэр':`Төрөл: ТБД (${secFast(sec,t)})`}
+}
 function renderRecordView(){
   const sec=activeSec();if(!sec)return;
-  const counts={normal:0,bad:0,tbd:0,bad_tbd:0};
-  sec.sleepers.forEach(s=>counts[s.type]++);
-  ['normal','bad','tbd','bad_tbd'].forEach(k=>countTo(document.getElementById('cnt-'+k),counts[k],380));
+  updateRecCounters(sec);
   renderRecordLog(sec);
   // Ref banner шинэчлэх
   const t=activeTrack();
@@ -2093,9 +2292,11 @@ function renderRecordLog(sec,focusIdx){
       // Сольсон дэр бол огноог улаан хүрээтэй жижиг хайрцагт харуулна
       const rp=replMap[i];
       const rb=rp?'<span class="repl-date">'+fmtReplDate(rp.rec.d)+'</span>':'';
+      // ТБД дэрийн бэхэлгээ
+      const ft=isTbdType(sl.type)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
-        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+rb+pb+
+        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+pb+
         '<span class="dr-edit">'+ic('edit',12)+'</span></div>';
     } else {
       const gs=prevSec.sleepers[i],gtp=TYPES[gs.type];
@@ -2156,7 +2357,7 @@ function syncManual(sec,type,delta){
   else if(type==='tbd')m.tbd=Math.max(0,(m.tbd||0)+delta);
   else if(type==='bad_tbd')m.bad_tbd=Math.max(0,(m.bad_tbd||0)+delta);
 }
-async function record(type){
+async function record(type,fastOverride){
   const sec=activeSec();if(!sec)return;
   hap(type==='normal'?10:18);
   if(_verifMode){recordVerif(type);return}
@@ -2164,6 +2365,9 @@ async function record(type){
   const prevSec=t?getPrevSection(t,sec.label):null;
   const pos=sec.sleepers.length;
   sec.sleepers.push({type,ts:Date.now()});
+  // ТБД дэр бүр бэхэлгээтэй. Тусгайлан заасан бол (жишээ нь жойстикийн
+  // "ТБД APC") тэрийг, үгүй бол үеийн үндсэн бэхэлгээг авна.
+  if(isTbdType(type)&&fastOverride)setFastAt(sec,pos,fastOverride,t);
   syncManual(sec,type,+1);saveDB();
   if(prevSec&&pos<prevSec.sleepers.length){
     const prevType=prevSec.sleepers[pos].type;
@@ -2179,6 +2383,7 @@ async function record(type){
       }
     }
   }
+  updateRecCounters(sec);   // өмнө нь тоолуур бүртгэх бүрт шинэчлэгддэггүй байв
   renderRecordLog(sec, sec.sleepers.length-1);
   renderRefOverlayLive(sec,prevSec)
 }
@@ -2186,6 +2391,7 @@ function undoLast(){
   hap(18);const sec=activeSec();if(!sec||!sec.sleepers.length){showToast('Буцаах зүйл алга');return}
   const last=sec.sleepers[sec.sleepers.length-1];sec.sleepers.pop();
   clearReplAt(sec,sec.sleepers.length);   // буцаасан дэрийн сольсон тэмдэглэгээ хамт арилна
+  clearFastAt(sec,sec.sleepers.length);   // бэхэлгээний тэмдэглэгээ мөн адил
   syncManual(sec,last.type,-1);saveDB();renderRecordView();showToast('Буцаалаа')
 }
 
@@ -2196,7 +2402,7 @@ let editIdx=-1;
 function openEditSleeper(idx){
   const sec=activeSec();if(!sec||!sec.sleepers[idx])return;
   editIdx=idx;
-  document.getElementById('editSleeperTitle').textContent=`#${idx+1} дэр засах · одоо: ${TYPES[sec.sleepers[idx].type].label}`;
+  document.getElementById('editSleeperTitle').textContent=`#${idx+1} дэр засах · одоо: ${sleeperLabel(sec,idx,activeTrack())}`;
   // Аль хэдийн сольсон бол товч дээр огноог нь харуулна.
   // Өмнөх паспортоос уламжилсан бол тэрийг нь тусад нь мэдэгдэнэ.
   const rp=effectiveRepl(activeTrack(),sec,idx),rb=document.getElementById('replBtn');
@@ -2212,6 +2418,86 @@ function editSleeper(newType){
   sec.sleepers[editIdx].type=newType;
   saveDB();closeModal('editSleeperModal');renderRecordView();showToast(`#${editIdx+1} → ${TYPES[newType].label}`)
 }
+// ══════════════════════════════════════════════
+// ҮЕИЙН ДЭРИЙН ТӨРӨЛ (материал + бэхэлгээ)
+// ══════════════════════════════════════════════
+let _stMat='tbd',_stFast=STATION_DEFAULT_FAST;
+function pickSecMat(m){
+  _stMat=m;hap(6);
+  document.getElementById('stMatTbd').classList.toggle('selected',m==='tbd');
+  document.getElementById('stMatWood').classList.toggle('selected',m==='wood');
+  document.getElementById('stFastBox').style.display=m==='tbd'?'block':'none'
+}
+function pickSecFast(f){
+  _stFast=f;hap(6);
+  document.querySelectorAll('#stFastGrid .fast-btn').forEach(b=>
+    b.classList.toggle('selected',b.dataset.f===f))
+}
+function openSecType(){
+  const sec=activeSec(),t=activeTrack();if(!sec)return;
+  _stMat=secMat(sec,t);_stFast=secFast(sec,t);
+  document.getElementById('secTypeTitle').textContent=`${sec.label} — дэрийн төрөл`;
+  document.getElementById('stFastGrid').innerHTML=FASTENINGS.map(f=>
+    `<button type="button" class="fast-btn${f===_stFast?' selected':''}" data-f="${f}" onclick="pickSecFast('${f}')">${f}</button>`).join('');
+  pickSecMat(_stMat);
+  openModal('secTypeModal')
+}
+function saveSecType(){
+  const sec=activeSec();if(!sec)return;
+  sec.mat=_stMat;
+  if(_stMat==='tbd')sec.fast=_stFast;else delete sec.fast;
+  saveDB();closeModal('secTypeModal');renderRecordView();
+  showToast(_stMat==='tbd'?`Төрөл: ТБД (${_stFast})`:'Төрөл: Модон дэр')
+}
+
+// ══════════════════════════════════════════════
+// ҮЕД НИЙТ ДЭР ОРУУЛАХ (бөөнөөр)
+// ══════════════════════════════════════════════
+function setBulkN(n){document.getElementById('bulkN').value=n;updateBulkPreview()}
+function _bulkTypeLabel(){
+  const sec=activeSec(),t=activeTrack();
+  return secMat(sec,t)==='wood'?'Хэвийн (модон)':`Хэвийн ТБД (${secFast(sec,t)})`
+}
+function updateBulkPreview(){
+  const sec=activeSec();if(!sec)return;
+  const n=parseInt(document.getElementById('bulkN').value,10);
+  const cur=sec.sleepers.length;
+  const box=document.getElementById('bulkPreview');
+  if(!n&&n!==0){box.textContent='Тоогоо оруулна уу';return}
+  if(n===cur){box.textContent=`Одоо ч ${cur} дэр байна — өөрчлөлт гарахгүй`;return}
+  box.innerHTML=n>cur
+    ?`Одоо ${cur} дэр → <b>${n}</b> болно. <b>${n-cur}</b> ширхэг "${_bulkTypeLabel()}" нэмэгдэнэ.`
+    :`Одоо ${cur} дэр → <b>${n}</b> болно. Сүүлийн <b>${cur-n}</b> дэр устана.`
+}
+function openBulkModal(){
+  const sec=activeSec(),t=activeTrack();if(!sec)return;
+  document.getElementById('bulkTitle').textContent=`${sec.label} — нийт дэр`;
+  document.getElementById('bulkHint').textContent=
+    `Оруулсан тоогоор бүх дэр "${_bulkTypeLabel()}" гэж бүртгэгдэнэ. Тэнцэхгүй дэрийг дараа нь тухайн дэр дээр дарж өөрчилнө.`;
+  document.getElementById('bulkN').value=sec.sleepers.length||'';
+  updateBulkPreview();
+  openModal('bulkModal')
+}
+async function applyBulk(){
+  const sec=activeSec(),t=activeTrack();if(!sec)return;
+  const n=parseInt(document.getElementById('bulkN').value,10);
+  if(isNaN(n)||n<0){showToast('Тоогоо оруулна уу');return}
+  const cur=sec.sleepers.length;
+  if(n===cur){closeModal('bulkModal');return}
+  if(n<cur&&!await appConfirm(`Сүүлийн ${cur-n} дэр устана. Үргэлжлүүлэх үү?`))return;
+  if(n<cur){
+    for(let i=cur-1;i>=n;i--){clearReplAt(sec,i);clearFastAt(sec,i)}
+    sec.sleepers.length=n
+  } else {
+    const now=Date.now();
+    for(let i=cur;i<n;i++)sec.sleepers.push({type:'normal',ts:now})
+  }
+  // Бөөнөөр оруулсан дэр бүгд хэвийн тул гараар засварласан тоог дахин тооцно
+  if(sec.manual)delete sec.manual;
+  saveDB();closeModal('bulkModal');renderRecordView();
+  showToast(`${sec.label}: ${n} дэр бүртгэлээ`)
+}
+
 // ── СОЛИГДСОН ДЭР: огноо сонгох ──
 const _WH_IH=42;            // мөрийн өндөр (CSS-тэй тааруулсан)
 let _replM=1,_replD=1,_replY=2026;
@@ -2305,6 +2591,7 @@ async function deleteSleeper(){
   const oldType=sec.sleepers[editIdx].type;syncManual(sec,oldType,-1);
   sec.sleepers.splice(editIdx,1);
   shiftReplAfterDelete(sec,editIdx);      // үлдсэн тэмдэглэгээг зөв дэр дээр байлгана
+  shiftFmapAfterDelete(sec,editIdx);      // бэхэлгээг мөн адил
   saveDB();closeModal('editSleeperModal');renderRecordView();showToast('Устгалаа')
 }
 
@@ -2383,16 +2670,25 @@ function updateNavBtns(){
 // ══════════════════════════════════════════════
 const joyBtn=document.getElementById('joyBtn');
 let jStart=null;
+// Доош шудрах = ТБД APC (өмнө нь доош чиглэл ашиглагдаагүй байсан)
+const JOY_DOWN_FAST='APC';
 function getJoyType(dx,dy){
   const d=Math.sqrt(dx*dx+dy*dy);
   if(d<16)return'normal';
   if(Math.abs(dx)>Math.abs(dy))return dx>0?'tbd':'bad_tbd';
-  return dy<0?'bad':null
+  return dy<0?'bad':'tbd_apc'
 }
-function flashJoy(type){
-  joyBtn.style.background=TYPE_COLORS[type];
-  document.getElementById('joyIcon').textContent={normal:'✓',bad:'~',tbd:'■',bad_tbd:'✕'}[type];
-  document.getElementById('joyLbl').textContent=TYPES[type].label;
+// 'tbd_apc' нь ТБД дэр боловч бэхэлгээг нь APC гэж тусгайлан заана
+function joyTypeInfo(k){
+  return k==='tbd_apc'
+    ?{type:'tbd',fast:JOY_DOWN_FAST,label:'ТБД ('+JOY_DOWN_FAST+')',icon:'■'}
+    :{type:k,fast:null,label:TYPES[k].label,icon:{normal:'✓',bad:'~',tbd:'■',bad_tbd:'✕'}[k]}
+}
+function flashJoy(k){
+  const inf=joyTypeInfo(k);
+  joyBtn.style.background=TYPE_COLORS[inf.type];
+  document.getElementById('joyIcon').textContent=inf.icon;
+  document.getElementById('joyLbl').textContent=inf.label;
   clearTimeout(joyBtn._t);
   joyBtn._t=setTimeout(()=>{joyBtn.style.background='';document.getElementById('joyIcon').textContent='●';document.getElementById('joyLbl').textContent='Хэвийн'},380)
 }
@@ -2400,25 +2696,27 @@ joyBtn.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0]
 joyBtn.addEventListener('touchmove',e=>{
   e.preventDefault();if(!jStart)return;
   const t=e.touches[0];const dx=t.clientX-jStart.x,dy=t.clientY-jStart.y;
-  const type=getJoyType(dx,dy);
-  if(type){joyBtn.style.background=TYPE_COLORS[type];document.getElementById('joyLbl').textContent=TYPES[type].label}
+  const k=getJoyType(dx,dy);
+  if(k){const inf=joyTypeInfo(k);joyBtn.style.background=TYPE_COLORS[inf.type];
+    document.getElementById('joyLbl').textContent=inf.label}
 },{passive:false});
 joyBtn.addEventListener('touchend',e=>{
   e.preventDefault();if(!jStart)return;
   const t=e.changedTouches[0];const dx=t.clientX-jStart.x,dy=t.clientY-jStart.y;
-  const type=getJoyType(dx,dy);jStart=null;
-  if(type){record(type);flashJoy(type)}else{joyBtn.style.background='';document.getElementById('joyLbl').textContent='Хэвийн'}
+  const k=getJoyType(dx,dy);jStart=null;
+  if(k){const inf=joyTypeInfo(k);record(inf.type,inf.fast);flashJoy(k)}
+  else{joyBtn.style.background='';document.getElementById('joyLbl').textContent='Хэвийн'}
 },{passive:false});
 joyBtn.addEventListener('mousedown',e=>{jStart={x:e.clientX,y:e.clientY}});
 joyBtn.addEventListener('mouseup',e=>{
   if(!jStart)return;const dx=e.clientX-jStart.x,dy=e.clientY-jStart.y;
-  const type=getJoyType(dx,dy);jStart=null;
-  if(type){record(type);flashJoy(type)}
+  const k=getJoyType(dx,dy);jStart=null;
+  if(k){const inf=joyTypeInfo(k);record(inf.type,inf.fast);flashJoy(k)}
 });
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('recordView').classList.contains('active'))return;
-  const map={'1':'normal','2':'bad','3':'tbd','4':'bad_tbd',' ':'normal','ArrowRight':'tbd','ArrowUp':'bad','ArrowLeft':'bad_tbd'};
-  if(map[e.key]){record(map[e.key]);e.preventDefault()}
+  const map={'1':'normal','2':'bad','3':'tbd','4':'bad_tbd',' ':'normal','ArrowRight':'tbd','ArrowUp':'bad','ArrowLeft':'bad_tbd','ArrowDown':'tbd_apc','5':'tbd_apc'};
+  if(map[e.key]){const inf=joyTypeInfo(map[e.key]);record(inf.type,inf.fast);e.preventDefault()}
   else if(e.key==='Backspace'||e.key==='z'){undoLast();e.preventDefault()}
 });
 
@@ -4268,7 +4566,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·30';
+const APP_BUILD='2026.08.23·31';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
