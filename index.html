@@ -2294,8 +2294,13 @@ function renderTrackView(){
   const t=activeTrack();if(!t)return;
   document.getElementById('tvTitle').textContent=`${trackLabel(t)}${t.note?' · '+t.note:''}`;
   document.getElementById('tvSub').textContent=`${t.sections.length} үе · ${DB.location}`;
-  const a=analyzeTrack(t);
-  document.getElementById('tvOverview').innerHTML=`
+  // Гол замд материалаар (ТБД / Модон), өртөөнд төрлөөр нь харуулна
+  const a=isMainTrack(t)?analyzeMainTrack(t):analyzeTrack(t);
+  document.getElementById('tvOverview').innerHTML=isMainTrack(t)?`
+    <div class="ov-cell"><div class="ov-n" id="ovTot">${a.total}</div><div class="ov-l">Нийт дэр</div></div>
+    <div class="ov-cell" style="background:var(--red-bg);border-color:#F5A0A0"><div class="ov-n" style="color:var(--red)">${a.tbd}</div><div class="ov-l">ТБД</div></div>
+    <div class="ov-cell" style="background:var(--g100);border-color:var(--g300)"><div class="ov-n" style="color:var(--g700)">${a.wood}</div><div class="ov-l">Модон</div></div>
+    <div class="ov-cell" style="background:var(--orange-bg);border-color:#F5C272"><div class="ov-n" style="color:var(--orange)">${a.bad}</div><div class="ov-l">Тэнцэхгүй</div></div>`:`
     <div class="ov-cell"><div class="ov-n" id="ovTot">${a.total}</div><div class="ov-l">Нийт дэр</div></div>
     <div class="ov-cell" style="background:var(--g100);border-color:var(--g300)"><div class="ov-n" style="color:var(--g600)">${a.normal}</div><div class="ov-l">Хэвийн</div></div>
     <div class="ov-cell" style="background:var(--orange-bg);border-color:#F5C272"><div class="ov-n" style="color:var(--orange)">${a.bad}</div><div class="ov-l">Тэнцэхгүй</div></div>
@@ -2315,7 +2320,10 @@ function renderTrackView(){
 
 function sectionCard(s,t){
   const a=analyzeSection(s);
-  const pct=a.total>0?(a.totalBad/a.total*100):0;
+  // Гол замд материалыг сегментээс тодорхойлдог тул тусад нь тоолно
+  const isMain=isMainTrack(t);
+  const ma=isMain?analyzeMainSection(s,t):null;
+  const pct=isMain?ma.pct:(a.total>0?(a.totalBad/a.total*100):0);
   const prevSec=getPrevSection(t,s.label);
   const prevA=prevSec?analyzeSection(prevSec):null;
   const pctColor=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
@@ -2337,13 +2345,17 @@ function sectionCard(s,t){
     </div>
     <div class="sec-stats">
       <span class="sec-chip" style="background:var(--bg);color:var(--ink3)">Нийт: ${a.total}</span>
-      <span class="sec-chip" style="background:var(--bg);color:var(--ink3)">Мод: ${a.woodTotal}</span>
-      ${a.bad?`<span class="sec-chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${a.bad}</span>`:''}
-      ${a.tbd?`<span class="sec-chip" style="background:var(--red-bg);color:var(--red)">ТБД: ${a.tbd}</span>`:''}
-      ${a.bad_tbd?`<span class="sec-chip" style="background:var(--dred-bg);color:var(--dred)">Тэнц.ТБД: ${a.bad_tbd}</span>`:''}
-      ${a.woodTotal>0?`<span class="sec-pct" style="color:${pctColor};font-size:13px;font-weight:900">${pct.toFixed(1)}%</span>`:''}
+      ${isMain
+        ? `${ma.tbd?`<span class="sec-chip" style="background:var(--red-bg);color:var(--red)">ТБД: ${ma.tbd}</span>`:''}
+           ${ma.wood?`<span class="sec-chip" style="background:var(--g100);color:var(--g700)">Модон: ${ma.wood}</span>`:''}
+           ${ma.bad?`<span class="sec-chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${ma.bad}</span>`:''}`
+        : `<span class="sec-chip" style="background:var(--bg);color:var(--ink3)">Мод: ${a.woodTotal}</span>
+           ${a.bad?`<span class="sec-chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${a.bad}</span>`:''}
+           ${a.tbd?`<span class="sec-chip" style="background:var(--red-bg);color:var(--red)">ТБД: ${a.tbd}</span>`:''}
+           ${a.bad_tbd?`<span class="sec-chip" style="background:var(--dred-bg);color:var(--dred)">Тэнц.ТБД: ${a.bad_tbd}</span>`:''}`}
+      ${a.total>0?`<span class="sec-pct" style="color:${pctColor};font-size:13px;font-weight:900">${pct.toFixed(1)}%</span>`:''}
     </div>
-    ${a.woodTotal>0?`<div class="sec-pbar"><div class="sec-pbar-fill" style="width:${Math.min(100,pct*2)}%;background:${barCol}"></div></div>`:''}
+    ${a.total>0?`<div class="sec-pbar"><div class="sec-pbar-fill" style="width:${Math.min(100,pct*2)}%;background:${barCol}"></div></div>`:''}
     ${!a.total&&!hasOverride&&prevA?`<div class="sec-card-empty" style="color:var(--blue);background:var(--blue-bg);border-radius:6px;padding:4px 8px">
       ${ic("clipboard",12)} Өмнөх: ${prevA.total} дэр · ТБД ${prevA.tbd+prevA.bad_tbd} · ${(prevA.total>0?(prevA.totalBad/prevA.total*100):0).toFixed(1)}%
     </div>`:''}
@@ -2485,9 +2497,22 @@ function renderRefBanner(t,sec){
 // Дээд талын тоолуур + төрлийн товчийг шинэчилнэ (жагсаалтыг хөндөхгүй)
 function updateRecCounters(sec){
   sec=sec||activeSec();if(!sec)return;
+  const tr=activeTrack();
   const counts={normal:0,bad:0,tbd:0,bad_tbd:0};
   sec.sleepers.forEach(s=>{if(counts[s.type]!==undefined)counts[s.type]++});
-  ['normal','bad','tbd','bad_tbd'].forEach(k=>countTo(document.getElementById('cnt-'+k),counts[k],380));
+  // Гол замд 3, 4-р нүдийг МАТЕРИАЛААР харуулна (ТБД / Модон) — тэнд бүх дэр
+  // төмөр бетон эсвэл модон бөгөөд дэрийн төрөл нь зөвхөн байдлыг заадаг
+  const lbl=(k,txt)=>{const e=document.getElementById('cnt-'+k);
+    if(e&&e.nextElementSibling)e.nextElementSibling.textContent=txt};
+  let show=counts;
+  if(isMainTrack(tr)){
+    const m=analyzeMainSection(sec,tr);
+    show={normal:m.normal,bad:m.bad,tbd:m.tbd,bad_tbd:m.wood};
+    lbl('tbd','ТБД');lbl('bad_tbd','Модон')
+  } else {
+    lbl('tbd','ТБД');lbl('bad_tbd','Тэнц.ТБД')
+  }
+  ['normal','bad','tbd','bad_tbd'].forEach(k=>countTo(document.getElementById('cnt-'+k),show[k],380));
   DRM.lastCur=-1;                      // товчийг дахин тооцуулна
   updateSecTypeBtn(drumCursor())
 }
@@ -3221,16 +3246,26 @@ function analyzeSection(sec){
 }
 // Гол замын дүн: дэрийг МАТЕРИАЛААР нь тоолно (ТБД / модон — бэхэлгээний
 // төрөл хамаарахгүй), тэнцэхгүйг нь төрлөөр нь.
+// Өртөөний замын analyzeSection нь "Хэвийн+Тэнцэхгүй = мод" гэж үздэг тул
+// гол замд тохирохгүй — тэнд материал нь дэрийн төрлөөс хамаардаггүй.
+function analyzeMainSection(sec,t){
+  const r={total:0,tbd:0,wood:0,bad:0,normal:0};
+  if(!sec)return(r.pct=0,r);
+  if(typeof sec.sleepers==='string')
+    sec.sleepers=[...sec.sleepers].map(ch=>({type:_SLREV[ch]||'normal',ts:0}));
+  (sec.sleepers||[]).forEach((sl,i)=>{
+    r.total++;
+    if(matOf(sec,i,t)==='wood')r.wood++;else r.tbd++;
+    if(sl.type==='bad'||sl.type==='bad_tbd')r.bad++;else r.normal++
+  });
+  r.pct=r.total>0?(r.bad/r.total*100):0;
+  return r
+}
 function analyzeMainTrack(t){
-  const r={total:0,tbd:0,wood:0,bad:0};
+  const r={total:0,tbd:0,wood:0,bad:0,normal:0};
   (t&&t.sections||[]).forEach(sec=>{
-    if(typeof sec.sleepers==='string')
-      sec.sleepers=[...sec.sleepers].map(ch=>({type:_SLREV[ch]||'normal',ts:0}));
-    (sec.sleepers||[]).forEach((sl,i)=>{
-      r.total++;
-      if(matOf(sec,i,t)==='wood')r.wood++;else r.tbd++;
-      if(sl.type==='bad'||sl.type==='bad_tbd')r.bad++
-    })
+    const a=analyzeMainSection(sec,t);
+    r.total+=a.total;r.tbd+=a.tbd;r.wood+=a.wood;r.bad+=a.bad;r.normal+=a.normal
   });
   r.pct=r.total>0?(r.bad/r.total*100):0;
   return r
@@ -5065,7 +5100,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·39';
+const APP_BUILD='2026.08.23·40';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
