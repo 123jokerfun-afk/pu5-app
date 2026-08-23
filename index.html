@@ -1354,16 +1354,23 @@ function trackCounts(tracks){
 function _secEnd(sec){return sec&&sec.sleepers?sec.sleepers.length:0}
 function secMat(sec,t){return matAt(sec,_secEnd(sec),t)}
 function secFast(sec,t){return segFastAt(sec,_secEnd(sec),t)}
-// Тухайн дэрийн бэхэлгээ: дан ганцаараа зөрсөн бол fmap-аас, үгүй бол сегментээс
-function fastOf(sec,idx,t){
-  if(sec&&sec.fmap&&sec.fmap[idx])return sec.fmap[idx];
-  return segFastAt(sec,idx,t)
+// Дэр дээрх ганцаарчилсан зөрүү. Хуучин өгөгдөлд зөвхөн бэхэлгээ (мөр) байсан.
+function _fmAt(sec,idx){
+  const v=sec&&sec.fmap?sec.fmap[idx]:null;
+  return typeof v==='string'?{f:v}:(v||null)
 }
-function setFastAt(sec,idx,f,t){
+// Тухайн дэрийн бэхэлгээ / материал: ганцаарчилсан зөрүү давуу, үгүй бол сегментээс
+function fastOf(sec,idx,t){const o=_fmAt(sec,idx);return (o&&o.f)||segFastAt(sec,idx,t)}
+function matOf(sec,idx,t){const o=_fmAt(sec,idx);return (o&&o.m)||matAt(sec,idx,t)}
+// Дэрийг бүртгэх үед түүний төрлийг тогтооно (сегментийнхээс зөрвөл л бичнэ)
+function setFastAt(sec,idx,f,m,t){
   if(!sec)return;
-  if(!f||f===secFast(sec,t)){if(sec.fmap)delete sec.fmap[idx];return}
+  const o={};
+  if(f&&f!==segFastAt(sec,idx,t))o.f=f;
+  if(m&&m!==matAt(sec,idx,t))o.m=m;
+  if(!Object.keys(o).length){if(sec.fmap)delete sec.fmap[idx];return}
   if(!sec.fmap)sec.fmap={};
-  sec.fmap[idx]=f
+  sec.fmap[idx]=o
 }
 function clearFastAt(sec,idx){if(sec&&sec.fmap)delete sec.fmap[idx]}
 // Дэр устгахад бэхэлгээний индексийг мөн шилжүүлнэ
@@ -1390,7 +1397,7 @@ function isTbdType(tp){return tp==='tbd'||tp==='bad_tbd'}
 // Гол замын ТБД үед БҮХ дэр төмөр бетон тул төрөл бүр дээр бэхэлгээ харагдана
 // ("Хэвийн APC", "Тэнцэхгүй APC"). Өртөөний замд зөвхөн ТБД гэж тэмдэглэсэн дэр дээр.
 function showFastFor(sec,t,type,idx){
-  const m=idx===undefined?secMat(sec,t):matAt(sec,idx,t);
+  const m=idx===undefined?secMat(sec,t):matOf(sec,idx,t);
   if(m==='wood')return false;
   return isMainTrack(t)?true:isTbdType(type)
 }
@@ -2271,12 +2278,20 @@ function updateRecCounters(sec){
   const counts={normal:0,bad:0,tbd:0,bad_tbd:0};
   sec.sleepers.forEach(s=>{if(counts[s.type]!==undefined)counts[s.type]++});
   ['normal','bad','tbd','bad_tbd'].forEach(k=>countTo(document.getElementById('cnt-'+k),counts[k],380));
-  // Дэрийн төрөл сонгох нь гол замын ойлголт — өртөөний замд өмнөх шигээ үлдэнэ
-  const tb=document.getElementById('secTypeBtn');
-  if(tb){const t=activeTrack();
-    if(!isMainTrack(t)){tb.style.display='none'}
-    else{tb.style.display='';
-      tb.textContent=secMat(sec,t)==='wood'?'Төрөл: Модон дэр':`Төрөл: ТБД (${secFast(sec,t)})`}}
+  DRM.lastCur=-1;                      // товчийг дахин тооцуулна
+  updateSecTypeBtn(drumCursor())
+}
+// "Төрөл" товч — тухайн байрлалд үйлчилж буй төрлийг харуулна.
+// Дэрийн төрөл сонгох нь гол замын ойлголт — өртөөний замд харагдахгүй.
+function updateSecTypeBtn(idx){
+  const tb=document.getElementById('secTypeBtn');if(!tb)return;
+  const sec=activeSec(),t=activeTrack();
+  if(!sec||!isMainTrack(t)){tb.style.display='none';return}
+  tb.style.display='';
+  const i=(idx===undefined||idx<0)?_secEnd(sec):idx;
+  tb.textContent=matAt(sec,i,t)==='wood'
+    ?`Төрөл #${i+1}: Модон дэр`
+    :`Төрөл #${i+1}: ТБД (${segFastAt(sec,i,t)})`
 }
 function renderRecordView(){
   const sec=activeSec();if(!sec)return;
@@ -2319,6 +2334,11 @@ function _magnet(p){
 function _drumPaint(){
   const p=DRM.pos,ft=_drumFrameTop();
   if(ft<0)return;
+  // Хүрээнд таарсан дэр солигдвол "Төрөл" товчийг ТУХАЙН БАЙРЛАЛЫН төрлөөр
+  // шинэчилнэ. Өмнө нь жагсаалтын төгсгөлийн төрлийг харуулдаг байсан тул
+  // өмнөх дэр дээр тааруулахад төрөл нь өөрчлөгдсөн мэт харагддаг байв.
+  const ci=Math.round(p);
+  if(ci!==DRM.lastCur){DRM.lastCur=ci;updateSecTypeBtn(ci)}
   if(DRM.reel)DRM.reel.style.transform='translate3d(0,'+(ft-p*DR_H).toFixed(2)+'px,0)';
   if(DRM.frame)DRM.frame.style.transform='translate3d(0,'+ft.toFixed(1)+'px,0)';
   const rows=DRM.rows;
@@ -2464,7 +2484,7 @@ function renderRecordLog(sec,focusIdx){
       const rp=replMap[i];
       const rb=rp?'<span class="repl-date">'+fmtReplDate(rp.rec.d)+'</span>':'';
       // Бэхэлгээ (гол замын ТБД үед бүх дэр дээр, өртөөнд зөвхөн ТБД дээр)
-      const ft=showFastFor(sec,t,sl.type)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
+      const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
         '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+pb+
@@ -2497,7 +2517,7 @@ function renderRecordLog(sec,focusIdx){
   DRM.reel=document.getElementById('drumReel');
   DRM.frame=document.getElementById('drumFrame');
   DRM.rows=Array.prototype.slice.call(DRM.reel.children);
-  DRM.n=n;DRM.max=Math.max(0,DRM.rows.length-1);DRM.lastNear=-1;
+  DRM.n=n;DRM.max=Math.max(0,DRM.rows.length-1);DRM.lastNear=-1;DRM.lastCur=-1;
 
   DRM.reel.onclick=function(e){
     const r=e.target.closest('.drow');if(!r||r.dataset.rec!=='1')return;
@@ -2551,13 +2571,18 @@ async function record(type,fastOverride){
   const prevSec=t?getPrevSection(t,sec.label):null;
   const cur=drumCursor();
 
+  // Бүртгэх үед ҮРГЭЛЖ ОДООГИЙН сонгосон төрлөөр орно (жойстикийн "ТБД APC"
+  // гэх мэт тусгай заалт байвал тэрийг)
+  const curMat=secMat(sec,t);
+  const curFast=(isTbdType(type)&&fastOverride)?fastOverride:secFast(sec,t);
+
   // ── Аль хэдийн бүртгэсэн дэр дээр таарсан бол түүнийг дарж бичнэ ──
   if(cur<sec.sleepers.length){
     const oldType=sec.sleepers[cur].type;
-    const oldFast=fastOf(sec,cur,t);
-    const newFast=(isTbdType(type)&&fastOverride)?fastOverride:secFast(sec,t);
     const sameType=oldType===type;
-    const sameFast=!showFastFor(sec,t,type)||oldFast===newFast;
+    const sameFast=(curMat==='wood'&&matOf(sec,cur,t)==='wood')||
+      (!showFastFor(sec,t,type,cur)&&curMat!=='tbd')||
+      (matOf(sec,cur,t)===curMat&&fastOf(sec,cur,t)===curFast);
     if(sameType&&sameFast){
       // Ижил байвал юу ч өөрчлөхгүй, зүгээр дараагийн хайрцаг руу шилжинэ
       renderRecordLog(sec,cur+1);return
@@ -2568,8 +2593,7 @@ async function record(type,fastOverride){
     }
     syncManual(sec,oldType,-1);syncManual(sec,type,+1);
     sec.sleepers[cur].type=type;
-    if(isTbdType(type)&&fastOverride)setFastAt(sec,cur,fastOverride,t);
-    else clearFastAt(sec,cur);
+    setFastAt(sec,cur,curFast,curMat,t);
     saveDB();updateRecCounters(sec);
     renderRecordLog(sec,cur+1);renderRefOverlayLive(sec,prevSec);
     showToast(`#${cur+1} → ${sleeperLabel(sec,cur,t)}`);
@@ -2579,9 +2603,7 @@ async function record(type,fastOverride){
   // ── Шинэ дэр нэмнэ ──
   const pos=sec.sleepers.length;
   sec.sleepers.push({type,ts:Date.now()});
-  // ТБД дэр бүр бэхэлгээтэй. Тусгайлан заасан бол (жишээ нь жойстикийн
-  // "ТБД APC") тэрийг, үгүй бол үеийн үндсэн бэхэлгээг авна.
-  if(isTbdType(type)&&fastOverride)setFastAt(sec,pos,fastOverride,t);
+  setFastAt(sec,pos,curFast,curMat,t);
   syncManual(sec,type,+1);saveDB();
   if(prevSec&&pos<prevSec.sleepers.length){
     const prevType=prevSec.sleepers[pos].type;
@@ -2667,27 +2689,36 @@ async function saveSecType(){
   const cur=drumCursor();
   const n=sec.sleepers.length;
   const what=_stMat==='tbd'?`ТБД (${_stFast})`:'Модон дэр';
-  let at=cur;
-  // Курсор дээр бүртгэсэн дэр байвал түүнийг өөрчлөх эсэхийг лавлана.
-  // Үгүй гэвэл зөвхөн цаашид бүртгэх дэрэнд үйлчилнэ.
+
+  // Курсор дээр бүртгэсэн дэр байвал ЗӨВХӨН түүнийг өөрчлөх эсэхийг лавлана.
+  // Аль хэдийн бүртгэсэн бусад дэр (36, 37 …) автоматаар өөрчлөгдөхгүй —
+  // тэд дахин бүртгэгдэх үедээ л шинэ төрлөөр орно.
+  let changeCur=false;
   if(cur<n){
     const was=sleeperLabel(sec,cur,t);
-    const yes=await appConfirm(
-      `#${cur+1} дэр "${was}" гэж бүртгэлтэй байна. Үүнээс хойших бүртгэсэн дэрийг "${what}" болгох уу? Үгүй бол зөвхөн цаашид бүртгэхэд үйлчилнэ.`,
-      'Болгох');
-    at=yes?cur:n
+    changeCur=await appConfirm(
+      `#${cur+1} дэр "${was}" гэж бүртгэлтэй байна. Үүнийг "${what}" болгох уу? Цаашид бүртгэх дэр шинэ төрлөөр орно.`,
+      'Болгох')
   }
+
   if(!Array.isArray(sec.fseg))sec.fseg=[];
-  sec.fseg=sec.fseg.filter(s=>s.i<at);         // энэ байрлалаас хойшхыг шинэ нь дарна
-  const seg={i:at,m:_stMat};
-  if(_stMat==='tbd')seg.f=_stFast;
-  sec.fseg.push(seg);
+  const setSeg=(i,m,f)=>{
+    sec.fseg=sec.fseg.filter(s=>s.i!==i);
+    const s={i,m};if(f)s.f=f;sec.fseg.push(s)
+  };
+  if(changeCur){
+    // Дараагийн дэрүүд хуучин төрлөө хэвээр авахын тулд тэдний утгыг эхлээд уншина
+    const nm=matAt(sec,cur+1,t),nf=segFastAt(sec,cur+1,t);
+    setSeg(cur,_stMat,_stMat==='tbd'?_stFast:null);
+    if(cur+1<n)setSeg(cur+1,nm,nm==='tbd'?nf:null);
+    if(sec.fmap)delete sec.fmap[cur]
+  }
+  // Цаашид бүртгэх дэр шинэ төрлөөр
+  setSeg(n,_stMat,_stMat==='tbd'?_stFast:null);
   sec.fseg.sort((a,b)=>a.i-b.i);
-  // Энэ байрлалаас хойших ганцаарчилсан зөрүүг цэвэрлэнэ (шинэ төрлийг дагана)
-  if(sec.fmap)for(let i=at;i<n;i++)delete sec.fmap[i];
 
   saveDB();closeModal('secTypeModal');renderRecordLog(sec,cur);updateRecCounters(sec);
-  showToast(at<n?`#${at+1}-ээс хойш: ${what}`:`Цаашид: ${what}`)
+  showToast(changeCur?`#${cur+1} → ${what} · цаашид ${what}`:`Цаашид: ${what}`)
 }
 
 // ══════════════════════════════════════════════
@@ -4807,7 +4838,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·34';
+const APP_BUILD='2026.08.23·35';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
