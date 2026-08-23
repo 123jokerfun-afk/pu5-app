@@ -551,6 +551,11 @@ button{font-family:inherit}
 .dr-slot{border:1.5px dashed var(--blue-mid);background:rgba(29,78,216,.045)}
 .dr-slot .dr-num{color:var(--blue)}
 .dr-slot-lbl{font-size:11px;font-weight:800;color:var(--blue);opacity:.75}
+/* Удаан дарж устгах — дарж байх хугацаанд жижигрэн улаавтар болно */
+.lp-del{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.lp-del.lp-hold{transform:scale(.955);transition:transform .5s ease,box-shadow .5s ease;
+  box-shadow:0 0 0 2px var(--red) inset}
+.lp-hint{font-size:10px;color:var(--ink5);font-weight:600;text-align:center;padding:2px 0 6px}
 /* Гол замын км жагсаалт */
 .km-row{display:flex;align-items:center;gap:7px;padding:11px 13px;margin-bottom:7px;
   background:var(--card);border:1.5px solid var(--border);border-radius:var(--rm);cursor:pointer;
@@ -736,6 +741,7 @@ button{font-family:inherit}
     <div class="home-section">
       <div class="sec-lbl" style="margin-top:6px">Замууд</div>
       <div class="tracks-grid stagger" id="tracksGrid"></div>
+      <div class="lp-hint" id="trackLpHint" style="display:none">Зам дээр удаан дарж устгана</div>
       <div id="replFolderWrap" style="margin-top:10px"></div>
       <button class="add-track-btn" onclick="openAddTrack()">
         <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Зам нэмэх
@@ -780,6 +786,7 @@ button{font-family:inherit}
   </div>
   <div class="track-body">
     <div id="mainKmBody"></div>
+    <div class="lp-hint" id="kmLpHint" style="display:none">Км дээр удаан дарж устгана</div>
     <button class="add-track-btn" onclick="openAddKm()" style="margin-top:10px">
       <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Км нэмэх
     </button>
@@ -1388,6 +1395,8 @@ function isMainTrack(t){return !!t&&t.kind==='main'}
 // Өртөөний зам "2-р зам", гол зам "681-р км" гэж нэрлэгдэнэ
 function trackLabel(t){return t?(isMainTrack(t)?`${t.num}-р км`:`${t.num}-р зам`):''}
 function trackUnit(t){return isMainTrack(t)?'-р км':'-р зам'}
+// Заахын тийн ялгал: "2-р замыг" / "681-р км-ийг"
+function trackLabelAcc(t){return t?(isMainTrack(t)?`${t.num}-р км-ийг`:`${t.num}-р замыг`):''}
 // Гол зам самбарт нэг нэгжээр харагддаг тул тоолохдоо ч нэгээр тооцно
 function trackCounts(tracks){
   const list=tracks||[];
@@ -1738,7 +1747,7 @@ function renderHome(){
     const pctCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
     const barCol=pct>=25?'var(--red)':pct>=15?'var(--orange-mid)':'var(--g500)';
     const conn=t.sections.filter(s=>s.type==='connecting').length;
-    return`<div class="track-card" onclick="hap();openTrack('${t.id}')">
+    return`<div class="track-card lp-del" data-tid="${t.id}" onclick="hap();openTrack('${t.id}')">
       <div style="display:flex;align-items:baseline;gap:4px">
         <div class="track-card-num">${t.num}</div><div class="track-card-unit">${trackUnit(t)}</div>
       </div>
@@ -1784,7 +1793,9 @@ function renderHome(){
       </div>
     </div>`
   }
-  grid.innerHTML=out
+  grid.innerHTML=out;
+  const lh=document.getElementById('trackLpHint');
+  if(lh)lh.style.display=_st.length?'block':'none'
 }
 
 // ── Гол замын км жагсаалт (тусдаа хуудас) ──
@@ -1798,8 +1809,10 @@ function renderMainKmView(){
     if(sub)sub.textContent=DB.location||'';
     if(stats)stats.innerHTML='';
     body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Км нэмнэ үү</div>';
+    const h0=document.getElementById('kmLpHint');if(h0)h0.style.display='none';
     return
   }
+  const h1=document.getElementById('kmLpHint');if(h1)h1.style.display='block';
   // Гол замын нийт дүн
   let gT=0,gB=0;
   mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad});
@@ -1819,7 +1832,7 @@ function renderMainKmView(){
     const pct=a.pct;
     const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
     const filled=t.sections.filter(s=>s.sleepers.length>0).length;
-    return`<div class="km-row" onclick="hap();openTrack('${t.id}')">
+    return`<div class="km-row lp-del" data-tid="${t.id}" onclick="hap();openTrack('${t.id}')">
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:900;color:var(--ink)">${t.num}-р км</div>
         <div style="font-size:10px;color:var(--ink4);font-weight:700;margin-top:1px">${filled}/${t.sections.length} үе</div>
@@ -1836,6 +1849,67 @@ function renderMainKmView(){
     </div>`
   }).join('')
 }
+
+// ══════════════════════════════════════════════
+// УДААН ДАРЖ УСТГАХ (өртөөний зам / гол замын км)
+// ══════════════════════════════════════════════
+async function confirmDeleteTrack(tid){
+  const t=DB.tracks.find(x=>x.id===tid);if(!t)return;
+  const n=(isMainTrack(t)?analyzeMainTrack(t):analyzeTrack(t)).total;
+  const msg=`${trackLabelAcc(t)} устгах уу?`+(n?` ${n} дэрийн бүртгэл устана.`:'');
+  if(!await appConfirm(msg,'Устгах'))return;
+  DB.tracks=DB.tracks.filter(x=>x.id!==tid);
+  if(activeTrackId===tid)activeTrackId=null;
+  saveDB();
+  const mk=document.getElementById('mainKmView');
+  if(mk&&mk.classList.contains('active'))renderMainKmView();else renderHome();
+  showToast(`${trackLabel(t)} устлаа`)
+}
+(function(){
+  const HOLD=550;                      // удаан дарах хугацаа
+  let tmr=null,el=null,sx=0,sy=0,firedAt=0,swallowEl=null;
+  function clear(){
+    if(tmr){clearTimeout(tmr);tmr=null}
+    if(el){el.classList.remove('lp-hold');el=null}
+  }
+  function start(e){
+    const tgt=e.target&&e.target.closest?e.target.closest('.lp-del[data-tid]'):null;
+    if(!tgt)return;
+    const p=e.touches?e.touches[0]:e;
+    clear();el=tgt;sx=p.clientX;sy=p.clientY;
+    el.classList.add('lp-hold');
+    tmr=setTimeout(function(){
+      const id=el?el.dataset.tid:null;
+      firedAt=Date.now();swallowEl=el;hap(30);clear();
+      if(id)confirmDeleteTrack(id)
+    },HOLD)
+  }
+  function move(e){
+    if(!tmr)return;
+    const p=e.touches?e.touches[0]:e;
+    // Гулсуулбал устгахгүй — жагсаалт гүйлгэж байна гэсэн үг
+    if(Math.abs(p.clientX-sx)>8||Math.abs(p.clientY-sy)>8)clear()
+  }
+  document.addEventListener('touchstart',start,{passive:true});
+  document.addEventListener('touchmove',move,{passive:true});
+  document.addEventListener('touchend',clear,{passive:true});
+  document.addEventListener('touchcancel',clear,{passive:true});
+  document.addEventListener('mousedown',start);
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',clear);
+  // Удаан дарсны дараа ирэх click-ийг залгина (зам нээгдэхээс сэргийлнэ).
+  // ЗӨВХӨН тухайн картын даралтыг — эс тэгвэл лавлах цонхны товч ажиллахгүй болно.
+  document.addEventListener('click',function(e){
+    if(!swallowEl)return;
+    const inSame=e.target&&e.target.closest&&e.target.closest('.lp-del')===swallowEl;
+    if(inSame&&Date.now()-firedAt<1500){e.stopPropagation();e.preventDefault();swallowEl=null}
+    else if(Date.now()-firedAt>=1500)swallowEl=null
+  },true);
+  // Удаан дарахад гарах контекст цэсийг хаана
+  document.addEventListener('contextmenu',function(e){
+    if(e.target&&e.target.closest&&e.target.closest('.lp-del'))e.preventDefault()
+  });
+})();
 
 // ── Гол замд км нэмэх ──
 let _akMat='tbd',_akFast=STATION_DEFAULT_FAST;
@@ -2209,7 +2283,7 @@ function sortTracks(){
 function openTrack(id){activeTrackId=id;showView('trackView');renderTrackView()}
 async function deleteTrack(){
   const t=activeTrack();if(!t)return;
-  if(!await appConfirm(`${trackLabel(t)}-ыг устгах уу? Бүх өгөгдөл устана.`))return;
+  if(!await appConfirm(`${trackLabelAcc(t)} устгах уу? Бүх өгөгдөл устана.`))return;
   DB.tracks=DB.tracks.filter(x=>x.id!==activeTrackId);saveDB();goHome()
 }
 
@@ -4991,7 +5065,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·38';
+const APP_BUILD='2026.08.23·39';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
