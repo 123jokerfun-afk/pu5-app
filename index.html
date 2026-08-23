@@ -766,10 +766,30 @@ button{font-family:inherit}
 </div>
 
 <!-- TRACK VIEW -->
-<div class="view" id="trackView">
+<!-- ГОЛ ЗАМ — км жагсаалт (тусдаа хуудас) -->
+<div class="view" id="mainKmView">
   <div class="pg-hdr">
     <div class="pg-hdr-row">
       <button class="back-btn" onclick="goHome()">Буцах</button>
+      <div style="flex:1">
+        <div class="pg-title">Гол зам</div>
+        <div class="pg-sub" id="mkSub">—</div>
+      </div>
+    </div>
+    <div class="track-ov-grid" id="mkStats" style="margin-top:10px"></div>
+  </div>
+  <div class="track-body">
+    <div id="mainKmBody"></div>
+    <button class="add-track-btn" onclick="openAddKm()" style="margin-top:10px">
+      <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Км нэмэх
+    </button>
+  </div>
+</div>
+
+<div class="view" id="trackView">
+  <div class="pg-hdr">
+    <div class="pg-hdr-row">
+      <button class="back-btn" onclick="backFromTrack()">Буцах</button>
       <div style="flex:1">
         <div class="pg-title" id="tvTitle">—</div>
         <div class="pg-sub" id="tvSub">—</div>
@@ -870,14 +890,34 @@ button{font-family:inherit}
   </div></div>
 </div>
 
-<!-- ГОЛ ЗАМ: км сонгох -->
-<div class="overlay" id="mainKmModal">
+<!-- ГОЛ ЗАМ: км нэмэх -->
+<div class="overlay" id="addKmModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="sheet-title" style="margin:0">Гол зам — км сонгох</div>
-      <button onclick="closeModal('mainKmModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Км нэмэх</div>
+      <button onclick="closeModal('addKmModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
     </div>
-    <div id="mainKmBody"></div>
+    <div class="ff"><label>Км (эхлэл — төгсгөл)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="akFrom" placeholder="702" min="0" oninput="updateAddKmHint()" style="flex:1">
+        <span style="font-weight:800;color:var(--ink4)">—</span>
+        <input type="number" id="akTo" placeholder="705" min="0" oninput="updateAddKmHint()" style="flex:1">
+      </div>
+      <div id="akHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:5px">Нэг км нэмэх бол зөвхөн эхлэлийг бичнэ</div>
+    </div>
+    <div class="ff"><label>Дэрийн материал</label>
+      <div class="edit-grid" style="margin:0">
+        <button type="button" class="etb mat-btn selected" id="akMatTbd" onclick="pickAddKmMat('tbd')">ТБД</button>
+        <button type="button" class="etb mat-btn" id="akMatWood" onclick="pickAddKmMat('wood')">Модон дэр</button>
+      </div>
+    </div>
+    <div class="ff" id="akFastBox"><label>Бэхэлгээний төрөл</label>
+      <div class="fast-grid" id="akFastGrid"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('addKmModal')">Болих</button>
+      <button class="btn-ok" onclick="addKm()">Нэмэх</button>
+    </div>
   </div></div>
 </div>
 
@@ -1606,7 +1646,8 @@ function ring(pct,size,color){
 // ══════════════════════════════════════════════
 // VIEWS
 // ══════════════════════════════════════════════
-const _VDEPTH={loginView:0,homeView:1,adminView:1,trackView:2,recordView:3,summaryView:4};
+// Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
+const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4};
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
@@ -1624,6 +1665,10 @@ function goHome(){
   const ts=document.getElementById('tracksSection');
   if(ts)ts.style.display=activeFolderId?'block':'none';
   renderHome()
+}
+// Замаас буцахад: гол замын км байсан бол км жагсаалт руу, үгүй бол нүүр рүү
+function backFromTrack(){
+  isMainTrack(activeTrack())?openMainKmList():goHome()
 }
 function goTrack(){
   _navBack=true;
@@ -1742,31 +1787,39 @@ function renderHome(){
   grid.innerHTML=out
 }
 
-// ── Гол замын км жагсаалт ──
-function openMainKmList(){
+// ── Гол замын км жагсаалт (тусдаа хуудас) ──
+function openMainKmList(){showView('mainKmView');renderMainKmView()}
+function renderMainKmView(){
   const mn=DB.tracks.filter(isMainTrack);
   const body=document.getElementById('mainKmBody');
-  if(!mn.length){body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Гол зам алга</div>';openModal('mainKmModal');return}
+  const stats=document.getElementById('mkStats');
+  const sub=document.getElementById('mkSub');
+  if(!mn.length){
+    if(sub)sub.textContent=DB.location||'';
+    if(stats)stats.innerHTML='';
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Км нэмнэ үү</div>';
+    return
+  }
   // Гол замын нийт дүн
-  let gT=0,gB=0,gTbd=0,gW=0;
-  mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad;gTbd+=a.tbd;gW+=a.wood});
+  let gT=0,gB=0;
+  mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad});
   const gPct=gT>0?(gB/gT*100):0;
   const gCol=gPct>=25?'var(--red)':gPct>=15?'var(--orange)':'var(--g600)';
-  const head=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+  if(sub)sub.textContent=`${mn[0].num}—${mn[mn.length-1].num} км · ${DB.location||''}`;
+  if(stats)stats.innerHTML=`
     <div class="ov-cell" style="background:var(--blue-bg);border-color:rgba(29,78,216,.25)">
       <div class="ov-n" style="color:var(--blue)">${mn.length}</div><div class="ov-l">Нийт км</div></div>
     <div class="ov-cell" style="background:var(--bg);border-color:var(--border)">
       <div class="ov-n" style="color:var(--ink)">${gT}</div><div class="ov-l">Нийт дэр</div></div>
     <div class="ov-cell" style="background:var(--orange-bg);border-color:#F5C272">
-      <div class="ov-n" style="color:${gCol}">${gPct.toFixed(1)}%</div><div class="ov-l">Тэнцэхгүй</div></div>
-  </div>`;
+      <div class="ov-n" style="color:${gCol}">${gPct.toFixed(1)}%</div><div class="ov-l">Тэнцэхгүй</div></div>`;
 
-  body.innerHTML=head+mn.map(t=>{
+  body.innerHTML=mn.map(t=>{
     const a=analyzeMainTrack(t);
     const pct=a.pct;
     const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
     const filled=t.sections.filter(s=>s.sleepers.length>0).length;
-    return`<div class="km-row" onclick="hap();closeModal('mainKmModal');openTrack('${t.id}')">
+    return`<div class="km-row" onclick="hap();openTrack('${t.id}')">
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:900;color:var(--ink)">${t.num}-р км</div>
         <div style="font-size:10px;color:var(--ink4);font-weight:700;margin-top:1px">${filled}/${t.sections.length} үе</div>
@@ -1781,8 +1834,66 @@ function openMainKmList(){
       </div>
       <span style="color:var(--ink4);font-weight:800">›</span>
     </div>`
-  }).join('');
-  openModal('mainKmModal')
+  }).join('')
+}
+
+// ── Гол замд км нэмэх ──
+let _akMat='tbd',_akFast=STATION_DEFAULT_FAST;
+function pickAddKmMat(m){
+  _akMat=m;hap(6);
+  document.getElementById('akMatTbd').classList.toggle('selected',m==='tbd');
+  document.getElementById('akMatWood').classList.toggle('selected',m==='wood');
+  document.getElementById('akFastBox').style.display=m==='tbd'?'block':'none'
+}
+function pickAddKmFast(f){
+  _akFast=f;hap(6);
+  document.querySelectorAll('#akFastGrid .fast-btn').forEach(b=>
+    b.classList.toggle('selected',b.dataset.f===f))
+}
+function _akRange(){
+  const a=parseInt(document.getElementById('akFrom').value,10);
+  const b=parseInt(document.getElementById('akTo').value,10);
+  if(isNaN(a))return null;
+  const to=isNaN(b)?a:b;
+  if(to<a)return null;
+  return{from:a,to,count:to-a+1}
+}
+function updateAddKmHint(){
+  const r=_akRange(),el=document.getElementById('akHint');
+  if(!r){el.textContent='Нэг км нэмэх бол зөвхөн эхлэлийг бичнэ';return}
+  el.textContent=`${r.from}—${r.to} = ${r.count} км · тус бүр ${MAIN_UE_PER_KM} үе (нийт ${r.count*MAIN_UE_PER_KM} үе)`
+}
+function openAddKm(){
+  // Байгаа гол замын тохиргоог өгөгдмөл болгоно
+  const mn=DB.tracks.filter(isMainTrack);
+  const last=mn[mn.length-1];
+  _akMat=(last&&last.mat)||'tbd';
+  _akFast=(last&&last.fast)||STATION_DEFAULT_FAST;
+  document.getElementById('akFrom').value=last?last.num+1:'';
+  document.getElementById('akTo').value='';
+  document.getElementById('akFastGrid').innerHTML=FASTENINGS.map(f=>
+    `<button type="button" class="fast-btn${f===_akFast?' selected':''}" data-f="${f}" onclick="pickAddKmFast('${f}')">${f}</button>`).join('');
+  pickAddKmMat(_akMat);updateAddKmHint();
+  openModal('addKmModal')
+}
+function addKm(){
+  const r=_akRange();
+  if(!r){showToast('Км-ээ зөв оруулна уу');return}
+  const dup=[];
+  for(let km=r.from;km<=r.to;km++)
+    if(DB.tracks.find(t=>isMainTrack(t)&&t.num===km))dup.push(km);
+  if(dup.length===r.count){showToast(`${dup.join(', ')}-р км аль хэдийн байна`);return}
+  let added=0;
+  for(let km=r.from;km<=r.to;km++){
+    if(dup.indexOf(km)>=0)continue;
+    const tr={id:uid(),num:km,kind:'main',note:'',sections:_mkUeSections(MAIN_UE_PER_KM),mat:_akMat};
+    if(_akMat==='tbd')tr.fast=_akFast;
+    DB.tracks.push(tr);added++
+  }
+  sortTracks();saveDB();closeModal('addKmModal');renderMainKmView();
+  showToast(dup.length
+    ?`${added} км нэмэгдлээ (${dup.length} км аль хэдийн байсан)`
+    :`${added} км · ${added*MAIN_UE_PER_KM} үе нэмэгдлээ`)
 }
 
 // ══════════════════════════════════════════════
@@ -4869,7 +4980,8 @@ function _appBack(){
   if(!av)return false;
   switch(av.id){
     case 'recordView':goTrack();return true;
-    case 'trackView':goHome();return true;
+    case 'trackView':backFromTrack();return true;
+    case 'mainKmView':goHome();return true;
     case 'summaryView':backFromSummary();return true;
     case 'adminView':return false;
     case 'homeView':
@@ -4879,7 +4991,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·37';
+const APP_BUILD='2026.08.23·38';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
