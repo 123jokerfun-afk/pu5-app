@@ -665,7 +665,7 @@ button{font-family:inherit}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
-      <div id="buildTag" data-v="2026.08.01-13" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)">BUILD 2026.08.02-22</div>
+      <div id="buildTag" class="build-tag" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)"></div>
     </div>
   </div>
 </div>
@@ -759,6 +759,9 @@ button{font-family:inherit}
       </div>
     </div>
     </div><!-- /tracksSection -->
+    <!-- Хувилбар нэвтэрсний дараа ч харагдана -->
+    <div class="build-tag" style="text-align:center;padding:18px 0 26px;font-size:10px;
+      font-weight:600;color:var(--ink5)"></div>
   </div>
 </div>
 
@@ -4838,7 +4841,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·35';
+const APP_BUILD='2026.08.23·36';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
@@ -4928,7 +4931,8 @@ try{
   showView('loginView');
 }
 (function(){
-  var b=document.getElementById('buildTag');if(b)b.textContent='v '+APP_BUILD;
+  // Хувилбарыг нэвтрэх дэлгэц болон нүүр хуудасны хамгийн доор харуулна
+  document.querySelectorAll('.build-tag').forEach(function(e){e.textContent='v '+APP_BUILD});
 })();
 initScreenSwipe();
 initRipple();
