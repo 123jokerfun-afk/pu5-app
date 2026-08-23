@@ -1725,8 +1725,8 @@ function renderHome(){
       ${t.note?`<div class="track-card-note">${t.note}</div>`:''}
       <div class="track-card-chips" style="margin-top:8px">
         <span class="chip" style="background:var(--bg);color:var(--ink3)">Нийт: ${a.total}</span>
-        ${a.bad?`<span class="chip" style="background:var(--orange-bg);color:var(--orange)">${a.bad}</span>`:''}
         ${(a.tbd+a.bad_tbd)?`<span class="chip" style="background:var(--red-bg);color:var(--red)">ТБД: ${a.tbd+a.bad_tbd}</span>`:''}
+        ${a.totalBad?`<span class="chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${a.totalBad}</span>`:''}
       </div>
       <div class="track-pbar"><div class="track-pbar-fill" style="width:${Math.min(100,pct*1.5)}%;background:${barCol}"></div></div>
       <div class="track-footer">
@@ -2239,6 +2239,7 @@ function sectionCard(s,t){
   // Гол замд материалыг сегментээс тодорхойлдог тул тусад нь тоолно
   const isMain=isMainTrack(t);
   const ma=isMain?analyzeMainSection(s,t):null;
+  const bd=sleeperBreakdown(s,t);
   const pct=isMain?ma.pct:(a.total>0?(a.totalBad/a.total*100):0);
   const pctColor=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
   const barCol=pct>=25?'var(--red)':pct>=15?'var(--orange-mid)':'var(--g500)';
@@ -2258,15 +2259,9 @@ function sectionCard(s,t){
       </div>
     </div>
     <div class="sec-stats">
-      <span class="sec-chip" style="background:var(--bg);color:var(--ink3)">Нийт: ${a.total}</span>
-      ${isMain
-        ? `${ma.tbd?`<span class="sec-chip" style="background:var(--red-bg);color:var(--red)">ТБД: ${ma.tbd}</span>`:''}
-           ${ma.wood?`<span class="sec-chip" style="background:var(--g100);color:var(--g700)">Модон: ${ma.wood}</span>`:''}
-           ${ma.bad?`<span class="sec-chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${ma.bad}</span>`:''}`
-        : `<span class="sec-chip" style="background:var(--bg);color:var(--ink3)">Мод: ${a.woodTotal}</span>
-           ${a.bad?`<span class="sec-chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${a.bad}</span>`:''}
-           ${a.tbd?`<span class="sec-chip" style="background:var(--red-bg);color:var(--red)">ТБД: ${a.tbd}</span>`:''}
-           ${a.bad_tbd?`<span class="sec-chip" style="background:var(--dred-bg);color:var(--dred)">Тэнц.ТБД: ${a.bad_tbd}</span>`:''}`}
+      <span class="sec-chip" style="background:var(--bg);color:var(--ink3);font-weight:800">Нийт: ${bd.total}</span>
+      ${bd.items.filter(x=>x.n>0).map(x=>
+        `<span class="sec-chip" style="background:${x.bg};color:${x.fg}">${x.k}: ${x.n} · ${(x.n/bd.total*100).toFixed(1)}%</span>`).join('')}
       ${a.total>0?`<span class="sec-pct" style="color:${pctColor};font-size:13px;font-weight:900">${pct.toFixed(1)}%</span>`:''}
     </div>
     ${a.total>0?`<div class="sec-pbar"><div class="sec-pbar-fill" style="width:${Math.min(100,pct*2)}%;background:${barCol}"></div></div>`:''}
@@ -3086,17 +3081,40 @@ function analyzeSection(sec){
 // Өртөөний замын analyzeSection нь "Хэвийн+Тэнцэхгүй = мод" гэж үздэг тул
 // гол замд тохирохгүй — тэнд материал нь дэрийн төрлөөс хамаардаггүй.
 function analyzeMainSection(sec,t){
-  const r={total:0,tbd:0,wood:0,bad:0,normal:0};
+  // nTbd/bTbd/nWood/bWood = байдал × материал. Эдгээрийн нийлбэр = нийт дүн.
+  const r={total:0,tbd:0,wood:0,bad:0,normal:0,nTbd:0,bTbd:0,nWood:0,bWood:0};
   if(!sec)return(r.pct=0,r);
   if(typeof sec.sleepers==='string')
     sec.sleepers=[...sec.sleepers].map(ch=>({type:_SLREV[ch]||'normal',ts:0}));
   (sec.sleepers||[]).forEach((sl,i)=>{
     r.total++;
-    if(matOf(sec,i,t)==='wood')r.wood++;else r.tbd++;
-    if(sl.type==='bad'||sl.type==='bad_tbd')r.bad++;else r.normal++
+    const isWood=matOf(sec,i,t)==='wood';
+    const isBad=sl.type==='bad'||sl.type==='bad_tbd';
+    if(isWood)r.wood++;else r.tbd++;
+    if(isBad)r.bad++;else r.normal++;
+    if(isWood){isBad?r.bWood++:r.nWood++}else{isBad?r.bTbd++:r.nTbd++}
   });
   r.pct=r.total>0?(r.bad/r.total*100):0;
   return r
+}
+// Дэрийн задаргаа: 4 ангилалын нийлбэр ҮРГЭЛЖ нийт дүнтэй тэнцэнэ.
+// (Өмнө нь "Мод" гэсэн нийлбэрийг өөрийнх нь бүрэлдэхүүнтэй зэрэгцүүлж
+//  харуулдаг байсан тул давхардаж, нийт дүнгээс их гардаг байв.)
+function sleeperBreakdown(sec,t){
+  if(isMainTrack(t)){
+    const m=analyzeMainSection(sec,t);
+    return{total:m.total,items:[
+      {k:'Хэвийн ТБД',n:m.nTbd,bg:'var(--g100)',fg:'var(--g700)'},
+      {k:'Тэнц.ТБД',n:m.bTbd,bg:'var(--dred-bg)',fg:'var(--dred)'},
+      {k:'Хэвийн мод',n:m.nWood,bg:'var(--bg)',fg:'var(--ink2)'},
+      {k:'Тэнц.мод',n:m.bWood,bg:'var(--orange-bg)',fg:'var(--orange)'}]}
+  }
+  const a=analyzeSection(sec);
+  return{total:a.total,items:[
+    {k:'Хэвийн',n:a.normal,bg:'var(--g100)',fg:'var(--g700)'},
+    {k:'Тэнцэхгүй',n:a.bad,bg:'var(--orange-bg)',fg:'var(--orange)'},
+    {k:'ТБД',n:a.tbd,bg:'var(--red-bg)',fg:'var(--red)'},
+    {k:'Тэнц.ТБД',n:a.bad_tbd,bg:'var(--dred-bg)',fg:'var(--dred)'}]}
 }
 function analyzeMainTrack(t){
   const r={total:0,tbd:0,wood:0,bad:0,normal:0};
@@ -3264,18 +3282,18 @@ function showSectionSummary(){
   summaryBack='record';const sec=activeSec();if(!sec)return;
   document.getElementById('sumTitle').textContent=sec.label;
   const a=analyzeSection(sec);
+  const _t=activeTrack();
+  const bd=sleeperBreakdown(sec,_t);
   const pCol=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
   document.getElementById('sumBody').innerHTML=`
   <div class="sum-block">
     <div class="sum-block-title">Нийт дүн</div>
     <div class="sum-totals">
-      <div class="sum-tot"><div class="sum-tot-n">${a.total}</div><div class="sum-tot-l">Нийт</div></div>
-      <div class="sum-tot"><div class="sum-tot-n" style="color:var(--g600)">${a.normal}</div><div class="sum-tot-l">Хэвийн</div></div>
-      <div class="sum-tot"><div class="sum-tot-n" style="color:var(--orange)">${a.bad}</div><div class="sum-tot-l">Тэнцэхгүй</div></div>
-      <div class="sum-tot"><div class="sum-tot-n" style="color:var(--red)">${a.tbd+a.bad_tbd}</div><div class="sum-tot-l">ТБД нийт</div></div>
+      <div class="sum-tot"><div class="sum-tot-n">${bd.total}</div><div class="sum-tot-l">Нийт</div></div>
+      ${bd.items.map(x=>`<div class="sum-tot"><div class="sum-tot-n" style="color:${x.fg}">${x.n}</div><div class="sum-tot-l">${x.k}</div></div>`).join('')}
     </div>
     <div class="sum-sub">
-      Тэнцэхгүй ТБД: <strong>${a.bad_tbd}</strong> · Модон: ${a.woodTotal} (тэнцэхгүй: ${a.bad}) · Бетон: ${a.concreteTotal} (тэнцэхгүй: ${a.bad_tbd})<br>
+      ${bd.items.filter(x=>x.n>0).map(x=>`${x.k}: <strong>${x.n}</strong> (${(x.n/bd.total*100).toFixed(1)}%)`).join(' · ')||'Бүртгэл алга'}<br>
       Тэнцэхгүй хувь: <strong style="color:${pCol}">${a.pct.toFixed(1)}%</strong>${a.pct>=25?' ⚠️ 25%-аас их!':''}
     </div>
   </div>
@@ -3324,15 +3342,23 @@ function showSummaryAll(){
   document.getElementById('sumBody').innerHTML=html;showView('summaryView')
 }
 function renderTrackSummaryHTML(t){
-  const a=analyzeTrack(t);const pCol=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
+  const a=isMainTrack(t)?analyzeMainTrack(t):analyzeTrack(t);
+  // Замын задаргаа = үеүүдийн задаргааны нийлбэр
+  const tb={total:0,items:null};
+  t.sections.forEach(s=>{const b=sleeperBreakdown(s,t);
+    tb.total+=b.total;
+    if(!tb.items)tb.items=b.items.map(x=>({k:x.k,n:0,bg:x.bg,fg:x.fg}));
+    b.items.forEach((x,i)=>tb.items[i].n+=x.n)});
+  if(!tb.items)tb.items=sleeperBreakdown({sleepers:[]},t).items;
+  const pCol=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
   let tbl=`<div class="sum-block"><div class="sum-block-title">Үеийн дэлгэрэнгүй</div>
-    <table class="stbl"><thead><tr><th>Үе / Холбох</th><th>Нийт</th><th>Модон эпюр</th><th>Хэвийн</th><th>Тэнцэхгүй</th><th>ТБД</th><th>Тэнц.ТБД</th><th>%</th></tr></thead><tbody>`;
+    <table class="stbl"><thead><tr><th>Үе / Холбох</th><th>Нийт</th>${sleeperBreakdown({sleepers:[]},t).items.map(x=>`<th>${x.k}</th>`).join('')}<th>%</th></tr></thead><tbody>`;
   t.sections.forEach(s=>{
-    const sa=analyzeSection(s);const pc=sa.pct;
+    const sa=analyzeSection(s);const sb=sleeperBreakdown(s,t);const pc=isMainTrack(t)?analyzeMainSection(s,t).pct:sa.pct;
     const rCls=s.type==='connecting'?'co':pc>=25?'rd':pc>=15?'wd':'';
     const tCls=pc>=25?'tc-r':pc>=15?'tc-w':'tc-g';
     tbl+=`<tr class="${rCls}"><td style="text-align:left;font-weight:700;font-size:10px">${s.label}</td>
-      <td>${sa.total}</td><td>${sa.woodTotal}</td><td>${sa.normal}</td><td>${sa.bad||'—'}</td><td>${sa.tbd||'—'}</td><td>${sa.bad_tbd||'—'}</td>
+      <td>${sb.total}</td>${sb.items.map(x=>`<td>${x.n||'—'}</td>`).join('')}
       <td class="${tCls}">${sa.total?pc.toFixed(0)+'%':'—'}</td></tr>`
   });
   tbl+=`</tbody></table><div style="font-size:11px;color:var(--ink4);margin-top:8px">🔴 25%+ · 🟡 15–25% · 🟣 Холбох хэсэг</div></div>`;
@@ -3340,12 +3366,10 @@ function renderTrackSummaryHTML(t){
   <div class="sum-block">
     <div class="sum-block-title">${trackLabel(t)} · Нийт дүн</div>
     <div class="sum-totals">
-      <div class="sum-tot"><div class="sum-tot-n">${a.total}</div><div class="sum-tot-l">Нийт</div></div>
-      <div class="sum-tot"><div class="sum-tot-n" style="color:var(--g600)">${a.normal}</div><div class="sum-tot-l">Хэвийн</div></div>
-      <div class="sum-tot"><div class="sum-tot-n" style="color:var(--orange)">${a.bad}</div><div class="sum-tot-l">Тэнцэхгүй</div></div>
-      <div class="sum-tot"><div class="sum-tot-n" style="color:var(--red)">${a.tbd+a.bad_tbd}</div><div class="sum-tot-l">ТБД</div></div>
+      <div class="sum-tot"><div class="sum-tot-n">${tb.total}</div><div class="sum-tot-l">Нийт</div></div>
+      ${tb.items.map(x=>`<div class="sum-tot"><div class="sum-tot-n" style="color:${x.fg}">${x.n}</div><div class="sum-tot-l">${x.k}</div></div>`).join('')}
     </div>
-    <div class="sum-sub">Тэнцэхгүй ТБД: <strong>${a.bad_tbd}</strong> · Модон: ${a.normal+a.bad} · Бетон: ${a.tbd+a.bad_tbd}<br>
+    <div class="sum-sub">${tb.items.filter(x=>x.n>0).map(x=>`${x.k}: <strong>${x.n}</strong> (${(x.n/tb.total*100).toFixed(1)}%)`).join(' · ')||'Бүртгэл алга'}<br>
       Тэнцэхгүй: <strong style="color:${pCol}">${a.pct.toFixed(1)}%</strong>${a.pct>=25?' ⚠️ 25%-аас их!':''}</div>
   </div>${tbl}
   ${consecAnalysisHTML(t.sections,t.num+'-р зам')}
@@ -4833,7 +4857,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·41';
+const APP_BUILD='2026.08.23·42';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
