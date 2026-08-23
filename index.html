@@ -1662,10 +1662,13 @@ function renderHome(){
   const meta=document.getElementById('heroMeta');
   const _af=DB.folders.find(x=>x.id===activeFolderId);
   if(meta)meta.textContent=_af?`${_af.name} · ${r.cls||''}${r.cls?'-р анги':''} ${r.secName||r.sec||''} хэсэг`:`${r.cls||''}${r.cls?'-р анги':''} ${r.secName||r.sec||''} хэсэг · ${r.season||''} ${r.year||''}`;
+  // Паспортын дээд дүн = ЗӨВХӨН өртөөний зам.
+  // Гол замын дүнг "Гол зам" дотор тусад нь харуулна.
   let gTotal=0,gBad=0;
-  DB.tracks.forEach(t=>{const a=analyzeTrack(t);gTotal+=a.total;gBad+=a.totalBad});
+  DB.tracks.filter(t=>!isMainTrack(t)).forEach(t=>{
+    const a=analyzeTrack(t);gTotal+=a.total;gBad+=a.totalBad});
   const _tc=trackCounts(DB.tracks);
-  countTo(document.getElementById('hsTracks'),_tc.st+(_tc.km?1:0),420);
+  countTo(document.getElementById('hsTracks'),_tc.st,420);
   countTo(document.getElementById('hsTotal'),gTotal,700);
   const gp=gTotal>0?(gBad/gTotal*100):null;
   const hp=document.getElementById('hsPct');
@@ -1717,7 +1720,7 @@ function renderHome(){
   let out=_st.map(card).join('');
   if(_mn.length){
     let mTot=0,mBad=0,mDone=0;
-    _mn.forEach(t=>{const a=analyzeTrack(t);mTot+=a.total;mBad+=a.totalBad;if(a.total>0)mDone++});
+    _mn.forEach(t=>{const a=analyzeMainTrack(t);mTot+=a.total;mBad+=a.bad;if(a.total>0)mDone++});
     const mPct=mTot>0?(mBad/mTot*100):0;
     const kmFrom=_mn[0].num,kmTo=_mn[_mn.length-1].num;
     out+=`<div class="track-card" style="grid-column:span 2;border-color:var(--blue-mid);background:var(--blue-bg)" onclick="hap();openMainKmList()">
@@ -1744,19 +1747,38 @@ function openMainKmList(){
   const mn=DB.tracks.filter(isMainTrack);
   const body=document.getElementById('mainKmBody');
   if(!mn.length){body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Гол зам алга</div>';openModal('mainKmModal');return}
-  body.innerHTML=mn.map(t=>{
-    const a=analyzeTrack(t);
-    const pct=a.total>0?(a.totalBad/a.total*100):0;
-    const done=a.total>0;
+  // Гол замын нийт дүн
+  let gT=0,gB=0,gTbd=0,gW=0;
+  mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad;gTbd+=a.tbd;gW+=a.wood});
+  const gPct=gT>0?(gB/gT*100):0;
+  const gCol=gPct>=25?'var(--red)':gPct>=15?'var(--orange)':'var(--g600)';
+  const head=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+    <div class="ov-cell" style="background:var(--blue-bg);border-color:rgba(29,78,216,.25)">
+      <div class="ov-n" style="color:var(--blue)">${mn.length}</div><div class="ov-l">Нийт км</div></div>
+    <div class="ov-cell" style="background:var(--bg);border-color:var(--border)">
+      <div class="ov-n" style="color:var(--ink)">${gT}</div><div class="ov-l">Нийт дэр</div></div>
+    <div class="ov-cell" style="background:var(--orange-bg);border-color:#F5C272">
+      <div class="ov-n" style="color:${gCol}">${gPct.toFixed(1)}%</div><div class="ov-l">Тэнцэхгүй</div></div>
+  </div>`;
+
+  body.innerHTML=head+mn.map(t=>{
+    const a=analyzeMainTrack(t);
+    const pct=a.pct;
+    const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
     const filled=t.sections.filter(s=>s.sleepers.length>0).length;
     return`<div class="km-row" onclick="hap();closeModal('mainKmModal');openTrack('${t.id}')">
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:900;color:var(--ink)">${t.num}-р км</div>
-        <div style="font-size:10px;color:var(--ink4);font-weight:700;margin-top:1px">${filled}/${t.sections.length} үе${t.mat==='wood'?' · Модон':t.fast?' · '+t.fast:''}</div>
+        <div style="font-size:10px;color:var(--ink4);font-weight:700;margin-top:1px">${filled}/${t.sections.length} үе</div>
       </div>
-      ${done?`<span class="chip" style="background:var(--bg);color:var(--ink3)">${a.total} дэр</span>`:'<span class="chip" style="background:var(--bg);color:var(--ink5)">хоосон</span>'}
-      ${a.totalBad?`<span class="chip" style="background:var(--orange-bg);color:var(--orange)">${a.totalBad}</span>`:''}
-      ${pct>0?`<span class="chip" style="background:var(--red-bg);color:var(--red)">${pct.toFixed(0)}%</span>`:''}
+      <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:60%">
+        ${a.total
+          ?`<span class="chip" style="background:var(--bg);color:var(--ink2)">${a.total} дэр</span>
+            ${a.tbd?`<span class="chip" style="background:var(--red-bg);color:var(--red)">ТБД ${a.tbd}</span>`:''}
+            ${a.wood?`<span class="chip" style="background:var(--g100);color:var(--g700)">Модон ${a.wood}</span>`:''}
+            <span class="chip" style="background:var(--card);color:${pCol};border:1px solid ${pCol}">${pct.toFixed(1)}%</span>`
+          :'<span class="chip" style="background:var(--bg);color:var(--ink5)">хоосон</span>'}
+      </div>
       <span style="color:var(--ink4);font-weight:800">›</span>
     </div>`
   }).join('');
@@ -3011,6 +3033,22 @@ function analyzeSection(sec){
   sec.sleepers.forEach(s=>{r[s.type]++;r.total++});
   r.woodTotal=r.normal+r.bad;r.concreteTotal=r.tbd+r.bad_tbd;
   r.totalBad=r.bad+r.bad_tbd;r.pct=r.total>0?(r.totalBad/r.total*100):0;return r
+}
+// Гол замын дүн: дэрийг МАТЕРИАЛААР нь тоолно (ТБД / модон — бэхэлгээний
+// төрөл хамаарахгүй), тэнцэхгүйг нь төрлөөр нь.
+function analyzeMainTrack(t){
+  const r={total:0,tbd:0,wood:0,bad:0};
+  (t&&t.sections||[]).forEach(sec=>{
+    if(typeof sec.sleepers==='string')
+      sec.sleepers=[...sec.sleepers].map(ch=>({type:_SLREV[ch]||'normal',ts:0}));
+    (sec.sleepers||[]).forEach((sl,i)=>{
+      r.total++;
+      if(matOf(sec,i,t)==='wood')r.wood++;else r.tbd++;
+      if(sl.type==='bad'||sl.type==='bad_tbd')r.bad++
+    })
+  });
+  r.pct=r.total>0?(r.bad/r.total*100):0;
+  return r
 }
 function analyzeTrack(t){
   const r={normal:0,bad:0,tbd:0,bad_tbd:0,total:0,totalBad:0};
@@ -4841,7 +4879,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·36';
+const APP_BUILD='2026.08.23·37';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
