@@ -547,6 +547,10 @@ button{font-family:inherit}
   background:var(--blue-bg);border-color:var(--blue-mid);color:var(--blue)}
 .fast-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fast-btn{padding:11px 6px;font-size:12px}
+/* Дараагийн бүртгэлийн хоосон хайрцаг (зөвхөн харагдац — өгөгдөлд хадгалагдахгүй) */
+.dr-slot{border:1.5px dashed var(--blue-mid);background:rgba(29,78,216,.045)}
+.dr-slot .dr-num{color:var(--blue)}
+.dr-slot-lbl{font-size:11px;font-weight:800;color:var(--blue);opacity:.75}
 /* Гол замын км жагсаалт */
 .km-row{display:flex;align-items:center;gap:7px;padding:11px 13px;margin-bottom:7px;
   background:var(--card);border:1.5px solid var(--border);border-radius:var(--rm);cursor:pointer;
@@ -1324,6 +1328,19 @@ const MATS={tbd:'ТБД',wood:'Модон'};
 const STATION_DEFAULT_FAST='CZ';   // өртөөний замын ТБД автоматаар CZ
 const MAIN_UE_PER_KM=40;           // 1 км = багадаа 40 үе (дараа нь нэмж болно)
 
+// Төрөл нь "энэ байрлалаас хойш" гэсэн зарчмаар үйлчилдэг тул сегментээр хадгална:
+// fseg=[{i:0,m:'tbd',f:'APC'},{i:45,m:'tbd',f:'ЖБР'}] = 46-аас хойш ЖБР.
+// Дэр бүр дээр тусад нь бичихгүй тул 840 үетэй гол зам ч өгөгдөл багатай хэвээр.
+function segAt(sec,idx){
+  const sg=sec&&sec.fseg;
+  if(!sg||!sg.length)return null;
+  let r=null;
+  for(let k=0;k<sg.length;k++){if(sg[k].i<=idx)r=sg[k];else break}
+  return r
+}
+function matAt(sec,idx,t){const s=segAt(sec,idx);return (s&&s.m)||(sec&&sec.mat)||(t&&t.mat)||'tbd'}
+function segFastAt(sec,idx,t){const s=segAt(sec,idx);return (s&&s.f)||(sec&&sec.fast)||(t&&t.fast)||STATION_DEFAULT_FAST}
+
 function isMainTrack(t){return !!t&&t.kind==='main'}
 // Өртөөний зам "2-р зам", гол зам "681-р км" гэж нэрлэгдэнэ
 function trackLabel(t){return t?(isMainTrack(t)?`${t.num}-р км`:`${t.num}-р зам`):''}
@@ -1333,13 +1350,14 @@ function trackCounts(tracks){
   const list=tracks||[];
   return{st:list.filter(t=>!isMainTrack(t)).length,km:list.filter(isMainTrack).length}
 }
-// Үеийн үндсэн материал / бэхэлгээ — тохируулаагүй бол замынхаа тохиргоог авна
-function secMat(sec,t){return (sec&&sec.mat)||(t&&t.mat)||'tbd'}
-function secFast(sec,t){return (sec&&sec.fast)||(t&&t.fast)||STATION_DEFAULT_FAST}
-// Тухайн дэрийн бэхэлгээ (зөрсөн бол fmap-аас, үгүй бол үеийн үндсэн)
+// Дараагийн бүртгэлд үйлчлэх материал / бэхэлгээ (жагсаалтын төгсгөл дэх утга)
+function _secEnd(sec){return sec&&sec.sleepers?sec.sleepers.length:0}
+function secMat(sec,t){return matAt(sec,_secEnd(sec),t)}
+function secFast(sec,t){return segFastAt(sec,_secEnd(sec),t)}
+// Тухайн дэрийн бэхэлгээ: дан ганцаараа зөрсөн бол fmap-аас, үгүй бол сегментээс
 function fastOf(sec,idx,t){
   if(sec&&sec.fmap&&sec.fmap[idx])return sec.fmap[idx];
-  return secFast(sec,t)
+  return segFastAt(sec,idx,t)
 }
 function setFastAt(sec,idx,f,t){
   if(!sec)return;
@@ -1350,20 +1368,30 @@ function setFastAt(sec,idx,f,t){
 function clearFastAt(sec,idx){if(sec&&sec.fmap)delete sec.fmap[idx]}
 // Дэр устгахад бэхэлгээний индексийг мөн шилжүүлнэ
 function shiftFmapAfterDelete(sec,removed){
-  if(!sec||!sec.fmap)return;
-  const out={};
-  Object.keys(sec.fmap).forEach(k=>{
-    const i=parseInt(k,10);
-    if(i===removed)return;
-    out[i>removed?i-1:i]=sec.fmap[k]
-  });
-  sec.fmap=out
+  if(!sec)return;
+  if(sec.fmap){
+    const out={};
+    Object.keys(sec.fmap).forEach(k=>{
+      const i=parseInt(k,10);
+      if(i===removed)return;
+      out[i>removed?i-1:i]=sec.fmap[k]
+    });
+    sec.fmap=out
+  }
+  // Төрлийн сегментийн эхлэл мөн шилжинэ
+  if(Array.isArray(sec.fseg)){
+    sec.fseg.forEach(s=>{if(s.i>removed)s.i--});
+    // Ижил байрлалд давхарласан бол сүүлийнхийг үлдээнэ
+    const seen={};
+    sec.fseg=sec.fseg.filter(s=>{const k=s.i;const dup=seen[k];seen[k]=1;return !dup})
+  }
 }
 function isTbdType(tp){return tp==='tbd'||tp==='bad_tbd'}
 // Гол замын ТБД үед БҮХ дэр төмөр бетон тул төрөл бүр дээр бэхэлгээ харагдана
 // ("Хэвийн APC", "Тэнцэхгүй APC"). Өртөөний замд зөвхөн ТБД гэж тэмдэглэсэн дэр дээр.
-function showFastFor(sec,t,type){
-  if(secMat(sec,t)==='wood')return false;
+function showFastFor(sec,t,type,idx){
+  const m=idx===undefined?secMat(sec,t):matAt(sec,idx,t);
+  if(m==='wood')return false;
   return isMainTrack(t)?true:isTbdType(type)
 }
 // Дэрийн бүтэн нэр: "Хэвийн APC" / "Тэнцэхгүй APC" / "ТБД (CZ)" гэх мэт
@@ -1371,7 +1399,7 @@ function sleeperLabel(sec,idx,t){
   const sl=sec&&sec.sleepers&&sec.sleepers[idx];
   if(!sl)return'';
   const base=TYPES[sl.type]?TYPES[sl.type].label:'';
-  if(!showFastFor(sec,t,sl.type))return base;
+  if(!showFastFor(sec,t,sl.type,idx))return base;
   const f=fastOf(sec,idx,t);
   return isMainTrack(t)?`${base} ${f}`:`${base} (${f})`
 }
@@ -2401,7 +2429,8 @@ function renderRecordLog(sec,focusIdx){
   const prevSec=t?getPrevSection(t,sec.label):null;
   const n=sec.sleepers.length;
 
-  if(!n&&!prevSec){
+  // Баталгаажуулах горимд хоосон бол өмнөх шигээ мессеж (бүртгэх хайрцаг хэрэггүй)
+  if(!n&&!prevSec&&_verifMode){
     wrap.innerHTML='<div class="log-empty"><span class="log-empty-icon">'+ic('clipboard',34)+
       '</span>Товшиж эхлэх эсвэл гулсуулах<div class="log-empty-hint">Бүртгэсэн дэрийг дарж засах боломжтой</div></div>';
     DRM.reel=null;DRM.vp=null;DRM.rows=[];return
@@ -2450,9 +2479,19 @@ function renderRecordLog(sec,focusIdx){
     }
   }
 
+  // Дараагийн бүртгэлийн хоосон хайрцаг. Өгөгдөлд хадгалагдахгүй — үеэс гарахад
+  // өөрөө алга болно. Өмнөх судалгааны сүүдэр мөр байвал тэр нь энэ үүргийг гүйцэтгэнэ.
+  const hasGhostSlot=prevSec&&n<prevSec.sleepers.length;
+  if(!_verifMode&&!hasGhostSlot){
+    html+='<div class="drow dr-slot" data-i="'+n+'" data-rec="0" data-slot="1">'+
+      '<span class="dr-num">#'+(n+1)+'</span>'+
+      '<span class="dr-slot-lbl">бүртгэх…</span></div>';
+  }
+
   wrap.innerHTML='<div class="drum-frame" id="drumFrame"></div>'+
     '<div class="drum-viewport" id="drumVP"><div class="drum-reel" id="drumReel">'+html+'</div></div>'+
-    (prevSec?'<div class="drum-hint">бүдэгхэн = өмнөх судалгаа</div>':'');
+    (prevSec?'<div class="drum-hint">бүдэгхэн = өмнөх судалгаа</div>'
+      :(!n?'<div class="drum-hint">товшиж эхлэх эсвэл гулсуулах</div>':''));
 
   DRM.vp=document.getElementById('drumVP');
   DRM.reel=document.getElementById('drumReel');
@@ -2468,8 +2507,8 @@ function renderRecordLog(sec,focusIdx){
   };
 
   _drumBind();
-  // Сүүлийн бүртгэсэн дэр = n-1 (хүрээ түүн дээр таарна)
-  const want=focusIdx!==undefined?focusIdx:(_verifMode?_verifCursor:(n>0?n-1:0));
+  // Анхдагчаар дараагийн бүртгэлийн хайрцаг дээр таарна
+  const want=focusIdx!==undefined?focusIdx:(_verifMode?_verifCursor:n);
   const same=DRM.secId===sec.id;
   DRM.secId=sec.id;
   if(same){DRM.target=Math.max(0,Math.min(DRM.max,want));
@@ -2499,12 +2538,45 @@ function syncManual(sec,type,delta){
   else if(type==='tbd')m.tbd=Math.max(0,(m.tbd||0)+delta);
   else if(type==='bad_tbd')m.bad_tbd=Math.max(0,(m.bad_tbd||0)+delta);
 }
+// Бөмбөрөгний одоогийн байрлал (хүрээнд таарсан мөрийн дугаар)
+function drumCursor(){
+  const v=DRM&&typeof DRM.target==='number'?DRM.target:0;
+  return Math.max(0,Math.round(v))
+}
 async function record(type,fastOverride){
   const sec=activeSec();if(!sec)return;
   hap(type==='normal'?10:18);
   if(_verifMode){recordVerif(type);return}
   const t=activeTrack();
   const prevSec=t?getPrevSection(t,sec.label):null;
+  const cur=drumCursor();
+
+  // ── Аль хэдийн бүртгэсэн дэр дээр таарсан бол түүнийг дарж бичнэ ──
+  if(cur<sec.sleepers.length){
+    const oldType=sec.sleepers[cur].type;
+    const oldFast=fastOf(sec,cur,t);
+    const newFast=(isTbdType(type)&&fastOverride)?fastOverride:secFast(sec,t);
+    const sameType=oldType===type;
+    const sameFast=!showFastFor(sec,t,type)||oldFast===newFast;
+    if(sameType&&sameFast){
+      // Ижил байвал юу ч өөрчлөхгүй, зүгээр дараагийн хайрцаг руу шилжинэ
+      renderRecordLog(sec,cur+1);return
+    }
+    const was=sleeperLabel(sec,cur,t);
+    if(!await appConfirm(`#${cur+1} дэрийг "${was}" гэж бүртгэсэн байна. Өөрчлөх үү?`,'Өөрчлөх')){
+      renderRecordLog(sec,cur);return    // өмнө бүртгэснээр үлдээнэ
+    }
+    syncManual(sec,oldType,-1);syncManual(sec,type,+1);
+    sec.sleepers[cur].type=type;
+    if(isTbdType(type)&&fastOverride)setFastAt(sec,cur,fastOverride,t);
+    else clearFastAt(sec,cur);
+    saveDB();updateRecCounters(sec);
+    renderRecordLog(sec,cur+1);renderRefOverlayLive(sec,prevSec);
+    showToast(`#${cur+1} → ${sleeperLabel(sec,cur,t)}`);
+    return
+  }
+
+  // ── Шинэ дэр нэмнэ ──
   const pos=sec.sleepers.length;
   sec.sleepers.push({type,ts:Date.now()});
   // ТБД дэр бүр бэхэлгээтэй. Тусгайлан заасан бол (жишээ нь жойстикийн
@@ -2526,7 +2598,8 @@ async function record(type,fastOverride){
     }
   }
   updateRecCounters(sec);   // өмнө нь тоолуур бүртгэх бүрт шинэчлэгддэггүй байв
-  renderRecordLog(sec, sec.sleepers.length-1);
+  // Дараагийн хоосон хайрцаг руу шилжинэ
+  renderRecordLog(sec, sec.sleepers.length);
   renderRefOverlayLive(sec,prevSec)
 }
 function undoLast(){
@@ -2577,19 +2650,33 @@ function pickSecFast(f){
 }
 function openSecType(){
   const sec=activeSec(),t=activeTrack();if(!sec)return;
-  _stMat=secMat(sec,t);_stFast=secFast(sec,t);
-  document.getElementById('secTypeTitle').textContent=`${sec.label} — дэрийн төрөл`;
+  // Одоо таарсан байрлал дээрх төрлийг харуулна
+  const cur=drumCursor();
+  _stMat=matAt(sec,cur,t);_stFast=segFastAt(sec,cur,t);
+  document.getElementById('secTypeTitle').textContent=
+    `${sec.label} — #${cur+1}-ээс хойш`;
   document.getElementById('stFastGrid').innerHTML=FASTENINGS.map(f=>
     `<button type="button" class="fast-btn${f===_stFast?' selected':''}" data-f="${f}" onclick="pickSecFast('${f}')">${f}</button>`).join('');
   pickSecMat(_stMat);
   openModal('secTypeModal')
 }
 function saveSecType(){
-  const sec=activeSec();if(!sec)return;
-  sec.mat=_stMat;
-  if(_stMat==='tbd')sec.fast=_stFast;else delete sec.fast;
-  saveDB();closeModal('secTypeModal');renderRecordView();
-  showToast(_stMat==='tbd'?`Төрөл: ТБД (${_stFast})`:'Төрөл: Модон дэр')
+  const sec=activeSec(),t=activeTrack();if(!sec)return;
+  // Одоо таарсан байрлалаас ХОЙШ шинэ төрөл үйлчилнэ.
+  // Түүнээс өмнөх дэрүүд бүртгэсэн төрлөө хэвээр хадгална.
+  const cur=drumCursor();
+  if(!Array.isArray(sec.fseg))sec.fseg=[];
+  sec.fseg=sec.fseg.filter(s=>s.i<cur);        // курсороос хойшхыг шинэ нь дарна
+  const seg={i:cur,m:_stMat};
+  if(_stMat==='tbd')seg.f=_stFast;
+  sec.fseg.push(seg);
+  sec.fseg.sort((a,b)=>a.i-b.i);
+  // Курсороос хойших ганцаарчилсан зөрүүг цэвэрлэнэ (шинэ төрлийг дагана)
+  if(sec.fmap)for(let i=cur;i<sec.sleepers.length;i++)delete sec.fmap[i];
+
+  saveDB();closeModal('secTypeModal');renderRecordLog(sec,cur);updateRecCounters(sec);
+  const what=_stMat==='tbd'?`ТБД (${_stFast})`:'Модон дэр';
+  showToast(cur<sec.sleepers.length?`#${cur+1}-ээс хойш: ${what}`:`Цаашид: ${what}`)
 }
 
 // ══════════════════════════════════════════════
@@ -4709,7 +4796,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·32';
+const APP_BUILD='2026.08.23·33';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
