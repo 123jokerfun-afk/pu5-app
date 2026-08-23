@@ -2660,23 +2660,34 @@ function openSecType(){
   pickSecMat(_stMat);
   openModal('secTypeModal')
 }
-function saveSecType(){
+async function saveSecType(){
   const sec=activeSec(),t=activeTrack();if(!sec)return;
   // Одоо таарсан байрлалаас ХОЙШ шинэ төрөл үйлчилнэ.
   // Түүнээс өмнөх дэрүүд бүртгэсэн төрлөө хэвээр хадгална.
   const cur=drumCursor();
+  const n=sec.sleepers.length;
+  const what=_stMat==='tbd'?`ТБД (${_stFast})`:'Модон дэр';
+  let at=cur;
+  // Курсор дээр бүртгэсэн дэр байвал түүнийг өөрчлөх эсэхийг лавлана.
+  // Үгүй гэвэл зөвхөн цаашид бүртгэх дэрэнд үйлчилнэ.
+  if(cur<n){
+    const was=sleeperLabel(sec,cur,t);
+    const yes=await appConfirm(
+      `#${cur+1} дэр "${was}" гэж бүртгэлтэй байна. Үүнээс хойших бүртгэсэн дэрийг "${what}" болгох уу? Үгүй бол зөвхөн цаашид бүртгэхэд үйлчилнэ.`,
+      'Болгох');
+    at=yes?cur:n
+  }
   if(!Array.isArray(sec.fseg))sec.fseg=[];
-  sec.fseg=sec.fseg.filter(s=>s.i<cur);        // курсороос хойшхыг шинэ нь дарна
-  const seg={i:cur,m:_stMat};
+  sec.fseg=sec.fseg.filter(s=>s.i<at);         // энэ байрлалаас хойшхыг шинэ нь дарна
+  const seg={i:at,m:_stMat};
   if(_stMat==='tbd')seg.f=_stFast;
   sec.fseg.push(seg);
   sec.fseg.sort((a,b)=>a.i-b.i);
-  // Курсороос хойших ганцаарчилсан зөрүүг цэвэрлэнэ (шинэ төрлийг дагана)
-  if(sec.fmap)for(let i=cur;i<sec.sleepers.length;i++)delete sec.fmap[i];
+  // Энэ байрлалаас хойших ганцаарчилсан зөрүүг цэвэрлэнэ (шинэ төрлийг дагана)
+  if(sec.fmap)for(let i=at;i<n;i++)delete sec.fmap[i];
 
   saveDB();closeModal('secTypeModal');renderRecordLog(sec,cur);updateRecCounters(sec);
-  const what=_stMat==='tbd'?`ТБД (${_stFast})`:'Модон дэр';
-  showToast(cur<sec.sleepers.length?`#${cur+1}-ээс хойш: ${what}`:`Цаашид: ${what}`)
+  showToast(at<n?`#${at+1}-ээс хойш: ${what}`:`Цаашид: ${what}`)
 }
 
 // ══════════════════════════════════════════════
@@ -4796,7 +4807,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·33';
+const APP_BUILD='2026.08.23·34';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
