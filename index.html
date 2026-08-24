@@ -176,6 +176,8 @@ button{font-family:inherit}
 .sec-badge-normal{background:var(--g100);color:var(--g600)}
 .sec-badge-connecting{background:var(--purple-bg);color:var(--purple)}
 .sec-badge-turnout{background:var(--blue-bg);color:var(--blue)}
+.sc-tag{font-size:9px;font-weight:800;background:var(--orange-bg);color:var(--orange);
+  padding:2px 6px;border-radius:20px;vertical-align:middle;white-space:nowrap}
 .sec-stats{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;padding-left:4px}
 .sec-chip{font-size:11px;padding:3px 9px;border-radius:8px;font-weight:600}
 .sec-pct{font-size:12px;font-weight:800;margin-left:auto}
@@ -1508,9 +1510,58 @@ function _migrateDB(){
   });
   if((DB.tracks||[]).some(isMainTrack))DB.tracks=DB.tracks.filter(t=>!isMainTrack(t));
   sortMain();
-  if(activeFolderId){const f=DB.folders.find(x=>x.id===activeFolderId);if(f)DB.tracks=f.tracks}
+  dedupeFolders();      // давхардсан паспортыг чимээгүй нэгтгэнэ
+  if(activeFolderId){
+    const f=DB.folders.find(x=>x.id===activeFolderId);
+    if(f)DB.tracks=f.tracks;
+    else{activeFolderId=null;DB.tracks=[]}   // нэгтгэлд шингэсэн бол салгана
+  }
 }
 function _trackFill(t){return (t.sections||[]).reduce((n,s)=>n+((s.sleepers||[]).length),0)}
+// Хоёр паспорт нэг гэж үзэх түлхүүр (id өөр байсан ч нэр/улирал/он/огноо ижил бол)
+function folderKey(f){
+  return [f.name||'',f.season||'',f.year||'',f.date||''].join('|')
+}
+function folderFill(f){
+  return (f.tracks||[]).reduce((n,t)=>n+_trackFill(t),0)
+}
+function folderSecs(f){return (f.tracks||[]).reduce((n,t)=>n+(t.sections||[]).length,0)}
+// Давхардсан паспортыг НЭГТГЭНЭ (устгахгүй): зам/үе тус бүрээр бүртгэл ихтэйг нь
+// авч, зөвхөн нэгд байгааг нь нэмнэ. Ингэснээр юу ч алдагдахгүй.
+function mergeFolder(dst,src){
+  if(!dst||!src||dst===src)return;
+  dst.tracks=dst.tracks||[];
+  (src.tracks||[]).forEach(t=>{
+    const ex=dst.tracks.find(x=>x.num===t.num&&!!isMainTrack(x)===!!isMainTrack(t));
+    if(!ex){dst.tracks.push(t);return}
+    (t.sections||[]).forEach(sec=>{
+      const es=(ex.sections||[]).find(y=>y.label===sec.label&&y.type===sec.type);
+      if(!es){ex.sections.push(sec);return}
+      // Ижил үе — дэр олонтойг нь үлдээнэ
+      if((sec.sleepers||[]).length>(es.sleepers||[]).length)
+        ex.sections[ex.sections.indexOf(es)]=sec
+    });
+    sortSections(ex)
+  });
+  sortTracksIn(dst)
+}
+function sortTracksIn(f){if(f&&Array.isArray(f.tracks))f.tracks.sort((a,b)=>a.num-b.num)}
+function dedupeFolders(){
+  const list=DB.folders||[];
+  if(list.length<2)return;
+  const seen={},out=[];
+  list.forEach(f=>{
+    const k=folderKey(f),ex=seen[k];
+    if(!ex){seen[k]=f;out.push(f);return}
+    // Баялаг нь үндсэн болж, нөгөөгийнхөө өгөгдлийг шингээж авна
+    if(folderFill(f)>folderFill(ex)){
+      mergeFolder(f,ex);
+      f.sc=ex.sc||f.sc;
+      out[out.indexOf(ex)]=f;seen[k]=f
+    } else mergeFolder(ex,f)
+  });
+  if(out.length!==list.length)DB.folders=out
+}
 // Гол замын км-үүд (паспортаас хараат бус)
 function mainTracks(){if(!Array.isArray(DB.main))DB.main=[];return DB.main}
 function sortMain(){mainTracks().sort((a,b)=>a.num-b.num)}
@@ -4507,7 +4558,7 @@ function addFolder(){
   const sea=document.getElementById('afSeason').value;
   const yr=document.getElementById('afYear').value||new Date().getFullYear()+'';
   const date=document.getElementById('afDate').value||new Date().toISOString().slice(0,10);
-  const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[]};
+  const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[],sc:_sectionCode||''};
   DB.folders.push(folder);saveDB();closeModal('addFolderModal');
   openFolder(folder.id)
 }
@@ -4543,12 +4594,14 @@ function renderFolders(){
     const isActive=f.id===activeFolderId;
     const tCount=`${trackCounts(f.tracks).st} зам`;
     const totalSecs=f.tracks.reduce((s,t)=>s+dataSections(t).length,0);
+    // Өөр хаягаас орж ирсэн паспортыг ялгаж харуулна
+    const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
     return`<div class="folder-card${isActive?' active-folder':''}" onclick="hap();openFolder('${f.id}')">
       <div class="folder-icon">${isActive
         ?'<svg class="ic" style="font-size:21px;color:var(--gold-deep)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2M3 7v10a2 2 0 002 2h14a2 2 0 002-2l1-7H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
         :'<svg class="ic" style="font-size:21px;color:var(--blue)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'}</div>
       <div class="folder-info">
-        <div class="folder-name">${f.name}</div>
+        <div class="folder-name">${f.name}${foreign?` <span class="sc-tag">${f.sc}</span>`:''}</div>
         <div class="folder-meta">${f.year} · ${f.season} · ${tCount} · ${totalSecs} үе${isActive?' · <b style="color:var(--g600)">нээлттэй</b>':''}</div>
       </div>
       <div class="folder-actions">
@@ -4818,6 +4871,9 @@ async function _afterLoginInner(){
 
 async function _checkLocalImport(){
   try{
+    // Энэ хаяг руу нэг удаа импортлосон бол дахин асуухгүй
+    if(localStorage.getItem('sg_der_imported_'+(_sectionCode||''))){
+      console.log('Import: энэ хаяг руу аль хэдийн импортолсон');return}
     // Бүх боломжит түлхүүрүүдийг шалгах
     let s=localStorage.getItem('sg_der_v3');
     if(!s)s=localStorage.getItem('sg_der_v3_'+_sectionCode);
@@ -4872,14 +4928,27 @@ async function manualLocalImport(){
 }
 function _importLocalData(localDB){
   try{
-    // Folders шилжүүлэх
+    // Folders шилжүүлэх — id ба агуулгаар давхардлыг шүүнэ
     if(localDB.folders&&localDB.folders.length){
-      DB.folders=DB.folders.concat(localDB.folders);
+      let added=0,skipped=0,replaced=0;
+      localDB.folders.forEach(f=>{
+        const byId=DB.folders.find(x=>x.id===f.id);
+        const ex=byId||DB.folders.find(x=>folderKey(x)===folderKey(f));
+        if(!ex){f.sc=f.sc||_sectionCode||'';DB.folders.push(f);added++;return}
+        // Ижил паспорт байвал бүртгэл ИХТЭЙГ нь үлдээнэ
+        if(folderFill(f)>folderFill(ex)){
+          f.sc=ex.sc||f.sc||_sectionCode||'';
+          DB.folders[DB.folders.indexOf(ex)]=f;replaced++
+        } else skipped++
+      });
+      console.log('Import: паспорт нэмсэн',added,'сольсон',replaced,'алгассан',skipped);
+      if(!added&&!replaced)showToast('Бүх паспорт аль хэдийн байна — давхардуулаагүй',3000)
     } else if(localDB.tracks&&localDB.tracks.length){
       // Хуучин бүтэц — folder болгож шилжүүлнэ
       const yr=(localDB.rpt&&localDB.rpt.year)||new Date().getFullYear()+'';
       const sea=(localDB.rpt&&localDB.rpt.season)||'хавар';
-      DB.folders.push({id:'f-'+Date.now(),name:sea.charAt(0).toUpperCase()+sea.slice(1)+' '+yr+' паспорт (утаснаас)',season:sea,year:yr,date:new Date().toISOString().slice(0,10),tracks:localDB.tracks});
+      const nf={id:'f-'+Date.now(),name:sea.charAt(0).toUpperCase()+sea.slice(1)+' '+yr+' паспорт (утаснаас)',season:sea,year:yr,date:new Date().toISOString().slice(0,10),tracks:localDB.tracks,sc:_sectionCode||''};
+      if(!DB.folders.some(x=>folderKey(x)===folderKey(nf)))DB.folders.push(nf);
     }
     // Гол замын км — дугаараар давхардвал бүртгэл ихтэйг нь үлдээнэ
     (localDB.main||[]).forEach(t=>{
@@ -4894,7 +4963,9 @@ function _importLocalData(localDB){
     saveDB();
     renderHome();
     showToast('✓ Өгөгдөл амжилттай шилжлээ! Үүлэнд хадгалагдаж байна...',3500);
-    // Import хийсний дараа local-г цэвэрлэхгүй — аюулгүйн үүднээс хадгална
+    // Дахин дахин асуухгүйн тулд тэмдэглэнэ. Өгөгдлийг нь устгахгүй —
+    // "Утасны хуучин өгөгдөл импортлох" товчоор гараар дахин авч болно.
+    try{localStorage.setItem('sg_der_imported_'+(_sectionCode||''),'1')}catch(e2){}
   }catch(e){showToast('Алдаа: '+e.message)}
 }
 
@@ -5257,7 +5328,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·49';
+const APP_BUILD='2026.08.24·50';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
