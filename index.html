@@ -167,12 +167,15 @@ button{font-family:inherit}
 .sec-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;border-radius:var(--r) 0 0 var(--r)}
 .sec-card.type-normal::before{background:linear-gradient(180deg,#FFD23F,#FF8E3C)}
 .sec-card.type-connecting::before{background:linear-gradient(180deg,var(--purple),#9333EA)}
+.sec-card.type-turnout::before{background:linear-gradient(180deg,var(--blue),#1D4ED8)}
+.sec-card.type-turnout{border-style:dashed}
 .sec-card:active{transform:scale(.99);box-shadow:none}
 .sec-card-top{display:flex;align-items:center;justify-content:space-between;padding-left:4px}
 .sec-card-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
 .sec-badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700}
 .sec-badge-normal{background:var(--g100);color:var(--g600)}
 .sec-badge-connecting{background:var(--purple-bg);color:var(--purple)}
+.sec-badge-turnout{background:var(--blue-bg);color:var(--blue)}
 .sec-stats{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;padding-left:4px}
 .sec-chip{font-size:11px;padding:3px 9px;border-radius:8px;font-weight:600}
 .sec-pct{font-size:12px;font-weight:800;margin-left:auto}
@@ -195,6 +198,9 @@ button{font-family:inherit}
   font-weight:800;cursor:pointer;text-align:center;transition:all .15s}
 .asb-normal{background:linear-gradient(135deg,#FF8E3C,#FFD23F);color:#fff;box-shadow:var(--sh-sm)}
 .asb-conn{background:var(--purple-bg);color:var(--purple);border:1.5px solid rgba(109,40,217,.25)}
+.asb-turn{background:var(--blue-bg);color:#0B6BA8;border:1.5px solid rgba(14,134,212,.3)}
+.add-sec-dock.dock-3{grid-template-columns:1fr 1fr 1fr}
+.dock-3 .add-sec-btn{font-size:12.5px;padding:13px 4px}
 .rec-counters{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}
 .cnt{border-radius:16px;padding:9px 4px;text-align:center;border:1px solid transparent;transition:transform .2s cubic-bezier(.34,1.4,.5,1)}
 .cnt:active{transform:scale(.95)}
@@ -786,6 +792,7 @@ button{font-family:inherit}
   <div class="add-sec-dock">
     <button class="add-sec-btn asb-normal" onclick="openAddSection('normal')"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Үе нэмэх</button>
     <button class="add-sec-btn asb-conn" onclick="openAddSection('connecting')"><svg class="ic" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Холбох</button>
+    <button class="add-sec-btn asb-turn" id="asbTurnout" style="display:none" onclick="openAddSection('turnout')"><svg class="ic" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сум</button>
   </div>
 </div>
 
@@ -1715,6 +1722,7 @@ function renderHome(){
     const pctCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
     const barCol=pct>=25?'var(--red)':pct>=15?'var(--orange-mid)':'var(--g500)';
     const conn=t.sections.filter(s=>s.type==='connecting').length;
+    const turns=t.sections.filter(isTurnout).length;
     return`<div class="track-card lp-del" data-tid="${t.id}" onclick="hap();openTrack('${t.id}')">
       <div style="display:flex;align-items:baseline;gap:4px">
         <div class="track-card-num">${t.num}</div><div class="track-card-unit">${trackUnit(t)}</div>
@@ -1730,7 +1738,7 @@ function renderHome(){
       </div>
       <div class="track-pbar"><div class="track-pbar-fill" style="width:${Math.min(100,pct*1.5)}%;background:${barCol}"></div></div>
       <div class="track-footer">
-        <span class="track-sec-count">${t.sections.length} үе${conn?` · ${conn} холбох`:''}</span>
+        <span class="track-sec-count">${dataSections(t).length} үе${conn?` · ${conn} холбох`:''}${turns?` · ${turns} сум`:''}</span>
         ${pct>0?`<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px">
           ${ring(Math.min(100,pct*2),38,pctCol)}
           <span style="position:absolute;font-size:10px;font-weight:800;color:${pctCol}">${pct.toFixed(0)}</span>
@@ -1799,11 +1807,13 @@ function renderMainKmView(){
     const a=analyzeMainTrack(t);
     const pct=a.pct;
     const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
-    const filled=t.sections.filter(s=>s.sleepers.length>0).length;
+    const secs=dataSections(t);
+    const filled=secs.filter(s=>s.sleepers.length>0).length;
+    const turns=t.sections.filter(isTurnout).length;
     return`<div class="km-row lp-del" data-tid="${t.id}" onclick="hap();openTrack('${t.id}')">
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:900;color:var(--ink)">${t.num}-р км</div>
-        <div style="font-size:10px;color:var(--ink4);font-weight:700;margin-top:1px">${filled}/${t.sections.length} үе</div>
+        <div style="font-size:10px;color:var(--ink4);font-weight:700;margin-top:1px">${filled}/${secs.length} үе${turns?` · ${turns} сум`:''}</div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:60%">
         ${a.total
@@ -2143,8 +2153,20 @@ function secNum(label){
 // Үеийг дугаараар нь эрэмбэлнэ. Холбох хэсэг үргэлж эцэст.
 // Эрэмбийн түлхүүр. "25—26 хооронд" гэж заасан холбох хэсэг 25.5 болж
 // 25-р үеийн ард, 26-р үеийн өмнө орно. Заагаагүй бол эцэст нь.
+// Сум = зөвхөн тэмдэглэгээ. Дэр агуулахгүй, тооцоо/тайланд орохгүй, зөвхөн
+// хоёр үеийн хооронд байрлаж дараалсан тэнцэхгүй дэрийн гинжийг тасална.
+const SEC_TURNOUT='turnout';
+function isTurnout(s){return !!s&&s.type===SEC_TURNOUT}
+function dataSections(t){return((t&&t.sections)||[]).filter(s=>!isTurnout(s))}
 function secSortKey(s){
-  if(s.type==='connecting')return (s.btw&&s.btw.a!=null)?s.btw.a+0.5:1e9;
+  // Сум нь 25—26 хооронд гэвэл 25.5 болж яг дунд нь орно.
+  if(isTurnout(s))return (s.btw&&s.btw.a!=null)?s.btw.a+0.5:1e9;
+  if(s.type==='connecting'){
+    if(!s.btw||s.btw.a==null)return 1e9;
+    // Нэг зайд сум байвал холбох нь залгаа талдаа очно:
+    // залгаа=дараах үе бол сумын АРД (25 · сум · холбох · 26), эс бөгөөс ӨМНӨ.
+    return s.btw.a+(s.adj==='b'?0.6:0.4)
+  }
   return secNum(s.label)
 }
 function sortSections(t){
@@ -2161,6 +2183,8 @@ function sortSections(t){
 // adj заагаагүй хуучин өгөгдөлд урьдын адил үргэлжилсэн гэж үзнэ.
 function boundaryContinuous(prev,next){
   if(!prev||!next)return false;
+  // Сумын байрлал дээр дэр тасардаг тул дараалал ХЭЗЭЭ Ч дамжихгүй
+  if(isTurnout(prev)||isTurnout(next))return false;
   if(prev.type==='connecting'&&prev.adj)return prev.adj==='both'||prev.adj==='b';
   if(next.type==='connecting'&&next.adj)return next.adj==='both'||next.adj==='a';
   return true
@@ -2223,7 +2247,13 @@ async function deleteTrack(){
 function renderTrackView(){
   const t=activeTrack();if(!t)return;
   document.getElementById('tvTitle').textContent=`${trackLabel(t)}${t.note?' · '+t.note:''}`;
-  document.getElementById('tvSub').textContent=`${t.sections.length} үе · ${DB.location}`;
+  const turns=t.sections.filter(isTurnout).length;
+  document.getElementById('tvSub').textContent=
+    `${dataSections(t).length} үе${turns?` · ${turns} сум`:''} · ${DB.location}`;
+  // "Сум" товч зөвхөн гол замд
+  const dock=document.querySelector('.add-sec-dock'),tBtn=document.getElementById('asbTurnout');
+  if(tBtn){tBtn.style.display=isMainTrack(t)?'':'none'}
+  if(dock)dock.classList.toggle('dock-3',isMainTrack(t));
   // Гол замд материалаар (ТБД / Модон), өртөөнд төрлөөр нь харуулна
   const a=isMainTrack(t)?analyzeMainTrack(t):analyzeTrack(t);
   document.getElementById('tvOverview').innerHTML=isMainTrack(t)?`
@@ -2256,6 +2286,20 @@ function renderTrackView(){
 }
 
 function sectionCard(s,t){
+  // ── СУМ: дэргүй тэмдэглэгээ. Тоолуургүй, дарвал засварын цонх нээнэ ──
+  if(isTurnout(s)){
+    return`<div class="sec-card type-turnout" onclick="hap();openEditTurnout('${s.id}')">
+      <div class="sec-card-top">
+        <div class="sec-card-title" style="flex:1;min-width:0">${s.label}</div>
+        <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
+          <span class="sec-badge sec-badge-turnout">сум</span>
+          ${s.btw?`<span class="sec-badge" style="background:var(--blue-bg);color:var(--blue)">${s.btw.a}—${s.btw.b} хооронд</span>`:''}
+          <button class="sec-card-del" onclick="event.stopPropagation();deleteSection('${t.id}','${s.id}')" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24" style="font-size:15px"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+      <div class="sec-card-empty">🔀 Дэр бүртгэхгүй — энд дараалсан тэнцэхгүй дэр тасарна${s.note?' · '+s.note:''}</div>
+    </div>`
+  }
   const a=analyzeSection(s);
   // Гол замд материалыг сегментээс тодорхойлдог тул тусад нь тоолно
   const isMain=isMainTrack(t);
@@ -2292,8 +2336,9 @@ function sectionCard(s,t){
 }
 
 async function deleteSection(tid,sid){
-  if(!await appConfirm('Энэ үеийг устгах уу?'))return;
   const t=getTrack(tid);if(!t)return;
+  const s=t.sections.find(x=>x.id===sid);
+  if(!await appConfirm(isTurnout(s)?`"${s.label}"-ын тэмдэглэгээг устгах уу?`:'Энэ үеийг устгах уу?'))return;
   t.sections=t.sections.filter(s=>s.id!==sid);saveDB();renderTrackView()
 }
 
@@ -2370,13 +2415,47 @@ function updateBtwHint(){
     ?`${a}-р үе → энэ холбох → ${b}-р үе гэж жагсана`
     :'Жишээ: 25 — 26 гэвэл 25-р үеийн ард орно'
 }
+// Сумын цонхны санамж
+function updateTurnHint(){
+  const n=parseInt(document.getElementById('asTurnNum').value,10);
+  const a=parseInt(document.getElementById('asBtwA').value,10);
+  const b=parseInt(document.getElementById('asBtwB').value,10);
+  const h=document.getElementById('asBtwHint');if(!h)return;
+  h.innerHTML=(!isNaN(a)&&!isNaN(b))
+    ?`<strong>${a}-р үе → ${isNaN(n)?'?':n}-р сум → ${b}-р үе</strong> гэж жагсана.<br>
+       ${a} ба ${b}-р үеийн хооронд дараалсан тэнцэхгүй дэр <strong>дамжихгүй</strong>.`
+    :'Жишээ: 25 — 26 гэвэл 25-р үеийн ард орно';
+  const s=document.getElementById('asTurnSum');
+  if(s)s.textContent=(!isNaN(a)&&!isNaN(b)&&!isNaN(n))?`${a}—${b} үе хооронд ${n}-р сум`:'—'
+}
+// Байгаа сумыг засах үед бөглөх бичлэгийн id
+let _asEditId=null;
 function openAddSection(type){
   pendingSecType=type;const t=activeTrack();if(!t)return;
-  _asAdj={a:false,b:false};
+  _asAdj={a:false,b:false};_asEditId=null;
   const isConn=type==='connecting';
-  document.getElementById('addSecTitle').textContent=isConn?'Холбох хэсэг нэмэх':'Үе нэмэх';
-  const nextNum=t.sections.filter(s=>s.type!=='connecting').length+1;
+  const isTurn=type===SEC_TURNOUT;
+  document.getElementById('addSecTitle').textContent=isTurn?'Сум нэмэх':isConn?'Холбох хэсэг нэмэх':'Үе нэмэх';
+  const nextNum=t.sections.filter(s=>s.type!=='connecting'&&!isTurnout(s)).length+1;
   const isMain=isMainTrack(t);
+  if(isTurn){
+    document.getElementById('addSecContent').innerHTML=`
+    <div class="ff"><label>Сумын дугаар<span style="color:var(--red)"> *</span></label>
+      <input type="number" id="asTurnNum" placeholder="5" min="1" oninput="updateTurnHint()">
+    </div>
+    <div class="ff"><label>Аль үе хооронд<span style="color:var(--red)"> *</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="asBtwA" placeholder="25" min="1" oninput="updateTurnHint()" style="flex:1">
+        <span style="font-weight:800;color:var(--ink4)">—</span>
+        <input type="number" id="asBtwB" placeholder="26" min="1" oninput="updateTurnHint()" style="flex:1">
+      </div>
+      <div id="asBtwHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:5px">Жишээ: 25 — 26 гэвэл 25-р үеийн ард орно</div>
+    </div>
+    <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="asNote" placeholder="..."></div>
+    <div class="info-pill" style="background:var(--blue-bg);color:#0B6BA8">🔀 Сум дээр <strong>дэр бүртгэхгүй</strong>. Зөвхөн байрлалыг нь тэмдэглэж, тэр цэг дээр үе дамнасан 3 ба түүнээс дээш дараалсан тэнцэхгүй дэрийг таслана.</div>
+    <div style="text-align:center;font-size:12px;font-weight:800;color:var(--ink2);margin-top:8px" id="asTurnSum">—</div>`;
+    openModal('addSecModal');return
+  }
   document.getElementById('addSecContent').innerHTML=isConn?`
     <div class="ff"><label>Холбох нэр / сумын дугаар</label><input type="text" id="asLabel" placeholder="жишээ: 1-3-р сумын холбох"></div>
     ${isMain?`
@@ -2405,10 +2484,42 @@ function openAddSection(type){
     <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="asNote" placeholder="..."></div>`;
   openModal('addSecModal')
 }
+// Байгаа сумыг дарж засах (дугаар / үе хоорондыг өөрчилнө)
+function openEditTurnout(secId){
+  const t=activeTrack();if(!t)return;
+  const s=t.sections.find(x=>x.id===secId);if(!isTurnout(s))return;
+  openAddSection(SEC_TURNOUT);
+  _asEditId=secId;
+  document.getElementById('addSecTitle').textContent='Сум засах';
+  document.getElementById('asTurnNum').value=s.num||'';
+  document.getElementById('asBtwA').value=s.btw?s.btw.a:'';
+  document.getElementById('asBtwB').value=s.btw?s.btw.b:'';
+  document.getElementById('asNote').value=s.note||'';
+  updateTurnHint()
+}
 function addSection(){
   const t=activeTrack();if(!t)return;
   let label,note='';
   let btw=null,adj=null;
+  // ── СУМ: дэргүй тэмдэглэгээ. Дугаар + аль үе хоорондыг заавал бөглөнө ──
+  if(pendingSecType===SEC_TURNOUT){
+    const n=parseInt(document.getElementById('asTurnNum').value,10);
+    const a=parseInt(document.getElementById('asBtwA').value,10);
+    const b=parseInt(document.getElementById('asBtwB').value,10);
+    if(isNaN(n)||n<1){showToast('Сумын дугаарыг оруулна уу');return}
+    if(isNaN(a)||isNaN(b)){showToast('Аль үе хооронд болохыг оруулна уу');return}
+    if(b<=a){showToast('Дараах үе нь эхнийхээсээ том байна');return}
+    if(t.sections.some(s=>isTurnout(s)&&s.id!==_asEditId&&s.num===n&&s.btw&&s.btw.a===a&&s.btw.b===b)){
+      showToast(`${a}—${b} хооронд ${n}-р сум бүртгэгдсэн байна`);return}
+    note=(document.getElementById('asNote').value||'').trim();
+    const old=_asEditId?t.sections.find(s=>s.id===_asEditId):null;
+    if(old){Object.assign(old,{num:n,btw:{a,b},label:`${n}-р сум`,note})}
+    else t.sections.push({id:uid(),type:SEC_TURNOUT,label:`${n}-р сум`,note,num:n,btw:{a,b},
+      sleepers:[],date:new Date().toLocaleDateString('mn-MN')});
+    sortSections(t);saveDB();closeModal('addSecModal');renderTrackView();
+    showToast(`✓ ${a}—${b} үе хооронд ${n}-р сум ${old?'засагдлаа':'нэмэгдлээ'}`);
+    _asEditId=null;return
+  }
   if(pendingSecType==='connecting'){
     label=(document.getElementById('asLabel').value||'').trim();
     note=(document.getElementById('asNote').value||'').trim();
@@ -2443,6 +2554,7 @@ function addSection(){
 function openSection(secId){
   hap(6);DRM.secId=null;const t=activeTrack();if(!t)return;
   const sec=t.sections.find(s=>s.id===secId);if(!sec)return;
+  if(isTurnout(sec)){openEditTurnout(secId);return}   // сум дээр дэр бүртгэхгүй
   activeSectionId=secId;
   document.getElementById('rvTitle').textContent=sec.label;
   document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
@@ -3043,16 +3155,17 @@ function showSwipeFlash(dir){
 function hideSwipeFlash(){const el=document.getElementById('swipeFlash');if(el)el.style.opacity='0'}
 function navNextSection(){
   hap(8);hideSwipeFlash();const t=activeTrack();if(!t)return;
-  const idx=t.sections.findIndex(s=>s.id===activeSectionId);
-  if(idx>=0&&idx<t.sections.length-1){
-    const next=t.sections[idx+1];activeSectionId=next.id;
+  const secs=dataSections(t);   // сум дээр бүртгэл байхгүй тул алгасна
+  const idx=secs.findIndex(s=>s.id===activeSectionId);
+  if(idx>=0&&idx<secs.length-1){
+    const next=secs[idx+1];activeSectionId=next.id;
     document.getElementById('rvTitle').textContent=next.label;
     document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
     renderRecordView();showToast(`→ ${next.label}`)
   } else {
-    const nextNum=t.sections.filter(s=>s.type!=='connecting').length+1;
+    const nextNum=secs.filter(s=>s.type!=='connecting').length+1;
     const ns={id:uid(),type:'normal',label:`${nextNum}-р үе`,note:'',sleepers:[],date:new Date().toLocaleDateString('mn-MN')};
-    t.sections.push(ns);saveDB();activeSectionId=ns.id;
+    t.sections.push(ns);sortSections(t);saveDB();activeSectionId=ns.id;
     document.getElementById('rvTitle').textContent=ns.label;
     document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
     renderRecordView();showToast(`✓ ${ns.label} шинээр нэмлээ`)
@@ -3061,9 +3174,10 @@ function navNextSection(){
 }
 function navPrevSection(){
   hap(8);hideSwipeFlash();const t=activeTrack();if(!t)return;
-  const idx=t.sections.findIndex(s=>s.id===activeSectionId);
+  const secs=dataSections(t);
+  const idx=secs.findIndex(s=>s.id===activeSectionId);
   if(idx>0){
-    const prev=t.sections[idx-1];activeSectionId=prev.id;
+    const prev=secs[idx-1];activeSectionId=prev.id;
     document.getElementById('rvTitle').textContent=prev.label;
     document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
     renderRecordView();showToast(`← ${prev.label}`)
@@ -3072,7 +3186,7 @@ function navPrevSection(){
 }
 function updateNavBtns(){
   const t=activeTrack();if(!t)return;
-  const idx=t.sections.findIndex(s=>s.id===activeSectionId);
+  const idx=dataSections(t).findIndex(s=>s.id===activeSectionId);
   const hasPrev=idx>0;
   const prev=document.getElementById('navPrevBtn');
   if(prev){prev.style.opacity=hasPrev?'1':'0.3';prev.style.pointerEvents=hasPrev?'all':'none'}
@@ -3249,9 +3363,15 @@ function findConsecutiveBadForTrack(sections){
 // ══════════════════════════════════════════════
 function consecAnalysisHTML(sections, trackLabel){
   const allGroups=findConsecutiveBadForTrack(sections);
+  const turns=(sections||[]).filter(isTurnout);
+  const turnNote=turns.length
+    ?`<div style="font-size:10px;color:var(--blue);background:var(--blue-bg);font-weight:700;
+        padding:6px 9px;border-radius:8px;margin-bottom:8px">🔀 ${turns.length} сум тэмдэглэгдсэн —
+        ${turns.map(s=>s.btw?`${s.btw.a}—${s.btw.b}`:s.label).join(', ')} хооронд дараалал дамжихгүй</div>`:'';
   if(!allGroups.length){
     return`<div class="consec-block">
       <div class="consec-title">🔗 Дараалсан тэнцэхгүй дэр</div>
+      ${turnNote}
       <div class="consec-empty">✓ Дараалсан тэнцэхгүй дэр олдсонгүй</div>
     </div>`
   }
@@ -3275,7 +3395,7 @@ function consecAnalysisHTML(sections, trackLabel){
         <div class="cs-n" style="color:var(--dred)">${cnt5p}</div>
         <div class="cs-l" style="color:var(--dred)">5+ дараалсан</div>
       </div>
-    </div>`;
+    </div>${turnNote}`;
 
   // Үе доторх дараалалуудыг үеээр нь бүлэглэж харуулна
   const withinGroups=allGroups.filter(x=>!x.crossSection);
@@ -3296,7 +3416,7 @@ function consecAnalysisHTML(sections, trackLabel){
         }).join('');
         html+=`<div class="consec-row ${cls}">
           <span class="consec-badge ${bcls}">${lbl}</span>
-          <div class="consec-nums">Сум: ${nums}<br>
+          <div class="consec-nums">Дэр №: ${nums}<br>
             <span style="font-size:10px;color:var(--ink3);font-weight:600">#${g.items[0].posInSec} → #${g.items[g.items.length-1].posInSec} · ${g.len} дэр</span>
           </div>
         </div>`
@@ -3385,7 +3505,7 @@ function showSummaryAll(){
         <div class="sum-tot"><div class="sum-tot-n" style="color:var(--orange)">${a.bad}</div><div class="sum-tot-l">Тэнцэхгүй</div></div>
         <div class="sum-tot"><div class="sum-tot-n" style="color:var(--red)">${a.tbd+a.bad_tbd}</div><div class="sum-tot-l">ТБД</div></div>
       </div>
-      <div class="sum-sub">Тэнцэхгүй: <strong style="color:${pCol}">${a.pct.toFixed(1)}%</strong> · ${t.sections.length} үе</div>
+      <div class="sum-sub">Тэнцэхгүй: <strong style="color:${pCol}">${a.pct.toFixed(1)}%</strong> · ${dataSections(t).length} үе</div>
     </div>`
   });
   const gp=gT>0?(gB/gT*100):0;
@@ -3416,7 +3536,7 @@ function renderTrackSummaryHTML(t){
   const a=isMainTrack(t)?analyzeMainTrack(t):analyzeTrack(t);
   // Замын задаргаа = үеүүдийн задаргааны нийлбэр
   const tb={total:0,items:null};
-  t.sections.forEach(s=>{const b=sleeperBreakdown(s,t);
+  dataSections(t).forEach(s=>{const b=sleeperBreakdown(s,t);
     tb.total+=b.total;
     if(!tb.items)tb.items=b.items.map(x=>({k:x.k,n:0,bg:x.bg,fg:x.fg}));
     b.items.forEach((x,i)=>tb.items[i].n+=x.n)});
@@ -3424,7 +3544,7 @@ function renderTrackSummaryHTML(t){
   const pCol=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
   let tbl=`<div class="sum-block"><div class="sum-block-title">Үеийн дэлгэрэнгүй</div>
     <table class="stbl"><thead><tr><th>Үе / Холбох</th><th>Нийт</th>${sleeperBreakdown({sleepers:[]},t).items.map(x=>`<th>${x.k}</th>`).join('')}<th>%</th></tr></thead><tbody>`;
-  t.sections.forEach(s=>{
+  dataSections(t).forEach(s=>{
     const sa=analyzeSection(s);const sb=sleeperBreakdown(s,t);const pc=isMainTrack(t)?analyzeMainSection(s,t).pct:sa.pct;
     const rCls=s.type==='connecting'?'co':pc>=25?'rd':pc>=15?'wd':'';
     const tCls=pc>=25?'tc-r':pc>=15?'tc-w':'tc-g';
@@ -3514,7 +3634,7 @@ function exportTrackCSV(tid){
 function exportAllCSV(){
   const rows=[['Байршил','Зам №','Үе','Нийт','Хэвийн','Тэнцэхгүй','ТБД','Тэнцэхгүй ТБД','%']];
   DB.tracks.forEach(t=>{
-    t.sections.forEach(s=>{const a=analyzeSection(s);rows.push([DB.location,t.num+'-р зам',s.label,a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—'])});
+    dataSections(t).forEach(s=>{const a=analyzeSection(s);rows.push([DB.location,t.num+'-р зам',s.label,a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—'])});
     const a=analyzeTrack(t);rows.push([DB.location,t.num+'-р зам','— НИЙТ —',a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—']);rows.push([])
   });
   dl(`${DB.location}_niit.csv`,rows)
@@ -3576,7 +3696,7 @@ function renderThreshPreview(){
   const container=document.getElementById('threshPreview');
   const rows=[];
   const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):DB.tracks;
-  tracks.forEach(t=>{t.sections.forEach(s=>{const a=analyzeSection(s);if(a.pct>=mn&&a.pct<=mx)rows.push({t,s,a})})});
+  tracks.forEach(t=>{dataSections(t).forEach(s=>{const a=analyzeSection(s);if(a.pct>=mn&&a.pct<=mx)rows.push({t,s,a})})});
   const lbl=mx===Infinity?`${mn}%+`:`${mn}–${mx}%`;
   if(!rows.length){container.innerHTML=`<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">${lbl} тэнцэхгүй үе олдсонгүй</div>`;return}
   let html=`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;font-weight:700">${lbl} тэнцэхгүй · ${rows.length} үе олдлоо</div>
@@ -3653,12 +3773,12 @@ async function exportColoredExcel(){
   }
 
   // Sheet 1: Нийт дүн
-  const allRows=[];tracks.forEach(t=>{t.sections.forEach(s=>{const sa=analyzeSection(s);allRows.push({t,s,sa})})});
+  const allRows=[];tracks.forEach(t=>{dataSections(t).forEach(s=>{const sa=analyzeSection(s);allRows.push({t,s,sa})})});
   const {ws:ws1,lastRow:lr1}=makeSheet(wb,'Нийт дүн',allRows,true);
   let tr=lr1;
   tracks.forEach(t=>{
     const ta=analyzeTrack(t);const totRow=ws1.getRow(tr++);
-    const taWood=t.sections.reduce((s,sec)=>{const a=analyzeSection(sec);return s+a.woodTotal},0);[t.num+'-р зам НИЙТ',`(${t.sections.length} үе)`,ta.total,taWood,ta.normal,ta.bad,ta.tbd,ta.bad_tbd,ta.totalBad,ta.total?ta.pct/100:null].forEach((v,i)=>{
+    const taWood=dataSections(t).reduce((s,sec)=>{const a=analyzeSection(sec);return s+a.woodTotal},0);[t.num+'-р зам НИЙТ',`(${dataSections(t).length} үе)`,ta.total,taWood,ta.normal,ta.bad,ta.tbd,ta.bad_tbd,ta.totalBad,ta.total?ta.pct/100:null].forEach((v,i)=>{
       const cell=totRow.getCell(i+1);cell.value=v;cell.fill=cFill('FFEEF2FF');
       cell.font={bold:true,name:'Arial',size:10};cell.alignment={horizontal:i<=1?'left':'center',vertical:'middle'};bdr(cell);
       if(i===9&&ta.total){cell.numFmt='0.0%';cell.fill=pFill(ta.pct);cell.font={...pFont(ta.pct),bold:true}}
@@ -3666,7 +3786,7 @@ async function exportColoredExcel(){
   });
 
   // Sheet 2: Threshold шүүлтүүр
-  const filtRows=[];tracks.forEach(t=>{t.sections.forEach(s=>{const sa=analyzeSection(s);if(sa.pct>=thresh&&sa.pct<=threshMx)filtRows.push({t,s,sa})})});
+  const filtRows=[];tracks.forEach(t=>{dataSections(t).forEach(s=>{const sa=analyzeSection(s);if(sa.pct>=thresh&&sa.pct<=threshMx)filtRows.push({t,s,sa})})});
   const sheetLbl=threshMx===Infinity?`${thresh}%+`:`${thresh}–${threshMx}%`;
   makeSheet(wb,`${sheetLbl} шүүлтүүр`,filtRows,true);
 
@@ -3674,12 +3794,12 @@ async function exportColoredExcel(){
   //                   ★ Холбох хэсгүүд → тусад нь нэг хуудсанд
   tracks.forEach(t=>{
     // Бүх үеийн нэгтгэл шийт
-    const rows=t.sections.map(s=>({t,s,sa:analyzeSection(s)}));
+    const rows=dataSections(t).map(s=>({t,s,sa:analyzeSection(s)}));
     makeSheet(wb,`${t.num}-р зам`,rows,true);
 
     // ── Энгийн үенүүдийн матриц шийтүүд (1-10, 11-20, ...) ──
-    const normalSecs=t.sections.filter(s=>s.type!=='connecting');
-    const connSecs=t.sections.filter(s=>s.type==='connecting');
+    const normalSecs=dataSections(t).filter(s=>s.type!=='connecting');
+    const connSecs=dataSections(t).filter(s=>s.type==='connecting');
 
     const SEC_GROUP=10;
     for(let gi=0;gi<normalSecs.length;gi+=SEC_GROUP){
@@ -4226,7 +4346,7 @@ function renderFolders(){
     const isActive=f.id===activeFolderId;
     const fc=trackCounts(f.tracks);
     const tCount=`${fc.st} зам${fc.km?' · '+fc.km+' км':''}`;
-    const totalSecs=f.tracks.reduce((s,t)=>s+t.sections.length,0);
+    const totalSecs=f.tracks.reduce((s,t)=>s+dataSections(t).length,0);
     return`<div class="folder-card${isActive?' active-folder':''}" onclick="hap();openFolder('${f.id}')">
       <div class="folder-icon">${isActive
         ?'<svg class="ic" style="font-size:21px;color:var(--gold-deep)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2M3 7v10a2 2 0 002 2h14a2 2 0 002-2l1-7H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
@@ -4928,7 +5048,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·43';
+const APP_BUILD='2026.08.24·44';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
