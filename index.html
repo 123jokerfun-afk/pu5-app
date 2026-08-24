@@ -709,6 +709,11 @@ button{font-family:inherit}
     </div>
   </div>
   <div class="home-body">
+    <!-- Гол зам — паспортаас хараат бус, паспортуудын дээр -->
+    <div class="home-section" style="margin-top:16px">
+      <div class="sec-lbl" style="margin-top:0">Гол зам</div>
+      <div id="mainLineCard"></div>
+    </div>
     <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
       <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
@@ -1066,34 +1071,8 @@ button{font-family:inherit}
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div class="sheet-title">Зам нэмэх</div>
     <div style="font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Шинэ зам нэмэх</div>
-    <div class="ff"><label>Замын төрөл</label>
-      <div class="edit-grid" style="margin:0">
-        <button type="button" class="etb kind-btn selected" id="atKindStation" onclick="pickTrackKind('station')">Өртөө зам</button>
-        <button type="button" class="etb kind-btn" id="atKindMain" onclick="pickTrackKind('main')">Гол зам</button>
-      </div>
-    </div>
-    <!-- Зөвхөн өртөөний замд: дугаар. Гол замд дугаар байхгүй, км нь нэр болно -->
     <div class="ff" id="atNumBox"><label>Замын дугаар</label><input type="number" id="atNum" placeholder="2, 3, 4, 5..." min="1"></div>
-    <!-- Зөвхөн гол замд -->
-    <div id="atMainBox" style="display:none">
-      <div class="ff"><label>Хэсгийн км (эхлэл — төгсгөл)</label>
-        <div style="display:flex;align-items:center;gap:8px">
-          <input type="number" id="atKmFrom" placeholder="681" min="0" oninput="updateKmHint()" style="flex:1">
-          <span style="font-weight:800;color:var(--ink4)">—</span>
-          <input type="number" id="atKmTo" placeholder="701" min="0" oninput="updateKmHint()" style="flex:1">
-        </div>
-        <div id="atKmHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:5px">Жишээ: 681—701 = 21 км</div>
-      </div>
-      <div class="ff"><label>Дэрийн материал</label>
-        <div class="edit-grid" style="margin:0">
-          <button type="button" class="etb mat-btn selected" id="atMatTbd" onclick="pickTrackMat('tbd')">ТБД</button>
-          <button type="button" class="etb mat-btn" id="atMatWood" onclick="pickTrackMat('wood')">Модон дэр</button>
-        </div>
-      </div>
-      <div class="ff" id="atFastBox"><label>Бэхэлгээний төрөл</label>
-        <div class="fast-grid" id="atFastGrid"></div>
-      </div>
-    </div>
+    <div class="info-pill" style="background:var(--blue-bg);color:#0B6BA8">ℹ Гол зам нь паспортаас тусдаа. Км-ийг нүүр хуудасны "Гол зам" хэсгээс нэмнэ.</div>
     <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="atNote" placeholder="..."></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('addTrackModal')">Болих</button>
@@ -1341,6 +1320,7 @@ function _packDB(db){
     if(Array.isArray(s.sleepers))s.sleepers=s.sleepers.map(sl=>_SLMAP[sl.type]||'n').join('')
   });
   (d.folders||[]).forEach(f=>(f.tracks||[]).forEach(walk));
+  (d.main||[]).forEach(walk);
   d.tracks=[]; // давхардал арилгана — active folder-с дахин холбогдоно
   return d
 }
@@ -1495,6 +1475,7 @@ function sleeperLabel(sec,idx,t){
 function uid(){return Date.now()+'-'+Math.random().toString(36).slice(2,7)}
 function _migrateDB(){
   if(!DB.folders)DB.folders=[];
+  if(!Array.isArray(DB.main))DB.main=[];
   if(DB.location==='Шивээ-говь')DB.location='ПУ-5';
   if(DB.tracks&&DB.tracks.length&&!DB.folders.length){
     const yr=DB.rpt&&DB.rpt.year?DB.rpt.year:new Date().getFullYear()+'';
@@ -1502,8 +1483,29 @@ function _migrateDB(){
     DB.folders.push({id:'f-'+Date.now(),name:`${sea.charAt(0).toUpperCase()+sea.slice(1)} ${yr} паспорт`,season:sea,year:yr,date:DB.rpt&&DB.rpt.date?DB.rpt.date:new Date().toISOString().slice(0,10),tracks:DB.tracks});
     DB.tracks=[];
   }
+  // Гол зам нь паспортаас хамаарахгүй тусдаа өгөгдөл. Хуучин паспорт дотор
+  // байсан км-үүдийг DB.main руу нэг удаа зөөнө (км тоогоор давхардвал
+  // бүртгэл ихтэйг нь үлдээнэ).
+  (DB.folders||[]).forEach(f=>{
+    const keep=[];
+    (f.tracks||[]).forEach(t=>{
+      if(!isMainTrack(t)){keep.push(t);return}
+      const ex=DB.main.find(x=>x.num===t.num);
+      if(!ex){DB.main.push(t);return}
+      if(_trackFill(t)>_trackFill(ex))DB.main[DB.main.indexOf(ex)]=t
+    });
+    f.tracks=keep
+  });
+  if((DB.tracks||[]).some(isMainTrack))DB.tracks=DB.tracks.filter(t=>!isMainTrack(t));
+  sortMain();
   if(activeFolderId){const f=DB.folders.find(x=>x.id===activeFolderId);if(f)DB.tracks=f.tracks}
 }
+function _trackFill(t){return (t.sections||[]).reduce((n,s)=>n+((s.sleepers||[]).length),0)}
+// Гол замын км-үүд (паспортаас хараат бус)
+function mainTracks(){if(!Array.isArray(DB.main))DB.main=[];return DB.main}
+function sortMain(){mainTracks().sort((a,b)=>a.num-b.num)}
+// Өртөөний зам (идэвхтэй паспорт) + гол зам — тайлан, экспортод хоёуланг нь
+function allTracks(){return (DB.tracks||[]).concat(mainTracks())}
 function loadDB(){
   if(!fbDb||!_sectionCode){
     try{const s=localStorage.getItem('sg_der_v3');if(s)DB=_unpackDB(JSON.parse(s))}catch(e){}
@@ -1604,7 +1606,7 @@ function effectiveRepl(track,sec,idx){
   return m[idx]||null
 }
 
-function getTrack(id){return DB.tracks.find(t=>t.id===id)}
+function getTrack(id){return DB.tracks.find(t=>t.id===id)||mainTracks().find(t=>t.id===id)}
 function getSection(tid,sid){const t=getTrack(tid);return t&&t.sections.find(s=>s.id===sid)}
 function activeTrack(){return getTrack(activeTrackId)}
 function activeSec(){return getSection(activeTrackId,activeSectionId)}
@@ -1760,13 +1762,12 @@ function renderHome(){
       if(p<1)requestAnimationFrame(anim)})(performance.now())
   } else hp.textContent='—';
   renderFolders();
+  renderMainLineCard();
   renderReplFolder();
   const grid=document.getElementById('tracksGrid');
   if(!activeFolderId){if(grid)grid.innerHTML='';return}
   if(!DB.tracks.length){grid.innerHTML='<div style="grid-column:span 2;text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';return}
-  // Өртөөний зам ба гол замыг тусад нь бүлэглэж харуулна
-  const _st=DB.tracks.filter(t=>!isMainTrack(t)),_mn=DB.tracks.filter(isMainTrack);
-  const _hd=txt=>`<div class="sec-lbl" style="grid-column:span 2;margin:4px 0 0">${txt}</div>`;
+  const _st=DB.tracks.filter(t=>!isMainTrack(t));
   const card=t=>{
     const a=analyzeTrack(t);
     const pct=a.total>0?(a.totalBad/a.total*100):0;
@@ -1797,38 +1798,51 @@ function renderHome(){
       </div>
     </div>`
   };
-  // Гол замыг нэг картаар харуулна — дарж орж км сонгоно
-  let out=_st.map(card).join('');
-  if(_mn.length){
-    let mTot=0,mBad=0,mDone=0;
-    _mn.forEach(t=>{const a=analyzeMainTrack(t);mTot+=a.total;mBad+=a.bad;if(a.total>0)mDone++});
-    const mPct=mTot>0?(mBad/mTot*100):0;
-    const kmFrom=_mn[0].num,kmTo=_mn[_mn.length-1].num;
-    out+=`<div class="track-card" style="grid-column:span 2;border-color:var(--blue-mid);background:var(--blue-bg)" onclick="hap();openMainKmList()">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div>
-          <div style="font-size:17px;font-weight:900;color:var(--blue)">Гол зам</div>
-          <div style="font-size:11px;color:var(--ink3);font-weight:700;margin-top:2px">${kmFrom}—${kmTo} км · ${_mn.length} км</div>
-        </div>
-        <span class="rb-btn" style="pointer-events:none">Км сонгох →</span>
-      </div>
-      <div class="track-card-chips" style="margin-top:8px">
-        <span class="chip" style="background:var(--card);color:var(--ink3)">Нийт: ${mTot}</span>
-        <span class="chip" style="background:var(--card);color:var(--ink3)">Бүртгэсэн: ${mDone}/${_mn.length} км</span>
-        ${mBad?`<span class="chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${mBad}</span>`:''}
-        ${mPct>0?`<span class="chip" style="background:var(--red-bg);color:var(--red)">${mPct.toFixed(1)}%</span>`:''}
-      </div>
-    </div>`
-  }
-  grid.innerHTML=out;
+  grid.innerHTML=_st.map(card).join('');
   const lh=document.getElementById('trackLpHint');
   if(lh)lh.style.display=_st.length?'block':'none'
+}
+
+// Нүүр хуудасны "Гол зам" карт — паспортаас хамаарахгүй, үргэлж харагдана
+function renderMainLineCard(){
+  const box=document.getElementById('mainLineCard');if(!box)return;
+  const mn=mainTracks();
+  if(!mn.length){
+    box.innerHTML=`<div class="track-card" style="border-color:var(--blue-mid);background:var(--blue-bg);border-style:dashed" onclick="hap();openMainKmList()">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:900;color:var(--blue)">Гол зам</div>
+          <div style="font-size:11px;color:var(--ink3);font-weight:700;margin-top:2px">Км нэмээгүй байна</div>
+        </div>
+        <span class="rb-btn" style="pointer-events:none">Км нэмэх →</span>
+      </div>
+    </div>`;
+    return
+  }
+  let mTot=0,mBad=0,mDone=0;
+  mn.forEach(t=>{const a=analyzeMainTrack(t);mTot+=a.total;mBad+=a.bad;if(a.total>0)mDone++});
+  const mPct=mTot>0?(mBad/mTot*100):0;
+  box.innerHTML=`<div class="track-card" style="border-color:var(--blue-mid);background:var(--blue-bg)" onclick="hap();openMainKmList()">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:17px;font-weight:900;color:var(--blue)">Гол зам</div>
+        <div style="font-size:11px;color:var(--ink3);font-weight:700;margin-top:2px">${mn[0].num}—${mn[mn.length-1].num} км · ${mn.length} км</div>
+      </div>
+      <span class="rb-btn" style="pointer-events:none">Км сонгох →</span>
+    </div>
+    <div class="track-card-chips" style="margin-top:8px">
+      <span class="chip" style="background:var(--card);color:var(--ink3)">Нийт: ${mTot}</span>
+      <span class="chip" style="background:var(--card);color:var(--ink3)">Бүртгэсэн: ${mDone}/${mn.length} км</span>
+      ${mBad?`<span class="chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${mBad}</span>`:''}
+      ${mPct>0?`<span class="chip" style="background:var(--red-bg);color:var(--red)">${mPct.toFixed(1)}%</span>`:''}
+    </div>
+  </div>`
 }
 
 // ── Гол замын км жагсаалт (тусдаа хуудас) ──
 function openMainKmList(){showView('mainKmView');renderMainKmView()}
 function renderMainKmView(){
-  const mn=DB.tracks.filter(isMainTrack);
+  const mn=mainTracks();
   const body=document.getElementById('mainKmBody');
   const stats=document.getElementById('mkStats');
   const sub=document.getElementById('mkSub');
@@ -1904,7 +1918,7 @@ function _kmBulkTargets(){
   const bad=isNaN(kA)||isNaN(kB)||isNaN(sA)||isNaN(sB)||isNaN(n);
   const out={kA,kB,sA,sB,n,bad,kms:0,secs:[],filled:[],empty:[]};
   if(bad||kB<kA||sB<sA||n<0)return out;
-  DB.tracks.filter(isMainTrack).forEach(t=>{
+  mainTracks().forEach(t=>{
     if(t.num<kA||t.num>kB)return;
     let hit=false;
     dataSections(t).forEach(s=>{
@@ -1933,7 +1947,7 @@ function updateKmBulkPreview(){
     ${_kbMode==='over'&&r.filled.length?`<br><span style="color:var(--red)">⚠ ${r.filled.length} үеийн одоогийн бүртгэл дарагдана</span>`:''}`
 }
 function openKmBulkModal(){
-  const mn=DB.tracks.filter(isMainTrack);
+  const mn=mainTracks();
   if(!mn.length){showToast('Эхлээд км нэмнэ үү');return}
   document.getElementById('kbKmA').value=mn[0].num;
   document.getElementById('kbKmB').value=mn[mn.length-1].num;
@@ -1973,11 +1987,12 @@ async function applyKmBulk(){
 // УДААН ДАРЖ УСТГАХ (өртөөний зам / гол замын км)
 // ══════════════════════════════════════════════
 async function confirmDeleteTrack(tid){
-  const t=DB.tracks.find(x=>x.id===tid);if(!t)return;
+  const t=getTrack(tid);if(!t)return;
   const n=(isMainTrack(t)?analyzeMainTrack(t):analyzeTrack(t)).total;
   const msg=`${trackLabelAcc(t)} устгах уу?`+(n?` ${n} дэрийн бүртгэл устана.`:'');
   if(!await appConfirm(msg,'Устгах'))return;
-  DB.tracks=DB.tracks.filter(x=>x.id!==tid);
+  if(isMainTrack(t))DB.main=mainTracks().filter(x=>x.id!==tid);
+  else DB.tracks=DB.tracks.filter(x=>x.id!==tid);
   if(activeTrackId===tid)activeTrackId=null;
   saveDB();
   const mk=document.getElementById('mainKmView');
@@ -2058,7 +2073,7 @@ function updateAddKmHint(){
 }
 function openAddKm(){
   // Байгаа гол замын тохиргоог өгөгдмөл болгоно
-  const mn=DB.tracks.filter(isMainTrack);
+  const mn=mainTracks();
   const last=mn[mn.length-1];
   _akMat=(last&&last.mat)||'tbd';
   _akFast=(last&&last.fast)||STATION_DEFAULT_FAST;
@@ -2074,16 +2089,16 @@ function addKm(){
   if(!r){showToast('Км-ээ зөв оруулна уу');return}
   const dup=[];
   for(let km=r.from;km<=r.to;km++)
-    if(DB.tracks.find(t=>isMainTrack(t)&&t.num===km))dup.push(km);
+    if(mainTracks().find(t=>t.num===km))dup.push(km);
   if(dup.length===r.count){showToast(`${dup.join(', ')}-р км аль хэдийн байна`);return}
   let added=0;
   for(let km=r.from;km<=r.to;km++){
     if(dup.indexOf(km)>=0)continue;
     const tr={id:uid(),num:km,kind:'main',note:'',sections:_mkUeSections(MAIN_UE_PER_KM),mat:_akMat};
     if(_akMat==='tbd')tr.fast=_akFast;
-    DB.tracks.push(tr);added++
+    mainTracks().push(tr);added++
   }
-  sortTracks();saveDB();closeModal('addKmModal');renderMainKmView();
+  sortMain();saveDB();closeModal('addKmModal');renderMainKmView();
   showToast(dup.length
     ?`${added} км нэмэгдлээ (${dup.length} км аль хэдийн байсан)`
     :`${added} км · ${added*MAIN_UE_PER_KM} үе нэмэгдлээ`)
@@ -2095,7 +2110,7 @@ function addKm(){
 // Идэвхтэй паспортын бүх зам/үеийг тойрч, сольсон гэж тэмдэглэсэн дэрүүдийг цуглуулна
 function collectRepl(){
   const out=[];
-  DB.tracks.forEach(t=>{
+  allTracks().forEach(t=>{
     const rows=[];
     (t.sections||[]).forEach(s=>{
       if(!s.repl)return;
@@ -2234,56 +2249,12 @@ function saveReportSettings(){
 // ══════════════════════════════════════════════
 // TRACKS
 // ══════════════════════════════════════════════
-// ── Зам нэмэх: төрөл / материал / бэхэлгээ сонгох ──
-let _atKind='station',_atMat='tbd',_atFast=STATION_DEFAULT_FAST;
-function pickTrackKind(k){
-  _atKind=k;hap(6);
-  document.getElementById('atKindStation').classList.toggle('selected',k==='station');
-  document.getElementById('atKindMain').classList.toggle('selected',k==='main');
-  document.getElementById('atMainBox').style.display=k==='main'?'block':'none';
-  // Гол замд дугаар байхгүй — км нь өөрөө нэр болно (681-р км)
-  document.getElementById('atNumBox').style.display=k==='main'?'none':'block'
-}
-function pickTrackMat(m){
-  _atMat=m;hap(6);
-  document.getElementById('atMatTbd').classList.toggle('selected',m==='tbd');
-  document.getElementById('atMatWood').classList.toggle('selected',m==='wood');
-  // Модон дэр бэхэлгээгүй
-  document.getElementById('atFastBox').style.display=m==='tbd'?'block':'none'
-}
-function pickTrackFast(f){
-  _atFast=f;hap(6);
-  document.querySelectorAll('#atFastGrid .fast-btn').forEach(b=>
-    b.classList.toggle('selected',b.dataset.f===f))
-}
-function _renderFastGrid(){
-  const g=document.getElementById('atFastGrid');if(!g)return;
-  g.innerHTML=FASTENINGS.map(f=>
-    `<button type="button" class="fast-btn${f===_atFast?' selected':''}" data-f="${f}" onclick="pickTrackFast('${f}')">${f}</button>`).join('')
-}
-// 681—701 = 21 км (хоёр үзүүрийг нь оруулж тоолно)
-function _kmRange(){
-  const a=parseInt(document.getElementById('atKmFrom').value,10);
-  const b=parseInt(document.getElementById('atKmTo').value,10);
-  if(isNaN(a))return null;
-  const to=isNaN(b)?a:b;
-  if(to<a)return null;
-  return{from:a,to,count:to-a+1}
-}
-function updateKmHint(){
-  const r=_kmRange();
-  const el=document.getElementById('atKmHint');
-  if(!r){el.textContent='Жишээ: 681—701 = 21 км';return}
-  el.textContent=`${r.from}—${r.to} = ${r.count} км · тус бүр ${MAIN_UE_PER_KM} үе (нийт ${r.count*MAIN_UE_PER_KM} үе)`
-}
+// ── Зам нэмэх: паспортод зөвхөн ӨРТӨӨНИЙ зам нэмнэ.
+//    Гол замын км-ийг нүүр хуудасны "Гол зам" → "Км нэмэх"-ээс нэмнэ.
 
 function openAddTrack(){
   document.getElementById('atNum').value='';
   document.getElementById('atNote').value='';
-  document.getElementById('atKmFrom').value='';
-  document.getElementById('atKmTo').value='';
-  _atKind='station';_atMat='tbd';_atFast=STATION_DEFAULT_FAST;
-  pickTrackKind('station');pickTrackMat('tbd');_renderFastGrid();updateKmHint();
   openModal('addTrackModal')
 }
 // "12-р үе · нэмэлт" → 12. Дугааргүй бол Infinity (эцэст нь очно)
@@ -2337,30 +2308,7 @@ function _mkUeSections(n){
 }
 function addTrack(){
   const note=document.getElementById('atNote').value.trim();
-
-  // ── ГОЛ ЗАМ: дугааргүй. Км муж дахь км тус бүр нэг бичлэг болно (681-р км) ──
-  if(_atKind==='main'){
-    const r=_kmRange();
-    if(!r){showToast('Км-ийн эхлэл, төгсгөлийг зөв оруулна уу');return}
-    const dup=[];
-    for(let km=r.from;km<=r.to;km++)
-      if(DB.tracks.find(t=>isMainTrack(t)&&t.num===km))dup.push(km);
-    if(dup.length===r.count){showToast(`${dup.join(', ')}-р км аль хэдийн байна`);return}
-    let added=0;
-    for(let km=r.from;km<=r.to;km++){
-      if(dup.indexOf(km)>=0)continue;
-      const tr={id:uid(),num:km,kind:'main',note,sections:_mkUeSections(MAIN_UE_PER_KM),mat:_atMat};
-      if(_atMat==='tbd')tr.fast=_atFast;
-      DB.tracks.push(tr);added++
-    }
-    sortTracks();saveDB();closeModal('addTrackModal');renderHome();
-    showToast(dup.length
-      ?`${added} км нэмэгдлээ (${dup.length} км аль хэдийн байсан)`
-      :`${added} км · ${added*MAIN_UE_PER_KM} үе үүслээ`);
-    return
-  }
-
-  // ── ӨРТӨӨНИЙ ЗАМ: өмнөх шигээ дугаартай ──
+  // Гол зам нь паспортад биш, тусдаа байрладаг тул энд зөвхөн өртөөний зам
   const num=parseInt(document.getElementById('atNum').value);
   if(!num){showToast('Замын дугаар оруулна уу');return}
   if(DB.tracks.find(t=>!isMainTrack(t)&&t.num===num)){showToast(`${num}-р зам аль хэдийн байна`);return}
@@ -2368,18 +2316,16 @@ function addTrack(){
   DB.tracks.push(newTrack);
   sortTracks();saveDB();closeModal('addTrackModal');renderHome()
 }
-// Өртөөний зам эхэлж, дараа нь гол зам — тус бүр дугаараар нь
-function sortTracks(){
-  DB.tracks.sort((a,b)=>{
-    const ka=isMainTrack(a)?1:0,kb=isMainTrack(b)?1:0;
-    return ka!==kb?ka-kb:a.num-b.num
-  })
-}
+function sortTracks(){DB.tracks.sort((a,b)=>a.num-b.num)}
 function openTrack(id){activeTrackId=id;showView('trackView');renderTrackView()}
 async function deleteTrack(){
   const t=activeTrack();if(!t)return;
   if(!await appConfirm(`${trackLabelAcc(t)} устгах уу? Бүх өгөгдөл устана.`))return;
-  DB.tracks=DB.tracks.filter(x=>x.id!==activeTrackId);saveDB();goHome()
+  const main=isMainTrack(t);
+  if(main)DB.main=mainTracks().filter(x=>x.id!==activeTrackId);
+  else DB.tracks=DB.tracks.filter(x=>x.id!==activeTrackId);
+  activeTrackId=null;saveDB();
+  if(main)openMainKmList();else goHome()
 }
 
 // ══════════════════════════════════════════════
@@ -3644,7 +3590,8 @@ function showSectionSummary(){
 function showSummaryAll(){
   summaryBack='home';document.getElementById('sumTitle').textContent=`${DB.location} — Нийт`;
   let html='',gT=0,gB=0;
-  DB.tracks.forEach(t=>{
+  const _all=allTracks();
+  _all.forEach(t=>{
     const a=analyzeTrack(t);gT+=a.total;gB+=a.totalBad;
     const pCol=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
     html+=`<div class="sum-block">
@@ -3665,7 +3612,7 @@ function showSummaryAll(){
       <div class="sum-tot"><div class="sum-tot-n">${gT}</div><div class="sum-tot-l">Нийт дэр</div></div>
       <div class="sum-tot"><div class="sum-tot-n" style="color:var(--red)">${gB}</div><div class="sum-tot-l">Тэнцэхгүй</div></div>
       <div class="sum-tot"><div class="sum-tot-n" style="color:${gp>=25?'var(--red)':'var(--g600)'}">${gp.toFixed(1)}%</div><div class="sum-tot-l">Хувь</div></div>
-      <div class="sum-tot"><div class="sum-tot-n">${DB.tracks.length}</div><div class="sum-tot-l">Замын тоо</div></div>
+      <div class="sum-tot"><div class="sum-tot-n">${_all.length}</div><div class="sum-tot-l">Замын тоо</div></div>
     </div>
   </div>`+html;
   html+=`<div class="sum-block"><div class="sum-block-title">Экспорт</div>
@@ -3674,7 +3621,7 @@ function showSummaryAll(){
       <button class="exp-btn exp-csv" onclick="exportAllCSV()">${ic("download",16)} CSV</button>
     </div></div>`;
   let consecAll='';
-  DB.tracks.forEach(t=>{
+  _all.forEach(t=>{
     const grps=findConsecutiveBadForTrack(t.sections);
     if(grps.length>0)consecAll+=consecAnalysisHTML(t.sections,trackLabel(t))
   });
@@ -3783,9 +3730,10 @@ function exportTrackCSV(tid){
 }
 function exportAllCSV(){
   const rows=[['Байршил','Зам №','Үе','Нийт','Хэвийн','Тэнцэхгүй','ТБД','Тэнцэхгүй ТБД','%']];
-  DB.tracks.forEach(t=>{
-    dataSections(t).forEach(s=>{const a=analyzeSection(s);rows.push([DB.location,t.num+'-р зам',s.label,a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—'])});
-    const a=analyzeTrack(t);rows.push([DB.location,t.num+'-р зам','— НИЙТ —',a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—']);rows.push([])
+  allTracks().forEach(t=>{
+    const lbl=trackLabel(t);
+    dataSections(t).forEach(s=>{const a=analyzeSection(s);rows.push([DB.location,lbl,s.label,a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—'])});
+    const a=analyzeTrack(t);rows.push([DB.location,lbl,'— НИЙТ —',a.total,a.normal,a.bad,a.tbd,a.bad_tbd,a.total?a.pct.toFixed(1)+'%':'—']);rows.push([])
   });
   dl(`${DB.location}_niit.csv`,rows)
 }
@@ -3845,7 +3793,7 @@ function renderThreshPreview(){
   updateRangeBtns(mn,mx===Infinity?'':mx);
   const container=document.getElementById('threshPreview');
   const rows=[];
-  const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):DB.tracks;
+  const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):allTracks();
   tracks.forEach(t=>{dataSections(t).forEach(s=>{const a=analyzeSection(s);if(a.pct>=mn&&a.pct<=mx)rows.push({t,s,a})})});
   const lbl=mx===Infinity?`${mn}%+`:`${mn}–${mx}%`;
   if(!rows.length){container.innerHTML=`<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">${lbl} тэнцэхгүй үе олдсонгүй</div>`;return}
@@ -3892,7 +3840,7 @@ async function exportColoredExcel(){
   function pFont(pct){if(pct>=50)return{bold:true,color:{argb:'FF5A1010'},name:'Arial',size:10};if(pct>=35)return{bold:true,color:{argb:'FF8B1F1F'},name:'Arial',size:10};if(pct>=25)return{bold:true,color:{argb:'FF8A5009'},name:'Arial',size:10};return{bold:true,color:{argb:'FF0D6E46'},name:'Arial',size:10}}
   function bdr(cell){cell.border={top:{style:'thin',color:C.border},bottom:{style:'thin',color:C.border},left:{style:'thin',color:C.border},right:{style:'thin',color:C.border}}}
 
-  const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):DB.tracks;
+  const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):allTracks();
   const hdrs=['Зам №','Үе / Холбох','Нийт','Модон эпюр','Хэвийн','Тэнцэхгүй','ТБД','Тэнцэхгүй ТБД','Нийт тэнцэхгүй','Хувь %'];
 
   function makeSheet(wb,name,rows,showTitle){
@@ -4494,8 +4442,7 @@ function renderFolders(){
   }
   grid.innerHTML=DB.folders.map(f=>{
     const isActive=f.id===activeFolderId;
-    const fc=trackCounts(f.tracks);
-    const tCount=`${fc.st} зам${fc.km?' · '+fc.km+' км':''}`;
+    const tCount=`${trackCounts(f.tracks).st} зам`;
     const totalSecs=f.tracks.reduce((s,t)=>s+dataSections(t).length,0);
     return`<div class="folder-card${isActive?' active-folder':''}" onclick="hap();openFolder('${f.id}')">
       <div class="folder-icon">${isActive
@@ -5198,7 +5145,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·46';
+const APP_BUILD='2026.08.24·47';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
