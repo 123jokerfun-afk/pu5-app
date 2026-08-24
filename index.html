@@ -1840,7 +1840,7 @@ function goHome(){
 function backFromTrack(){
   isMainTrack(activeTrack())?openMainKmList():goHome()
 }
-function goTrack(){
+function goTrack(){_fromConsec=false;
   _navBack=true;
   showView('trackView');renderTrackView()
 }
@@ -2343,6 +2343,9 @@ function setConsecFilter(f){_consecFilter=f;hap(6);renderConsecReport()}
 function openConsecReport(){_consecFilter='all';renderConsecReport();openModal('consecReportModal')}
 // Дараалсан цэг дээр дарахад тэр зам → үе рүү орж, ЭХНИЙ тэнцэхгүй дэр
 // дээр тааруулна
+// "Дараалсан цэг"-ээс үсэрч ирсэн эсэх. Буцах товч дарахад жагсаалт руугаа
+// эргэж очно (үеийн жагсаалт руу биш).
+let _fromConsec=false;
 function jumpToConsec(trackId,secId,pos){
   hap(8);
   closeModal('consecReportModal');
@@ -2351,7 +2354,13 @@ function jumpToConsec(trackId,secId,pos){
   const sec=(t.sections||[]).find(s=>s.id===secId);
   if(!sec){showToast('Тухайн үе олдсонгүй');return}
   openSection(secId,Math.max(0,pos-1));
+  _fromConsec=true;                     // openTrack/openSection-ий дараа тавина
   showToast(`${trackLabel(t)} · ${sec.label} · #${pos}`,2200)
+}
+// Жагсаалт руу нь эргэж очно — шүүлтүүрийг нь хэвээр хадгална
+function backToConsec(){
+  _fromConsec=false;
+  goHome();renderConsecReport();openModal('consecReportModal')
 }
 function renderConsecReport(){
   const data=collectConsec();
@@ -2554,7 +2563,7 @@ function addTrack(){
   sortTracks();saveDB();closeModal('addTrackModal');renderHome()
 }
 function sortTracks(){DB.tracks.sort((a,b)=>a.num-b.num)}
-function openTrack(id){activeTrackId=id;showView('trackView');renderTrackView()}
+function openTrack(id){_fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView()}
 async function deleteTrack(){
   const t=activeTrack();if(!t)return;
   if(!await appConfirm(`${trackLabelAcc(t)} устгах уу? Бүх өгөгдөл устана.`))return;
@@ -5461,7 +5470,10 @@ function _appBack(){
   const av=document.querySelector('.view.active');
   if(!av)return false;
   switch(av.id){
-    case 'recordView':goTrack();return true;
+    case 'recordView':
+      // "Дараалсан цэг"-ээс үсэрч ирсэн бол жагсаалт руугаа буцна
+      if(_fromConsec){backToConsec();return true}
+      goTrack();return true;
     case 'trackView':backFromTrack();return true;
     case 'mainKmView':goHome();return true;
     case 'summaryView':backFromSummary();return true;
@@ -5482,7 +5494,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·58';
+const APP_BUILD='2026.08.24·59';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
