@@ -1340,6 +1340,8 @@ function _unpackDB(db){
   });
   (db.folders||[]).forEach(f=>(f.tracks||[]).forEach(walk));
   (db.tracks||[]).forEach(walk);
+  if(!Array.isArray(db.main))db.main=[];
+  db.main.forEach(walk);          // гол зам — паспортаас тусдаа тул тусад нь задална
   return db
 }
 let _currentUser=null,_sectionCode=null,_isAdmin=false;
@@ -1369,7 +1371,7 @@ function _initFB(){
 // ══════════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════════
-let DB={location:'ПУ-5',tracks:[],v:3,folders:[],
+let DB={location:'ПУ-5',tracks:[],v:3,folders:[],main:[],
   rpt:{cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:new Date().getFullYear()+'',date:new Date().toISOString().slice(0,10)}
 };
 let activeTrackId=null,activeSectionId=null,summaryBack='home',pendingSecType='normal';
@@ -1514,20 +1516,54 @@ function mainTracks(){if(!Array.isArray(DB.main))DB.main=[];return DB.main}
 function sortMain(){mainTracks().sort((a,b)=>a.num-b.num)}
 // Өртөөний зам (идэвхтэй паспорт) + гол зам — тайлан, экспортод хоёуланг нь
 function allTracks(){return (DB.tracks||[]).concat(mainTracks())}
+// Хэсэг бүрийн өгөгдөл ӨӨРИЙН хаяг дээрээ хадгалагдана:
+//   үүлэнд  sections/<хэсгийн код>
+//   утсанд  sg_der_v3_<хэсгийн код>
+// Нэг утсанд хоёр өөр хэсэг нэвтэрсэн ч өгөгдөл нь холилдохгүй.
+function _lsKey(){return _sectionCode?'sg_der_v3_'+_sectionCode:'sg_der_v3'}
+function _lsRead(){
+  try{
+    const s=localStorage.getItem(_lsKey());
+    if(s)return JSON.parse(s);
+    // Энэ өөрчлөлтөөс өмнөх нэгдсэн түлхүүр. ӨӨР хэсгийнх бол авахгүй.
+    const old=localStorage.getItem('sg_der_v3');
+    if(!old)return null;
+    const d=JSON.parse(old);
+    if(d&&d._sc&&_sectionCode&&d._sc!==_sectionCode)return null;
+    // Энэ хэсэг хуучин өгөгдлийг өвлөж авлаа гэж тэмдэглэнэ — цаашид өөр
+    // хэсэг нэвтэрвэл энэ өгөгдлийг авахгүй
+    if(d&&!d._sc&&_sectionCode){
+      d._sc=_sectionCode;
+      try{localStorage.setItem('sg_der_v3',JSON.stringify(d))}catch(e2){}
+    }
+    if(d)delete d._sc;
+    return d
+  }catch(e){return null}
+}
+function _lsWrite(packed){
+  try{
+    if(_sectionCode)packed._sc=_sectionCode;
+    localStorage.setItem(_lsKey(),JSON.stringify(packed));
+    // Нэвтэрсэн үед хуучин нэгдсэн түлхүүрт бичихээ болино —
+    // эс тэгвэл өөр хэсгийн өгөгдлийг дарж бичих эрсдэлтэй
+    if(!_sectionCode)localStorage.setItem('sg_der_v3',JSON.stringify(packed))
+  }catch(e){}
+}
 function loadDB(){
   if(!fbDb||!_sectionCode){
-    try{const s=localStorage.getItem('sg_der_v3');if(s)DB=_unpackDB(JSON.parse(s))}catch(e){}
+    const d=_lsRead();if(d)DB=_unpackDB(d);
     _migrateDB();return
   }
 }
 function _dbHasData(d){
-  try{return (d.folders||[]).some(function(f){return (f.tracks||[]).length>0})||((d.tracks||[]).length>0)}
+  try{return (d.folders||[]).some(function(f){return (f.tracks||[]).length>0})
+    ||((d.tracks||[]).length>0)||((d.main||[]).length>0)}
   catch(e){return false}
 }
 function saveDB(){
   if(activeFolderId){const f=DB.folders.find(x=>x.id===activeFolderId);if(f)f.tracks=DB.tracks}
   const packed=_packDB(DB);
-  try{localStorage.setItem('sg_der_v3',JSON.stringify(packed))}catch(e){}
+  _lsWrite(packed);
   if(!fbDb||!_sectionCode)return;
   if(!_cloudLoaded){console.warn('Үүлнээс уншаагүй тул бичихгүй');return}
   if(_cloudHadData&&!_dbHasData(DB)){
@@ -4762,7 +4798,7 @@ async function _afterLoginInner(){
     }
   }catch(e){
     console.error('Firestore read err:',e);
-    try{const s=localStorage.getItem('sg_der_v3');if(s)DB=_unpackDB(JSON.parse(s))}catch(e2){}
+    try{const d=_lsRead();if(d)DB=_unpackDB(d)}catch(e2){}
     _errBanner('Дахин холбогдож байна...','Автоматаар оролдож байна');
     _scheduleAutoLoad();
   }
@@ -4789,12 +4825,15 @@ async function _checkLocalImport(){
     const localDB=_unpackDB(JSON.parse(s));
     const localFolders=(localDB.folders||[]).length;
     const localTracks=(localDB.tracks||[]).length;
-    console.log('Import: олдлоо -',localFolders,'folder,',localTracks,'tracks');
-    if(!localFolders&&!localTracks)return;
+    const localMain=(localDB.main||[]).length;
+    console.log('Import: олдлоо -',localFolders,'folder,',localTracks,'tracks,',localMain,'км');
+    if(!localFolders&&!localTracks&&!localMain)return;
     // Аль хэдийн үүлэнд ИЖИЛ хэмжээний өгөгдөл байвал асуухгүй
-    const cloudSecs=(DB.folders||[]).reduce((s,f)=>s+(f.tracks||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0),0);
+    const cloudSecs=(DB.folders||[]).reduce((s,f)=>s+(f.tracks||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0),0)
+      +(DB.main||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0);
     const localSecs=(localDB.folders||[]).reduce((s,f)=>s+(f.tracks||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0),0)
-      +(localDB.tracks||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0);
+      +(localDB.tracks||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0)
+      +(localDB.main||[]).reduce((s2,t)=>s2+(t.sections||[]).length,0);
     console.log('Import: cloud үе:',cloudSecs,'local үе:',localSecs);
     if(cloudSecs>=localSecs&&cloudSecs>0){console.log('Import: үүлэнд аль хэдийн байна');return}
     let stats=localFolders?(localFolders+' паспорт, '+localSecs+' үе'):(localTracks+' зам, '+localSecs+' үе');
@@ -4821,10 +4860,12 @@ async function manualLocalImport(){
     const localDB=_unpackDB(JSON.parse(s));
     const lf=(localDB.folders||[]).length;
     const lt=(localDB.tracks||[]).length;
+    const lm=(localDB.main||[]).length;
     const lsecs=(localDB.folders||[]).reduce((a,f)=>a+(f.tracks||[]).reduce((a2,t)=>a2+(t.sections||[]).length,0),0)
-      +(localDB.tracks||[]).reduce((a2,t)=>a2+(t.sections||[]).length,0);
-    if(!lf&&!lt){showToast('❌ Өгөгдөл хоосон байна');return}
-    if(await appConfirm('📥 Олдлоо: '+(lf||lt)+' '+(lf?'паспорт':'зам')+', '+lsecs+' үе.\n\n'+_sectionCode+' руу импортлох уу?')){
+      +(localDB.tracks||[]).reduce((a2,t)=>a2+(t.sections||[]).length,0)
+      +(localDB.main||[]).reduce((a2,t)=>a2+(t.sections||[]).length,0);
+    if(!lf&&!lt&&!lm){showToast('❌ Өгөгдөл хоосон байна');return}
+    if(await appConfirm('📥 Олдлоо: '+(lf||lt||lm)+' '+(lf?'паспорт':lt?'зам':'км')+', '+lsecs+' үе.\n\n'+_sectionCode+' руу импортлох уу?')){
       _importLocalData(localDB)
     }
   }catch(e){showToast('Алдаа: '+e.message)}
@@ -4840,6 +4881,13 @@ function _importLocalData(localDB){
       const sea=(localDB.rpt&&localDB.rpt.season)||'хавар';
       DB.folders.push({id:'f-'+Date.now(),name:sea.charAt(0).toUpperCase()+sea.slice(1)+' '+yr+' паспорт (утаснаас)',season:sea,year:yr,date:new Date().toISOString().slice(0,10),tracks:localDB.tracks});
     }
+    // Гол замын км — дугаараар давхардвал бүртгэл ихтэйг нь үлдээнэ
+    (localDB.main||[]).forEach(t=>{
+      const ex=mainTracks().find(x=>x.num===t.num);
+      if(!ex){mainTracks().push(t);return}
+      if(_trackFill(t)>_trackFill(ex))DB.main[DB.main.indexOf(ex)]=t
+    });
+    sortMain();
     // rpt тохиргоо шилжүүлэх
     if(localDB.rpt&&!DB.rpt.secName)DB.rpt=localDB.rpt;
     if(localDB.location)DB.location=localDB.location;
@@ -4855,7 +4903,7 @@ function doLogout(){
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
   if(fbAuth)fbAuth.signOut().catch(()=>{});
   _currentUser=null;_sectionCode=null;_isAdmin=false;
-  activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],rpt:{}};
+  activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
   showView('loginView')
 }
 
@@ -4874,6 +4922,7 @@ function startRealtimeSync(){
       const _r=_unpackDB(remote);
       if(_cloudHadData&&!_dbHasData(_r))return;   // хоосон шинэчлэлт үл тоомсорлоно
       DB=_r;
+      _migrateDB();   // өөр төхөөрөмжөөс паспорт дотор ирсэн км-ийг гол зам руу гаргана
       if(_dbHasData(DB)){_cloudHadData=true;_cloudLoaded=true;_autoTry=0;clearTimeout(_autoTimer);
         const _eb2=document.getElementById('errBanner');if(_eb2)_eb2.remove()}
       if(!DB.folders)DB.folders=[];
@@ -5208,7 +5257,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·48';
+const APP_BUILD='2026.08.24·49';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
