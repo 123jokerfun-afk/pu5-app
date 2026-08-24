@@ -517,9 +517,9 @@ button{font-family:inherit}
 /* Icon */
 .ic{display:inline-block;vertical-align:-2px;flex-shrink:0}
 /* ── Зам төрөл / бэхэлгээ сонгох ── */
-.kind-btn,.mat-btn,.fast-btn{padding:12px 8px;border-radius:var(--rm);border:2px solid var(--border);
+.kind-btn,.mat-btn,.fast-btn,.adj-btn{padding:12px 8px;border-radius:var(--rm);border:2px solid var(--border);
   background:var(--bg);font-size:13px;font-weight:800;color:var(--ink2);cursor:pointer;transition:all .12s}
-.kind-btn.selected,.mat-btn.selected,.fast-btn.selected{
+.kind-btn.selected,.mat-btn.selected,.fast-btn.selected,.adj-btn.selected{
   background:var(--blue-bg);border-color:var(--blue-mid);color:var(--blue)}
 .fast-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fast-btn{padding:11px 6px;font-size:12px}
@@ -1654,7 +1654,7 @@ function goTrack(){
   _navBack=true;
   showView('trackView');renderTrackView()
 }
-function closeModal(id){document.getElementById(id).classList.remove('open')}
+function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open')}
 function openModal(id){hap(6);document.getElementById(id).classList.add('open')}
 function showToast(msg,dur=2000){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
 function appConfirm(msg,okLabel='Тийм'){
@@ -2141,15 +2141,29 @@ function secNum(label){
   return m?parseInt(m[1],10):Infinity
 }
 // Үеийг дугаараар нь эрэмбэлнэ. Холбох хэсэг үргэлж эцэст.
+// Эрэмбийн түлхүүр. "25—26 хооронд" гэж заасан холбох хэсэг 25.5 болж
+// 25-р үеийн ард, 26-р үеийн өмнө орно. Заагаагүй бол эцэст нь.
+function secSortKey(s){
+  if(s.type==='connecting')return (s.btw&&s.btw.a!=null)?s.btw.a+0.5:1e9;
+  return secNum(s.label)
+}
 function sortSections(t){
   if(!t||!Array.isArray(t.sections))return;
   t.sections.sort((a,b)=>{
-    const ca=a.type==='connecting'?1:0,cb=b.type==='connecting'?1:0;
-    if(ca!==cb)return ca-cb;
-    const na=secNum(a.label),nb=secNum(b.label);
-    if(na!==nb)return na-nb;
+    const ka=secSortKey(a),kb=secSortKey(b);
+    if(ka!==kb)return ka-kb;
     return String(a.label).localeCompare(String(b.label),'mn')
   })
+}
+// Хоёр зэргэлдээ хэсгийн ЗААГ дээр дэр үргэлжилж байгаа эсэх.
+// Холбох хэсэг зөвхөн заасан талдаа залгаа — эс тэгвэл дараалсан
+// тэнцэхгүй дэрийг буруугаар үе дамнуулан холбож тоолно.
+// adj заагаагүй хуучин өгөгдөлд урьдын адил үргэлжилсэн гэж үзнэ.
+function boundaryContinuous(prev,next){
+  if(!prev||!next)return false;
+  if(prev.type==='connecting'&&prev.adj)return prev.adj==='both'||prev.adj==='b';
+  if(next.type==='connecting'&&next.adj)return next.adj==='both'||next.adj==='a';
+  return true
 }
 function _mkUeSections(n){
   const d=new Date().toLocaleDateString('mn-MN'),out=[];
@@ -2223,13 +2237,20 @@ function renderTrackView(){
     <div class="ov-cell" style="background:var(--red-bg);border-color:#F5A0A0"><div class="ov-n" style="color:var(--red)">${a.tbd+a.bad_tbd}</div><div class="ov-l">ТБД нийт</div></div>`;
   const body=document.getElementById('trackBody');
   if(!t.sections.length){body.innerHTML='<div class="log-empty"><span class="log-empty-icon">${ic("clipboard",34)}</span>Үе нэмэх товч дарна уу</div>';return}
-  const normal=t.sections.filter(s=>s.type!=='connecting');
-  const conn=t.sections.filter(s=>s.type==='connecting');
   let html='';
-  if(normal.length){html+=`<div class="sec-lbl" style="margin-top:4px">Үенүүд</div><div class="stagger">`+normal.map(s=>sectionCard(s,t)).join('')+`</div>`}
-  if(conn.length){
-    html+=`<div class="sec-lbl" style="margin-top:16px">Холбох хэсгүүд <span style="font-size:10px;color:var(--ink4);font-weight:600;text-transform:none">(${trackLabel(t)} тооцоонд нэмэгдэнэ)</span></div>`;
-    html+=`<div class="stagger">`+conn.map(s=>sectionCard(s,t)).join('')+`</div>`
+  if(isMainTrack(t)){
+    // Гол замд холбох хэсэг заасан үеийнхээ дунд орж, нэг жагсаалтаар харагдана
+    // (25-р үе → 1-3-р сумын холбох → 26-р үе)
+    html+=`<div class="sec-lbl" style="margin-top:4px">Үенүүд</div><div class="stagger">`+
+      t.sections.map(s=>sectionCard(s,t)).join('')+`</div>`
+  } else {
+    const normal=t.sections.filter(s=>s.type!=='connecting');
+    const conn=t.sections.filter(s=>s.type==='connecting');
+    if(normal.length){html+=`<div class="sec-lbl" style="margin-top:4px">Үенүүд</div><div class="stagger">`+normal.map(s=>sectionCard(s,t)).join('')+`</div>`}
+    if(conn.length){
+      html+=`<div class="sec-lbl" style="margin-top:16px">Холбох хэсгүүд <span style="font-size:10px;color:var(--ink4);font-weight:600;text-transform:none">(${trackLabel(t)} тооцоонд нэмэгдэнэ)</span></div>`;
+      html+=`<div class="stagger">`+conn.map(s=>sectionCard(s,t)).join('')+`</div>`
+    }
   }
   body.innerHTML=html
 }
@@ -2255,6 +2276,7 @@ function sectionCard(s,t){
       <div style="display:flex;align-items:center;gap:7px;flex-shrink:0">
         <button class="sec-edit-btn" onclick="event.stopPropagation();hap();openVerifModal('${s.id}')" style="color:var(--g600);border-color:var(--g400)"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 12.5l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Шалгах</button>
         <span class="sec-badge ${isConn?'sec-badge-connecting':'sec-badge-normal'}">${isConn?'холбох':'үе'}</span>
+        ${isConn&&s.btw?`<span class="sec-badge" style="background:var(--blue-bg);color:var(--blue)">${s.btw.a}—${s.btw.b} хооронд${s.adj?' · залгаа: '+(s.adj==='both'?'хоёул':s.adj==='a'?s.btw.a:s.btw.b):''}</span>`:''}
         <button class="sec-card-del" onclick="event.stopPropagation();deleteSection('${t.id}','${s.id}')" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24" style="font-size:15px"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
       </div>
     </div>
@@ -2326,13 +2348,54 @@ async function clearOverride(){
 // ══════════════════════════════════════════════
 // ADD SECTION
 // ══════════════════════════════════════════════
+// Холбох хэсгийн залгаа тал: 'a' = өмнөх үе, 'b' = дараах үе
+let _asAdj={a:false,b:false};
+function toggleAdj(k){
+  _asAdj[k]=!_asAdj[k];hap(6);
+  document.getElementById('asAdj'+k.toUpperCase()).classList.toggle('selected',_asAdj[k]);
+  const h=document.getElementById('asAdjHint');
+  if(h)h.textContent=(_asAdj.a&&_asAdj.b)?'Хоёр талдаа залгаа — дэр дамжин үргэлжилнэ'
+    :(_asAdj.a||_asAdj.b)?'Нэг талдаа залгаа'
+    :'Аль нэгийг нь сонгоно уу'
+}
+function updateBtwHint(){
+  const a=parseInt(document.getElementById('asBtwA').value,10);
+  const b=parseInt(document.getElementById('asBtwB').value,10);
+  const h=document.getElementById('asBtwHint');
+  const la=document.getElementById('asAdjALbl'),lb=document.getElementById('asAdjBLbl');
+  if(la)la.textContent=isNaN(a)?'эхний үе':a+'-р үе';
+  if(lb)lb.textContent=isNaN(b)?'дараах үе':b+'-р үе';
+  if(!h)return;
+  h.textContent=(!isNaN(a)&&!isNaN(b))
+    ?`${a}-р үе → энэ холбох → ${b}-р үе гэж жагсана`
+    :'Жишээ: 25 — 26 гэвэл 25-р үеийн ард орно'
+}
 function openAddSection(type){
   pendingSecType=type;const t=activeTrack();if(!t)return;
+  _asAdj={a:false,b:false};
   const isConn=type==='connecting';
   document.getElementById('addSecTitle').textContent=isConn?'Холбох хэсэг нэмэх':'Үе нэмэх';
   const nextNum=t.sections.filter(s=>s.type!=='connecting').length+1;
+  const isMain=isMainTrack(t);
   document.getElementById('addSecContent').innerHTML=isConn?`
-    <div class="ff"><label>Холбох нэр / сумын дугаар</label><input type="text" id="asLabel" placeholder="жишээ: 3-5 сумын холбох"></div>
+    <div class="ff"><label>Холбох нэр / сумын дугаар</label><input type="text" id="asLabel" placeholder="жишээ: 1-3-р сумын холбох"></div>
+    ${isMain?`
+    <div class="ff"><label>Аль үе хооронд<span style="color:var(--red)"> *</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="asBtwA" placeholder="25" min="1" oninput="updateBtwHint()" style="flex:1">
+        <span style="font-weight:800;color:var(--ink4)">—</span>
+        <input type="number" id="asBtwB" placeholder="26" min="1" oninput="updateBtwHint()" style="flex:1">
+      </div>
+      <div id="asBtwHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:5px">Жишээ: 25 — 26 гэвэл 25-р үеийн ард орно</div>
+    </div>
+    <div class="ff"><label>Аль үетэй залгаа вэ<span style="color:var(--red)"> *</span></label>
+      <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:6px">Дэр нь тасралтгүй үргэлжилж байгаа талыг сонгоно. Үе дамнасан дараалсан тэнцэхгүй дэрийг үүгээр тооцно.</div>
+      <div class="edit-grid" style="margin:0">
+        <button type="button" class="etb adj-btn" id="asAdjA" onclick="toggleAdj('a')">← <span id="asAdjALbl">эхний үе</span></button>
+        <button type="button" class="etb adj-btn" id="asAdjB" onclick="toggleAdj('b')"><span id="asAdjBLbl">дараах үе</span> →</button>
+      </div>
+      <div id="asAdjHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:6px">Аль нэгийг нь сонгоно уу</div>
+    </div>`:''}
     <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="asNote" placeholder="..."></div>
     <div class="info-pill">ℹ Холбох хэсэг нь ${trackLabel(t)}-ын нийт тооцоонд автоматаар нэмэгдэнэ</div>`:`
     <div class="ff-row">
@@ -2345,10 +2408,21 @@ function openAddSection(type){
 function addSection(){
   const t=activeTrack();if(!t)return;
   let label,note='';
+  let btw=null,adj=null;
   if(pendingSecType==='connecting'){
     label=(document.getElementById('asLabel').value||'').trim();
     note=(document.getElementById('asNote').value||'').trim();
     if(!label){showToast('Нэр оруулна уу');return}
+    if(isMainTrack(t)){
+      // Гол замд аль үе хооронд байхыг ЗААВАЛ бөглөнө
+      const a=parseInt(document.getElementById('asBtwA').value,10);
+      const b=parseInt(document.getElementById('asBtwB').value,10);
+      if(isNaN(a)||isNaN(b)){showToast('Аль үе хооронд болохыг оруулна уу');return}
+      if(b<=a){showToast('Дараах үе нь эхнийхээсээ том байна');return}
+      if(!_asAdj.a&&!_asAdj.b){showToast('Аль үетэй залгааг сонгоно уу');return}
+      btw={a,b};
+      adj=(_asAdj.a&&_asAdj.b)?'both':(_asAdj.a?'a':'b')
+    }
   } else {
     const num=parseInt(document.getElementById('asNum').value)||1;
     const extra=(document.getElementById('asExtra').value||'').trim();
@@ -2356,6 +2430,7 @@ function addSection(){
     note=(document.getElementById('asNote').value||'').trim();
   }
   const sec={id:uid(),type:pendingSecType,label,note,sleepers:[],date:new Date().toLocaleDateString('mn-MN')};
+  if(btw){sec.btw=btw;sec.adj=adj}
   t.sections.push(sec);
   sortSections(t);            // устгасны дараа дахин нэмсэн үе байрандаа орно
   saveDB();closeModal('addSecModal');
@@ -3148,27 +3223,23 @@ function findConsecutiveBad(sec){
 // ★ ШИНЭ: Үе дамнасан дараалсан тэнцэхгүй дэр илрүүлэх
 // Жишээ: 1-р үеийн 46-р дэр + 2-р үеийн 1,2-р дэр = 3 дараалсан
 function findConsecutiveBadForTrack(sections){
-  const flat=[];
-  sections.forEach(sec=>{
+  const groups=[];let run=[];
+  function flush(){
+    if(run.length>=3){
+      const secIds=[...new Set(run.map(x=>x.secId))];
+      groups.push({items:[...run],len:run.length,crossSection:secIds.length>1})
+    }
+    run=[]
+  }
+  sections.forEach((sec,si)=>{
+    // Залгаагүй зааг дээр дараалал тасарна
+    if(si>0&&!boundaryContinuous(sections[si-1],sec))flush();
     sec.sleepers.forEach((sl,i)=>{
-      flat.push({type:sl.type,secId:sec.id,secLabel:sec.label,posInSec:i+1})
+      const item={type:sl.type,secId:sec.id,secLabel:sec.label,posInSec:i+1};
+      if(isBadSleeper(item.type))run.push(item);else flush()
     })
   });
-  const groups=[];let run=[];
-  flat.forEach(item=>{
-    if(isBadSleeper(item.type)){run.push(item)}
-    else{
-      if(run.length>=3){
-        const secIds=[...new Set(run.map(x=>x.secId))];
-        groups.push({items:[...run],len:run.length,crossSection:secIds.length>1})
-      }
-      run=[]
-    }
-  });
-  if(run.length>=3){
-    const secIds=[...new Set(run.map(x=>x.secId))];
-    groups.push({items:[...run],len:run.length,crossSection:secIds.length>1})
-  }
+  flush();
   return groups
 }
 
@@ -4857,7 +4928,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.23·42';
+const APP_BUILD='2026.08.24·43';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
