@@ -585,6 +585,11 @@ button{font-family:inherit}
 .repl-date{font-size:9px;padding:2px 5px;border-radius:5px;font-weight:800;flex-shrink:0;
   background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-variant-numeric:tabular-nums}
 /* Тайлангийн жагсаалт */
+.consec-summary.cs-4{grid-template-columns:repeat(4,1fr)}
+.cs-btn{cursor:pointer;font-family:inherit;transition:all .14s;position:relative}
+.cs-btn:active{transform:scale(.96)}
+.cs-btn.sel{box-shadow:0 0 0 2.5px var(--ink) inset;filter:saturate(1.15)}
+.cs-4 .cs-l{font-size:8.5px}
 .rp-month{margin-bottom:16px}
 .rp-month-hd{display:flex;justify-content:space-between;align-items:center;
   font-size:13px;font-weight:900;color:#fff;padding:9px 13px;border-radius:12px;
@@ -2330,24 +2335,41 @@ function openReplReport(){
   openModal('replReportModal')
 }
 // ── Дараалсан цэг (3 ба түүнээс дээш) ──
-function openConsecReport(){
+// Дээд талын нүднүүд нь шүүлтүүр: Нийт / 3 / 4 / 5+
+let _consecFilter='all';
+function setConsecFilter(f){_consecFilter=f;hap(6);renderConsecReport()}
+function openConsecReport(){_consecFilter='all';renderConsecReport();openModal('consecReportModal')}
+function renderConsecReport(){
   const data=collectConsec();
-  const body=document.getElementById('consecReportBody');
-  if(!data.length){
-    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">✓ Дараалсан цэг олдсонгүй</div>';
-    openModal('consecReportModal');return
-  }
-  let total=0,c3=0,c4=0,c5=0,html='';
+  const body=document.getElementById('consecReportBody');if(!body)return;
+  // Бүх цэгийн тоо (шүүлтүүрээс хамаарахгүй)
+  let a3=0,a4=0,a5=0,all=0;
+  data.forEach(t=>t.groups.forEach(g=>{
+    all++;if(g.len===3)a3++;else if(g.len===4)a4++;else a5++}));
+  const cell=(f,n,lbl,col,bg,bd)=>`<button type="button" class="cs-cell cs-btn${_consecFilter===f?' sel':''}"
+    style="background:${bg};border-color:${bd}" onclick="setConsecFilter('${f}')">
+      <div class="cs-n" style="color:${col}">${n}</div>
+      <div class="cs-l" style="color:${col}">${lbl}</div></button>`;
+  let html=`<div class="consec-summary cs-4" style="margin-bottom:12px">
+      ${cell('all',all,'Нийт','var(--ink)','var(--bg)','var(--border)')}
+      ${cell('3',a3,'3 дараалсан','var(--orange)','var(--orange-bg)','#F5C272')}
+      ${cell('4',a4,'4 дараалсан','var(--red)','var(--red-bg)','#F5A0A0')}
+      ${cell('5',a5,'5+ дараалсан','var(--dred)','var(--dred-bg)','#E0A0A0')}
+    </div>`;
+  // Шүүлтүүрээр нь сонгоно
+  const keep=g=>_consecFilter==='all'||(_consecFilter==='5'?g.len>=5:g.len===+_consecFilter);
+  let shown=0,rows='';
   data.forEach(t=>{
-    total+=t.groups.length;
-    html+=`<div class="rp-track"><div class="rp-track-hd">${t.name}</div>`;
-    t.groups.forEach(g=>{
-      if(g.len===3)c3++;else if(g.len===4)c4++;else c5++;
+    const gs=t.groups.filter(keep);
+    if(!gs.length)return;
+    shown+=gs.length;
+    rows+=`<div class="rp-track"><div class="rp-track-hd">${t.name}</div>`;
+    gs.forEach(g=>{
       const col=g.len>=5?'var(--dred)':g.len===4?'var(--red)':'var(--orange)';
       const bg=g.len>=5?'var(--dred-bg)':g.len===4?'var(--red-bg)':'var(--orange-bg)';
       const secs=[...new Set(g.items.map(i=>i.secLabel))];
       const first=g.items[0],last=g.items[g.items.length-1];
-      html+=`<div class="rp-row" style="align-items:flex-start">
+      rows+=`<div class="rp-row" style="align-items:flex-start">
         <span style="flex:1;min-width:0">
           <span style="font-weight:800;color:var(--ink2)">${secs.join(' → ')}</span>
           <span style="display:block;font-size:10px;color:var(--ink3);font-weight:700;margin-top:2px">
@@ -2356,22 +2378,13 @@ function openConsecReport(){
         <span class="repl-date" style="background:${bg};color:${col}">${g.len} дараалсан</span>
       </div>`
     });
-    html+=`<div class="rp-sub"><span>${t.name}</span><span>${t.groups.length} цэг</span></div></div>`
+    rows+=`<div class="rp-sub"><span>${t.name}</span><span>${gs.length} цэг</span></div></div>`
   });
-  html=`<div class="consec-summary" style="margin-bottom:12px">
-      <div class="cs-cell" style="background:var(--orange-bg);border-color:#F5C272">
-        <div class="cs-n" style="color:var(--orange)">${c3}</div>
-        <div class="cs-l" style="color:var(--orange)">3 дараалсан</div></div>
-      <div class="cs-cell" style="background:var(--red-bg);border-color:#F5A0A0">
-        <div class="cs-n" style="color:var(--red)">${c4}</div>
-        <div class="cs-l" style="color:var(--red)">4 дараалсан</div></div>
-      <div class="cs-cell" style="background:var(--dred-bg);border-color:#E0A0A0">
-        <div class="cs-n" style="color:var(--dred)">${c5}</div>
-        <div class="cs-l" style="color:var(--dred)">5+ дараалсан</div></div>
-    </div>`+html+
-    `<div class="rp-total"><span>Бүх замын нийт</span><span>${total} цэг</span></div>`;
-  body.innerHTML=html;
-  openModal('consecReportModal')
+  const fl=_consecFilter==='all'?'Бүх':_consecFilter==='5'?'5+ дараалсан':_consecFilter+' дараалсан';
+  html+=rows||`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${
+    all?fl+' цэг олдсонгүй':'✓ Дараалсан цэг олдсонгүй'}</div>`;
+  if(shown)html+=`<div class="rp-total"><span>${_consecFilter==='all'?'Бүх замын нийт':fl}</span><span>${shown} цэг</span></div>`;
+  body.innerHTML=html
 }
 
 function editLocation(){document.getElementById('locInput').value=DB.location;openModal('locModal')}
@@ -5453,7 +5466,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·56';
+const APP_BUILD='2026.08.24·57';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
