@@ -590,6 +590,14 @@ button{font-family:inherit}
 .cs-btn:active{transform:scale(.96)}
 .cs-btn.sel{box-shadow:0 0 0 2.5px var(--ink) inset;filter:saturate(1.15)}
 .cs-4 .cs-l{font-size:8.5px}
+.rp-carve{background:var(--blue-bg);border-color:var(--blue-mid)!important}
+.rd-carve{background:var(--blue)!important;color:#fff!important}
+.mat-tag{font-size:9px;padding:2px 6px;border-radius:5px;font-weight:800;flex-shrink:0;
+  background:var(--bg);color:var(--ink3);border:1px solid var(--border)}
+.carve-btn{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;
+  padding:11px 14px;border-radius:var(--rm);color:#fff;
+  background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:var(--sh-sm)}
+.carve-btn:active{transform:scale(.985)}
 .rp-jump{cursor:pointer;transition:background .12s}
 .rp-jump:active{background:var(--bg)}
 .rp-month{margin-bottom:16px}
@@ -1074,6 +1082,19 @@ button{font-family:inherit}
 </div>
 
 <!-- СОЛИГДСОН ДЭР: тайлан -->
+<div class="overlay" id="carveReportModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--blue)">🔧 Сийлэгжилт</div>
+      <button onclick="closeModal('carveReportModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">
+      Дараалсан цэгийг таслахын тулд сольсон дэрүүд. Эдгээр нь "Солигдсон дэр" жагсаалтад ч цэнхэрээр орсон байна.
+    </div>
+    <div id="carveReportBody"></div>
+  </div></div>
+</div>
+
 <div class="overlay" id="consecReportModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1669,7 +1690,18 @@ function saveDB(){
 // Тиймээс үеийн түвшинд { дэрийн индекс: {d:'YYYY-MM-DD', t:'normal'|'tbd'} } гэж хадгална.
 // Энэ нь _packDB-д хөндөгдөхгүй тул шахалт хэвээрээ үлдэнэ.
 function getRepl(sec,idx){return sec&&sec.repl?sec.repl[idx]||null:null}
-function setReplAt(sec,idx,d,t){if(!sec.repl)sec.repl={};sec.repl[idx]={d,t}}
+// r = {d:огноо, t:шинэ төрөл, m:'wood'|'tbd' материал, s:1 бол СИЙЛЭГЖИЛТ
+//      (дараалсан цэг таслахын тулд сольсон)}
+function setReplAt(sec,idx,d,t,m,s){
+  if(!sec.repl)sec.repl={};
+  const r={d,t};
+  if(m)r.m=m;
+  if(s)r.s=1;
+  sec.repl[idx]=r
+}
+// Хуучин бүртгэлд материал байхгүй бол төрлөөс нь тааварлана
+function replMatOf(r){return (r&&r.m)||((r&&(r.t==='tbd'||r.t==='bad_tbd'))?'tbd':'wood')}
+function matLabel(m){return m==='tbd'?'ТБД':'Модон'}
 function clearReplAt(sec,idx){if(sec&&sec.repl)delete sec.repl[idx]}
 // Дэр устгахад дараагийн бүх индекс 1-ээр ухарна — тэмдэглэгээг мөн шилжүүлэхгүй бол
 // огноо өөр дэр дээр буруу харагдана
@@ -2247,7 +2279,8 @@ function collectRepl(){
       Object.keys(s.repl).forEach(k=>{
         const i=parseInt(k,10),r=s.repl[k];
         if(!r||!r.d)return;
-        rows.push({sec:s.label||'—',idx:i+1,date:r.d,type:r.t})
+        rows.push({sec:s.label||'—',idx:i+1,date:r.d,type:r.t,
+                   mat:replMatOf(r),carve:!!r.s})
       })
     });
     // Үе → дэрийн дугаараар эрэмбэлнэ
@@ -2322,10 +2355,12 @@ function openReplReport(){
       const rows=mo.tracks[tn];
       html+=`<div class="rp-track"><div class="rp-track-hd">${tn}</div>`;
       rows.forEach(r=>{
-        html+=`<div class="rp-row">
-          <span style="flex:1;font-weight:700;color:var(--ink2)">${r.sec}</span>
-          <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
-          <span class="repl-date">${fmtReplDate(r.date)}</span>
+        html+=`<div class="rp-row${r.carve?' rp-carve':''}">
+          <span style="flex:1;font-weight:700;color:${r.carve?'var(--blue)':'var(--ink2)'}">${
+            r.carve?'🔧 ':''}${r.sec}</span>
+          <span style="font-weight:800;color:${r.carve?'var(--blue)':'var(--ink)'};min-width:44px">#${r.idx}</span>
+          <span class="mat-tag">${matLabel(r.mat)}</span>
+          <span class="repl-date${r.carve?' rd-carve':''}">${fmtReplDate(r.date)}</span>
         </div>`
       });
       html+=`<div class="rp-sub"><span>${tn}</span><span>${rows.length} дэр</span></div></div>`
@@ -2333,8 +2368,60 @@ function openReplReport(){
     html+=`</div>`
   });
   html+=`<div class="rp-total"><span>Бүх сарын нийт</span><span>${total} дэр</span></div>`;
+  // Сийлэгжилт — дараалсан цэг таслахын тулд сольсон дэрүүд тусдаа цонхонд
+  const cv=collectCarve(),cn=cv.reduce((n,t)=>n+t.rows.length,0);
+  html=`<div class="carve-btn" onclick="hap();openCarveReport()">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:900">🔧 Сийлэгжилт</div>
+        <div style="font-size:11px;font-weight:700;opacity:.85;margin-top:2px">${
+          cn?cn+' дэр · дараалсан цэг таслахад сольсон':'Одоогоор алга'}</div>
+      </div>
+      <span style="font-weight:900;font-size:16px">›</span>
+    </div>`+html;
   body.innerHTML=html;
   openModal('replReportModal')
+}
+// ── СИЙЛЭГЖИЛТ: дараалсан цэгийг таслахын тулд сольсон дэрүүд ──
+function collectCarve(){
+  return collectRepl().map(t=>({name:t.name,num:t.num,
+    rows:t.rows.filter(r=>r.carve)})).filter(t=>t.rows.length)
+}
+function openCarveReport(){
+  const data=collectCarve();
+  const body=document.getElementById('carveReportBody');
+  if(!data.length){
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Сийлэгжилт хийгээгүй байна.<br><span style="font-size:11px">Дараалсан цэгийн дэрийг сольж тэмдэглэвэл энд бүртгэгдэнэ.</span></div>';
+    openModal('carveReportModal');return
+  }
+  let total=0,wood=0,tbd=0,html='';
+  data.forEach(t=>{
+    total+=t.rows.length;
+    html+=`<div class="rp-track"><div class="rp-track-hd" style="background:var(--blue-bg);color:var(--blue)">${t.name}</div>`;
+    t.rows.forEach(r=>{
+      if(r.mat==='tbd')tbd++;else wood++;
+      html+=`<div class="rp-row rp-carve">
+        <span style="flex:1;font-weight:700;color:var(--blue)">${r.sec}</span>
+        <span style="font-weight:800;color:var(--blue);min-width:44px">#${r.idx}</span>
+        <span class="mat-tag">${matLabel(r.mat)}</span>
+        <span class="repl-date rd-carve">${fmtReplDate(r.date)}</span>
+      </div>`
+    });
+    html+=`<div class="rp-sub" style="background:var(--blue-bg);color:var(--blue)"><span>${t.name}</span><span>${t.rows.length} дэр</span></div></div>`
+  });
+  html=`<div class="consec-summary" style="margin-bottom:12px">
+      <div class="cs-cell" style="background:var(--blue-bg);border-color:var(--blue-mid)">
+        <div class="cs-n" style="color:var(--blue)">${total}</div>
+        <div class="cs-l" style="color:var(--blue)">Нийт</div></div>
+      <div class="cs-cell" style="background:var(--g100);border-color:var(--g300)">
+        <div class="cs-n" style="color:var(--g700)">${wood}</div>
+        <div class="cs-l" style="color:var(--g700)">Модон</div></div>
+      <div class="cs-cell" style="background:var(--red-bg);border-color:#F5A0A0">
+        <div class="cs-n" style="color:var(--red)">${tbd}</div>
+        <div class="cs-l" style="color:var(--red)">ТБД</div></div>
+    </div>`+html+
+    `<div class="rp-total" style="background:linear-gradient(135deg,var(--blue),var(--blue-mid))"><span>Бүх замын нийт</span><span>${total} дэр</span></div>`;
+  body.innerHTML=html;
+  openModal('carveReportModal')
 }
 // ── Дараалсан цэг (3 ба түүнээс дээш) ──
 // Дээд талын нүднүүд нь шүүлтүүр: Нийт / 3 / 4 / 5+
@@ -3427,19 +3514,31 @@ function openReplModal(){
     }
   },40)
 }
+// Энэ дэр 3 ба түүнээс дээш дараалсан цэгийн дотор байгаа эсэх
+function inConsecRun(t,sec,idx){
+  if(!t||!sec)return false;
+  return findConsecutiveBadForTrack(t.sections||[]).some(g=>
+    g.items.some(it=>it.secId===sec.id&&it.posInSec===idx+1))
+}
 function saveRepl(newType){
   const sec=activeSec();if(!sec||editIdx<0)return;
+  const t=activeTrack();
   const p=n=>(n<10?'0':'')+n;
   const date=_replY+'-'+p(_replM)+'-'+p(_replD);
   const oldType=sec.sleepers[editIdx].type;
+  // Солихоос ӨМНӨ дараалсан цэгийн дотор байсан бол энэ нь СИЙЛЭГЖИЛТ —
+  // дараалсан цэгийг таслах зорилготой солилт
+  const carve=isBadSleeper(oldType)&&!isBadSleeper(newType)&&inConsecRun(t,sec,editIdx);
   // Сонгосон төрлөөр дэрийн төрлийг солино (модон → Хэвийн, ТБД → ТБД)
   if(oldType!==newType){
     syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
     sec.sleepers[editIdx].type=newType
   }
-  setReplAt(sec,editIdx,date,newType);
+  setReplAt(sec,editIdx,date,newType,newType==='tbd'?'tbd':'wood',carve);
   saveDB();closeModal('replModal');renderRecordView();renderHome();
-  showToast(`#${editIdx+1} сольсон · ${fmtReplDate(date)}`)
+  showToast(carve
+    ?`🔧 #${editIdx+1} сийлэгжилт · ${fmtReplDate(date)}`
+    :`#${editIdx+1} сольсон · ${fmtReplDate(date)}`,2600)
 }
 function clearRepl(){
   const sec=activeSec();if(!sec||editIdx<0)return;
@@ -5494,7 +5593,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·59';
+const APP_BUILD='2026.08.24·60';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
