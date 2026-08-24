@@ -3381,8 +3381,17 @@ joyBtn.addEventListener('mouseup',e=>{
   const k=getJoyType(dx,dy);jStart=null;
   if(k){const inf=joyTypeInfo(k);record(inf.type,inf.fast);flashJoy(k)}
 });
+// Гараас бүртгэх товчлол. Талбарт бичиж байхад ЭСВЭЛ цонх нээлттэй үед
+// ажиллуулж болохгүй — эс тэгвэл 1—5 тоо ороход дэр бүртгэгдэж,
+// устгах товч дарахад тоо арилахын оронд сүүлийн дэр буцаагдана.
+function _kbBusy(e){
+  const el=e&&e.target;
+  if(el&&(el.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName||'')))return true;
+  return !!document.querySelector('.overlay.open')
+}
 document.addEventListener('keydown',e=>{
   if(!document.getElementById('recordView').classList.contains('active'))return;
+  if(_kbBusy(e))return;
   const map={'1':'normal','2':'bad','3':'tbd','4':'bad_tbd',' ':'normal','ArrowRight':'tbd','ArrowUp':'bad','ArrowLeft':'bad_tbd','ArrowDown':'tbd_apc','5':'tbd_apc'};
   if(map[e.key]){const inf=joyTypeInfo(map[e.key]);record(inf.type,inf.fast);e.preventDefault()}
   else if(e.key==='Backspace'||e.key==='z'){undoLast();e.preventDefault()}
@@ -5189,7 +5198,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·45';
+const APP_BUILD='2026.08.24·46';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
