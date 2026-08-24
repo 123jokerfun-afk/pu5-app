@@ -585,6 +585,11 @@ button{font-family:inherit}
 .repl-date{font-size:9px;padding:2px 5px;border-radius:5px;font-weight:800;flex-shrink:0;
   background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-variant-numeric:tabular-nums}
 /* Тайлангийн жагсаалт */
+.rp-month{margin-bottom:16px}
+.rp-month-hd{display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;font-weight:900;color:#fff;padding:9px 13px;border-radius:12px;
+  background:linear-gradient(135deg,var(--red),#E0648C);margin-bottom:8px}
+.rp-month .rp-track{margin-bottom:8px;padding-left:6px}
 .rp-track{margin-bottom:14px}
 .rp-track-hd{font-size:13px;font-weight:900;color:var(--ink);padding:8px 12px;background:var(--bg);
   border-radius:10px 10px 0 0;border:1.5px solid var(--border);border-bottom:none}
@@ -1062,6 +1067,16 @@ button{font-family:inherit}
 </div>
 
 <!-- СОЛИГДСОН ДЭР: тайлан -->
+<div class="overlay" id="consecReportModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0">Дараалсан цэг</div>
+      <button onclick="closeModal('consecReportModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div id="consecReportBody"></div>
+  </div></div>
+</div>
+
 <div class="overlay" id="replReportModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2237,17 +2252,43 @@ function collectRepl(){
 function replTotalCount(){
   return collectRepl().reduce((s,t)=>s+t.rows.length,0)
 }
+// Бүх замын 3 ба түүнээс дээш дараалсан тэнцэхгүй цэгүүд
+function collectConsec(){
+  const out=[];
+  allTracks().forEach(t=>{
+    const g=findConsecutiveBadForTrack(t.sections||[]);
+    if(g.length)out.push({name:trackLabel(t),num:t.num,groups:g})
+  });
+  return out
+}
+function consecTotalCount(){
+  return collectConsec().reduce((s,t)=>s+t.groups.length,0)
+}
 function renderReplFolder(){
   const wrap=document.getElementById('replFolderWrap');if(!wrap)return;
-  const n=activeFolderId?replTotalCount():0;
-  if(!n){wrap.innerHTML='';return}
-  wrap.innerHTML=`<div class="folder-card" style="border-color:var(--red);background:var(--red-bg)" onclick="hap();openReplReport()">
-    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:var(--red)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+  if(!activeFolderId){wrap.innerHTML='';return}
+  const n=replTotalCount(),c=consecTotalCount();
+  if(!n&&!c){wrap.innerHTML='';return}
+  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
+    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
     <div class="folder-info">
-      <div class="folder-name" style="color:var(--red)">Солигдсон дэр</div>
-      <div class="folder-meta">Нийт ${n} дэр · дарж жагсаалтыг харах</div>
+      <div class="folder-name" style="color:${color}">${name}</div>
+      <div class="folder-meta">${meta}</div>
     </div>
-  </div>`
+  </div>`;
+  wrap.innerHTML=
+    card('var(--red)','var(--red-bg)','Солигдсон дэр',
+      n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',"openReplReport()")+
+    card('var(--purple)','var(--purple-bg)','Дараалсан цэг',
+      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()");
+}
+const MN_MONTHS=['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар',
+  '7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
+// '2026-08-19' → {key:'2026-08', label:'2026 оны 8-р сар'}
+function replMonth(d){
+  const m=String(d||'').match(/^(\d{4})-(\d{2})/);
+  if(!m)return{key:'0000-00',label:'Огноогүй'};
+  return{key:m[1]+'-'+m[2],label:m[1]+' оны '+(MN_MONTHS[parseInt(m[2],10)-1]||m[2])}
 }
 function openReplReport(){
   const data=collectRepl();
@@ -2256,22 +2297,81 @@ function openReplReport(){
     body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Солигдсон дэр алга</div>';
     openModal('replReportModal');return
   }
+  // Эхлээд САР, дотор нь зам гэж хавтаслана
+  const months={};
+  data.forEach(t=>t.rows.forEach(r=>{
+    const m=replMonth(r.date);
+    const mo=months[m.key]||(months[m.key]={label:m.label,tracks:{},n:0});
+    (mo.tracks[t.name]||(mo.tracks[t.name]=[])).push(r);mo.n++
+  }));
+  // Шинэ сар эхэнд
+  const keys=Object.keys(months).sort().reverse();
   let total=0,html='';
-  data.forEach(t=>{
-    total+=t.rows.length;
-    html+=`<div class="rp-track"><div class="rp-track-hd">${t.name}</div>`;
-    t.rows.forEach(r=>{
-      html+=`<div class="rp-row">
-        <span style="flex:1;font-weight:700;color:var(--ink2)">${r.sec}</span>
-        <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
-        <span class="repl-date">${fmtReplDate(r.date)}</span>
-      </div>`
+  keys.forEach(k=>{
+    const mo=months[k];total+=mo.n;
+    html+=`<div class="rp-month">
+      <div class="rp-month-hd"><span>📅 ${mo.label}</span><span>${mo.n} дэр</span></div>`;
+    Object.keys(mo.tracks).forEach(tn=>{
+      const rows=mo.tracks[tn];
+      html+=`<div class="rp-track"><div class="rp-track-hd">${tn}</div>`;
+      rows.forEach(r=>{
+        html+=`<div class="rp-row">
+          <span style="flex:1;font-weight:700;color:var(--ink2)">${r.sec}</span>
+          <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
+          <span class="repl-date">${fmtReplDate(r.date)}</span>
+        </div>`
+      });
+      html+=`<div class="rp-sub"><span>${tn}</span><span>${rows.length} дэр</span></div></div>`
     });
-    html+=`<div class="rp-sub"><span>${t.name} — дүн</span><span>${t.rows.length} дэр</span></div></div>`
+    html+=`</div>`
   });
-  html+=`<div class="rp-total"><span>Бүх замын нийт</span><span>${total} дэр</span></div>`;
+  html+=`<div class="rp-total"><span>Бүх сарын нийт</span><span>${total} дэр</span></div>`;
   body.innerHTML=html;
   openModal('replReportModal')
+}
+// ── Дараалсан цэг (3 ба түүнээс дээш) ──
+function openConsecReport(){
+  const data=collectConsec();
+  const body=document.getElementById('consecReportBody');
+  if(!data.length){
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">✓ Дараалсан цэг олдсонгүй</div>';
+    openModal('consecReportModal');return
+  }
+  let total=0,c3=0,c4=0,c5=0,html='';
+  data.forEach(t=>{
+    total+=t.groups.length;
+    html+=`<div class="rp-track"><div class="rp-track-hd">${t.name}</div>`;
+    t.groups.forEach(g=>{
+      if(g.len===3)c3++;else if(g.len===4)c4++;else c5++;
+      const col=g.len>=5?'var(--dred)':g.len===4?'var(--red)':'var(--orange)';
+      const bg=g.len>=5?'var(--dred-bg)':g.len===4?'var(--red-bg)':'var(--orange-bg)';
+      const secs=[...new Set(g.items.map(i=>i.secLabel))];
+      const first=g.items[0],last=g.items[g.items.length-1];
+      html+=`<div class="rp-row" style="align-items:flex-start">
+        <span style="flex:1;min-width:0">
+          <span style="font-weight:800;color:var(--ink2)">${secs.join(' → ')}</span>
+          <span style="display:block;font-size:10px;color:var(--ink3);font-weight:700;margin-top:2px">
+            #${first.posInSec} → #${last.posInSec}${g.crossSection?' · үе дамнасан':''}</span>
+        </span>
+        <span class="repl-date" style="background:${bg};color:${col}">${g.len} дараалсан</span>
+      </div>`
+    });
+    html+=`<div class="rp-sub"><span>${t.name}</span><span>${t.groups.length} цэг</span></div></div>`
+  });
+  html=`<div class="consec-summary" style="margin-bottom:12px">
+      <div class="cs-cell" style="background:var(--orange-bg);border-color:#F5C272">
+        <div class="cs-n" style="color:var(--orange)">${c3}</div>
+        <div class="cs-l" style="color:var(--orange)">3 дараалсан</div></div>
+      <div class="cs-cell" style="background:var(--red-bg);border-color:#F5A0A0">
+        <div class="cs-n" style="color:var(--red)">${c4}</div>
+        <div class="cs-l" style="color:var(--red)">4 дараалсан</div></div>
+      <div class="cs-cell" style="background:var(--dred-bg);border-color:#E0A0A0">
+        <div class="cs-n" style="color:var(--dred)">${c5}</div>
+        <div class="cs-l" style="color:var(--dred)">5+ дараалсан</div></div>
+    </div>`+html+
+    `<div class="rp-total"><span>Бүх замын нийт</span><span>${total} цэг</span></div>`;
+  body.innerHTML=html;
+  openModal('consecReportModal')
 }
 
 function editLocation(){document.getElementById('locInput').value=DB.location;openModal('locModal')}
@@ -5353,7 +5453,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·55';
+const APP_BUILD='2026.08.24·56';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
