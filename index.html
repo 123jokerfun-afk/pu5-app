@@ -1085,7 +1085,7 @@ button{font-family:inherit}
 <div class="overlay" id="carveReportModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div class="sheet-title" style="margin:0;color:var(--blue)">🔧 Сийлэгжилт</div>
+      <div class="sheet-title" style="margin:0;color:var(--blue)">🔧 Сийрэгжилт</div>
       <button onclick="closeModal('carveReportModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">
@@ -2368,11 +2368,11 @@ function openReplReport(){
     html+=`</div>`
   });
   html+=`<div class="rp-total"><span>Бүх сарын нийт</span><span>${total} дэр</span></div>`;
-  // Сийлэгжилт — дараалсан цэг таслахын тулд сольсон дэрүүд тусдаа цонхонд
+  // Сийрэгжилт — дараалсан цэг таслахын тулд сольсон дэрүүд тусдаа цонхонд
   const cv=collectCarve(),cn=cv.reduce((n,t)=>n+t.rows.length,0);
   html=`<div class="carve-btn" onclick="hap();openCarveReport()">
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:900">🔧 Сийлэгжилт</div>
+        <div style="font-size:13px;font-weight:900">🔧 Сийрэгжилт</div>
         <div style="font-size:11px;font-weight:700;opacity:.85;margin-top:2px">${
           cn?cn+' дэр · дараалсан цэг таслахад сольсон':'Одоогоор алга'}</div>
       </div>
@@ -2390,7 +2390,7 @@ function openCarveReport(){
   const data=collectCarve();
   const body=document.getElementById('carveReportBody');
   if(!data.length){
-    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Сийлэгжилт хийгээгүй байна.<br><span style="font-size:11px">Дараалсан цэгийн дэрийг сольж тэмдэглэвэл энд бүртгэгдэнэ.</span></div>';
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Сийрэгжилт хийгээгүй байна.<br><span style="font-size:11px">Дараалсан цэгийн дэрийг сольж тэмдэглэвэл энд бүртгэгдэнэ.</span></div>';
     openModal('carveReportModal');return
   }
   let total=0,wood=0,tbd=0,html='';
@@ -3537,7 +3537,7 @@ function saveRepl(newType){
   setReplAt(sec,editIdx,date,newType,newType==='tbd'?'tbd':'wood',carve);
   saveDB();closeModal('replModal');renderRecordView();renderHome();
   showToast(carve
-    ?`🔧 #${editIdx+1} сийлэгжилт · ${fmtReplDate(date)}`
+    ?`🔧 #${editIdx+1} сийрэгжилт · ${fmtReplDate(date)}`
     :`#${editIdx+1} сольсон · ${fmtReplDate(date)}`,2600)
 }
 function clearRepl(){
@@ -5593,7 +5593,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·60';
+const APP_BUILD='2026.08.24·61';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
