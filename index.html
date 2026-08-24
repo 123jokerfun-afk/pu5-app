@@ -304,6 +304,13 @@ button{font-family:inherit}
 .swipe-flash.lf{background:linear-gradient(to right,rgba(109,40,217,.14),transparent)}
 .flash-pill{font-size:15px;font-weight:900;color:#fff;
   background:rgba(15,25,40,.6);padding:10px 22px;border-radius:99px;backdrop-filter:blur(12px)}
+/* Км хооронд шудрахад агуулга хурууны дагуу гулсаж орж ирнэ */
+@keyframes kmSlideFromL{from{opacity:0;transform:translateX(-46px)}to{opacity:1;transform:translateX(0)}}
+@keyframes kmSlideFromR{from{opacity:0;transform:translateX(46px)}to{opacity:1;transform:translateX(0)}}
+#trackView.km-slide-next .pg-hdr-row,#trackView.km-slide-next .track-ov,
+#trackView.km-slide-next .track-body{animation:kmSlideFromL .3s cubic-bezier(.22,1,.36,1)}
+#trackView.km-slide-prev .pg-hdr-row,#trackView.km-slide-prev .track-ov,
+#trackView.km-slide-prev .track-body{animation:kmSlideFromR .3s cubic-bezier(.22,1,.36,1)}
 .edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
 .etb{padding:16px 8px;border-radius:var(--rm);border:2px solid var(--border);
   cursor:pointer;text-align:center;font-size:13px;font-weight:800;transition:all .12s;background:var(--bg)}
@@ -796,6 +803,7 @@ button{font-family:inherit}
     </div>
   </div>
   <div class="track-ov"><div class="track-ov-grid" id="tvOverview"></div></div>
+  <div class="lp-hint" id="kmSwipeHint" style="display:none">← Хажуу тийш шудран км солино →</div>
   <div class="track-body" id="trackBody"></div>
   <div class="add-sec-dock">
     <button class="add-sec-btn asb-normal" onclick="openAddSection('normal')"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Үе нэмэх</button>
@@ -2335,8 +2343,13 @@ function renderTrackView(){
   const t=activeTrack();if(!t)return;
   document.getElementById('tvTitle').textContent=`${trackLabel(t)}${t.note?' · '+t.note:''}`;
   const turns=t.sections.filter(isTurnout).length;
+  // Гол замд хэддэх км дээр байгааг харуулж, шудрах санамж гаргана
+  const mn=isMainTrack(t)?mainTracks():[];
+  const kmPos=mn.length>1?` · ${mn.findIndex(x=>x.id===t.id)+1}/${mn.length} км`:'';
   document.getElementById('tvSub').textContent=
-    `${dataSections(t).length} үе${turns?` · ${turns} сум`:''} · ${DB.location}`;
+    `${dataSections(t).length} үе${turns?` · ${turns} сум`:''}${kmPos} · ${DB.location}`;
+  const ksh=document.getElementById('kmSwipeHint');
+  if(ksh)ksh.style.display=mn.length>1?'block':'none';
   // "Сум" товч зөвхөн гол замд
   const dock=document.querySelector('.add-sec-dock'),tBtn=document.getElementById('asbTurnout');
   if(tBtn){tBtn.style.display=isMainTrack(t)?'':'none'}
@@ -3233,10 +3246,60 @@ function initScreenSwipe(){
     if(Math.abs(dx)>28&&Math.abs(dx)>Math.abs(dy)*1.1)showSwipeFlash(dx>0?'right':'left');else hideSwipeFlash()
   },{passive:true})
 }
-function showSwipeFlash(dir){
+// ── Гол замын км хооронд шудрах (үеийн жагсаалт дээр) ──
+// Баруун шудрах = дараагийн км, зүүн = өмнөх. Агуулга хурууны дагуу гулсана.
+let _kmSwipedAt=0;
+function initKmSwipe(){
+  const tv=document.getElementById('trackView');if(!tv)return;
+  let st=null;
+  const ready=()=>isMainTrack(activeTrack())&&mainTracks().length>1
+    &&!document.querySelector('.overlay.open');
+  tv.addEventListener('touchstart',e=>{
+    if(!ready()){st=null;return}
+    const t=e.touches[0];st={x:t.clientX,y:t.clientY,time:Date.now()}
+  },{passive:true});
+  tv.addEventListener('touchmove',e=>{
+    if(!st)return;
+    const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
+    if(Math.abs(dx)>28&&Math.abs(dx)>Math.abs(dy)*1.1)showSwipeFlash(dx>0?'right':'left','км');
+    else hideSwipeFlash()
+  },{passive:true});
+  tv.addEventListener('touchend',e=>{
+    if(!st)return;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-st.x,dy=t.clientY-st.y,dt=Date.now()-st.time;
+    st=null;hideSwipeFlash();
+    if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.3&&dt<600){
+      _kmSwipedAt=Date.now();navKm(dx>0?1:-1)
+    }
+  },{passive:true});
+  // Шудрахад үеийн карт дээр дарагдаж орохоос сэргийлнэ
+  tv.addEventListener('click',e=>{
+    if(Date.now()-_kmSwipedAt<450){e.stopPropagation();e.preventDefault()}
+  },true)
+}
+function navKm(dir){
+  const mn=mainTracks();
+  const i=mn.findIndex(t=>t.id===activeTrackId);
+  if(i<0)return;
+  const j=i+dir;
+  if(j<0){hap(6);showToast('Эхний км байна');return}
+  if(j>=mn.length){hap(6);showToast('Сүүлийн км байна');return}
+  hap(8);activeTrackId=mn[j].id;activeSectionId=null;
+  renderTrackView();
+  const tv=document.getElementById('trackView');
+  if(tv){
+    tv.classList.remove('km-slide-next','km-slide-prev');void tv.offsetWidth;
+    tv.classList.add(dir>0?'km-slide-next':'km-slide-prev');
+    setTimeout(()=>tv.classList.remove('km-slide-next','km-slide-prev'),340)
+  }
+  showToast(`${mn[j].num}-р км · ${j+1}/${mn.length}`)
+}
+function showSwipeFlash(dir,unit='үе'){
   const el=document.getElementById('swipeFlash');
   el.className='swipe-flash '+(dir==='right'?'rf':'lf');
-  document.getElementById('swipeFlashLabel').textContent=dir==='right'?'Дараагийн үе →':'← Өмнөх үе';
+  document.getElementById('swipeFlashLabel').textContent=
+    dir==='right'?`Дараагийн ${unit} →`:`← Өмнөх ${unit}`;
   el.style.opacity='1'
 }
 function hideSwipeFlash(){const el=document.getElementById('swipeFlash');if(el)el.style.opacity='0'}
@@ -5145,7 +5208,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·47';
+const APP_BUILD='2026.08.24·48';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
@@ -5238,7 +5301,7 @@ try{
   // Хувилбарыг нэвтрэх дэлгэц болон нүүр хуудасны хамгийн доор харуулна
   document.querySelectorAll('.build-tag').forEach(function(e){e.textContent='v '+APP_BUILD});
 })();
-initScreenSwipe();
+initScreenSwipe();initKmSwipe();
 initRipple();
 
 // ══════════════════════════════════════════════
