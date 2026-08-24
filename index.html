@@ -5342,42 +5342,53 @@ function _appBack(){
 }
 
 // ── Буцах товчны хамгаалалт ──
-// Өмнө нь 20 бүртгэл урьдчилан түлхээд, дэлгэц солих бүрд, цонх нээх бүрд,
-// бас 0.5 секунд тутам дахин түлхдэг байв. Chrome нь pushState-ийг хязгаарладаг
-// тул түлхэлт чимээгүй ажиллахаа больж, бодит бүртгэл дуусаад буцах товч
-// нэг л удаа ажиллаад дараа нь аппаас шууд гарч байсан.
-// Одоо: ГАНЦ хамгаалагч бүртгэл. Буцах товч дарагдах бүрд шууд дахин тавина.
-const APP_BUILD='2026.08.24·52';
-let _exitArm=0,_exiting=false,_armed=false;
+// Андройдын боолт нь onBackPressed дээр canGoBack() шалгаж, худал бол аппаас
+// гардаг. Тиймээс аппын доор ҮРГЭЛЖ нэг "хамгаалагч" бүртгэл байлгана.
+//
+// ЧУХАЛ: хуудас ачаалж дуусахаас ӨМНӨ түлхсэн pushState-ийг WebView нь
+// "client redirect" гэж үзэн нэгтгэж хаядаг. Өмнө нь скрипт уншиж байх үед
+// 20 бүртгэл түлхдэг байсан ч бодит дээрээ нэг ч үүсдэггүй байв — тиймээс
+// нэг удаа ухраад дараагийн даралт шууд аппаас гаргаж байсан.
+// Одоо ачаалалт ДУУССАНЫ дараа л тавина.
+const APP_BUILD='2026.08.24·53';
+let _exitArm=0,_exiting=false,_armed=false,_armTimer=0;
 function _armBack(){
-  if(_exiting)return;
+  if(_exiting||_armed)return;
   try{history.pushState({pu5:1},'');_armed=true}catch(e){}
 }
-try{history.replaceState({pu5:0},'')}catch(e){}
-_armBack();
+function _armSoon(){clearTimeout(_armTimer);_armTimer=setTimeout(function(){_armed=false;_armBack()},300)}
+if(document.readyState==='complete')_armSoon();
+else window.addEventListener('load',_armSoon);
+// Хэрэглэгчийн хүрэлт бүрд хамгаалагч байгаа эсэхийг хямд шалгана
+['touchstart','pointerdown'].forEach(function(ev){
+  document.addEventListener(ev,function(){_armBack()},{passive:true,capture:true})
+});
 
 window.addEventListener('popstate',function(){
   if(_exiting)return;
-  _armed=false;
+  _armed=false;                       // хамгаалагч зарцуулагдлаа
   let handled=false;
   try{handled=_appBack()}catch(e){handled=false}
   if(handled){_exitArm=0;_armBack();return}
-  // Нүүр хуудсанд байна — хоёр дарж гарна
+  // Нүүр хуудсанд байна.
   if(Date.now()-_exitArm<2600){
+    // Хоёр дахь даралт — хамгаалагч тавихгүй тул апп гарна
     _exiting=true;
-    try{history.back()}catch(e){}          // хамгаалагчийн цаана гарна
-    setTimeout(function(){_exiting=false;_armBack()},1500);
+    setTimeout(function(){_exiting=false;_armBack()},2000);
     return
   }
+  // Эхний даралт: хамгаалагчгүй үлдээж, "дахин дарвал гарна" гэж сануулна.
+  // Хэрэглэгч өөр юм хийвэл (хүрэлт) эсвэл 2.7 сек өнгөрвөл хамгаалагч эргэнэ.
   _exitArm=Date.now();
   try{showToast('⟵ Дахин дарвал аппаас гарна',2400)}catch(e){}
-  _armBack()
+  setTimeout(function(){
+    if(!_exiting&&Date.now()-_exitArm>=2500){_exitArm=0;_armBack()}
+  },2700)
 });
 
-// Апп руу буцаж ирэхэд хамгаалагч байгаа эсэхийг л шалгана (түлхэлт нэмэхгүй)
-function _ensureArmed(){if(!_armed&&!_exiting)_armBack()}
-window.addEventListener('pageshow',function(e){if(e.persisted)_armed=false;_ensureArmed()});
-document.addEventListener('visibilitychange',function(){if(!document.hidden)_ensureArmed()});
+// Апп руу буцаж ирэхэд хамгаалагч сэргээнэ
+window.addEventListener('pageshow',function(e){if(e.persisted){_armed=false;_armBack()}});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_armBack()});
 
 // ══════════════════════════════════════════════
 // INIT
