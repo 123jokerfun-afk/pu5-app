@@ -829,18 +829,20 @@ button{font-family:inherit}
       </div>
       <button class="icon-btn" onclick="showSectionSummary()">Дүн</button>
     </div>
+    <!-- Нийт / Тэнцэх / Тэнцэхгүй / Хувь — гол зам, өртөө хоёуланд адилхан.
+         Мод, бетон гэж ялгахгүй, бүгдийг нэгтгэж тоолно. -->
     <div class="rec-counters">
+      <div class="cnt" style="background:var(--bg);border-color:var(--border)">
+        <div class="cnt-n" style="color:var(--ink)" id="cnt-total">0</div><div class="cnt-l">Нийт</div>
+      </div>
       <div class="cnt" style="background:var(--g100);border-color:var(--g300)">
-        <div class="cnt-n" style="color:var(--g600)" id="cnt-normal">0</div><div class="cnt-l">Хэвийн</div>
+        <div class="cnt-n" style="color:var(--g600)" id="cnt-pass">0</div><div class="cnt-l">Тэнцэх</div>
       </div>
       <div class="cnt" style="background:var(--orange-bg);border-color:#F5C272">
-        <div class="cnt-n" style="color:var(--orange)" id="cnt-bad">0</div><div class="cnt-l">Тэнцэхгүй</div>
+        <div class="cnt-n" style="color:var(--orange)" id="cnt-fail">0</div><div class="cnt-l">Тэнцэхгүй</div>
       </div>
       <div class="cnt" style="background:var(--red-bg);border-color:#F5A0A0">
-        <div class="cnt-n" style="color:var(--red)" id="cnt-tbd">0</div><div class="cnt-l">ТБД</div>
-      </div>
-      <div class="cnt" style="background:var(--dred-bg);border-color:#E0A0A0">
-        <div class="cnt-n" style="color:var(--dred)" id="cnt-bad_tbd">0</div><div class="cnt-l">Тэнц.ТБД</div>
+        <div class="cnt-n" style="color:var(--red)" id="cnt-pct">—</div><div class="cnt-l">Тэнцэхгүй %</div>
       </div>
     </div>
     <!-- Дэрийн төрөл + бөөнөөр оруулах -->
@@ -2761,24 +2763,24 @@ function openSection(secId){
   setTimeout(updateNavBtns,50)
 }
 // Дээд талын тоолуур + төрлийн товчийг шинэчилнэ (жагсаалтыг хөндөхгүй)
+// Бүртгэх дэлгэцийн дээд 4 нүд: Нийт / Тэнцэх / Тэнцэхгүй / Тэнцэхгүй %
+// Мод, төмөр бетон гэж ялгахгүй — бүгдийг нэгтгэж тоолно.
+// Гол зам, өртөөний зам хоёуланд ижилхэн.
 function updateRecCounters(sec){
   sec=sec||activeSec();if(!sec)return;
-  const tr=activeTrack();
-  const counts={normal:0,bad:0,tbd:0,bad_tbd:0};
-  sec.sleepers.forEach(s=>{if(counts[s.type]!==undefined)counts[s.type]++});
-  // Гол замд 3, 4-р нүдийг МАТЕРИАЛААР харуулна (ТБД / Модон) — тэнд бүх дэр
-  // төмөр бетон эсвэл модон бөгөөд дэрийн төрөл нь зөвхөн байдлыг заадаг
-  const lbl=(k,txt)=>{const e=document.getElementById('cnt-'+k);
-    if(e&&e.nextElementSibling)e.nextElementSibling.textContent=txt};
-  let show=counts;
-  if(isMainTrack(tr)){
-    const m=analyzeMainSection(sec,tr);
-    show={normal:m.normal,bad:m.bad,tbd:m.tbd,bad_tbd:m.wood};
-    lbl('tbd','ТБД');lbl('bad_tbd','Модон')
-  } else {
-    lbl('tbd','ТБД');lbl('bad_tbd','Тэнц.ТБД')
+  let total=0,fail=0;
+  sec.sleepers.forEach(s=>{total++;if(isBadSleeper(s.type))fail++});
+  const pass=total-fail;
+  const pct=total>0?(fail/total*100):null;
+  countTo(document.getElementById('cnt-total'),total,380);
+  countTo(document.getElementById('cnt-pass'),pass,380);
+  countTo(document.getElementById('cnt-fail'),fail,380);
+  const pe=document.getElementById('cnt-pct');
+  if(pe){
+    pe.textContent=pct===null?'—':pct.toFixed(1)+'%';
+    pe.style.color=pct===null?'var(--ink4)'
+      :pct>=25?'var(--dred)':pct>=15?'var(--orange)':'var(--g600)'
   }
-  ['normal','bad','tbd','bad_tbd'].forEach(k=>countTo(document.getElementById('cnt-'+k),show[k],380));
   DRM.lastCur=-1;                      // товчийг дахин тооцуулна
   updateSecTypeBtn(drumCursor())
 }
@@ -5351,7 +5353,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·54';
+const APP_BUILD='2026.08.24·55';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
