@@ -1532,7 +1532,14 @@ function mergeFolder(dst,src){
   if(!dst||!src||dst===src)return;
   dst.tracks=dst.tracks||[];
   (src.tracks||[]).forEach(t=>{
-    const ex=dst.tracks.find(x=>x.num===t.num&&!!isMainTrack(x)===!!isMainTrack(t));
+    // Гол замын км паспортод харьяалагдахгүй — тусдаа жагсаалт руу
+    if(isMainTrack(t)){
+      const em=mainTracks().find(x=>x.num===t.num);
+      if(!em)mainTracks().push(t);
+      else if(_trackFill(t)>_trackFill(em))DB.main[DB.main.indexOf(em)]=t;
+      return
+    }
+    const ex=dst.tracks.find(x=>x.num===t.num&&!isMainTrack(x));
     if(!ex){dst.tracks.push(t);return}
     (t.sections||[]).forEach(sec=>{
       const es=(ex.sections||[]).find(y=>y.label===sec.label&&y.type===sec.type);
@@ -4593,7 +4600,8 @@ function renderFolders(){
   grid.innerHTML=DB.folders.map(f=>{
     const isActive=f.id===activeFolderId;
     const tCount=`${trackCounts(f.tracks).st} зам`;
-    const totalSecs=f.tracks.reduce((s,t)=>s+dataSections(t).length,0);
+    const totalSecs=(f.tracks||[]).reduce((s,t)=>
+      s+(isMainTrack(t)?0:dataSections(t).length),0);
     // Өөр хаягаас орж ирсэн паспортыг ялгаж харуулна
     const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
     return`<div class="folder-card${isActive?' active-folder':''}" onclick="hap();openFolder('${f.id}')">
@@ -4960,6 +4968,8 @@ function _importLocalData(localDB){
     // rpt тохиргоо шилжүүлэх
     if(localDB.rpt&&!DB.rpt.secName)DB.rpt=localDB.rpt;
     if(localDB.location)DB.location=localDB.location;
+    // ★ Импортолсон паспорт дотор гол замын км байвал гаргаж, давхардлыг нэгтгэнэ
+    _migrateDB();
     saveDB();
     renderHome();
     showToast('✓ Өгөгдөл амжилттай шилжлээ! Үүлэнд хадгалагдаж байна...',3500);
@@ -5328,7 +5338,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·50';
+const APP_BUILD='2026.08.24·51';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
