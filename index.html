@@ -590,6 +590,8 @@ button{font-family:inherit}
 .cs-btn:active{transform:scale(.96)}
 .cs-btn.sel{box-shadow:0 0 0 2.5px var(--ink) inset;filter:saturate(1.15)}
 .cs-4 .cs-l{font-size:8.5px}
+.rp-jump{cursor:pointer;transition:background .12s}
+.rp-jump:active{background:var(--bg)}
 .rp-month{margin-bottom:16px}
 .rp-month-hd{display:flex;justify-content:space-between;align-items:center;
   font-size:13px;font-weight:900;color:#fff;padding:9px 13px;border-radius:12px;
@@ -2262,7 +2264,7 @@ function collectConsec(){
   const out=[];
   allTracks().forEach(t=>{
     const g=findConsecutiveBadForTrack(t.sections||[]);
-    if(g.length)out.push({name:trackLabel(t),num:t.num,groups:g})
+    if(g.length)out.push({id:t.id,name:trackLabel(t),num:t.num,groups:g})
   });
   return out
 }
@@ -2339,6 +2341,18 @@ function openReplReport(){
 let _consecFilter='all';
 function setConsecFilter(f){_consecFilter=f;hap(6);renderConsecReport()}
 function openConsecReport(){_consecFilter='all';renderConsecReport();openModal('consecReportModal')}
+// Дараалсан цэг дээр дарахад тэр зам → үе рүү орж, ЭХНИЙ тэнцэхгүй дэр
+// дээр тааруулна
+function jumpToConsec(trackId,secId,pos){
+  hap(8);
+  closeModal('consecReportModal');
+  const t=getTrack(trackId);if(!t)return;
+  openTrack(trackId);
+  const sec=(t.sections||[]).find(s=>s.id===secId);
+  if(!sec){showToast('Тухайн үе олдсонгүй');return}
+  openSection(secId,Math.max(0,pos-1));
+  showToast(`${trackLabel(t)} · ${sec.label} · #${pos}`,2200)
+}
 function renderConsecReport(){
   const data=collectConsec();
   const body=document.getElementById('consecReportBody');if(!body)return;
@@ -2369,13 +2383,15 @@ function renderConsecReport(){
       const bg=g.len>=5?'var(--dred-bg)':g.len===4?'var(--red-bg)':'var(--orange-bg)';
       const secs=[...new Set(g.items.map(i=>i.secLabel))];
       const first=g.items[0],last=g.items[g.items.length-1];
-      rows+=`<div class="rp-row" style="align-items:flex-start">
+      rows+=`<div class="rp-row rp-jump" style="align-items:flex-start"
+        onclick="jumpToConsec('${t.id}','${first.secId}',${first.posInSec})">
         <span style="flex:1;min-width:0">
           <span style="font-weight:800;color:var(--ink2)">${secs.join(' → ')}</span>
           <span style="display:block;font-size:10px;color:var(--ink3);font-weight:700;margin-top:2px">
             #${first.posInSec} → #${last.posInSec}${g.crossSection?' · үе дамнасан':''}</span>
         </span>
         <span class="repl-date" style="background:${bg};color:${col}">${g.len} дараалсан</span>
+        <span style="color:var(--ink4);font-weight:800;font-size:15px;margin-left:2px">›</span>
       </div>`
     });
     rows+=`<div class="rp-sub"><span>${t.name}</span><span>${gs.length} цэг</span></div></div>`
@@ -2864,14 +2880,14 @@ function addSection(){
 // ══════════════════════════════════════════════
 // RECORD
 // ══════════════════════════════════════════════
-function openSection(secId){
+function openSection(secId,focusIdx){
   hap(6);DRM.secId=null;const t=activeTrack();if(!t)return;
   const sec=t.sections.find(s=>s.id===secId);if(!sec)return;
   if(isTurnout(sec)){openEditTurnout(secId);return}   // сум дээр дэр бүртгэхгүй
   activeSectionId=secId;
   document.getElementById('rvTitle').textContent=sec.label;
   document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
-  showView('recordView');renderRecordView();
+  showView('recordView');renderRecordView(focusIdx);
   // Өмнөх лавлагаа banner харуулах
   setTimeout(updateNavBtns,50)
 }
@@ -2909,10 +2925,10 @@ function updateSecTypeBtn(idx){
     ?`Төрөл #${i+1}: Модон дэр`
     :`Төрөл #${i+1}: ТБД (${segFastAt(sec,i,t)})`
 }
-function renderRecordView(){
+function renderRecordView(focusIdx){
   const sec=activeSec();if(!sec)return;
   updateRecCounters(sec);
-  renderRecordLog(sec);
+  renderRecordLog(sec,focusIdx);
 
 }
 // ── 3D DRUM параметрүүд ──
@@ -5466,7 +5482,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·57';
+const APP_BUILD='2026.08.24·58';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
