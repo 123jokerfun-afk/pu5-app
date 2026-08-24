@@ -769,8 +769,11 @@ button{font-family:inherit}
   <div class="track-body">
     <div id="mainKmBody"></div>
     <div class="lp-hint" id="kmLpHint" style="display:none">Км дээр удаан дарж устгана</div>
-    <button class="add-track-btn" onclick="openAddKm()" style="margin-top:10px">
+    <button class="add-track-btn" id="kmAddBtn" onclick="openAddKm()" style="margin-top:10px">
       <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Км нэмэх
+    </button>
+    <button class="add-track-btn" id="kmBulkBtn" onclick="openKmBulkModal()" style="margin-top:8px;display:none">
+      <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--g600)"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg> Нийт дэр оруулах
     </button>
   </div>
 </div>
@@ -957,6 +960,54 @@ button{font-family:inherit}
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('bulkModal')">Болих</button>
       <button class="btn-ok" onclick="applyBulk()">Бүртгэх</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- КМ ЖАГСААЛТААС: ОЛОН ҮЕД НЭГ ДОР ДЭР ОРУУЛАХ -->
+<div class="overlay" id="kmBulkModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Нийт дэр оруулах</div>
+      <button onclick="closeModal('kmBulkModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;font-weight:600">
+      Заасан үе бүрд оруулсан тоогоор дэр "Хэвийн" гэж бүртгэгдэнэ. Материал, бэхэлгээ нь тухайн км-ийнхээрээ явна.
+    </div>
+    <div class="ff"><label>Км (эхлэл — төгсгөл)</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="kbKmA" min="0" oninput="updateKmBulkPreview()" style="flex:1">
+        <span style="font-weight:800;color:var(--ink4)">—</span>
+        <input type="number" id="kbKmB" min="0" oninput="updateKmBulkPreview()" style="flex:1">
+      </div>
+    </div>
+    <div class="ff"><label>Аль үеэс аль үе хүртэл<span style="color:var(--red)"> *</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" id="kbSecA" min="1" placeholder="3" oninput="updateKmBulkPreview()" style="flex:1">
+        <span style="font-weight:800;color:var(--ink4)">—</span>
+        <input type="number" id="kbSecB" min="1" placeholder="10" oninput="updateKmBulkPreview()" style="flex:1">
+      </div>
+    </div>
+    <div class="ff"><label>Үе болгонд хэдэн дэр<span style="color:var(--red)"> *</span></label>
+      <input type="number" id="kbN" min="0" max="200" placeholder="жишээ: 46" oninput="updateKmBulkPreview()">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setKmBulkN(46)">46</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setKmBulkN(40)">40</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setKmBulkN(50)">50</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setKmBulkN(23)">23</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setKmBulkN(20)">20</button>
+    </div>
+    <div class="ff"><label>Аль хэдийн бүртгэлтэй үеийг</label>
+      <div class="edit-grid" style="margin:0">
+        <button type="button" class="etb mat-btn selected" id="kbModeSkip" onclick="pickKmBulkMode('skip')">Хэвээр үлдээх</button>
+        <button type="button" class="etb mat-btn" id="kbModeOver" onclick="pickKmBulkMode('over')">Дарж бичих</button>
+      </div>
+    </div>
+    <div id="kbPreview" style="font-size:12px;font-weight:700;color:var(--ink2);background:var(--bg);border:1px solid var(--border);border-radius:var(--rm);padding:10px;margin-bottom:4px"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('kmBulkModal')">Болих</button>
+      <button class="btn-ok" onclick="applyKmBulk()">Бүртгэх</button>
     </div>
   </div></div>
 </div>
@@ -1786,9 +1837,11 @@ function renderMainKmView(){
     if(stats)stats.innerHTML='';
     body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Км нэмнэ үү</div>';
     const h0=document.getElementById('kmLpHint');if(h0)h0.style.display='none';
+    const b0=document.getElementById('kmBulkBtn');if(b0)b0.style.display='none';
     return
   }
   const h1=document.getElementById('kmLpHint');if(h1)h1.style.display='block';
+  const b1=document.getElementById('kmBulkBtn');if(b1)b1.style.display='';
   // Гол замын нийт дүн
   let gT=0,gB=0;
   mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad});
@@ -1826,6 +1879,94 @@ function renderMainKmView(){
       <span style="color:var(--ink4);font-weight:800">›</span>
     </div>`
   }).join('')
+}
+
+// ══════════════════════════════════════════════
+// КМ ЖАГСААЛТААС ОЛОН ҮЕД НЭГ ДОР ДЭР ОРУУЛАХ
+// (жишээ: 681—701 км, 3—10 үе, үе болгонд 46 дэр)
+// ══════════════════════════════════════════════
+let _kbMode='skip';
+function pickKmBulkMode(m){
+  _kbMode=m;hap(6);
+  document.getElementById('kbModeSkip').classList.toggle('selected',m==='skip');
+  document.getElementById('kbModeOver').classList.toggle('selected',m==='over');
+  updateKmBulkPreview()
+}
+function setKmBulkN(n){document.getElementById('kbN').value=n;updateKmBulkPreview()}
+// Тохирох үенүүдийг олно: заасан км мужийн, заасан дугаартай энгийн үе.
+// Сум болон холбох хэсэг хамаарахгүй (дугааргүй тул).
+function _kmBulkTargets(){
+  const kA=parseInt(document.getElementById('kbKmA').value,10);
+  const kB=parseInt(document.getElementById('kbKmB').value,10);
+  const sA=parseInt(document.getElementById('kbSecA').value,10);
+  const sB=parseInt(document.getElementById('kbSecB').value,10);
+  const n=parseInt(document.getElementById('kbN').value,10);
+  const bad=isNaN(kA)||isNaN(kB)||isNaN(sA)||isNaN(sB)||isNaN(n);
+  const out={kA,kB,sA,sB,n,bad,kms:0,secs:[],filled:[],empty:[]};
+  if(bad||kB<kA||sB<sA||n<0)return out;
+  DB.tracks.filter(isMainTrack).forEach(t=>{
+    if(t.num<kA||t.num>kB)return;
+    let hit=false;
+    dataSections(t).forEach(s=>{
+      if(s.type==='connecting')return;
+      const num=secNum(s.label);
+      if(num<sA||num>sB)return;
+      hit=true;out.secs.push({t,s});
+      (s.sleepers.length?out.filled:out.empty).push(s)
+    });
+    if(hit)out.kms++
+  });
+  return out
+}
+function updateKmBulkPreview(){
+  const box=document.getElementById('kbPreview');if(!box)return;
+  const r=_kmBulkTargets();
+  if(r.bad){box.textContent='Км, үе, дэрийн тоог бүрэн оруулна уу';return}
+  if(r.kB<r.kA||r.sB<r.sA){box.textContent='Төгсгөл нь эхлэлээсээ том байх ёстой';return}
+  if(!r.secs.length){box.textContent=`${r.kA}—${r.kB} км-д ${r.sA}—${r.sB} дугаартай үе олдсонгүй`;return}
+  const apply=_kbMode==='over'?r.secs.length:r.empty.length;
+  const keep=_kbMode==='over'?0:r.filled.length;
+  box.innerHTML=`<b>${r.kA}—${r.kB} км</b> (${r.kms} км) · <b>${r.sA}—${r.sB} үе</b><br>
+    ${apply?`<b>${apply}</b> үе × <b>${r.n}</b> дэр = <b>${(apply*r.n).toLocaleString('mn-MN')}</b> дэр бүртгэгдэнэ`
+           :'Бүртгэх үе алга'}
+    ${keep?`<br><span style="color:var(--ink3)">${keep} үе аль хэдийн бүртгэлтэй тул хэвээр үлдэнэ</span>`:''}
+    ${_kbMode==='over'&&r.filled.length?`<br><span style="color:var(--red)">⚠ ${r.filled.length} үеийн одоогийн бүртгэл дарагдана</span>`:''}`
+}
+function openKmBulkModal(){
+  const mn=DB.tracks.filter(isMainTrack);
+  if(!mn.length){showToast('Эхлээд км нэмнэ үү');return}
+  document.getElementById('kbKmA').value=mn[0].num;
+  document.getElementById('kbKmB').value=mn[mn.length-1].num;
+  document.getElementById('kbSecA').value='';
+  document.getElementById('kbSecB').value='';
+  document.getElementById('kbN').value='';
+  pickKmBulkMode('skip');
+  openModal('kmBulkModal')
+}
+async function applyKmBulk(){
+  const r=_kmBulkTargets();
+  if(r.bad){showToast('Км, үе, дэрийн тоог бүрэн оруулна уу');return}
+  if(r.kB<r.kA||r.sB<r.sA){showToast('Төгсгөл нь эхлэлээсээ том байх ёстой');return}
+  if(r.n<0||r.n>200){showToast('Дэрийн тоог 0—200 хооронд оруулна уу');return}
+  const list=_kbMode==='over'?r.secs:r.secs.filter(x=>!x.s.sleepers.length);
+  if(!list.length){showToast(r.secs.length?'Бүх үе бүртгэлтэй байна':'Тохирох үе олдсонгүй');return}
+  const msg=`${r.kA}—${r.kB} км-ийн ${r.sA}—${r.sB} үе: ${list.length} үед тус бүр ${r.n} дэр бүртгэх үү?`
+    +(_kbMode==='over'&&r.filled.length?` ${r.filled.length} үеийн одоогийн бүртгэл дарагдана.`:'');
+  if(!await appConfirm(msg,'Бүртгэх'))return;
+  const now=Date.now();let total=0;
+  list.forEach(({s})=>{
+    const cur=s.sleepers.length;
+    if(r.n<cur){
+      for(let i=cur-1;i>=r.n;i--){clearReplAt(s,i);clearFastAt(s,i)}
+      s.sleepers.length=r.n
+    } else {
+      for(let i=cur;i<r.n;i++)s.sleepers.push({type:'normal',ts:now})
+    }
+    if(s.manual)delete s.manual;
+    total+=r.n
+  });
+  saveDB();closeModal('kmBulkModal');renderMainKmView();
+  showToast(`✓ ${list.length} үед нийт ${total.toLocaleString('mn-MN')} дэр бүртгэлээ`)
 }
 
 // ══════════════════════════════════════════════
@@ -5048,7 +5189,7 @@ function _appBack(){
 }
 
 // ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·44';
+const APP_BUILD='2026.08.24·45';
 let _exitArm=0;
 // ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
 const H_TARGET=20;
