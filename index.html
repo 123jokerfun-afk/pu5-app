@@ -38,6 +38,9 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;
+  /* Утасны апп — доош шудрахад дахин ачаалахгүй, хажуу тийш ухрахгүй */
+  overscroll-behavior:none;overscroll-behavior-y:none;
+  touch-action:pan-x pan-y;
   background:
     radial-gradient(ellipse 75% 50% at 12% 3%,rgba(255,210,63,.4),transparent 58%),
     radial-gradient(ellipse 65% 45% at 92% 12%,rgba(62,198,255,.32),transparent 55%),
@@ -47,7 +50,8 @@ html,body{height:100%;overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
   color:var(--ink);-webkit-font-smoothing:antialiased}
 button{font-family:inherit}
-.view{position:fixed;inset:0;overflow-y:auto;display:none;flex-direction:column;background:transparent}
+.view{position:fixed;inset:0;overflow-y:auto;display:none;flex-direction:column;
+  background:transparent;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .view.active{display:flex}
 #toast{position:fixed;bottom:calc(90px + var(--sab));left:50%;
   transform:translateX(-50%) translateY(6px) scale(.96);
@@ -5337,70 +5341,43 @@ function _appBack(){
   }
 }
 
-// ── History хамгаалалт: апп дотор байхад буцах товч гаргахгүй ──
-const APP_BUILD='2026.08.24·51';
-let _exitArm=0;
-// ── History хамгаалалт: 20 бүртгэл урьдчилан түлхэж, буцах товчийг найдвартай барина ──
-const H_TARGET=20;
-let _hCount=0, _inPop=false, _hPops=0, _hPushes=0, _hErr='', _exiting=false;
-
-function _histGuard(){
-  if(_inPop||_exiting)return;
-  let added=0;
-  while(_hCount<H_TARGET&&added<H_TARGET){
-    try{history.pushState({app:1,i:_hCount+1},'')}
-    catch(e){_hErr=(e&&e.message||'e').slice(0,18);break}
-    _hCount++;added++;_hPushes++
-  }
+// ── Буцах товчны хамгаалалт ──
+// Өмнө нь 20 бүртгэл урьдчилан түлхээд, дэлгэц солих бүрд, цонх нээх бүрд,
+// бас 0.5 секунд тутам дахин түлхдэг байв. Chrome нь pushState-ийг хязгаарладаг
+// тул түлхэлт чимээгүй ажиллахаа больж, бодит бүртгэл дуусаад буцах товч
+// нэг л удаа ажиллаад дараа нь аппаас шууд гарч байсан.
+// Одоо: ГАНЦ хамгаалагч бүртгэл. Буцах товч дарагдах бүрд шууд дахин тавина.
+const APP_BUILD='2026.08.24·52';
+let _exitArm=0,_exiting=false,_armed=false;
+function _armBack(){
+  if(_exiting)return;
+  try{history.pushState({pu5:1},'');_armed=true}catch(e){}
 }
-_histGuard();
-
-function _histRestore(){_inPop=false;_histGuard()}
+try{history.replaceState({pu5:0},'')}catch(e){}
+_armBack();
 
 window.addEventListener('popstate',function(){
   if(_exiting)return;
-  _hPops++;
-  if(_hCount>0)_hCount--;
-  _inPop=true;
+  _armed=false;
   let handled=false;
-  try{handled=_appBack()}catch(e){_hErr=(e&&e.message||'e').slice(0,18);handled=false}
-  if(handled){setTimeout(_histRestore,0);_exitArm=0;return}
-  const now=Date.now();
-  if(now-_exitArm>2600){
-    _exitArm=now;setTimeout(_histRestore,0);
-try{showToast('⟵ Дахин дарвал аппаас гарна',2600)}catch(e){}
-  } else {
-    // Хоёр дахь даралт → бүх хамгаалалтыг давж гарна
-_inPop=false;_exiting=true;
-    const k=_hCount+1;_hCount=0;
-    setTimeout(function(){try{history.go(-k)}catch(e){}},0);
-    setTimeout(function(){_exiting=false;_histGuard()},1500)
+  try{handled=_appBack()}catch(e){handled=false}
+  if(handled){_exitArm=0;_armBack();return}
+  // Нүүр хуудсанд байна — хоёр дарж гарна
+  if(Date.now()-_exitArm<2600){
+    _exiting=true;
+    try{history.back()}catch(e){}          // хамгаалагчийн цаана гарна
+    setTimeout(function(){_exiting=false;_armBack()},1500);
+    return
   }
+  _exitArm=Date.now();
+  try{showToast('⟵ Дахин дарвал аппаас гарна',2400)}catch(e){}
+  _armBack()
 });
 
-// Аль ч дэлгэц рүү шилжихэд sentinel байгаа эсэхийг баталгаажуулна
-(function(){
-  const _orig=showView;
-  window.showView=function(id,back){_orig(id,back);_histGuard()}
-})();
-// Modal нээхэд ч мөн адил
-(function(){
-  const _om=openModal;
-  window.openModal=function(id){_om(id);_histGuard()}
-})();
-// Апп руу буцаж ирэхэд sentinel сэргээнэ
-window.addEventListener('pageshow',function(e){if(e.persisted)_hCount=0;_histGuard()});
-document.addEventListener('visibilitychange',function(){if(!document.hidden)_histGuard()});
-// Ямар ч шалтгаанаар sentinel алдагдвал өөрөө сэргээнэ (гарах хүсэлтийн үед л алгасна)
-setInterval(function(){
-  if(_inPop||_exiting)return;
-  if(Date.now()-_exitArm<2400)return;
-  _histGuard()
-},500);
-// Хэрэглэгчийн эхний хүрэлтээр ч давхар шалгана
-['touchstart','pointerdown'].forEach(function(ev){
-  document.addEventListener(ev,function(){if(!_inPop)_histGuard()},{passive:true,capture:true})
-});
+// Апп руу буцаж ирэхэд хамгаалагч байгаа эсэхийг л шалгана (түлхэлт нэмэхгүй)
+function _ensureArmed(){if(!_armed&&!_exiting)_armBack()}
+window.addEventListener('pageshow',function(e){if(e.persisted)_armed=false;_ensureArmed()});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_ensureArmed()});
 
 // ══════════════════════════════════════════════
 // INIT
