@@ -134,6 +134,37 @@ button{font-family:inherit}
 .sheet{background:rgba(252,252,250,.97);border-radius:32px 32px 0 0;
   padding:0 0 calc(20px + var(--sab));width:100%;max-height:88vh;overflow-y:auto;
   backdrop-filter:blur(20px);box-shadow:0 -12px 48px rgba(150,95,25,.2)}
+/* ── СШ ПУ-5 ── */
+.sw-nav{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;
+  border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:800;font-family:inherit;
+  cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:transform .15s}
+.sw-nav:active{transform:scale(.95)}
+.sw-link{background:rgba(109,40,217,.1);border:1.5px solid #C4B5FD;color:#7E22CE;
+  border-radius:99px;padding:6px 12px;font-size:12px;font-weight:800;font-family:inherit;
+  cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:transform .15s}
+.sw-link:active{transform:scale(.95)}
+.sw-next{margin-top:8px;font-size:11.5px;font-weight:700;color:#6D28D9;background:#F5F0FF;
+  border:1px solid #DDD6FE;border-radius:var(--rs);padding:8px 11px;line-height:1.5}
+.sw-row{height:46px;cursor:pointer}
+.sw-row .sw-kind{font-size:12px;font-weight:800;padding:3px 9px;border-radius:7px;
+  background:var(--bg);border:1px solid var(--border);color:var(--ink2);white-space:nowrap}
+.sw-row .sw-state{font-size:12px;font-weight:700;color:var(--ink3);margin-left:6px}
+.sw-r-ok{background:var(--g50);border-color:var(--g300)}
+.sw-r-bad{background:var(--orange-bg);border-color:#F5C272}
+.sw-r-bad .sw-state{color:var(--orange)}
+.sw-r-sl{background:#F5F0FF;border-color:#DDD6FE}
+.sw-r-sl .sw-kind{background:#EDE4FF;border-color:#C4B5FD;color:#6D28D9}
+.sw-slot{background:var(--card);border:2px dashed var(--border2)}
+.sw-dock{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;
+  padding:10px 14px calc(12px + var(--sab));background:rgba(252,252,250,.94);
+  backdrop-filter:blur(12px);border-top:1px solid var(--border)}
+.sw-big{flex:1;padding:15px 8px;border-radius:var(--rm);border:2px solid;font-size:14px;
+  font-weight:900;font-family:inherit;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:7px;transition:transform .12s}
+.sw-big:active{transform:scale(.96)}
+.sw-big span{font-size:17px}
+.sw-ok{background:var(--g100);color:var(--g600);border-color:var(--g400)}
+.sw-bad{background:var(--orange-bg);color:var(--orange);border-color:#F5C272}
 .pu5-btn{width:100%;margin:-2px 0 4px;padding:8px 10px;border:1px dashed var(--border2);
   border-top:none;border-radius:0 0 var(--rm) var(--rm);background:var(--bg);
   color:var(--ink3);font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer;
@@ -764,7 +795,12 @@ button{font-family:inherit}
   <div class="home-body">
     <!-- Гол зам — паспортаас хараат бус, паспортуудын дээр -->
     <div class="home-section" style="margin-top:16px">
-      <div class="sec-lbl" style="margin-top:0">Гол зам</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div class="sec-lbl" style="margin-top:0">Гол зам</div>
+        <button class="sw-link" onclick="hap();goSwHome()">СШ ПУ-5
+          <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
       <div id="mainLineCard"></div>
       <button class="add-track-btn" id="pu5MainBtn" onclick="exportPu5Book('main')" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
@@ -926,6 +962,85 @@ button{font-family:inherit}
     </div>
   </div>
   <div class="sum-body" id="sumBody"></div>
+</div>
+
+<!-- ══════════ СШ ПУ-5 — СУМ ШИЛЖҮҮЛГИЙН ДҮНЗ БҮРТГЭЛ ══════════ -->
+<div class="view" id="swHomeView">
+  <div class="hero" style="background:linear-gradient(135deg,#6D28D9,#9333EA 55%,#C026D3)">
+    <div class="hero-top">
+      <button class="sw-nav" onclick="hap();goDerHome()">
+        <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Дэр ПУ-5
+      </button>
+      <div style="flex:1;text-align:center">
+        <div class="hero-text-title" style="font-size:19px">СШ ПУ-5</div>
+        <div class="hero-text-sub" id="swLoc">Сум шилжүүлгийн дүнз</div>
+      </div>
+      <div style="width:88px"></div>
+    </div>
+    <div class="hero-stats" id="swHeroStats">
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsD">0</div><div class="hero-stat-l">Нийт дүнз</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+    </div>
+  </div>
+  <div class="home-body">
+    <div class="home-section" style="margin-top:16px">
+      <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
+      <div id="swFolders" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <button class="add-track-btn" onclick="openSwFolder()" style="border-color:#C084FC;color:#7E22CE">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Шинэ паспорт нэмэх
+      </button>
+    </div>
+    <div class="lp-hint" style="margin-top:14px">Баруун тийш шудран Дэр ПУ-5 руу буцна →</div>
+    <div class="build-tag" style="text-align:center;padding:18px 0 26px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
+  </div>
+</div>
+
+<div class="view" id="swListView">
+  <div class="pg-hdr">
+    <div class="pg-hdr-row">
+      <button class="back-btn" onclick="showView('swHomeView',true);renderSwHome()">Буцах</button>
+      <div style="flex:1">
+        <div class="pg-title" id="swListTitle">—</div>
+        <div class="pg-sub" id="swListSub">—</div>
+      </div>
+      <button class="icon-btn" onclick="delSwFolder()" style="color:var(--red)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+  <div class="track-body" id="swListBody"></div>
+  <div class="add-sec-dock">
+    <button class="add-sec-btn asb-turn" style="width:100%" onclick="openSwTurnout()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сум нэмэх</button>
+  </div>
+</div>
+
+<div class="view" id="swRecView">
+  <div class="pg-hdr">
+    <div class="pg-hdr-row">
+      <button class="back-btn" onclick="showView('swListView',true);renderSwList()">Буцах</button>
+      <div style="flex:1">
+        <div class="pg-title" id="swRecTitle">—</div>
+        <div class="pg-sub" id="swRecSub">—</div>
+      </div>
+      <button class="icon-btn" onclick="delSwTurnout()" style="color:var(--red)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="rec-counters">
+      <div class="cnt" style="background:var(--bg);border-color:var(--border)">
+        <div class="cnt-n" style="color:var(--ink)" id="sw-total">0</div><div class="cnt-l">Нийт</div></div>
+      <div class="cnt" style="background:var(--g100);border-color:var(--g300)">
+        <div class="cnt-n" style="color:var(--g600)" id="sw-pass">0</div><div class="cnt-l">Тэнцэх</div></div>
+      <div class="cnt" style="background:var(--orange-bg);border-color:#F5C272">
+        <div class="cnt-n" style="color:var(--orange)" id="sw-fail">0</div><div class="cnt-l">Тэнцэхгүй</div></div>
+      <div class="cnt" style="background:var(--red-bg);border-color:#F5A0A0">
+        <div class="cnt-n" style="color:var(--red)" id="sw-pct">—</div><div class="cnt-l">Тэнцэхгүй %</div></div>
+    </div>
+    <div id="swNextInfo" class="sw-next">—</div>
+  </div>
+  <div class="log-wrap" id="swLog"></div>
+  <div class="sw-dock">
+    <button class="round-btn" onclick="swUndo()" title="Буцаах"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 105-8"/></svg></button>
+    <button class="sw-big sw-ok" onclick="swPut('n')"><span>✓</span>Хэвийн</button>
+    <button class="sw-big sw-bad" onclick="swPut('b')"><span>~</span>Тэнцэхгүй</button>
+  </div>
 </div>
 
 <!-- MODALS -->
@@ -1341,6 +1456,74 @@ button{font-family:inherit}
       <button class="btn-cancel" onclick="closeModal('overrideModal')">Болих</button>
       <button style="padding:13px;border:1.5px solid var(--red-bg);border-radius:var(--rm);background:var(--red-bg);color:var(--red);font-size:13px;font-weight:700;cursor:pointer" onclick="clearOverride()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Арилгах</button>
       <button class="btn-ok" onclick="saveOverride()">✓ Хадгалах</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: паспорт нэмэх -->
+<div class="overlay" id="swFolderModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div class="sheet-title">Сумын паспорт нэмэх</div>
+    <div class="ff"><label>Паспортын нэр</label><input type="text" id="swfName" placeholder="Хавар 2026 сумын паспорт"></div>
+    <div class="ff-row">
+      <div class="ff"><label>Улирал</label>
+        <select id="swfSeason" onchange="updateSwFolderName()"><option value="хавар">Хавар</option><option value="намар">Намар</option><option value="зун">Зун</option><option value="өвөл">Өвөл</option></select>
+      </div>
+      <div class="ff"><label>Он</label><input type="number" id="swfYear" placeholder="2026" oninput="updateSwFolderName()"></div>
+    </div>
+    <div class="ff"><label>Огноо</label><input type="date" id="swfDate"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('swFolderModal')">Болих</button>
+      <button class="btn-ok" onclick="addSwFolder()">Үүсгэх</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: сум нэмэх -->
+<div class="overlay" id="swTurnoutModal">
+  <div class="sheet" style="max-height:92vh"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Сум нэмэх</div>
+      <button onclick="closeModal('swTurnoutModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div class="ff"><label>Өртөө / Зөрлөгийн нэр</label><input type="text" id="swtStation" placeholder="Шивээ-говь"></div>
+    <div class="ff"><label>Сумын №</label><input type="number" id="swtNum" min="1" placeholder="1"></div>
+    <div class="ff"><label>Сумын маяг</label>
+      <div class="edit-grid" style="margin:0" id="swtMakGrid"></div>
+    </div>
+    <div class="ff"><label>Сумын марк</label>
+      <div class="edit-grid" style="margin:0" id="swtMarkGrid"></div>
+    </div>
+    <div class="ff"><label>Зураг төслийн дугаар <span style="text-transform:none;font-weight:600;color:var(--ink4)">(заавал биш)</span></label>
+      <div class="fast-grid" id="swtProjGrid"></div>
+    </div>
+    <div id="swtHint" style="font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:var(--rs);padding:9px 11px;margin-bottom:4px;line-height:1.6"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('swTurnoutModal')">Болих</button>
+      <button class="btn-ok" onclick="addSwTurnout()">Нэмэх</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: рам замын эхний дэрийн тоо -->
+<div class="overlay" id="swHeadModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div class="sheet-title">Бүртгэл эхлэх</div>
+    <div style="font-size:12.5px;color:var(--ink2);margin-bottom:14px;font-weight:600;line-height:1.6">
+      Рам зам төмрийн эхэнд хэдэн <b>дэр</b> байна вэ?<br>
+      <span style="font-size:11px;color:var(--ink3);font-weight:600">Эхлээд энэ тооны дэр бүртгэгдэж, дараа нь 3 пог/м-ээс эхлэн дүнз бүртгэгдэнэ.</span>
+    </div>
+    <div class="ff"><label>Дэрийн тоо</label><input type="number" id="swHeadN" min="0" max="50" placeholder="жишээ: 4"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="document.getElementById('swHeadN').value=0">0</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="document.getElementById('swHeadN').value=2">2</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="document.getElementById('swHeadN').value=3">3</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="document.getElementById('swHeadN').value=4">4</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="document.getElementById('swHeadN').value=5">5</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('swHeadModal')">Болих</button>
+      <button class="btn-ok" onclick="saveSwHead()">Эхлэх →</button>
     </div>
   </div></div>
 </div>
@@ -1870,7 +2053,8 @@ function ring(pct,size,color){
 // VIEWS
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
-const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4};
+const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
+  swHomeView:1,swListView:2,swRecView:3};
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
@@ -6024,6 +6208,310 @@ async function adminExportExcel(){
 })();
 
 // ══════════════════════════════════════════════
+// СШ ПУ-5 — СУМ ШИЛЖҮҮЛГИЙН ДҮНЗ БҮРТГЭЛ
+// Дэр бүртгэлээс тусдаа модуль. Өгөгдөл нь DB.sw дотор:
+//   DB.sw = [{id,name,season,year,date,sc, turnouts:[
+//     {id,num,station,mak,mark,proj,head,it}]}]
+//   head — рам зам төмрийн эхэнд байрлах ДЭРийн тоо
+//   it   — бүртгэлийн мөр бүрийн байдал, 'n' (хэвийн) / 'b' (тэнцэхгүй)
+//          Эхний head ширхэг нь ДЭР, түүнээс хойш ДҮНЗ.
+// ══════════════════════════════════════════════
+// Маяг × марк бүрийн дүнзний хуваарь: [урт пог/м, ширхэг]
+const SW_SPECS=[
+  {mak:'Р-65',mark:'1/11',proj:['2764','2433'],
+   sch:[[3,18],[3.25,10],[3.5,8],[3.75,7],[4,5],[4.25,6],[4.5,5],[4.75,6],[5,5],[5.25,6],[5.5,4]]},
+  {mak:'Р-65',mark:'1/9',proj:['2766','2434'],
+   sch:[[3,19],[3.25,10],[3.5,8],[3.75,4],[4,6],[4.25,5],[4.5,4],[4.75,4],[5,4],[5.25,4]]},
+  {mak:'Р-50',mark:'1/11',proj:['2642'],
+   sch:[[3,18],[3.25,8],[3.5,7],[3.75,8],[4,4],[4.25,6],[4.5,5],[4.75,5],[5,5],[5.25,6],[5.5,3]]}
+];
+const SW_MAKS=[...new Set(SW_SPECS.map(x=>x.mak))];
+function swSpec(mak,mark){return SW_SPECS.find(x=>x.mak===mak&&x.mark===mark)||null}
+function swMarksOf(mak){return SW_SPECS.filter(x=>x.mak===mak).map(x=>x.mark)}
+function swSchTotal(sp){return sp?sp.sch.reduce((s,x)=>s+x[1],0):0}
+// Уртыг эмх цэгцтэй бичих: 3.25 → "3,25"
+function swLen(v){return String(v).replace('.',',')}
+// i-р мөр юу болох: {kind:'дэр'} эсвэл {kind:'дүнз',len}
+// Хуваарь дуусвал үлдсэнийг нь 5,5 пог/м гэж бүртгэнэ.
+function swSlot(to,i){
+  const head=to.head||0;
+  if(i<head)return{kind:'дэр'};
+  const sp=swSpec(to.mak,to.mark);
+  let j=i-head;
+  if(sp)for(const [len,n] of sp.sch){if(j<n)return{kind:'дүнз',len};j-=n}
+  return{kind:'дүнз',len:5.5,over:true}
+}
+function swSlotLabel(to,i){const s=swSlot(to,i);
+  return s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}
+// Тухайн сумын бүртгэлийн дүн. Дүнзний тоог ДҮНЗ мөрүүдээр л тооцно.
+function swTally(to){
+  const it=to.it||'',head=to.head||0;
+  const r={total:0,bad:0,pass:0,sl:0,slBad:0};
+  for(let i=0;i<it.length;i++){
+    const isD=i>=head,bad=it[i]==='b';
+    if(isD){r.total++;if(bad)r.bad++;else r.pass++}
+    else{r.sl++;if(bad)r.slBad++}
+  }
+  r.pct=r.total?r.bad/r.total*100:0;
+  return r
+}
+function swPlanned(to){const sp=swSpec(to.mak,to.mark);return(to.head||0)+swSchTotal(sp)}
+function swFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw}
+let swFolderId=null,swTurnoutId=null;
+function swFolder(){return swFolders().find(f=>f.id===swFolderId)||null}
+function swTurnout(){const f=swFolder();return f?(f.turnouts||[]).find(t=>t.id===swTurnoutId)||null:null}
+
+// ── Шилжилт ──
+function goSwHome(){hap(6);showView('swHomeView');renderSwHome()}
+function goDerHome(){showView('homeView',true);renderHome()}
+// Нүүр ↔ СШ ПУ-5: зүүн шудрахад СШ рүү, баруун шудрахад Дэр рүү буцна.
+// Дэлгэц босоо гүйдэг тул зөвхөн тодорхой ХӨНДЛӨН шудралтад ажиллана.
+function initSwSwipe(){
+  const bind=(id,dir,go)=>{
+    const v=document.getElementById(id);if(!v)return;
+    let st=null;
+    const ready=()=>!document.querySelector('.overlay.open');
+    v.addEventListener('touchstart',e=>{
+      if(!ready()){st=null;return}
+      const t=e.touches[0];st={x:t.clientX,y:t.clientY,time:Date.now()}
+    },{passive:true});
+    v.addEventListener('touchmove',e=>{
+      if(!st)return;
+      const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
+      if(Math.abs(dx)>34&&Math.abs(dx)>Math.abs(dy)*1.6&&Math.sign(dx)===dir)
+        showSwipeFlash(dir>0?'right':'left');
+      else hideSwipeFlash()
+    },{passive:true});
+    v.addEventListener('touchend',e=>{
+      if(!st)return;
+      const t=e.changedTouches[0];
+      const dx=t.clientX-st.x,dy=t.clientY-st.y,dt=Date.now()-st.time;
+      st=null;hideSwipeFlash();
+      if(Math.sign(dx)===dir&&Math.abs(dx)>62&&Math.abs(dx)>Math.abs(dy)*1.6&&dt<600)go()
+    },{passive:true})
+  };
+  bind('homeView',-1,()=>goSwHome());     // зүүн тийш → СШ ПУ-5
+  bind('swHomeView',1,()=>goDerHome())    // баруун тийш → Дэр ПУ-5
+}
+
+// ── Нүүр: паспортын жагсаалт ──
+function renderSwHome(){
+  const el=document.getElementById('swLoc');
+  if(el)el.textContent=DB.location?DB.location+' · Сум шилжүүлгийн дүнз':'Сум шилжүүлгийн дүнз';
+  let nT=0,nD=0,nB=0;
+  swFolders().forEach(f=>(f.turnouts||[]).forEach(t=>{
+    nT++;const a=swTally(t);nD+=a.total;nB+=a.bad}));
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set('swHsT',nT);set('swHsD',nD);set('swHsP',nD?(nB/nD*100).toFixed(1)+'%':'—');
+  const g=document.getElementById('swFolders');if(!g)return;
+  if(!swFolders().length){
+    g.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return}
+  g.innerHTML=swFolders().map(f=>{
+    const ts=(f.turnouts||[]);
+    let d=0,b=0;ts.forEach(t=>{const a=swTally(t);d+=a.total;b+=a.bad});
+    const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
+    return`<div class="folder-card" style="border-color:#DDD6FE" onclick="hap();openSwFolderView('${f.id}')">
+      <div class="folder-icon"><svg class="ic" style="font-size:21px;color:#7E22CE" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="folder-info">
+        <div class="folder-name" style="color:#7E22CE">${f.name}${foreign?` <span class="sc-tag">${f.sc}</span>`:''}</div>
+        <div class="folder-meta">${f.year} · ${f.season} · ${ts.length} сум${d?` · ${d} дүнз · ${(b/d*100).toFixed(1)}%`:''}</div>
+      </div>
+      <div class="folder-actions">
+        <button class="folder-del" onclick="delSwFolderById('${f.id}',event)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>`}).join('')
+}
+// ── Паспорт нэмэх ──
+function updateSwFolderName(){
+  const s=document.getElementById('swfSeason').value;
+  const y=document.getElementById('swfYear').value||new Date().getFullYear();
+  document.getElementById('swfName').value=`${s.charAt(0).toUpperCase()+s.slice(1)} ${y} сумын паспорт`
+}
+function openSwFolder(){
+  document.getElementById('swfSeason').value='хавар';
+  document.getElementById('swfYear').value=new Date().getFullYear();
+  document.getElementById('swfDate').value=new Date().toISOString().slice(0,10);
+  updateSwFolderName();openModal('swFolderModal')
+}
+function addSwFolder(){
+  const name=(document.getElementById('swfName').value||'').trim();
+  if(!name){showToast('Нэр оруулна уу');return}
+  const f={id:'sf-'+uid(),name,
+    season:document.getElementById('swfSeason').value,
+    year:document.getElementById('swfYear').value||new Date().getFullYear()+'',
+    date:document.getElementById('swfDate').value||new Date().toISOString().slice(0,10),
+    sc:_sectionCode||'',turnouts:[]};
+  swFolders().push(f);saveDB();closeModal('swFolderModal');openSwFolderView(f.id)
+}
+async function delSwFolderById(id,e){
+  if(e)e.stopPropagation();
+  const f=swFolders().find(x=>x.id===id);if(!f)return;
+  if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх сумын бүртгэл устана.`,'Устгах'))return;
+  DB.sw=swFolders().filter(x=>x.id!==id);
+  if(swFolderId===id)swFolderId=null;
+  saveDB();renderSwHome()
+}
+async function delSwFolder(){
+  const f=swFolder();if(!f)return;
+  if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх сумын бүртгэл устана.`,'Устгах'))return;
+  DB.sw=swFolders().filter(x=>x.id!==f.id);swFolderId=null;
+  saveDB();showView('swHomeView',true);renderSwHome()
+}
+
+// ── Паспорт доторх сумын жагсаалт ──
+function openSwFolderView(id){swFolderId=id;showView('swListView');renderSwList()}
+function renderSwList(){
+  const f=swFolder();if(!f){showView('swHomeView',true);renderSwHome();return}
+  document.getElementById('swListTitle').textContent=f.name;
+  document.getElementById('swListSub').textContent=`${f.year} · ${f.season} · ${(f.turnouts||[]).length} сум`;
+  const body=document.getElementById('swListBody');
+  const ts=f.turnouts||[];
+  if(!ts.length){
+    body.innerHTML='<div style="text-align:center;padding:30px 16px;color:var(--ink4);font-size:13px;font-weight:600">Сум нэмнэ үү<div style="font-size:11px;margin-top:6px">Доод талын "Сум нэмэх" товчийг дарна уу</div></div>';return}
+  body.innerHTML=ts.slice().sort((a,b)=>a.num-b.num).map(t=>{
+    const a=swTally(t),pl=swPlanned(t),done=(t.it||'').length;
+    const pc=a.total?a.pct:0;
+    const col=!done?'var(--ink4)':pc>=25?'var(--red)':pc>=15?'var(--orange)':'var(--g600)';
+    return`<div class="sec-card type-connecting" onclick="hap();openSwRec('${t.id}')">
+      <div class="sec-card-top">
+        <div>
+          <div class="sec-name">Сум ${t.num} · ${t.mak} · ${t.mark}</div>
+          <div class="sec-meta">${t.station||'—'}${t.proj?' · төсөл '+t.proj:''}</div>
+        </div>
+        <span class="sec-badge sec-badge-connecting">${done}/${pl}</span>
+      </div>
+      ${done?`<div class="sec-stats">
+        <div class="sec-stat"><span class="ss-n">${a.total}</span><span class="ss-l">Нийт дүнз</span></div>
+        <div class="sec-stat"><span class="ss-n" style="color:var(--orange)">${a.bad}</span><span class="ss-l">Тэнцэхгүй</span></div>
+        <div class="sec-stat"><span class="ss-n" style="color:${col}">${a.total?a.pct.toFixed(1)+'%':'—'}</span><span class="ss-l">Эзлэх %</span></div>
+      </div>`:'<div class="sec-meta" style="margin-top:6px">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
+    </div>`}).join('')
+}
+// ── Сум нэмэх ──
+let _swMak=SW_MAKS[0],_swMark=swMarksOf(SW_MAKS[0])[0],_swProj='';
+function openSwTurnout(){
+  const f=swFolder();if(!f)return;
+  document.getElementById('swtStation').value=DB.location||'';
+  const mx=(f.turnouts||[]).reduce((m,t)=>Math.max(m,t.num||0),0);
+  document.getElementById('swtNum').value=mx+1;
+  _swMak=SW_MAKS[0];_swMark=swMarksOf(_swMak)[0];_swProj='';
+  renderSwPick();openModal('swTurnoutModal')
+}
+function pickSwMak(m){_swMak=m;const mk=swMarksOf(m);if(!mk.includes(_swMark))_swMark=mk[0];_swProj='';hap(6);renderSwPick()}
+function pickSwMark(m){_swMark=m;_swProj='';hap(6);renderSwPick()}
+function pickSwProj(p){_swProj=(_swProj===p?'':p);hap(6);renderSwPick()}
+function renderSwPick(){
+  document.getElementById('swtMakGrid').innerHTML=SW_MAKS.map(m=>
+    `<button type="button" class="etb mat-btn${m===_swMak?' selected':''}" onclick="pickSwMak('${m}')">${m}</button>`).join('');
+  document.getElementById('swtMarkGrid').innerHTML=swMarksOf(_swMak).map(m=>
+    `<button type="button" class="etb mat-btn${m===_swMark?' selected':''}" onclick="pickSwMark('${m}')">${m}</button>`).join('');
+  const sp=swSpec(_swMak,_swMark);
+  document.getElementById('swtProjGrid').innerHTML=(sp?sp.proj:[]).map(p=>
+    `<button type="button" class="fast-btn${p===_swProj?' selected':''}" onclick="pickSwProj('${p}')">${p}</button>`).join('')
+    ||'<div style="font-size:11px;color:var(--ink4);font-weight:600">Дугаар бүртгэгдээгүй</div>';
+  const h=document.getElementById('swtHint');
+  if(sp)h.innerHTML=`${_swMak} · ${_swMark} → нийт <b>${swSchTotal(sp)}</b> дүнз<br>`+
+    sp.sch.map(([l,n])=>`${swLen(l)}м–${n}ш`).join(' · ');
+  else h.textContent='Энэ маяг/маркийн хуваарь бүртгэгдээгүй'
+}
+function addSwTurnout(){
+  const f=swFolder();if(!f)return;
+  const num=parseInt(document.getElementById('swtNum').value,10);
+  if(!num){showToast('Сумын дугаар оруулна уу');return}
+  if((f.turnouts||[]).some(t=>t.num===num)){showToast(`${num}-р сум аль хэдийн байна`);return}
+  const t={id:'sw-'+uid(),num,
+    station:(document.getElementById('swtStation').value||'').trim(),
+    mak:_swMak,mark:_swMark,proj:_swProj,head:null,it:''};
+  (f.turnouts||(f.turnouts=[])).push(t);
+  saveDB();closeModal('swTurnoutModal');renderSwList();
+  showToast(`✓ Сум ${num} · ${t.mak} · ${t.mark} нэмэгдлээ`,2600)
+}
+async function delSwTurnout(){
+  const f=swFolder(),t=swTurnout();if(!f||!t)return;
+  if(!await appConfirm(`Сум ${t.num}-г устгах уу? Бүртгэл нь хамт устана.`,'Устгах'))return;
+  f.turnouts=(f.turnouts||[]).filter(x=>x.id!==t.id);swTurnoutId=null;
+  saveDB();showView('swListView',true);renderSwList()
+}
+
+// ── Бүртгэл ──
+function openSwRec(id){
+  swTurnoutId=id;const t=swTurnout();if(!t)return;
+  if(t.head===null||t.head===undefined){   // эхлэхийн өмнө рам замын дэрийн тоог асууна
+    document.getElementById('swHeadN').value='';
+    openModal('swHeadModal');return
+  }
+  showView('swRecView');renderSwRec()
+}
+function saveSwHead(){
+  const t=swTurnout();if(!t)return;
+  const n=parseInt(document.getElementById('swHeadN').value,10);
+  if(isNaN(n)||n<0){showToast('Дэрийн тоог оруулна уу');return}
+  t.head=n;saveDB();closeModal('swHeadModal');
+  showView('swRecView');renderSwRec();
+  showToast(n?`Эхний ${n} мөр — дэр`:'Дэргүй, шууд дүнзээр эхэлнэ',2600)
+}
+function renderSwRec(focus){
+  const f=swFolder(),t=swTurnout();
+  if(!f||!t){showView('swListView',true);renderSwList();return}
+  document.getElementById('swRecTitle').textContent=`Сум ${t.num} · ${t.mak} · ${t.mark}`;
+  document.getElementById('swRecSub').textContent=
+    `${t.station||f.name}${t.proj?' · төсөл '+t.proj:''} · эхэнд ${t.head} дэр`;
+  const a=swTally(t),pl=swPlanned(t),n=(t.it||'').length;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set('sw-total',a.total);set('sw-pass',a.pass);set('sw-fail',a.bad);
+  set('sw-pct',a.total?a.pct.toFixed(1)+'%':'—');
+  const pe=document.getElementById('sw-pct');
+  if(pe)pe.style.color=!a.total?'var(--ink4)':a.pct>=25?'var(--dred)':a.pct>=15?'var(--orange)':'var(--g600)';
+  // Дараагийн мөрөнд юу бүртгэх вэ
+  const ni=document.getElementById('swNextInfo');
+  const s=swSlot(t,n);
+  if(ni)ni.innerHTML=n>=pl&&pl
+    ?`Хуваарийн ${pl} мөр дүүрсэн — цаашид <b>5,5 пог/м</b> дүнз бүртгэнэ  ·  дараах #${n+1}`
+    :`Дараах #${n+1} — <b>${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м дүнз'}</b>  ·  хуваарь ${n}/${pl}`;
+  // Мөрүүд
+  const wrap=document.getElementById('swLog');
+  let html='';
+  for(let i=0;i<n;i++){
+    const sl=swSlot(t,i),bad=t.it[i]==='b';
+    const cls=sl.kind==='дэр'?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok';
+    html+=`<div class="drow sw-row ${cls}${bad?' sw-isbad':''}" data-i="${i}" onclick="hap();swTap(${i})">
+      <span class="dr-num">#${i+1}</span>
+      <span class="sw-kind">${sl.kind==='дэр'?'Дэр':swLen(sl.len)+' пог/м'}</span>
+      <span class="sw-state">${bad?'Тэнцэхгүй':'Хэвийн'}</span>
+      <span class="dr-edit">${ic('edit',12)}</span></div>`
+  }
+  html+=`<div class="drow sw-row sw-slot" data-i="${n}">
+    <span class="dr-num">#${n+1}</span>
+    <span class="sw-kind">${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}</span>
+    <span class="sw-state" style="color:var(--ink4)">бүртгэх…</span></div>`;
+  wrap.innerHTML=html;
+  const el=wrap.querySelector(focus!==undefined?`.sw-row[data-i="${focus}"]`:'.sw-slot');
+  if(el)el.scrollIntoView({block:'center',behavior:'smooth'})
+}
+// Бүртгэх / засах
+function swWrite(t,i,ch){
+  const a=(t.it||'').padEnd(i,'n').split('');a[i]=ch;t.it=a.join('')
+}
+function swPut(ch){
+  const t=swTurnout();if(!t)return;
+  hap(ch==='b'?18:8);
+  swWrite(t,(t.it||'').length,ch);
+  saveDB();renderSwRec()
+}
+let _swTapIdx=-1;
+function swTap(i){
+  const t=swTurnout();if(!t||i>=(t.it||'').length)return;
+  _swTapIdx=i;
+  swWrite(t,i,t.it[i]==='b'?'n':'b');   // дарах бүрд эсрэгээр нь сольно
+  saveDB();renderSwRec(i);
+  showToast(`#${i+1} → ${t.it[i]==='b'?'Тэнцэхгүй':'Хэвийн'}`,1400)
+}
+function swUndo(){
+  const t=swTurnout();if(!t||!(t.it||'').length){showToast('Буцаах зүйл алга');return}
+  hap(18);t.it=t.it.slice(0,-1);saveDB();renderSwRec()
+}
+
+// ══════════════════════════════════════════════
 // ANDROID BACK BUTTON
 // ══════════════════════════════════════════════
 function _appBack(){
@@ -6049,6 +6537,9 @@ function _appBack(){
       // "Дараалсан цэг"-ээс үсэрч ирсэн бол жагсаалт руугаа буцна
       if(_fromConsec){backToConsec();return true}
       goTrack();return true;
+    case 'swHomeView':goDerHome();return true;
+    case 'swListView':showView('swHomeView',true);renderSwHome();return true;
+    case 'swRecView':showView('swListView',true);renderSwList();return true;
     case 'trackView':backFromTrack();return true;
     case 'mainKmView':goHome();return true;
     case 'summaryView':backFromSummary();return true;
@@ -6069,7 +6560,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·73';
+const APP_BUILD='2026.08.25·74';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
@@ -6187,7 +6678,7 @@ try{
   // Хувилбарыг нэвтрэх дэлгэц болон нүүр хуудасны хамгийн доор харуулна
   document.querySelectorAll('.build-tag').forEach(function(e){e.textContent='v '+APP_BUILD});
 })();
-initScreenSwipe();initKmSwipe();
+initScreenSwipe();initKmSwipe();initSwSwipe();
 initRipple();initSheetGestures();
 
 // ══════════════════════════════════════════════
