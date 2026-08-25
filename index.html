@@ -145,26 +145,25 @@ button{font-family:inherit}
 .sw-link:active{transform:scale(.95)}
 .sw-next{margin-top:8px;font-size:11.5px;font-weight:700;color:#6D28D9;background:#F5F0FF;
   border:1px solid #DDD6FE;border-radius:var(--rs);padding:8px 11px;line-height:1.5}
-.sw-row{height:46px;cursor:pointer}
-.sw-row .sw-kind{font-size:12px;font-weight:800;padding:3px 9px;border-radius:7px;
+.sw-kind{font-size:12px;font-weight:800;padding:3px 9px;border-radius:7px;
   background:var(--bg);border:1px solid var(--border);color:var(--ink2);white-space:nowrap}
-.sw-row .sw-state{font-size:12px;font-weight:700;color:var(--ink3);margin-left:6px}
+.sw-state{font-size:12.5px;font-weight:700;color:var(--ink3);margin-left:4px}
 .sw-r-ok{background:var(--g50);border-color:var(--g300)}
 .sw-r-bad{background:var(--orange-bg);border-color:#F5C272}
-.sw-r-bad .sw-state{color:var(--orange)}
+.sw-r-bad .sw-state{color:var(--orange);font-weight:800}
 .sw-r-sl{background:#F5F0FF;border-color:#DDD6FE}
 .sw-r-sl .sw-kind{background:#EDE4FF;border-color:#C4B5FD;color:#6D28D9}
-.sw-slot{background:var(--card);border:2px dashed var(--border2)}
-.sw-dock{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;
-  padding:10px 14px calc(12px + var(--sab));background:rgba(252,252,250,.94);
-  backdrop-filter:blur(12px);border-top:1px solid var(--border)}
-.sw-big{flex:1;padding:15px 8px;border-radius:var(--rm);border:2px solid;font-size:14px;
-  font-weight:900;font-family:inherit;cursor:pointer;display:flex;align-items:center;
-  justify-content:center;gap:7px;transition:transform .12s}
-.sw-big:active{transform:scale(.96)}
-.sw-big span{font-size:17px}
-.sw-ok{background:var(--g100);color:var(--g600);border-color:var(--g400)}
-.sw-bad{background:var(--orange-bg);color:var(--orange);border-color:#F5C272}
+.sw-meters{margin-top:8px;font-size:11.5px;font-weight:800;color:var(--ink2);
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:7px 11px}
+.sw-slpanel{margin-top:8px;background:#F5F0FF;border:1px solid #DDD6FE;
+  border-radius:var(--rs);padding:8px 10px}
+.sw-slpanel .ssp-h{font-size:10px;font-weight:900;color:#6D28D9;text-transform:uppercase;
+  letter-spacing:.06em;margin-bottom:6px}
+.sw-slpanel .ssp-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sw-slpanel .ssp-c{text-align:center;background:var(--card);border-radius:7px;padding:5px 3px}
+.sw-slpanel .ssp-n{font-size:15px;font-weight:900;line-height:1.1}
+.sw-slpanel .ssp-l{font-size:8.5px;font-weight:800;color:var(--ink3);margin-top:2px}
+
 .pu5-btn{width:100%;margin:-2px 0 4px;padding:8px 10px;border:1px dashed var(--border2);
   border-top:none;border-radius:0 0 var(--rm) var(--rm);background:var(--bg);
   color:var(--ink3);font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer;
@@ -1033,13 +1032,23 @@ button{font-family:inherit}
       <div class="cnt" style="background:var(--red-bg);border-color:#F5A0A0">
         <div class="cnt-n" style="color:var(--red)" id="sw-pct">—</div><div class="cnt-l">Тэнцэхгүй %</div></div>
     </div>
+    <div id="swMeters" class="sw-meters">—</div>
     <div id="swNextInfo" class="sw-next">—</div>
+    <div id="swSlPanel" class="sw-slpanel" style="display:none"></div>
   </div>
   <div class="log-wrap" id="swLog"></div>
-  <div class="sw-dock">
-    <button class="round-btn" onclick="swUndo()" title="Буцаах"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 105-8"/></svg></button>
-    <button class="sw-big sw-ok" onclick="swPut('n')"><span>✓</span>Хэвийн</button>
-    <button class="sw-big sw-bad" onclick="swPut('b')"><span>~</span>Тэнцэхгүй</button>
+  <div class="rec-bottom">
+    <div class="left-controls">
+      <button class="round-btn" onclick="swUndo()" title="Буцаах"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 105-8"/></svg></button>
+    </div>
+    <div class="joystick-wrap">
+      <div class="joy-ring"></div>
+      <div class="joy-hint jh-bot">↓ Тэнцэхгүй</div>
+      <div class="joy-btn" id="swJoyBtn">
+        <div class="joy-icon" id="swJoyIcon">●</div>
+        <div class="joy-lbl" id="swJoyLbl">Хэвийн</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1502,6 +1511,23 @@ button{font-family:inherit}
       <button class="btn-cancel" onclick="closeModal('swTurnoutModal')">Болих</button>
       <button class="btn-ok" onclick="addSwTurnout()">Нэмэх</button>
     </div>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: рам замын дэр засах -->
+<div class="overlay" id="swSlModal" style="z-index:430">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="swSlTitle">Дэр засах</div>
+      <button onclick="closeModal('swSlModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Рам зам төмрийн эхний дэр — сумын дүнд ордоггүй</div>
+    <div class="edit-grid">
+      <button class="etb etb-n" id="swSlBn" onclick="setSwSl('n')"><span class="etb-icon">✓</span>Хэвийн</button>
+      <button class="etb etb-b" id="swSlBb" onclick="setSwSl('b')"><span class="etb-icon">~</span>Тэнцэхгүй</button>
+    </div>
+    <button class="etb" id="swSlReplBtn" onclick="openSwSlRepl()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('swSlModal')">Буцах</button>
   </div></div>
 </div>
 
@@ -3954,9 +3980,11 @@ function _replSyncDays(keepDay){
   _wheelFill(el,days,_replD-1);
   el.scrollTop=(_replD-1)*_WH_IH;
 }
+// Сольсон огнооны цонхыг дэр бүртгэл болон СШ ПУ-5 хоёр хуваан ашиглана
+let _replMode='sec';
 function openReplModal(){
   const sec=activeSec();if(!sec||editIdx<0)return;
-  closeModal('typeModal');
+  _replMode='sec';closeModal('typeModal');
   const ex=getRepl(sec,editIdx);
   const t=mnToday();
   _replY=t.y;                            // он тухайн оноороо — солигдохгүй
@@ -3969,21 +3997,22 @@ function openReplModal(){
   document.getElementById('replClearBtn').style.display=ex?'block':'none';
   closeModal('editSleeperModal');
   openModal('replModal');
-  // Цонх нээгдсэний дараа л scrollTop үйлчилнэ (нуугдсан үед хэмжээ 0 байдаг)
-  setTimeout(function(){
-    const mEl=document.getElementById('whMonth'),dEl=document.getElementById('whDay');
-    const months=[];for(let i=1;i<=12;i++)months.push(i);
-    _wheelFill(mEl,months,_replM-1);
-    mEl.scrollTop=(_replM-1)*_WH_IH;
-    _replSyncDays();
-    if(!mEl._bound){
-      mEl._bound=1;
-      _wheelBind(mEl,function(){return 12},function(i){
-        _replM=i+1;_replSyncDays()          // сар солигдвол өдрийн тоо дахин тооцогдоно
-      });
-      _wheelBind(dEl,function(){return daysInMonth(_replY,_replM)},function(i){_replD=i+1})
-    }
-  },40)
+  setTimeout(_replWheels,40)
+}
+// Цонх нээгдсэний дараа л scrollTop үйлчилнэ (нуугдсан үед хэмжээ 0 байдаг)
+function _replWheels(){
+  const mEl=document.getElementById('whMonth'),dEl=document.getElementById('whDay');
+  const months=[];for(let i=1;i<=12;i++)months.push(i);
+  _wheelFill(mEl,months,_replM-1);
+  mEl.scrollTop=(_replM-1)*_WH_IH;
+  _replSyncDays();
+  if(!mEl._bound){
+    mEl._bound=1;
+    _wheelBind(mEl,function(){return 12},function(i){
+      _replM=i+1;_replSyncDays()          // сар солигдвол өдрийн тоо дахин тооцогдоно
+    });
+    _wheelBind(dEl,function(){return daysInMonth(_replY,_replM)},function(i){_replD=i+1})
+  }
 }
 // Солихын өмнө тэнцэхгүй байсан эсэх. o тэмдэггүй хуучин бүртгэлийг
 // тэнцэхгүй байсанд тооцно (ихэвчлэн тэнцэхгүй дэрийг сольдог).
@@ -4050,6 +4079,7 @@ function recomputeCarve(t){
   })
 }
 async function saveRepl(newType){
+  if(_replMode==='sw')return saveSwSlRepl(newType);
   const sec=activeSec();if(!sec||editIdx<0)return;
   const t=activeTrack();
   const idx=editIdx;              // асуулт хариулах хооронд editIdx өөрчлөгдөж болзошгүй
@@ -4084,6 +4114,7 @@ async function saveRepl(newType){
     :`#${idx+1} сольсон · ${fmtReplDate(date)}`,2600)
 }
 function clearRepl(){
+  if(_replMode==='sw')return clearSwSlRepl();
   const sec=activeSec();if(!sec||editIdx<0)return;
   const idx=editIdx;
   clearReplAt(sec,idx);
@@ -6243,18 +6274,32 @@ function swSlot(to,i){
 }
 function swSlotLabel(to,i){const s=swSlot(to,i);
   return s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}
-// Тухайн сумын бүртгэлийн дүн. Дүнзний тоог ДҮНЗ мөрүүдээр л тооцно.
+// Тухайн сумын бүртгэлийн дүн.
+// Сумын тэнцэх/тэнцэхгүйд ЗӨВХӨН ДҮНЗ ордог — рам замын эхний дэрүүд
+// тусдаа тоологдоно.
+// Эзлэх хувийг ПОГ/М-ээр бодно: тэнцэхгүй пог/м ÷ нийт бүртгэгдсэн пог/м.
 function swTally(to){
   const it=to.it||'',head=to.head||0;
-  const r={total:0,bad:0,pass:0,sl:0,slBad:0};
+  const r={total:0,bad:0,pass:0,m:0,mBad:0,sl:0,slBad:0,slRuns:0,slRepl:0};
   for(let i=0;i<it.length;i++){
-    const isD=i>=head,bad=it[i]==='b';
-    if(isD){r.total++;if(bad)r.bad++;else r.pass++}
-    else{r.sl++;if(bad)r.slBad++}
+    const bad=it[i]==='b';
+    if(i>=head){
+      const len=swSlot(to,i).len;
+      r.total++;r.m+=len;
+      if(bad){r.bad++;r.mBad+=len}else r.pass++
+    } else {r.sl++;if(bad)r.slBad++}
   }
-  r.pct=r.total?r.bad/r.total*100:0;
+  // Рам замын дэрүүдэд 3 ба түүнээс дээш дараалсан цэг байна уу
+  let run=0;
+  for(let i=0;i<Math.min(head,it.length);i++){
+    if(it[i]==='b'){run++;if(run===3)r.slRuns++}else run=0
+  }
+  r.slRepl=Object.keys(to.slRepl||{}).length;
+  r.pct=r.m?r.mBad/r.m*100:0;
   return r
 }
+// Пог/м-ийг цэвэрхэн бичих: 6 → "6", 6.25 → "6,25"
+function swM(v){return (Math.round(v*100)/100).toString().replace('.',',')}
 function swPlanned(to){const sp=swSpec(to.mak,to.mark);return(to.head||0)+swSchTotal(sp)}
 function swFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw}
 let swFolderId=null,swTurnoutId=null;
@@ -6298,23 +6343,23 @@ function initSwSwipe(){
 function renderSwHome(){
   const el=document.getElementById('swLoc');
   if(el)el.textContent=DB.location?DB.location+' · Сум шилжүүлгийн дүнз':'Сум шилжүүлгийн дүнз';
-  let nT=0,nD=0,nB=0;
+  let nT=0,nD=0,nM=0,nMB=0;
   swFolders().forEach(f=>(f.turnouts||[]).forEach(t=>{
-    nT++;const a=swTally(t);nD+=a.total;nB+=a.bad}));
+    nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
-  set('swHsT',nT);set('swHsD',nD);set('swHsP',nD?(nB/nD*100).toFixed(1)+'%':'—');
+  set('swHsT',nT);set('swHsD',nD);set('swHsP',nM?(nMB/nM*100).toFixed(1)+'%':'—');
   const g=document.getElementById('swFolders');if(!g)return;
   if(!swFolders().length){
     g.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return}
   g.innerHTML=swFolders().map(f=>{
     const ts=(f.turnouts||[]);
-    let d=0,b=0;ts.forEach(t=>{const a=swTally(t);d+=a.total;b+=a.bad});
+    let d=0,m=0,mb=0;ts.forEach(t=>{const a=swTally(t);d+=a.total;m+=a.m;mb+=a.mBad});
     const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
     return`<div class="folder-card" style="border-color:#DDD6FE" onclick="hap();openSwFolderView('${f.id}')">
       <div class="folder-icon"><svg class="ic" style="font-size:21px;color:#7E22CE" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="folder-info">
         <div class="folder-name" style="color:#7E22CE">${f.name}${foreign?` <span class="sc-tag">${f.sc}</span>`:''}</div>
-        <div class="folder-meta">${f.year} · ${f.season} · ${ts.length} сум${d?` · ${d} дүнз · ${(b/d*100).toFixed(1)}%`:''}</div>
+        <div class="folder-meta">${f.year} · ${f.season} · ${ts.length} сум${d?` · ${d} дүнз · ${swM(m)} пог/м · ${(mb/m*100).toFixed(1)}%`:''}</div>
       </div>
       <div class="folder-actions">
         <button class="folder-del" onclick="delSwFolderById('${f.id}',event)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -6381,9 +6426,9 @@ function renderSwList(){
         <span class="sec-badge sec-badge-connecting">${done}/${pl}</span>
       </div>
       ${done?`<div class="sec-stats">
-        <div class="sec-stat"><span class="ss-n">${a.total}</span><span class="ss-l">Нийт дүнз</span></div>
-        <div class="sec-stat"><span class="ss-n" style="color:var(--orange)">${a.bad}</span><span class="ss-l">Тэнцэхгүй</span></div>
-        <div class="sec-stat"><span class="ss-n" style="color:${col}">${a.total?a.pct.toFixed(1)+'%':'—'}</span><span class="ss-l">Эзлэх %</span></div>
+        <div class="sec-stat"><span class="ss-n">${a.total}<span style="font-size:9px;font-weight:700;color:var(--ink3)"> · ${swM(a.m)}м</span></span><span class="ss-l">Нийт дүнз</span></div>
+        <div class="sec-stat"><span class="ss-n" style="color:var(--orange)">${a.bad}<span style="font-size:9px;font-weight:700;color:var(--ink3)"> · ${swM(a.mBad)}м</span></span><span class="ss-l">Тэнцэхгүй</span></div>
+        <div class="sec-stat"><span class="ss-n" style="color:${col}">${a.m?a.pct.toFixed(1)+'%':'—'}</span><span class="ss-l">Эзлэх % (пог/м)</span></div>
       </div>`:'<div class="sec-meta" style="margin-top:6px">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
     </div>`}).join('')
 }
@@ -6456,37 +6501,88 @@ function renderSwRec(focus){
   document.getElementById('swRecTitle').textContent=`Сум ${t.num} · ${t.mak} · ${t.mark}`;
   document.getElementById('swRecSub').textContent=
     `${t.station||f.name}${t.proj?' · төсөл '+t.proj:''} · эхэнд ${t.head} дэр`;
-  const a=swTally(t),pl=swPlanned(t),n=(t.it||'').length;
+  const a=swTally(t),pl=swPlanned(t),n=(t.it||'').length,head=t.head||0;
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   set('sw-total',a.total);set('sw-pass',a.pass);set('sw-fail',a.bad);
-  set('sw-pct',a.total?a.pct.toFixed(1)+'%':'—');
+  set('sw-pct',a.m?a.pct.toFixed(1)+'%':'—');
   const pe=document.getElementById('sw-pct');
-  if(pe)pe.style.color=!a.total?'var(--ink4)':a.pct>=25?'var(--dred)':a.pct>=15?'var(--orange)':'var(--g600)';
+  if(pe)pe.style.color=!a.m?'var(--ink4)':a.pct>=25?'var(--dred)':a.pct>=15?'var(--orange)':'var(--g600)';
+  const me=document.getElementById('swMeters');
+  if(me)me.innerHTML=`Нийт <b>${swM(a.m)}</b> пог/м · тэнцэхгүй <b style="color:var(--orange)">${swM(a.mBad)}</b> пог/м`
+    +(a.m?` · эзлэх <b>${a.pct.toFixed(1)}%</b>`:'');
+  // Рам замын дэр — сумын дүнд ордоггүй тул тусад нь
+  const sp=document.getElementById('swSlPanel');
+  if(sp){
+    if(!head)sp.style.display='none';
+    else{
+      sp.style.display='';
+      const pct=a.sl?(a.slBad/a.sl*100):0;
+      sp.innerHTML=`<div class="ssp-h">Рам замын дэр — сумын дүнд ороогүй</div>
+        <div class="ssp-g">
+          <div class="ssp-c"><div class="ssp-n">${a.sl}/${head}</div><div class="ssp-l">Бүртгэсэн</div></div>
+          <div class="ssp-c"><div class="ssp-n" style="color:var(--orange)">${a.slBad}</div><div class="ssp-l">Тэнцэхгүй</div></div>
+          <div class="ssp-c"><div class="ssp-n" style="color:var(--purple)">${a.slRuns}</div><div class="ssp-l">Дараалсан цэг</div></div>
+          <div class="ssp-c"><div class="ssp-n" style="color:var(--red)">${a.slRepl}</div><div class="ssp-l">Солигдсон дэр</div></div>
+        </div>
+        <div style="font-size:9.5px;font-weight:700;color:var(--ink3);margin-top:5px">
+          ${a.sl?`Тэнцэхгүй ${pct.toFixed(1)}%`:'Бүртгэл эхлээгүй'} · дэрийн мөр дээр дарж засна</div>`
+    }
+  }
   // Дараагийн мөрөнд юу бүртгэх вэ
   const ni=document.getElementById('swNextInfo');
   const s=swSlot(t,n);
+  const nno=n<head?n+1:n-head+1;
   if(ni)ni.innerHTML=n>=pl&&pl
-    ?`Хуваарийн ${pl} мөр дүүрсэн — цаашид <b>5,5 пог/м</b> дүнз бүртгэнэ  ·  дараах #${n+1}`
-    :`Дараах #${n+1} — <b>${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м дүнз'}</b>  ·  хуваарь ${n}/${pl}`;
+    ?`Хуваарь дүүрсэн — цаашид <b>5,5 пог/м</b> дүнз бүртгэнэ  ·  дараах дүнз #${nno}`
+    :`Дараах ${s.kind==='дэр'?'<b>дэр</b>':'<b>дүнз</b>'} #${nno} — <b>${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}</b>`
+      +`  ·  ${n<head?`рам зам ${n}/${head}`:`дүнз ${n-head}/${pl-head}`}`;
   // Мөрүүд
   const wrap=document.getElementById('swLog');
   let html='';
+  // Дугаарлалт: рам замын дэр 1-ээс, дүнз эхлэхэд ДАХИН 1-ээс эхэлнэ
+  const no=i=>(i<head?i+1:i-head+1);
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),bad=t.it[i]==='b';
-    const cls=sl.kind==='дэр'?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok';
-    html+=`<div class="drow sw-row ${cls}${bad?' sw-isbad':''}" data-i="${i}" onclick="hap();swTap(${i})">
-      <span class="dr-num">#${i+1}</span>
-      <span class="sw-kind">${sl.kind==='дэр'?'Дэр':swLen(sl.len)+' пог/м'}</span>
+    const isSl=sl.kind==='дэр';
+    const cls=isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok';
+    const rp=isSl?(t.slRepl||{})[i]:null;
+    html+=`<div class="drow dr-rec ${cls}" data-i="${i}" data-rec="1">
+      <span class="dr-num">#${no(i)}</span>
+      <span class="sw-kind">${isSl?'Дэр':swLen(sl.len)+' пог/м'}</span>
       <span class="sw-state">${bad?'Тэнцэхгүй':'Хэвийн'}</span>
+      ${rp?`<span class="repl-date">${fmtReplDate(rp.d)}</span>`:''}
       <span class="dr-edit">${ic('edit',12)}</span></div>`
   }
-  html+=`<div class="drow sw-row sw-slot" data-i="${n}">
-    <span class="dr-num">#${n+1}</span>
+  html+=`<div class="drow dr-slot" data-i="${n}" data-rec="0" data-slot="1">
+    <span class="dr-num">#${no(n)}</span>
     <span class="sw-kind">${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}</span>
-    <span class="sw-state" style="color:var(--ink4)">бүртгэх…</span></div>`;
-  wrap.innerHTML=html;
-  const el=wrap.querySelector(focus!==undefined?`.sw-row[data-i="${focus}"]`:'.sw-slot');
-  if(el)el.scrollIntoView({block:'center',behavior:'smooth'})
+    <span class="dr-slot-lbl">бүртгэх…</span></div>`;
+  wrap.innerHTML='<div class="drum-frame"></div>'+
+    '<div class="drum-viewport"><div class="drum-reel">'+html+'</div></div>'+
+    (!n?'<div class="drum-hint">товшиж эхлэх эсвэл гулсуулах</div>':'');
+  // ID-аар биш, багц дотроос нь олно — дэр бүртгэлийн бөмбөрөгтэй ID давхцахаас сэргийлнэ
+  DRM.vp=wrap.querySelector('.drum-viewport');
+  DRM.reel=wrap.querySelector('.drum-reel');
+  DRM.frame=wrap.querySelector('.drum-frame');
+  DRM.rows=Array.prototype.slice.call(DRM.reel.children);
+  DRM.n=n;DRM.max=Math.max(0,DRM.rows.length-1);DRM.lastNear=-1;DRM.lastCur=-1;
+  DRM.reel.onclick=function(e){
+    const r=e.target.closest('.drow');if(!r||r.dataset.rec!=='1')return;
+    const i=parseInt(r.dataset.i,10);
+    if(Math.abs(i-DRM.pos)>0.5){_drumTo(i);return}
+    hap(6);if(i<head)openSwSl(i);else swTap(i)
+  };
+  _drumBind();
+  const want=focus!==undefined?focus:n;
+  const same=DRM.secId==='sw:'+t.id;
+  DRM.secId='sw:'+t.id;
+  if(same){DRM.target=Math.max(0,Math.min(DRM.max,want));
+    if(!DRM.raf)DRM.raf=requestAnimationFrame(_drumSpring);_drumPaint()}
+  else{DRM.target=DRM.pos=Math.max(0,Math.min(DRM.max,want));DRM.vel=0;DRM.lastNear=-1}
+  _drumRealign();
+  if(window.ResizeObserver&&!DRM.ro){
+    DRM.ro=new ResizeObserver(function(){_drumPaint()});DRM.ro.observe(DRM.vp)
+  } else if(DRM.ro){DRM.ro.disconnect();DRM.ro.observe(DRM.vp)}
 }
 // Бүртгэх / засах
 function swWrite(t,i,ch){
@@ -6508,7 +6604,83 @@ function swTap(i){
 }
 function swUndo(){
   const t=swTurnout();if(!t||!(t.it||'').length){showToast('Буцаах зүйл алга');return}
-  hap(18);t.it=t.it.slice(0,-1);saveDB();renderSwRec()
+  const i=t.it.length-1;
+  hap(18);t.it=t.it.slice(0,-1);
+  if(t.slRepl)delete t.slRepl[i];   // буцаасан дэрийн солилтын тэмдэглэгээ хамт арилна
+  saveDB();renderSwRec()
+}
+// ── Бөөрөнхий удирдлага: дарвал Хэвийн, доош шудрахад Тэнцэхгүй ──
+(function(){
+  const btn=document.getElementById('swJoyBtn');if(!btn)return;
+  const lbl=document.getElementById('swJoyLbl'),icn=document.getElementById('swJoyIcon');
+  let st=null;
+  const kind=(dx,dy)=>(Math.sqrt(dx*dx+dy*dy)<16?'n':(dy>0&&dy>Math.abs(dx)?'b':null));
+  const show=k=>{
+    btn.style.background=k==='b'?'linear-gradient(145deg,#FFB86B,#F59E0B)':'';
+    lbl.textContent=k==='b'?'Тэнцэхгүй':'Хэвийн';icn.textContent=k==='b'?'~':'●'
+  };
+  const reset=()=>{clearTimeout(btn._t);btn._t=setTimeout(()=>show('n'),380)};
+  const start=(x,y)=>{st={x,y}};
+  const move=(x,y)=>{if(!st)return;const k=kind(x-st.x,y-st.y);if(k)show(k)};
+  const end=(x,y)=>{
+    if(!st)return;const k=kind(x-st.x,y-st.y);st=null;
+    if(k){swPut(k);show(k);reset()}else show('n')
+  };
+  btn.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];start(t.clientX,t.clientY)},{passive:false});
+  btn.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];move(t.clientX,t.clientY)},{passive:false});
+  btn.addEventListener('touchend',e=>{e.preventDefault();const t=e.changedTouches[0];end(t.clientX,t.clientY)},{passive:false});
+  btn.addEventListener('mousedown',e=>start(e.clientX,e.clientY));
+  btn.addEventListener('mouseup',e=>end(e.clientX,e.clientY));
+})();
+// ── Рам замын дэр засах ──
+let _swSlIdx=-1;
+function openSwSl(i){
+  const t=swTurnout();if(!t||i>=(t.it||'').length)return;
+  _swSlIdx=i;
+  document.getElementById('swSlTitle').textContent=`#${i+1} дэр засах`;
+  document.getElementById('swSlBn').classList.toggle('sel',t.it[i]==='n');
+  document.getElementById('swSlBb').classList.toggle('sel',t.it[i]==='b');
+  const rp=(t.slRepl||{})[i],b=document.getElementById('swSlReplBtn');
+  if(b)b.lastChild.textContent=rp?` Сольсон: ${fmtReplDate(rp.d)} — засах`:' Энэ дэрийг сольсон';
+  openModal('swSlModal')
+}
+function setSwSl(ch){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  swWrite(t,_swSlIdx,ch);saveDB();closeModal('swSlModal');
+  renderSwRec(_swSlIdx);showToast(`#${_swSlIdx+1} → ${ch==='b'?'Тэнцэхгүй':'Хэвийн'}`,1500)
+}
+// Огноог дэр бүртгэлийн адил дугуй гүйлгэгчээр сонгоно (нэг цонхыг хуваан ашиглана)
+function openSwSlRepl(){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  const ex=(t.slRepl||{})[_swSlIdx];
+  const d=mnToday();
+  _replY=d.y;
+  if(ex&&/^\d{4}-\d{2}-\d{2}$/.test(ex.d)){const p=ex.d.split('-');_replM=+p[1];_replD=+p[2]}
+  else{_replM=d.m;_replD=d.d}
+  _replMode='sw';
+  document.getElementById('replTitle').textContent=`#${_swSlIdx+1} дэр — сольсон огноо`;
+  document.getElementById('replYear').textContent=_replY+' он';
+  document.getElementById('replClearBtn').style.display=ex?'block':'none';
+  closeModal('swSlModal');openModal('replModal');
+  setTimeout(_replWheels,40)
+}
+function saveSwSlRepl(newType){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  const p=n=>(n<10?'0':'')+n;
+  const date=_replY+'-'+p(_replM)+'-'+p(_replD);
+  const i=_swSlIdx,wasBad=t.it[i]==='b';
+  swWrite(t,i,'n');                       // сольсон дэр хэвийн болно
+  if(!t.slRepl)t.slRepl={};
+  t.slRepl[i]={d:date,t:newType,m:newType==='tbd'?'tbd':'wood',o:wasBad?1:0};
+  _replMode='sec';
+  saveDB();closeModal('replModal');renderSwRec(i);
+  showToast(`#${i+1} дэр сольсон · ${fmtReplDate(date)}`,2600)
+}
+function clearSwSlRepl(){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  if(t.slRepl)delete t.slRepl[_swSlIdx];
+  _replMode='sec';
+  saveDB();closeModal('replModal');renderSwRec(_swSlIdx);showToast('Тэмдэглэгээ ариллаа')
 }
 
 // ══════════════════════════════════════════════
@@ -6560,7 +6732,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·74';
+const APP_BUILD='2026.08.25·75';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
