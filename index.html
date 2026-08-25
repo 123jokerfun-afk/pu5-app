@@ -134,6 +134,11 @@ button{font-family:inherit}
 .sheet{background:rgba(252,252,250,.97);border-radius:32px 32px 0 0;
   padding:0 0 calc(20px + var(--sab));width:100%;max-height:88vh;overflow-y:auto;
   backdrop-filter:blur(20px);box-shadow:0 -12px 48px rgba(150,95,25,.2)}
+.pu5-btn{width:100%;margin:-2px 0 4px;padding:8px 10px;border:1px dashed var(--border2);
+  border-top:none;border-radius:0 0 var(--rm) var(--rm);background:var(--bg);
+  color:var(--ink3);font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;transition:all .14s}
+.pu5-btn:active{transform:scale(.985);background:var(--g100);color:var(--g700);border-color:var(--g400)}
 .sheet-handle{width:44px;height:5px;background:var(--border2);border-radius:3px;margin:12px auto 6px;
   opacity:.7;position:relative;touch-action:none;cursor:grab}
 /* Хуруугаар барихад амар байхаар үл үзэгдэх өргөн талбай өгнө */
@@ -755,6 +760,9 @@ button{font-family:inherit}
     <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Гол зам</div>
       <div id="mainLineCard"></div>
+      <button class="add-track-btn" id="pu5MainBtn" onclick="exportPu5Book('main')" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
+        <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
+      </button>
     </div>
     <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
@@ -1218,40 +1226,13 @@ button{font-family:inherit}
         <div class="ff" style="margin:0"><label style="font-size:10px">Хэсэг №</label>
           <input type="text" id="txSec" placeholder="6" style="padding:8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card);width:100%"></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div class="ff" style="margin:0"><label style="font-size:10px">Хэсэг нэр (ПД-6...)</label>
-          <input type="text" id="txSecName" placeholder="ПД-6" style="padding:8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card);width:100%"></div>
-        <div class="ff" style="margin:0"><label style="font-size:10px">Улирал</label>
-          <select id="txSeason" style="padding:8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card);width:100%">
-            <option value="хавар">Хавар</option><option value="намар">Намар</option><option value="зун">Зун</option><option value="өвөл">Өвөл</option>
-          </select></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="ff" style="margin:0"><label style="font-size:10px">Он</label>
-          <input type="number" id="txYear" placeholder="2026" style="padding:8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card);width:100%"></div>
-        <div class="ff" style="margin:0"><label style="font-size:10px">Огноо</label>
-          <input type="date" id="txDate" style="padding:8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card);width:100%"></div>
-      </div>
+      <div class="ff" style="margin:0 0 8px"><label style="font-size:10px">Хэсэг нэр (ПД-6...)</label>
+        <input type="text" id="txSecName" placeholder="ПД-6" style="padding:8px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card);width:100%"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);background:var(--card);border:1px dashed var(--border2);border-radius:8px;padding:8px 10px;line-height:1.6" id="txAutoInfo"></div>
     </div>
-    <div class="sum-block" style="margin-bottom:12px;padding:12px">
-      <div class="thresh-top">
-        <span class="thresh-lbl">Хувь</span>
-        <input class="thresh-input" type="number" id="threshMin" value="25" min="0" max="100" oninput="updateThreshRange()" style="width:62px">
-        <span style="font-size:15px;font-weight:800;color:var(--ink3)">% —</span>
-        <input class="thresh-input" type="number" id="threshMax" placeholder="∞" min="0" max="100" oninput="updateThreshRange()" style="width:62px">
-        <span style="font-size:15px;font-weight:800;color:var(--ink3)">%</span>
-      </div>
-      <div style="font-size:10px;color:var(--ink4);margin:-4px 0 8px;font-weight:500">Дээд хязгаар хоосон = дээшээ бүгд</div>
-      <div class="presets" id="rangePresets">
-        <button class="pb" id="prAll" onclick="setRange(0,'')">Бүгд</button>
-        <button class="pb" id="pr25p" onclick="setRange(25,'')">25%+</button>
-        <button class="pb" id="pr25_29" onclick="setRange(25,29)">25–29%</button>
-        <button class="pb" id="pr30_34" onclick="setRange(30,34)">30–34%</button>
-        <button class="pb" id="pr35_40" onclick="setRange(35,40)">35–40%</button>
-        <button class="pb" id="pr40p" onclick="setRange(40,'')">40%+</button>
-      </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:12px;line-height:1.5">
+      Маягт-1, Хавсралт-2, -3, -4 гэсэн 4 хүснэгт бүртгэлээр бөглөгдөж татагдана.
     </div>
-    <div id="threshPreview" style="margin-bottom:12px"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('threshModal')">Болих</button>
       <button class="btn-ok" onclick="saveRptAndExport()"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel татах</button>
@@ -2604,11 +2585,24 @@ function _formHdrDate(d){
 }
 async function exportCarveForm(){
   if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй — сүлжээгээ шалгана уу',3200);return}
+  if(!collectCarveForm().length){showToast('Сийрэгжилт бүртгэгдээгүй байна',2600);return}
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  const n=buildCarveSheet(wb);
+  const r=DB.rpt||{};
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const t=mnToday(),p=x=>(x<10?'0':'')+x;
+    dlBlob(blob,`Сийрэгжилт_Маягт1-Хавсралт4_${t.y}-${p(t.m)}-${p(t.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ${n} цэг татагдлаа`,2600)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+// Маягт-1 Хавсралт-4-ийн шийтийг өгсөн ажлын дэвтэрт үүсгэнэ. Бөглөсөн
+// мөрийн тоог буцаана (бусад маягттай нэг файлд хамт орохын тулд тусгаарлав).
+function buildCarveSheet(wb){
   const rows=collectCarveForm();
-  if(!rows.length){showToast('Сийрэгжилт бүртгэгдээгүй байна',2600);return}
   const r=DB.rpt||{};
   const hesegNm=r.secName||('ПД-'+(r.sec||''));
-  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
   const ws=wb.addWorksheet('Маягт 1-4 өртөө-сийрэгжилт',{
     pageSetup:{orientation:'portrait',scale:93,
       margins:{left:.7,right:.7,top:.75,bottom:.75,header:.3,footer:.3}}
@@ -2638,7 +2632,8 @@ async function exportCarveForm(){
   put('A2','3 ба түүнээс дээш дараалан муудсан дэрийн жагсаалт.(Сийрэгжилт)',{box:false});
   ws.mergeCells('A3:L3');put('A3','/ өртөө замд/',{box:false});
   ws.mergeCells('I4:L4');
-  const hd=put('I4',_formHdrDate(r.date),{align:{horizontal:'right'},box:false});
+  // Толгойн огноо — татаж буй өдрөөр
+  const hd=put('I4',_formHdrDate(),{align:{horizontal:'right'},box:false});
   hd.border={bottom:TH};
   // ── Хүснэгтийн толгой (5-6-р мөр) ──
   [['A5:A6','Д/д'],['B5:B6','Хэсэг '],['C5:C6','Км'],['D5:D6','Үе'],
@@ -2679,12 +2674,7 @@ async function exportCarveForm(){
   const sc=ws.getCell('E'+sr);
   sc.value=hesegNm+'                                         '+(r.sign||'');
   sc.font=AR(11);sc.alignment={horizontal:'center',vertical:'middle'};
-  try{
-    const buf=await wb.xlsx.writeBuffer();
-    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    dlBlob(blob,`Сийрэгжилт_Маягт1-Хавсралт4_${(r.date||new Date().toISOString().slice(0,10))}.xlsx`);
-    if(!isIOS())showToast(`✓ ${rows.length} цэг татагдлаа`,2600)
-  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+  return rows.length
 }
 // ── Дараалсан цэг (3 ба түүнээс дээш) ──
 // Дээд талын нүднүүд нь шүүлтүүр: Нийт / 3 / 4 / 5+
@@ -4493,91 +4483,339 @@ function exportAllCSV(){
 let _threshTrackId=null;
 function openThresholdExport(tid){
   _threshTrackId=tid||null;
-  document.getElementById('threshMin').value=25;document.getElementById('threshMax').value='';updateRangeBtns(25,'');renderThreshPreview();
   const r=DB.rpt||{};
   document.getElementById('txCls').value=r.cls||'3';
   document.getElementById('txSec').value=r.sec||'6';
   document.getElementById('txSecName').value=r.secName||'ПД-6';
-  document.getElementById('txSeason').value=r.season||'хавар';
-  document.getElementById('txYear').value=r.year||r.yr||new Date().getFullYear();
-  document.getElementById('txDate').value=r.date||new Date().toISOString().slice(0,10);
+  // Он ба улирал нь идэвхтэй ПАСПОРТЫНХ, огноо нь тухайн өдрийнх — гараар
+  // сонгох шаардлагагүй тул зөвхөн харуулна
+  const f=DB.folders.find(x=>x.id===activeFolderId)||{};
+  const t=mnToday();
+  const info=document.getElementById('txAutoInfo');
+  if(info)info.innerHTML=
+    `Он · улирал: <b>${f.year||r.year||t.y} · ${f.season||r.season||'хавар'}</b> — паспортоос<br>`+
+    `Огноо: <b>${t.y}.${t.m<10?'0':''}${t.m}.${t.d<10?'0':''}${t.d}</b> — өнөөдрийн`;
   openModal('threshModal')
 }
 function saveRptAndExport(){
-  DB.rpt={
+  const f=DB.folders.find(x=>x.id===activeFolderId)||{};
+  const t=mnToday(),p=n=>(n<10?'0':'')+n;
+  DB.rpt=Object.assign(DB.rpt||{},{
     cls:document.getElementById('txCls').value||'3',
     sec:document.getElementById('txSec').value||'6',
     secName:document.getElementById('txSecName').value||'ПД-6',
-    season:document.getElementById('txSeason').value||'хавар',
-    year:document.getElementById('txYear').value||new Date().getFullYear(),
-    yr:parseInt(document.getElementById('txYear').value)||new Date().getFullYear(),
-    date:document.getElementById('txDate').value||new Date().toISOString().slice(0,10)
-  };
-  saveDB();exportColoredExcel()
-}
-function setRange(mn,mx){
-  document.getElementById('threshMin').value=mn;
-  document.getElementById('threshMax').value=mx;
-  updateRangeBtns(mn,mx);renderThreshPreview()
-}
-function updateThreshRange(){updateRangeBtns();renderThreshPreview()}
-function updateRangeBtns(mn,mx){
-  const minV=mn!==undefined?mn:parseFloat(document.getElementById('threshMin').value)||0;
-  const maxV=mx!==undefined?mx:(document.getElementById('threshMax').value===''?'':parseFloat(document.getElementById('threshMax').value));
-  const map={prAll:[0,''],pr25p:[25,''],pr25_29:[25,29],pr30_34:[30,34],pr35_40:[35,40],pr40p:[40,'']};
-  Object.entries(map).forEach(([id,[m1,m2]])=>{
-    const b=document.getElementById(id);if(!b)return;
-    b.className='pb'+(minV===m1&&String(maxV)===String(m2)?(' on'):'')
-  })
-}
-
-function getThreshRange(){
-  const mn=parseFloat(document.getElementById('threshMin').value)||0;
-  const mxStr=document.getElementById('threshMax').value;
-  const mx=mxStr===''?Infinity:parseFloat(mxStr)||Infinity;
-  return{mn,mx}
-}
-function renderThreshPreview(){
-  const {mn,mx}=getThreshRange();
-  updateRangeBtns(mn,mx===Infinity?'':mx);
-  const container=document.getElementById('threshPreview');
-  const rows=[];
-  const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):allTracks();
-  tracks.forEach(t=>{dataSections(t).forEach(s=>{const a=analyzeSection(s);if(a.pct>=mn&&a.pct<=mx)rows.push({t,s,a})})});
-  const lbl=mx===Infinity?`${mn}%+`:`${mn}–${mx}%`;
-  if(!rows.length){container.innerHTML=`<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">${lbl} тэнцэхгүй үе олдсонгүй</div>`;return}
-  let html=`<div style="font-size:12px;color:var(--ink2);margin-bottom:8px;font-weight:700">${lbl} тэнцэхгүй · ${rows.length} үе олдлоо</div>
-  <div class="xl-wrap"><table class="xl-tbl"><thead><tr>
-    <th class="xhd">Зам</th><th class="xhd">Үе / Холбох</th><th class="xhd">Нийт</th>
-    <th class="xhm" style="background:#1A5C3E">Хэвийн</th><th class="xhm" style="background:#7A4508">Тэнцэхгүй</th>
-    <th class="xhm" style="background:#8B1F1F">ТБД</th><th class="xhm" style="background:#5A1010">Тэнц.ТБД</th>
-    <th class="xhb">Хувь</th></tr></thead><tbody>`;
-  let tN=0,tBad=0,tTbd=0,tBTbd=0,tAll=0;
-  rows.forEach(({t,s,a})=>{
-    const pCls=a.pct>=50?'xcdr':a.pct>=35?'xpd':a.pct>=25?'xpw':'xpok';
-    const rCls=a.pct>=50?'xra':a.pct>=25?'xrw':s.type==='connecting'?'xrc':'xrn';
-    tN+=a.normal;tBad+=a.bad;tTbd+=a.tbd;tBTbd+=a.bad_tbd;tAll+=a.total;
-    html+=`<tr class="${rCls}"><td style="font-weight:700">${t.num}-р зам</td>
-      <td style="text-align:left;font-weight:700">${s.label}${s.type==='connecting'?' 🔗':''}</td>
-      <td>${a.total}</td><td class="xcg">${a.normal||'—'}</td><td class="${a.bad?'xco':''}">${a.bad||'—'}</td>
-      <td class="${a.tbd?'xcr':''}">${a.tbd||'—'}</td><td class="${a.bad_tbd?'xcdr':''}">${a.bad_tbd||'—'}</td>
-      <td class="${pCls}">${a.total?a.pct.toFixed(1)+'%':'—'}</td></tr>`
+    season:f.season||(DB.rpt||{}).season||'хавар',
+    year:f.year||(DB.rpt||{}).year||String(t.y),
+    yr:parseInt(f.year||(DB.rpt||{}).year)||t.y,
+    date:`${t.y}-${p(t.m)}-${p(t.d)}`
   });
-  if(rows.length>1){
-    const tp=tAll>0?((tBad+tBTbd)/tAll*100):0;
-    const tpCls=tp>=50?'xcdr':tp>=25?'xpw':'xpok';
-    html+=`<tr class="xrt"><td colspan="2" style="text-align:left;font-weight:800">НИЙТ (${rows.length} үе)</td>
-      <td style="font-weight:800">${tAll}</td><td class="xcg" style="font-weight:800">${tN}</td>
-      <td class="xco" style="font-weight:800">${tBad}</td><td class="xcr" style="font-weight:800">${tTbd}</td>
-      <td class="xcdr" style="font-weight:800">${tBTbd}</td><td class="${tpCls}">${tAll?tp.toFixed(1)+'%':'—'}</td></tr>`
-  }
-  html+=`</tbody></table></div>`;
-  container.innerHTML=html
+  saveDB();return exportColoredExcel()   // дуудагч хүлээж чадахаар promise буцаана
 }
 
+
+// ══════════════════════════════════════════════
+// АЛБАН МАЯГТУУД (Маягт-1, Хавсралт-2, -3, -4)
+// Загвар файлын бүтцийг яг хэвээр нь үүсгэж, бүртгэлээр бөглөнө.
+// ── ЧУХАЛ: "тэнцэхгүй дэрийн тоо" нь ҮЗЛЭГЭЭР ИЛЭРСЭН тоо. Тиймээс
+//    сольсон дэрийг буцаан тэнцэхгүй болгосон эх байдлаар (origSections)
+//    тооцно; сольсон нь тусдаа баганад ордог.
+// ══════════════════════════════════════════════
+const SEASON_GEN={хавар:'Хаврын',намар:'Намрын',зун:'Зуны',өвөл:'Өвлийн'};
+// Тухайн замын үзлэгийн үеийн (солихоос өмнөх) үенүүд
+function _origSecs(t){return origSections(t).filter(s=>!isTurnout(s))}
+// Нэг үеийн задаргаа — гол зам, өртөөний замд ижил хэлбэрээр
+function _secTally(s,t){
+  if(isMainTrack(t)){
+    const a=analyzeMainSection(s,t);
+    return{total:a.total,wood:a.wood,conc:a.tbd,bad:a.bad,badWood:a.bWood,badConc:a.bTbd}
+  }
+  const a=analyzeSection(s);
+  return{total:a.total,wood:a.woodTotal,conc:a.concreteTotal,
+         bad:a.totalBad,badWood:a.bad,badConc:a.bad_tbd}
+}
+// Замын нийт дүн
+function _trackTally(t){
+  const r={total:0,wood:0,conc:0,bad:0,badWood:0,badConc:0};
+  _origSecs(t).forEach(s=>{const a=_secTally(s,t);
+    Object.keys(r).forEach(k=>r[k]+=a[k])});
+  return r
+}
+// Дараалан муудсан бүлгийн тоо: 3 / 4 / 5 ба дээш
+function _runBuckets(t){
+  const b=[0,0,0];
+  findConsecutiveBadForTrack(origSections(t)).forEach(g=>{
+    b[g.len===3?0:g.len===4?1:2]++});
+  return b
+}
+// 1 үенд 25%-аас дээш гарсан үеийн тоо: 25-30 / 31-40 / 41-50 / 50-иас их
+// Хувийг НИЙТ дэрээс тооцно.
+function _pctBuckets(t){
+  const b=[0,0,0,0];
+  _origSecs(t).forEach(s=>{
+    const a=_secTally(s,t);if(!a.total)return;
+    const p=a.bad/a.total*100;
+    if(p<25)return;
+    b[p<=30?0:p<=40?1:p<=50?2:3]++
+  });
+  return b
+}
+// Тухайн паспортод солигдсон дэрийн тоо — материалаар
+function _replTally(t){
+  const r={wood:0,conc:0};
+  (t.sections||[]).forEach(s=>{
+    const rp=s.repl;if(!rp)return;
+    Object.keys(rp).forEach(k=>{const e=rp[k];if(!e||!e.d)return;
+      if(replMatOf(e)==='tbd')r.conc++;else r.wood++})
+  });
+  return r
+}
+// Маягтын толгойд орох он/улирал — паспортын өөрийнх нь утга эхэлж
+function _formHdr(){
+  const r=DB.rpt||{},f=DB.folders.find(x=>x.id===activeFolderId)||{};
+  const t=mnToday();
+  return{
+    cls:r.cls||'3',sec:r.sec||'6',secName:r.secName||('ПД-'+(r.sec||'')),
+    season:f.season||r.season||'хавар',
+    year:f.year||r.year||String(t.y),
+    sign:r.sign||'',today:t
+  }
+}
 async function exportColoredExcel(){
   if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');exportAllCSV();return}
-  const {mn:thresh,mx:threshMx}=getThreshRange();
+  const H=_formHdr();
+  const seasonGen=SEASON_GEN[H.season]||(H.season+'ын');
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  const AR=(sz,b)=>({name:'Arial',size:sz||10,bold:!!b});
+  const TH={style:'thin'};
+  const box=c=>{c.border={top:TH,bottom:TH,left:TH,right:TH}};
+  // Нүд бичих туслах: утга + фонт + байрлал + хүрээ + формат
+  const P=(ws,addr,v,o)=>{
+    const c=ws.getCell(addr);if(v!==undefined&&v!==null)c.value=v;
+    o=o||{};c.font=o.font||AR(10);
+    c.alignment=Object.assign({horizontal:'center',vertical:'middle'},o.align||{});
+    if(o.box!==false)box(c);
+    if(o.fmt)c.numFmt=o.fmt;
+    return c
+  };
+  // Нэгтгэсэн нүдний бүх хэсэгт хүрээ үлдээнэ (эс тэгвэл шугам тасарна)
+  const MB=(ws,rng,v,o)=>{
+    ws.mergeCells(rng);
+    const [a,b]=rng.split(':');
+    P(ws,a,v,o);
+    const cs=ws.getCell(a).col,ce=ws.getCell(b).col;
+    const rs=ws.getCell(a).row,re=ws.getCell(b).row;
+    if((o||{}).box!==false)
+      for(let r=rs;r<=re;r++)for(let c=cs;c<=ce;c++)box(ws.getCell(r,c));
+  };
+  const colw=(ws,arr)=>{ws.columns=arr.map(w=>({width:w}))};
+
+  // ══════════ 1. дэр ПО-6 маягт-1 — ГОЛ ЗАМ (км тус бүр) ══════════
+  (function(){
+    const ws=wb.addWorksheet('дэр ПО-6 маягт-1 ',
+      {pageSetup:{orientation:'landscape',scale:97}});
+    colw(ws,[6.89,7,5.66,7,8.33,5.11,9.44,8,7,11.66,5,8.43,8.43,9.44,11.55,8.44,7.89,5.11,8.43]);
+    MB(ws,'A1:F1','Маягт-1',{align:{horizontal:'left'},box:false});
+    P(ws,'R1','ПО-6',{align:{horizontal:'right'},box:false});
+    MB(ws,'A2:E2','',{box:false});
+    MB(ws,'L2:S2','ПО-6 маягт                        ПЧ нь 5-р сарын 5-н, 10-р сарын 20-нд                                                                                                                                                Замын албанд ирүүлнэ. ',
+      {align:{wrapText:true},box:false});
+    ws.getRow(2).height=26.4;
+    MB(ws,'A3:R3',` Замын  ${H.cls}-р ангийн   ${H.year} оны  ${seasonGen}`,{box:false});
+    MB(ws,'A4:R4','паспортын үзлэгээр илэрсэн тэнцэхгүй дэрийн тоо',{box:false});
+    MB(ws,'A5:R5','',{box:false});
+    const td=H.today;
+    MB(ws,'K6:S6',`${td.y} оны ${td.m}-р сарын ${td.d}-нд`,{align:{horizontal:'right'},box:false});
+    // Толгой
+    [['A7:A8','Хэсэг'],['B7:B8','Км'],['C7:E7','Дэрийн эпюр'],['F7:H7',' Тэнцэхгүй дэрийн тоо'],
+     ['I7:J7','Тэнцэхгүй дэрийн эзлэх хувь'],['K7:M7','Дараалан муудсан '],
+     ['N7:Q7','1 үенд 25%-аас дээш тэнцэхгүй гарсан үеийн тоо'],
+     ['R7:S7','Тухайн онд солигдсон дэрийн тоо ']
+    ].forEach(([r,v])=>MB(ws,r,v,{align:{wrapText:true}}));
+    [['C8','нийт'],['D8','модон'],['E8','бетон'],['F8','нийт'],['G8','модон '],['H8','бетон'],
+     ['I8','модон дэрэнд'],['J8','нийт дэрэнд'],['K8',3],['L8',4],['M8','5    ба<'],
+     ['N8','25-30'],['O8','31-40'],['P8','41-50'],['Q8','50 их'],['R8','мод'],['S8','бетон']
+    ].forEach(([a,v])=>P(ws,a,v,{align:{wrapText:true}}));
+    ws.getRow(7).height=88.5;ws.getRow(8).height=33.75;
+    // Өгөгдөл
+    const tracks=mainTracks().slice().sort((a,b)=>a.num-b.num);
+    let r=9;
+    tracks.forEach(t=>{
+      const a=_trackTally(t),rb=_runBuckets(t),pb=_pctBuckets(t),rp=_replTally(t);
+      P(ws,'A'+r,H.secName);P(ws,'B'+r,t.num,{font:AR(10,true)});
+      P(ws,'C'+r,a.total);P(ws,'D'+r,a.wood||'',{font:AR(10,true)});P(ws,'E'+r,a.conc||'');
+      P(ws,'F'+r,a.bad||'',{font:AR(10,true)});P(ws,'G'+r,a.badWood||'',{font:AR(10,true)});
+      P(ws,'H'+r,a.badConc||'');
+      P(ws,`I${r}`,{formula:`IFERROR(G${r}/D${r},"")`},{font:AR(10,true),fmt:'0%'});
+      P(ws,`J${r}`,{formula:`IFERROR(F${r}/C${r},"")`},{font:AR(10,true),fmt:'0.0%'});
+      P(ws,'K'+r,rb[0]||'',{font:AR(10,true)});P(ws,'L'+r,rb[1]||'',{font:AR(10,true)});
+      P(ws,'M'+r,rb[2]||'',{font:AR(10,true)});
+      P(ws,'N'+r,pb[0]||'',{font:AR(10,true)});P(ws,'O'+r,pb[1]||'',{font:AR(10,true)});
+      P(ws,'P'+r,pb[2]||'',{font:AR(10,true)});P(ws,'Q'+r,pb[3]||'',{font:AR(10,true)});
+      P(ws,'R'+r,rp.wood||'',{font:AR(10,true)});P(ws,'S'+r,rp.conc||'',{font:AR(10,true)});
+      ws.getRow(r).height=12;r++
+    });
+    if(!tracks.length){for(let c=1;c<=19;c++)box(ws.getCell(r,c));r++}
+    // Нийт дүн
+    const f=9,l=r-1;
+    MB(ws,`A${r}:B${r}`,'Нийт дүн',{font:AR(10,true)});
+    'CDEFGH'.split('').concat(['K','L','M','N','O','P','Q','R','S']).forEach(col=>{
+      P(ws,col+r,l>=f?{formula:`SUM(${col}${f}:${col}${l})`}:0,{font:AR(10,true)})});
+    P(ws,`I${r}`,{formula:`IFERROR(G${r}/D${r},"")`},{font:AR(10,true),fmt:'0%'});
+    P(ws,`J${r}`,{formula:`IFERROR(F${r}/C${r},"")`},{font:AR(10,true),fmt:'0.0%'});
+    ws.getRow(r).height=20.25;
+    P(ws,'E'+(r+3),'ПЧИ',{box:false});
+    P(ws,'E'+(r+5),`${H.secName}                                        ${H.sign}`,{box:false});
+  })();
+
+  // ══════════ 2. Маягт 1-3 өртөө ПО-6 — ӨРТӨӨНИЙ ЗАМ ══════════
+  (function(){
+    const ws=wb.addWorksheet('Маягт 1-3 өртөө ПО-6',{pageSetup:{orientation:'landscape'}});
+    colw(ws,[5.44,11.55,6.55,5.55,8.43,8.43,4.89,5.55,8.43,6.44,5.44,8.43,8.43,8.43,8.43,8.43,8.43,5.33,5.44]);
+    MB(ws,'A1:G1','Маягт-1 Хавсралт-3',{align:{horizontal:'left'},box:false});
+    P(ws,'R1','ПО-6',{align:{horizontal:'right'},box:false});
+    MB(ws,'A2:R2',` Замын ${H.cls} -р ангийн   ${H.year} оны ${seasonGen.toLowerCase()}`,{font:AR(12),box:false});
+    MB(ws,'A3:R3','паспортын үзлэгээр илэрсэн тэнцэхгүй дэрийн тоо',{font:AR(12),box:false});
+    MB(ws,'A4:R4','/өртөө  замд/',{font:AR(12,true),box:false});
+    const td=H.today;
+    MB(ws,'K5:S5',`${td.y} оны ${td.m}-р сарын ${td.d}нд`,{box:false});
+    [['A6:A7','Хэсэг'],['B6:B7','Өртөө зөрлөг'],['C6:C7','Замын дугаар'],['D6:F6','Дэрийн эпюр'],
+     ['G6:I6',' Тэнцэхгүй дэрийн тоо'],['J6:J7','Тэнцэх гүй дэрийн эзлэх хувь'],
+     ['K6:M6','Дараалан муудсан '],['N6:Q6',' 1 үенд 25%-с дээш тэнцэхгүй гарсан үеийн тоо '],
+     ['R6:S6','Тухайн онд солигдсон дэрийн тоо ']
+    ].forEach(([r,v])=>MB(ws,r,v,{align:{wrapText:true}}));
+    [['D7','нийт'],['E7','модон'],['F7','бетон'],['G7','нийт'],['H7','модон '],['I7','бетон'],
+     ['K7',3],['L7',4],['M7','5    ба<'],['N7','25-30'],['O7','31-40'],['P7','41-50'],
+     ['Q7','50 их'],['R7','мод'],['S7','бетон']
+    ].forEach(([a,v])=>P(ws,a,v,{align:{wrapText:true}}));
+    ws.getRow(6).height=42;ws.getRow(7).height=36;
+    const tracks=(DB.tracks||[]).filter(t=>!isMainTrack(t)).slice().sort((a,b)=>a.num-b.num);
+    let r=8;
+    tracks.forEach(t=>{
+      const a=_trackTally(t),rb=_runBuckets(t),pb=_pctBuckets(t),rp=_replTally(t);
+      P(ws,'A'+r,+H.sec||H.sec);P(ws,'B'+r,DB.location,{align:{wrapText:true}});
+      P(ws,'C'+r,t.num);
+      P(ws,`D${r}`,{formula:`E${r}+F${r}`});P(ws,'E'+r,a.wood);P(ws,'F'+r,a.conc);
+      P(ws,'G'+r,a.bad||'',{font:AR(9,true),align:{wrapText:true}});
+      P(ws,'H'+r,a.badWood||'',{font:AR(9,true),align:{wrapText:true}});
+      P(ws,'I'+r,a.badConc||'');
+      P(ws,`J${r}`,{formula:`IFERROR(G${r}*100/D${r},"")`},{fmt:'0.00'});
+      P(ws,'K'+r,rb[0]||'',{font:AR(9,true)});P(ws,'L'+r,rb[1]||'',{font:AR(9,true)});
+      P(ws,'M'+r,rb[2]||'');
+      P(ws,'N'+r,pb[0]||'');P(ws,'O'+r,pb[1]||'');P(ws,'P'+r,pb[2]||'');P(ws,'Q'+r,pb[3]||'');
+      P(ws,'R'+r,rp.wood||'');P(ws,'S'+r,rp.conc||'');
+      ws.getRow(r).height=37.2;r++
+    });
+    if(!tracks.length){for(let c=1;c<=19;c++)box(ws.getCell(r,c));r++}
+    const f=8,l=r-1;
+    P(ws,'A'+r,+H.sec||H.sec,{font:AR(10,true)});
+    MB(ws,`B${r}:C${r}`,'Нийт',{font:AR(10,true)});
+    ['D','E','F','G','H','I','K','L','M','N','O','P','Q','R','S'].forEach(col=>{
+      P(ws,col+r,l>=f?{formula:`SUM(${col}${f}:${col}${l})`}:0,{font:AR(10,true)})});
+    P(ws,`J${r}`,{formula:`IFERROR(G${r}*100/D${r},"")`},{font:AR(10,true),fmt:'0.00'});
+    ws.getRow(r).height=37.2;
+    MB(ws,`A${r+1}:L${r+1}`,'',{box:false});
+    P(ws,'B'+(r+3),'Үзлэгийн комисс:',{align:{horizontal:'left'},box:false});
+    P(ws,'D'+(r+3),'ПЧиу-2',{align:{horizontal:'left'},box:false});
+    P(ws,'D'+(r+4),`${H.secName}                                                    /${H.sign}/`,
+      {align:{horizontal:'left'},box:false});
+  })();
+
+  // ══════════ 3. маягт1-2 — 25%+ тэнцэхгүй дэртэй үеийн жагсаалт ══════════
+  (function(){
+    const ws=wb.addWorksheet('маягт1-2');
+    colw(ws,[4.88,7.55,9.11,11.33,9.11,9.11,9.55,9.11,9.11,17.55,10.11,11.77]);
+    MB(ws,'A1:C1','Маягт-1 Хавсралт-2',{align:{horizontal:'left'},box:false});
+    MB(ws,'A2:J2','25 ба түүнээс дээш %-тай тэнцэхгүй дэртэй үеийн жагсаалт',{box:false});
+    ws.getRow(2).height=26.25;
+    MB(ws,'A4:D4',`ЗАМЫН ${H.cls}-Р АНГИ ${H.sec}-р хэсэг`,{align:{horizontal:'left'},box:false});
+    const td=H.today;
+    MB(ws,'G4:K4',`${td.y} оны ${td.m}-р сарын ${td.d}`,{align:{horizontal:'right'},box:false});
+    [['A5:A6','Д/д'],['B5:B6','Хэсэг'],['C5:C6','Замын дугаар'],['D5:D6','Үе'],
+     ['E5:E6','Үен дэх модон дэрийн эпюр'],['F5:F6','Тэнцэх гүй дэрийн тоо'],
+     ['G5:G6','Эзлэх %'],['H5:K5','Сийрэгжилт хийсэн'],['L5:L6','Нийт дэр']
+    ].forEach(([r,v])=>MB(ws,r,v,{align:{wrapText:true}}));
+    [['H6','Сольсон дэрийн тоо'],['I6','солих дэрийн тоо'],
+     ['J6','сольсон дэрийн дугаар'],['K6','Огноо']
+    ].forEach(([a,v])=>P(ws,a,v,{align:{wrapText:true}}));
+    ws.getRow(5).height=17.25;ws.getRow(6).height=39.6;
+    // Зам бүрээр бүлэглэж, бүлэг бүрийн дараа "Нийт" мөр
+    let r=7,dd=0,subRows=[];
+    allTracks().forEach(t=>{
+      const rows=[];
+      _origSecs(t).forEach(os=>{
+        const a=_secTally(os,t);
+        if(!a.total||a.bad/a.total*100<25)return;
+        const cur=(t.sections||[]).find(x=>x.id===os.id)||{};
+        const rp=cur.repl||{};
+        const reps=Object.keys(rp).map(k=>({pos:+k+1,d:rp[k]&&rp[k].d}))
+          .filter(x=>x.d).sort((x,y)=>x.pos-y.pos);
+        rows.push({label:os.label,wood:a.wood,bad:a.bad,total:a.total,reps})
+      });
+      if(!rows.length)return;
+      const first=r;
+      rows.forEach(d=>{
+        P(ws,'A'+r,++dd);P(ws,'B'+r,H.secName);P(ws,'C'+r,trackLabel(t));
+        P(ws,'D'+r,d.label,{align:{wrapText:true}});
+        P(ws,'E'+r,d.wood);P(ws,'F'+r,d.bad);
+        // Эзлэх % — НИЙТ дэрээс
+        P(ws,`G${r}`,{formula:`IFERROR(F${r}/L${r}*100,"")`},{fmt:'0.0'});
+        P(ws,'H'+r,d.reps.length||'');
+        // Цаашид хэдэн дэр солибол 25%-даа орох вэ (сольсныг хассан)
+        P(ws,`I${r}`,{formula:`MAX(0,F${r}-(CEILING(L${r}*0.25,1)-1)-H${r})`});
+        P(ws,'J'+r,d.reps.length?d.reps.map(x=>x.pos).join(','):'');
+        const ds=[...new Set(d.reps.map(x=>x.d))];
+        if(ds.length===1)P(ws,'K'+r,_xlsDate(ds[0]),{fmt:'mm-dd-yy'});
+        else P(ws,'K'+r,ds.length?ds.map(fmtReplDate).join(', '):'',{font:AR(9),align:{wrapText:true}});
+        P(ws,'L'+r,d.total);
+        r++
+      });
+      MB(ws,`C${r}:D${r}`,'Нийт',{font:AR(10,true)});
+      ['A','B'].forEach(c=>P(ws,c+r,''));
+      ['E','F','H','I','L'].forEach(col=>
+        P(ws,col+r,{formula:`SUM(${col}${first}:${col}${r-1})`},{font:AR(10,true)}));
+      P(ws,`G${r}`,{formula:`IFERROR(F${r}/L${r}*100,"")`},{font:AR(10,true),fmt:'0.0'});
+      ['J','K'].forEach(c=>P(ws,c+r,''));
+      subRows.push(r);r++
+    });
+    if(!dd){for(let c=1;c<=12;c++)box(ws.getCell(r,c));r++}
+    // Бүх замын нийт
+    MB(ws,`C${r}:D${r}`,'Нийт',{font:AR(10,true)});
+    ['A','B'].forEach(c=>P(ws,c+r,''));
+    ['E','F','H','I','L'].forEach(col=>P(ws,col+r,
+      subRows.length?{formula:subRows.map(x=>col+x).join('+')}:0,{font:AR(10,true)}));
+    P(ws,`G${r}`,{formula:`IFERROR(F${r}/L${r}*100,"")`},{font:AR(10,true),fmt:'0.0'});
+    ['J','K'].forEach(c=>P(ws,c+r,''));
+    ws.getRow(r).height=17.4;
+  })();
+
+  // ══════════ 4. Маягт 1-4 өртөө-сийрэгжилт ══════════
+  buildCarveSheet(wb);
+
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const td=H.today,p=n=>(n<10?'0':'')+n;
+    closeModal('threshModal');
+    dlBlob(blob,`${DB.location}_Маягт-1_${td.y}-${p(td.m)}-${p(td.d)}.xlsx`);
+    if(!isIOS())showToast('✓ Excel татагдлаа!')
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+
+// ══════════════════════════════════════════════
+// ПУ-5 ДЭВТЭР ЗАГВАР
+// Үе бүрийн дэрийг нэг нэгээр нь тэмдэглэсэн матриц шийтүүд (1-10, 11-20 үе...)
+// scope: 'main' = гол замын км, эсвэл паспортын id = тухайн паспортын өртөө зам
+// ══════════════════════════════════════════════
+async function exportPu5Book(scope){
+  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');return}
+  const isMain=scope==='main';
+  // Паспортыг id-гаар нь шууд авна — нээлттэй биш паспортоос ч татаж болно
+  const fold=isMain?null:(DB.folders.find(f=>f.id===scope)
+    ||DB.folders.find(f=>f.id===activeFolderId));
+  const tracks=(isMain?mainTracks():((fold&&fold.tracks)||[]))
+    .filter(t=>isMain?true:!isMainTrack(t));
+  if(!tracks.length){showToast(isMain?'Гол замын км алга':'Энэ паспортад зам алга',2600);return}
+  const scopeLbl=isMain?'Гол зам':((fold&&fold.name)||'Паспорт');
   const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
   const C={hdark:{argb:'FF1E4D3B'},hmid:{argb:'FF2D6E52'},hblue:{argb:'FF1E3A6E'},
     white:{argb:'FFFFFFFF'},border:{argb:'FFCCD0D8'}};
@@ -4589,14 +4827,13 @@ async function exportColoredExcel(){
   function pFont(pct){if(pct>=50)return{bold:true,color:{argb:'FF5A1010'},name:'Arial',size:10};if(pct>=35)return{bold:true,color:{argb:'FF8B1F1F'},name:'Arial',size:10};if(pct>=25)return{bold:true,color:{argb:'FF8A5009'},name:'Arial',size:10};return{bold:true,color:{argb:'FF0D6E46'},name:'Arial',size:10}}
   function bdr(cell){cell.border={top:{style:'thin',color:C.border},bottom:{style:'thin',color:C.border},left:{style:'thin',color:C.border},right:{style:'thin',color:C.border}}}
 
-  const tracks=_threshTrackId?[getTrack(_threshTrackId)].filter(Boolean):allTracks();
-  const hdrs=['Зам №','Үе / Холбох','Нийт','Модон эпюр','Хэвийн','Тэнцэхгүй','ТБД','Тэнцэхгүй ТБД','Нийт тэнцэхгүй','Хувь %'];
+  const hdrs=[isMain?'Км':'Зам №','Үе / Холбох','Нийт','Модон эпюр','Хэвийн','Тэнцэхгүй','ТБД','Тэнцэхгүй ТБД','Нийт тэнцэхгүй','Хувь %'];
 
   function makeSheet(wb,name,rows,showTitle){
     const ws=wb.addWorksheet(name);
     ws.columns=[{width:12},{width:22},{width:8},{width:10},{width:8},{width:10},{width:8},{width:12},{width:12},{width:10}];
     if(showTitle){
-      ws.mergeCells('A1:I1');const tc=ws.getCell('A1');tc.value=`${DB.location} — ${name} · ${new Date().toLocaleDateString('mn-MN')}`;
+      ws.mergeCells('A1:I1');const tc=ws.getCell('A1');tc.value=`${DB.location} · ${scopeLbl} — ${name} · ${new Date().toLocaleDateString('mn-MN')}`;
       tc.style=hStyle('hdark');tc.font={bold:true,color:C.white,name:'Arial',size:12};ws.getRow(1).height=26
     }
     const hr=ws.getRow(showTitle?2:1);
@@ -4607,7 +4844,7 @@ async function exportColoredExcel(){
       const isConn=s.type==='connecting';
       const rf=isConn?cFill('FFF3EEFF'):sa.pct>=35?cFill('FFFEE2E2'):sa.pct>=25?cFill('FFFEF3C7'):cFill('FFE8F8F1');
       const row=ws.getRow(r++);
-      [t.num+'-р зам',s.label+(isConn?' 🔗':''),sa.total,sa.woodTotal,sa.normal,sa.bad,sa.tbd,sa.bad_tbd,sa.totalBad,sa.total?sa.pct/100:null].forEach((v,i)=>{
+      [trackLabel(t),s.label+(isConn?' 🔗':''),sa.total,sa.woodTotal,sa.normal,sa.bad,sa.tbd,sa.bad_tbd,sa.totalBad,sa.total?sa.pct/100:null].forEach((v,i)=>{
         const cell=row.getCell(i+1);cell.value=v;cell.fill=rf;
         cell.font={name:'Arial',size:10,bold:i<=1};cell.alignment={horizontal:i<=1?'left':'center',vertical:'middle'};bdr(cell);
         if(i===3)cell.font={...cell.font,color:{argb:'FF1A3A6E'},bold:true};if(i===4&&sa.normal)cell.font={...cell.font,color:{argb:'FF0D5E44'}};
@@ -4625,24 +4862,19 @@ async function exportColoredExcel(){
   let tr=lr1;
   tracks.forEach(t=>{
     const ta=analyzeTrack(t);const totRow=ws1.getRow(tr++);
-    const taWood=dataSections(t).reduce((s,sec)=>{const a=analyzeSection(sec);return s+a.woodTotal},0);[t.num+'-р зам НИЙТ',`(${dataSections(t).length} үе)`,ta.total,taWood,ta.normal,ta.bad,ta.tbd,ta.bad_tbd,ta.totalBad,ta.total?ta.pct/100:null].forEach((v,i)=>{
+    const taWood=dataSections(t).reduce((s,sec)=>{const a=analyzeSection(sec);return s+a.woodTotal},0);[trackLabel(t)+' НИЙТ',`(${dataSections(t).length} үе)`,ta.total,taWood,ta.normal,ta.bad,ta.tbd,ta.bad_tbd,ta.totalBad,ta.total?ta.pct/100:null].forEach((v,i)=>{
       const cell=totRow.getCell(i+1);cell.value=v;cell.fill=cFill('FFEEF2FF');
       cell.font={bold:true,name:'Arial',size:10};cell.alignment={horizontal:i<=1?'left':'center',vertical:'middle'};bdr(cell);
       if(i===9&&ta.total){cell.numFmt='0.0%';cell.fill=pFill(ta.pct);cell.font={...pFont(ta.pct),bold:true}}
     });totRow.height=20;ws1.getRow(tr++)
   });
 
-  // Sheet 2: Threshold шүүлтүүр
-  const filtRows=[];tracks.forEach(t=>{dataSections(t).forEach(s=>{const sa=analyzeSection(s);if(sa.pct>=thresh&&sa.pct<=threshMx)filtRows.push({t,s,sa})})});
-  const sheetLbl=threshMx===Infinity?`${thresh}%+`:`${thresh}–${threshMx}%`;
-  makeSheet(wb,`${sheetLbl} шүүлтүүр`,filtRows,true);
-
   // Per-track sheets: ★ Зөвхөн энгийн үе (normal) → 1-10, 11-20 гэх хуудсанд
   //                   ★ Холбох хэсгүүд → тусад нь нэг хуудсанд
   tracks.forEach(t=>{
     // Бүх үеийн нэгтгэл шийт
     const rows=dataSections(t).map(s=>({t,s,sa:analyzeSection(s)}));
-    makeSheet(wb,`${t.num}-р зам`,rows,true);
+    makeSheet(wb,trackLabel(t),rows,true);
 
     // ── Энгийн үенүүдийн матриц шийтүүд (1-10, 11-20, ...) ──
     const normalSecs=dataSections(t).filter(s=>s.type!=='connecting');
@@ -4653,7 +4885,7 @@ async function exportColoredExcel(){
       const sg=normalSecs.slice(gi,gi+SEC_GROUP);
       const mxSl=sg.reduce((mx,s)=>Math.max(mx,s.sleepers.length),0);
       const fromNum=gi+1,toNum=Math.min(gi+SEC_GROUP,normalSecs.length);
-      const wsM=wb.addWorksheet(`${t.num}з · ${fromNum}-${toNum}р үе`);
+      const wsM=wb.addWorksheet(`${t.num}${isMain?'км':'з'} · ${fromNum}-${toNum}р үе`);
       const cols=[{width:5}];sg.forEach(s=>cols.push({width:Math.max(10,s.label.length+2)}));wsM.columns=cols;
 
       // Дараалсан тэнцэхгүй байрлалыг тэмдэглэнэ
@@ -4694,7 +4926,7 @@ async function exportColoredExcel(){
       // Гарчиг
       wsM.mergeCells(1,1,1,sg.length+1);
       const mt=wsM.getCell(1,1);
-      mt.value=`${t.num}-р зам · ${fromNum}-${toNum}-р үе (зөвхөн энгийн үе)`;
+      mt.value=`${trackLabel(t)} · ${fromNum}-${toNum}-р үе (зөвхөн энгийн үе)`;
       mt.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E4D3B'}};
       mt.font={bold:true,color:C.white,name:'Arial',size:11};mt.alignment={horizontal:'center',vertical:'middle'};wsM.getRow(1).height=24;
 
@@ -4780,14 +5012,14 @@ async function exportColoredExcel(){
 
     // ── ★ ХОЛБОХ ХЭСГҮҮДИЙН ТУСДАА МАТРИЦ ШИЙТ ──
     if(connSecs.length>0){
-      const wsConn=wb.addWorksheet(`${t.num}з · Холбох`);
+      const wsConn=wb.addWorksheet(`${t.num}${isMain?'км':'з'} · Холбох`);
       const maxConnSl=connSecs.reduce((mx,s)=>Math.max(mx,s.sleepers.length),0);
       const cols2=[{width:5}];connSecs.forEach(s=>cols2.push({width:Math.max(14,s.label.length+2)}));wsConn.columns=cols2;
 
       // Гарчиг
       wsConn.mergeCells(1,1,1,connSecs.length+1);
       const ctitle=wsConn.getCell(1,1);
-      ctitle.value=`${t.num}-р зам · Холбох хэсгүүд`;
+      ctitle.value=`${trackLabel(t)} · Холбох хэсгүүд`;
       ctitle.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF3D1E8E'}};
       ctitle.font={bold:true,color:C.white,name:'Arial',size:11};ctitle.alignment={horizontal:'center',vertical:'middle'};wsConn.getRow(1).height=24;
 
@@ -4872,152 +5104,6 @@ async function exportColoredExcel(){
     }
   });
 
-  // ── Хавсралт-2 ──
-  (()=>{
-    const r=DB.rpt||{};
-    const clsNum=r.cls||'3',secNum=r.sec||'6',secName=r.secName||'ПД-'+secNum;
-    const season=r.season||'хавар',yr=r.yr||new Date().getFullYear();
-    const rptDate=r.date?new Date(r.date).toLocaleDateString('mn-MN'):new Date().toLocaleDateString('mn-MN');
-    function secNum2(label){const m=label.match(/^(\d+)/);return m?parseInt(m[1]):label}
-    const ws=wb.addWorksheet('Хавсралт-2');
-    ws.columns=[{width:5},{width:9},{width:11},{width:6},{width:12},{width:12},{width:9},{width:11},{width:10},{width:18},{width:12}];
-    function T(r2,c,v,s={}){
-      const cell=ws.getCell(r2,c);
-      if(v!==null&&v!==undefined)cell.value=v;
-      if(s.bg)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:s.bg}};
-      cell.font={bold:s.bold,color:{argb:s.fg||'FF000000'},name:'Arial',size:s.sz||9};
-      cell.alignment={horizontal:s.h||'center',vertical:'middle',wrapText:true};
-      if(s.br!==false)cell.border={top:{style:s.bt||'thin',color:{argb:'FFA6A6A6'}},bottom:{style:s.bb||'thin',color:{argb:'FFA6A6A6'}},left:{style:'thin',color:{argb:'FFA6A6A6'}},right:{style:'thin',color:{argb:'FFA6A6A6'}}}
-    }
-    function M(r1,c1,r2,c2){try{ws.mergeCells(r1,c1,r2,c2)}catch(e){}}
-    const HB='FFDEEBF7',HT='FF17375E',SB='FFBDD7EE',ST='FF17375E';
-    M(1,1,1,11);ws.getCell(1,1).value='Маягт-1 Хавсралт-2';
-    ws.getCell(1,1).font={bold:true,name:'Arial',size:12};ws.getCell(1,1).alignment={horizontal:'center',vertical:'middle'};ws.getRow(1).height=22;
-    const _lbl=threshMx===Infinity?`${thresh}%-аас дээш`:`${thresh}%–${threshMx}% хооронд`;
-    M(2,1,2,11);ws.getCell(2,1).value=`${_lbl} тэнцэхгүй дэртэй үеийн жагсаалт`;
-    ws.getCell(2,1).font={bold:true,name:'Arial',size:11};ws.getCell(2,1).alignment={horizontal:'center',vertical:'middle'};ws.getRow(2).height=20;
-    M(3,9,3,11);ws.getCell(3,9).value=rptDate;ws.getCell(3,9).font={name:'Arial',size:9};ws.getCell(3,9).alignment={horizontal:'right'};ws.getRow(3).height=15;
-    M(4,1,4,11);ws.getCell(4,1).value=`ЗАМЫН ${clsNum}-Р АНГИ ${secNum}-р хэсэг`;
-    ws.getCell(4,1).font={bold:true,name:'Arial',size:10};ws.getCell(4,1).alignment={horizontal:'left',vertical:'middle'};ws.getRow(4).height=16;
-    M(5,1,6,1);T(5,1,'Д/д',{bg:HB,bold:true,fg:HT,sz:8});M(5,2,6,2);T(5,2,'Хэсэг',{bg:HB,bold:true,fg:HT,sz:8});
-    M(5,3,6,3);T(5,3,'Замын\nдугаар',{bg:HB,bold:true,fg:HT,sz:8});M(5,4,6,4);T(5,4,'Үе',{bg:HB,bold:true,fg:HT,sz:8});
-    M(5,5,6,5);T(5,5,'Үен дэх\nдэрийн\nэпюр',{bg:HB,bold:true,fg:HT,sz:8});M(5,6,6,6);T(5,6,'Тэнцэх\nгүй дэрийн\nнийт тоо',{bg:HB,bold:true,fg:HT,sz:8});
-    M(5,7,6,7);T(5,7,'Эзлэх %',{bg:HB,bold:true,fg:HT,sz:8});M(5,8,5,11);T(5,8,'Сийрэгжилт хийсэн',{bg:SB,bold:true,fg:ST,sz:9});
-    T(6,8,'Сольсон\nдэрийн тоо',{bg:SB,bold:true,fg:ST,sz:7});T(6,9,'солих\nдэрийн тоо',{bg:SB,bold:true,fg:ST,sz:7});
-    T(6,10,'сольсон дэрийн\nдугаар',{bg:SB,bold:true,fg:ST,sz:7});T(6,11,'Огноо',{bg:SB,bold:true,fg:ST,sz:7});
-    ws.getRow(5).height=36;ws.getRow(6).height=28;
-    let row=7,idx=1;
-    tracks.forEach(t=>{
-      let tW=0,tB=0,tSolih=0;
-      t.sections.forEach(sec=>{
-        const a=analyzeSection(sec);if(!a.woodTotal)return;
-        const woodPct=a.total>0?(a.totalBad/a.total*100):0;if(woodPct<thresh||woodPct>threshMx)return;
-        tW+=a.total;tB+=a.totalBad;
-        const pFg=woodPct>=(thresh+15)?'FF843C0C':'FF7A5000';
-        T(row,1,idx,{});T(row,2,secName,{});T(row,3,t.num+'-р зам',{bold:true});T(row,4,secNum2(sec.label),{});
-        T(row,5,a.total,{});T(row,6,a.totalBad,{bold:true,fg:'FF843C0C'});
-        T(row,7,woodPct.toFixed(1)+'%',{bold:true,fg:pFg,bg:woodPct>=(thresh+15)?'FFFCE4D6':woodPct>=thresh?'FFFFF2CC':''});
-        T(row,8,'',{bg:'FFEFF7FF'});T(row,9,a.bad,{fg:'FF566172'});T(row,10,'',{});T(row,11,'',{});
-        ws.getRow(row).height=15;tSolih+=a.bad;idx++;row++
-      });
-      if(tW>0){
-        const tPct=tW>0?(tB/tW*100):0;
-        M(row,1,row,3);
-        T(row,1,t.num+'-р зам нийт',{bold:true,h:'left',bg:'FFDAE3F3',fg:HT,bt:'medium',bb:'medium'});
-        [[4,''],[5,tW],[6,tB],[7,tPct.toFixed(1)+'%'],[8,''],[9,tSolih],[10,''],[11,'']].forEach(([c,v])=>{
-          T(row,c,v,{bold:c<=7,bg:'FFDAE3F3',fg:c===6||c===7?'FF843C0C':HT,bt:'medium',bb:'medium'})
-        });
-        ws.getRow(row).height=16;row++;ws.getRow(row).height=5;row++
-      }
-    });
-    let gW=0,gB=0,gSolih=0;
-    tracks.forEach(t=>t.sections.forEach(sec=>{
-      const a=analyzeSection(sec);if(!a.woodTotal)return;
-      const _wp=a.total>0?(a.totalBad/a.total*100):0;if(_wp<thresh||_wp>threshMx)return;
-      gW+=a.total;gB+=a.totalBad;gSolih+=a.totalBad
-    }));
-    const gP=gW>0?(gB/gW*100):0;
-    M(row,1,row,3);
-    [[1,'Нийт'],[4,''],[5,gW],[6,gB],[7,gP.toFixed(1)+'%'],[8,0],[9,gSolih],[10,''],[11,'']].forEach(([c,v])=>{
-      T(row,c,v,{bold:true,bg:'FF1E4D3B',fg:'FFFFFFFF',bt:'medium',bb:'medium',h:c===1?'left':'center'})
-    });
-    ws.getRow(row).height=18
-  })();
-
-  // ── Хавсралт-3 ──
-  (()=>{
-    const r=DB.rpt||{};
-    const clsNum=r.cls||'3',secNum=r.sec||'6',secName=r.secName||'ПД-'+secNum;
-    const season=r.season||'хавар',yr=r.yr||new Date().getFullYear();
-    const rptDate=r.date?new Date(r.date).toLocaleDateString('mn-MN'):new Date().toLocaleDateString('mn-MN');
-    const NC=19;
-    const ws=wb.addWorksheet('Хавсралт-3');
-    ws.columns=[{width:6},{width:12},{width:9},{width:8},{width:7},{width:7},{width:8},{width:7},{width:7},{width:9},{width:6},{width:6},{width:6},{width:7},{width:7},{width:7},{width:7},{width:7},{width:7}];
-    function T(r2,c,v,s={}){
-      const cell=ws.getCell(r2,c);
-      if(v!==null&&v!==undefined)cell.value=v;
-      if(s.bg)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:s.bg}};
-      cell.font={bold:s.bold,color:{argb:s.fg||'FF000000'},name:'Arial',size:s.sz||9};
-      cell.alignment={horizontal:s.h||'center',vertical:'middle',wrapText:true};
-      if(s.br!==false)cell.border={top:{style:s.bt||'thin',color:{argb:'FFA6A6A6'}},bottom:{style:s.bb||'thin',color:{argb:'FFA6A6A6'}},left:{style:'thin',color:{argb:'FFA6A6A6'}},right:{style:'thin',color:{argb:'FFA6A6A6'}}}
-    }
-    function M(r1,c1,r2,c2){try{ws.mergeCells(r1,c1,r2,c2)}catch(e){}}
-    const H1='FFDEEBF7',H2='FFBDD7EE',HT='FF17375E';
-    M(1,1,1,NC);ws.getCell(1,1).value='Маягт-1 Хавсралт-3';
-    ws.getCell(1,1).font={bold:true,name:'Arial',size:12};ws.getCell(1,1).alignment={horizontal:'center',vertical:'middle'};ws.getRow(1).height=22;
-    M(2,1,2,NC);ws.getCell(2,1).value=`Замын ${clsNum}-р ангийн ${yr} оны ${season}ын паспортын үзлэгзэр тэнцэхгүй илэрсэн тэнцэхгүй дэрийн тоо /ертге замд/`;
-    ws.getCell(2,1).font={bold:true,name:'Arial',size:10};ws.getCell(2,1).alignment={horizontal:'center',vertical:'middle',wrapText:true};ws.getRow(2).height=30;
-    M(3,NC-1,3,NC);ws.getCell(3,NC-1).value=rptDate;ws.getCell(3,NC-1).font={name:'Arial',size:9};ws.getCell(3,NC-1).alignment={horizontal:'right'};ws.getRow(3).height=14;
-    M(4,1,5,1);T(4,1,'Хэсэг',{bg:H1,bold:true,fg:HT,sz:8});M(4,2,5,2);T(4,2,'Өртөө\nзерлег',{bg:H1,bold:true,fg:HT,sz:8});M(4,3,5,3);T(4,3,'Замын\nдугаар',{bg:H1,bold:true,fg:HT,sz:8});
-    M(4,4,4,6);T(4,4,'Дэрийн эпюр',{bg:H2,bold:true,fg:HT,sz:9});
-    T(5,4,'нийт',{bg:H2,bold:true,fg:HT,sz:8});T(5,5,'мод',{bg:H2,bold:true,fg:HT,sz:8});T(5,6,'бетон',{bg:H2,bold:true,fg:HT,sz:8});
-    M(4,7,4,9);T(4,7,'Тэнцэхгүй\nдэрийн тоо',{bg:H2,bold:true,fg:HT,sz:9});
-    T(5,7,'нийт',{bg:H2,bold:true,fg:HT,sz:8});T(5,8,'модон',{bg:H2,bold:true,fg:HT,sz:8});T(5,9,'бетон',{bg:H2,bold:true,fg:HT,sz:8});
-    M(4,10,5,10);T(4,10,'Тэнцэх\nгүй дэр\nхоллох\nхувь',{bg:H1,bold:true,fg:HT,sz:8});
-    M(4,11,4,13);T(4,11,'Дараалан муудсан',{bg:H2,bold:true,fg:HT,sz:8});
-    T(5,11,'3',{bg:H2,bold:true,fg:HT,sz:8});T(5,12,'4',{bg:H2,bold:true,fg:HT,sz:8});T(5,13,'5 ба<',{bg:H2,bold:true,fg:HT,sz:8});
-    const b1=thresh,b2=thresh+10,b3=thresh+20;
-    M(4,14,4,17);T(4,14,`1 үенд ${thresh}%-с дэшл тэнцэхгүй үеийн тоо`,{bg:H2,bold:true,fg:HT,sz:8});
-    [`${b1}-${b2-1}`,`${b2}-${b3-1}`,`${b3}+`,'нийт'].forEach((v,i)=>T(5,14+i,v,{bg:H2,bold:true,fg:HT,sz:8}));
-    M(4,18,4,19);T(4,18,'Тухайн онд солилцсон дэрийн тоо',{bg:H2,bold:true,fg:HT,sz:8});
-    T(5,18,'мод',{bg:H2,bold:true,fg:HT,sz:8});T(5,19,'бетон',{bg:H2,bold:true,fg:HT,sz:8});
-    ws.getRow(4).height=42;ws.getRow(5).height=20;
-    let row=6,gNt=0,gNm=0,gNb=0,gTt=0,gTm=0,gTb=0,gD3=0,gD4=0,gD5=0,gP25=0,gP31=0,gP41=0,gP50=0;
-    tracks.forEach(t=>{
-      const a=analyzeTrack(t);
-      const wT=a.normal+a.bad,bT=a.tbd+a.bad_tbd;
-      const pct=a.total>0?(a.totalBad/a.total*100):0;
-      // ★ Үе дамнасан дараалалыг тооцно
-      let d3=0,d4=0,d5=0;
-      findConsecutiveBadForTrack(t.sections).forEach(g=>g.len===3?d3++:g.len===4?d4++:d5++);
-      let b25=0,b31=0,b41=0,b50=0;
-      t.sections.forEach(sec=>{
-        const sa=analyzeSection(sec);if(!sa.woodTotal)return;
-        const sp=sa.total>0?(sa.totalBad/sa.total*100):0;if(sp<thresh)return;
-        if(sp>=thresh+20)b50++;else if(sp>=thresh+10)b41++;else b25++
-      });
-      const pFg=pct>=35?'FF843C0C':pct>=25?'FF7A5000':'FF375623';
-      T(row,1,secNum,{});T(row,2,DB.location,{h:'left'});T(row,3,t.num+'-р зам',{bold:true});
-      T(row,4,a.total,{});T(row,5,wT,{});T(row,6,bT||'',{});
-      T(row,7,a.totalBad,{bold:true,fg:'FF843C0C'});T(row,8,a.bad,{bold:true,fg:'FF843C0C'});T(row,9,a.bad_tbd||'',{});
-      T(row,10,pct>0?pct.toFixed(2):'',{bold:true,fg:pFg});
-      T(row,11,d3||'',{fg:d3?'FF7A3B00':'',bold:!!d3});
-      T(row,12,d4||'',{fg:d4?'FF843C0C':'',bold:!!d4});
-      T(row,13,d5||'',{fg:d5?'FF843C0C':'',bold:!!d5});
-      T(row,14,b25||'',{});T(row,15,b31||'',{});T(row,16,b41||'',{});T(row,17,b50||'',{});
-      T(row,18,'',{});T(row,19,'',{});
-      ws.getRow(row).height=16;
-      gNt+=a.total;gNm+=wT;gNb+=bT;gTt+=a.totalBad;gTm+=a.bad;gTb+=a.bad_tbd;
-      gD3+=d3;gD4+=d4;gD5+=d5;gP25+=b25;gP31+=b31;gP41+=b41;gP50+=b50;row++
-    });
-    const gP=gNt>0?(gTt/gNt*100):0;
-    M(row,1,row,3);
-    [[1,'Нийт'],[4,gNt],[5,gNm],[6,gNb||''],[7,gTt],[8,gTm],[9,gTb||''],
-     [10,gP.toFixed(1)+'%'],[11,gD3],[12,gD4],[13,gD5],
-     [14,gP25],[15,gP31],[16,gP41],[17,gP50],[18,0],[19,0]
-    ].forEach(([c,v])=>{T(row,c,v,{bold:true,bg:'FF1E4D3B',fg:'FFFFFFFF',bt:'medium',bb:'medium',h:c===1?'left':'center'})});
-    ws.getRow(row).height=18
-  })();
 
   // ── Дараалсан судалгаа (үе дамнасан тооцдог) ──
   (()=>{
@@ -5061,7 +5147,7 @@ async function exportColoredExcel(){
         const row=wsC.getRow(rowIdx++);
         const rfill=g.crossSection?'FFF3EEFF':g.len>=5?'FFFFF0D0':g.len===4?'FFFFF5E0':'FFFFFDE7';
         const leftColor=g.crossSection?'FF6D28D9':g.len>=5?'FF8B1818':g.len===4?'FFC00000':'FF7A5000';
-        [t.num+'-р зам',
+        [trackLabel(t),
          Object.keys(bySec).map(l=>{const m=l.match(/^(\d+)/);return m?m[1]:l}).join('/'),
          gi+1,posStr,g.len,
          is3?1:'',is4?1:'',is5p?1:'',
@@ -5082,7 +5168,7 @@ async function exportColoredExcel(){
       });
       // Дэд нийлбэр
       const subRow=wsC.getRow(rowIdx++);
-      [t.num+'-р зам НИЙТ','',tTrackAll,'',tTrack3+tTrack4+tTrack5p,tTrack3,tTrack4,tTrack5p,tTrackCross?`🔀 ${tTrackCross}`:''].forEach((v,i)=>{
+      [trackLabel(t)+' НИЙТ','',tTrackAll,'',tTrack3+tTrack4+tTrack5p,tTrack3,tTrack4,tTrack5p,tTrackCross?`🔀 ${tTrackCross}`:''].forEach((v,i)=>{
         const cell=subRow.getCell(i+1);cell.value=v;
         cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF2FF'}};
         cell.font={bold:true,name:'Arial',size:9};cell.alignment={horizontal:i<=1?'left':'center',vertical:'middle'};
@@ -5110,10 +5196,9 @@ async function exportColoredExcel(){
   try{
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const fname=`${DB.location}_${new Date().toISOString().slice(0,10)}.xlsx`;
-    closeModal('threshModal');
-    dlBlob(blob,fname);
-    if(!isIOS())showToast('✓ Excel татагдлаа!')
+    const t=mnToday(),p=n=>(n<10?'0':'')+n;
+    dlBlob(blob,`ПУ5-дэвтэр_${scopeLbl}_${t.y}-${p(t.m)}-${p(t.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ПУ-5 дэвтэр · ${tracks.length} ${isMain?'км':'зам'}`,2600)
   }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
 }
 
@@ -5208,7 +5293,10 @@ function renderFolders(){
         ${isActive?`<button onclick="closeFolder();event.stopPropagation()" style="background:var(--g100);border:1px solid var(--g400);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--g700);cursor:pointer"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Хаах</button>`:''}
         <button class="folder-del" onclick="deleteFolder('${f.id}',event)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-    </div>`
+    </div>
+    <button class="pu5-btn" onclick="event.stopPropagation();hap();exportPu5Book('${f.id}')">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
+    </button>`
   }).join('')
 }
 
@@ -5948,7 +6036,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·67';
+const APP_BUILD='2026.08.25·69';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
