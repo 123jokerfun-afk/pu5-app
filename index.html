@@ -4830,6 +4830,7 @@ async function exportColoredExcel(){
 // ══════════════════════════════════════════════
 async function exportPu5Book(scope){
   if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');return}
+  if(!await appConfirm('ПУ-5 дэвтэр загварыг татах уу?','Татах'))return;
   const isMain=scope==='main';
   // Паспортыг id-гаар нь шууд авна — нээлттэй биш паспортоос ч татаж болно
   const fold=isMain?null:(DB.folders.find(f=>f.id===scope)
@@ -4879,12 +4880,19 @@ async function exportPu5Book(scope){
   }
 
   // Sheet 1: Нийт дүн
-  const allRows=[];tracks.forEach(t=>{dataSections(t).forEach(s=>{const sa=analyzeSection(s);allRows.push({t,s,sa})})});
+  // Дэвтрийн бусад шийттэй нэг байдлаар — үзлэгийн эх төлөвөөр
+  const allRows=[];tracks.forEach(t=>{origSections(t).filter(x=>!isTurnout(x))
+    .forEach(s=>{const sa=analyzeSection(s);allRows.push({t,s,sa})})});
   const {ws:ws1,lastRow:lr1}=makeSheet(wb,'Нийт дүн',allRows,true);
   let tr=lr1;
   tracks.forEach(t=>{
-    const ta=analyzeTrack(t);const totRow=ws1.getRow(tr++);
-    const taWood=dataSections(t).reduce((s,sec)=>{const a=analyzeSection(sec);return s+a.woodTotal},0);[trackLabel(t)+' НИЙТ',`(${dataSections(t).length} үе)`,ta.total,taWood,ta.normal,ta.bad,ta.tbd,ta.bad_tbd,ta.totalBad,ta.total?ta.pct/100:null].forEach((v,i)=>{
+    const _os=origSections(t).filter(x=>!isTurnout(x));
+    const ta=_os.reduce((r,sec)=>{const a=analyzeSection(sec);
+      ['normal','bad','tbd','bad_tbd','total'].forEach(k=>r[k]+=a[k]);return r},
+      {normal:0,bad:0,tbd:0,bad_tbd:0,total:0});
+    ta.totalBad=ta.bad+ta.bad_tbd;ta.pct=ta.total?ta.totalBad/ta.total*100:0;
+    const totRow=ws1.getRow(tr++);
+    const taWood=_os.reduce((s,sec)=>{const a=analyzeSection(sec);return s+a.woodTotal},0);[trackLabel(t)+' НИЙТ',`(${_os.length} үе)`,ta.total,taWood,ta.normal,ta.bad,ta.tbd,ta.bad_tbd,ta.totalBad,ta.total?ta.pct/100:null].forEach((v,i)=>{
       const cell=totRow.getCell(i+1);cell.value=v;cell.fill=cFill('FFEEF2FF');
       cell.font={bold:true,name:'Arial',size:10};cell.alignment={horizontal:i<=1?'left':'center',vertical:'middle'};bdr(cell);
       if(i===9&&ta.total){cell.numFmt='0.0%';cell.fill=pFill(ta.pct);cell.font={...pFont(ta.pct),bold:true}}
@@ -4894,13 +4902,53 @@ async function exportPu5Book(scope){
   // Per-track sheets: ★ Зөвхөн энгийн үе (normal) → 1-10, 11-20 гэх хуудсанд
   //                   ★ Холбох хэсгүүд → тусад нь нэг хуудсанд
   tracks.forEach(t=>{
+    // ПУ-5 дэвтэр бол ҮЗЛЭГИЙН баримт. Дэр сольж хэвийн болсон ч зураас нь
+    // арилахгүй байх ёстой тул үеүүдийг солихоос ӨМНӨХ байдлаар нь харуулна.
+    const oSecs=origSections(t).filter(x=>!isTurnout(x));
+    const realById={};(t.sections||[]).forEach(x=>{realById[x.id]=x});
+    // Тухайн байрлалын дэр сольсон эсэх (зөвхөн өмнө нь тэнцэхгүй байсныг)
+    const replAt=(secId,idx)=>{
+      const rs=realById[secId],e=rs&&rs.repl&&rs.repl[idx];
+      return (e&&e.d&&replWasBad(e))?e:null
+    };
+    // '2026-08-19' → '26/8'
+    const shortYm=d=>{const m=String(d||'').match(/^(\d{2})(\d{2})-(\d{2})/);
+      return m?`${m[2]}/${+m[3]}`:''};
+    // Нэг нүдийг бөглөж, эзэлсэн мөрийн тоог буцаана.
+    // Зураасны ДЭЭР — сольсон он/сар (26/8), ДООР — С (солигдсон) / У (тэнцэхгүй хэвээр)
+    const fillCell=(cell,sec,pos,isConsec,isCross)=>{
+      const sl=sec.sleepers[pos],hi=isConsec||isCross;
+      const bd=c=>({top:{style:'medium',color:{argb:c}},bottom:{style:'medium',color:{argb:c}},
+                    left:{style:'medium',color:{argb:c}},right:{style:'medium',color:{argb:c}}});
+      if(sl.type==='normal'){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};return 1}
+      let mark='ТБД',bg='FFFDEAEA',fg='FFC00000',sz=9;
+      if(sl.type==='bad'){mark='—';sz=13}
+      else if(sl.type==='bad_tbd'){mark='ТТБД';bg='FFD6E4FF';fg='FF1A4BC4'}
+      const bad=isBadSleeper(sl.type);
+      const rp=bad?replAt(sec.id,pos):null;
+      const top=rp?shortYm(rp.d):'';
+      const bot=bad?(rp?'С':'У'):'';
+      const mfg=hi?'FF7A5000':fg;
+      const rt=[];
+      if(top)rt.push({font:{name:'Arial',size:7,bold:true,color:{argb:'FF1A4BC4'}},text:top+'\n'});
+      rt.push({font:{name:'Arial',size:sz,bold:true,color:{argb:mfg}},text:mark});
+      if(bot)rt.push({font:{name:'Arial',size:8,bold:true,
+        color:{argb:bot==='С'?'FF0D6E46':'FFC00000'}},text:'\n'+bot});
+      cell.value=rt.length>1?{richText:rt}:mark;
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hi?'FFFFFF99':bg}};
+      cell.font={bold:true,color:{argb:mfg},name:'Arial',size:sz};
+      cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+      if(isConsec)cell.border=bd('FFFF9800');
+      else if(isCross)cell.border=bd('FF9C27B0');
+      return (top?1:0)+1+(bot?1:0)
+    };
     // Бүх үеийн нэгтгэл шийт
-    const rows=dataSections(t).map(s=>({t,s,sa:analyzeSection(s)}));
+    const rows=oSecs.map(s=>({t,s,sa:analyzeSection(s)}));
     makeSheet(wb,trackLabel(t),rows,true);
 
     // ── Энгийн үенүүдийн матриц шийтүүд (1-10, 11-20, ...) ──
-    const normalSecs=dataSections(t).filter(s=>s.type!=='connecting');
-    const connSecs=dataSections(t).filter(s=>s.type==='connecting');
+    const normalSecs=oSecs.filter(s=>s.type!=='connecting');
+    const connSecs=oSecs.filter(s=>s.type==='connecting');
 
     const SEC_GROUP=10;
     for(let gi=0;gi<normalSecs.length;gi+=SEC_GROUP){
@@ -4955,7 +5003,7 @@ async function exportPu5Book(scope){
       // Тайлбар
       wsM.mergeCells(2,1,2,sg.length+1);
       const leg=wsM.getCell(2,1);
-      leg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан (үе дамнасан 🔀)';
+      leg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан (үе дамнасан 🔀)   ●   Зураасны ДЭЭР=сольсон он/сар (26/8), ДООР: С=солигдсон, У=тэнцэхгүй хэвээр';
       leg.font={italic:true,color:{argb:'FF566172'},name:'Arial',size:9};
       leg.alignment={horizontal:'center',vertical:'middle'};
       leg.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFDE7'}};wsM.getRow(2).height=16;
@@ -4977,37 +5025,12 @@ async function exportPu5Book(scope){
         const dr=wsM.getRow(pos+4);
         const pc=dr.getCell(1);pc.value=pos+1;pc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2D6E52'}};
         pc.font={bold:true,color:C.white,name:'Arial',size:9};pc.alignment={horizontal:'center',vertical:'middle'};bdr(pc);
+        let mxLn=1;
         sg.forEach((s,si)=>{
           const cell=dr.getCell(si+2);cell.alignment={horizontal:'center',vertical:'middle'};bdr(cell);
           if(pos>=s.sleepers.length){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2C2C2C'}};return}
-          const sl=s.sleepers[pos];
-          const isConsec=consecSets[si].has(pos);
-          const isCross=crossSets[si].has(pos); // үе дамнасан
-          const isHighlight=isConsec||isCross;
-          const crossBorderColor='FF9C27B0'; // нил ягаан = үе дамнасан
-
-          if(sl.type==='normal'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}}
-          } else if(sl.type==='tbd'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:isHighlight?{argb:'FFFFFF99'}:{argb:'FFFDEAEA'}};
-            cell.value='ТБД';
-            cell.font={bold:true,color:isHighlight?{argb:'FF7A5000'}:{argb:'FFC00000'},name:'Arial',size:9};
-            if(isConsec)cell.border={top:{style:'medium',color:{argb:'FFFF9800'}},bottom:{style:'medium',color:{argb:'FFFF9800'}},left:{style:'medium',color:{argb:'FFFF9800'}},right:{style:'medium',color:{argb:'FFFF9800'}}};
-            if(isCross&&!isConsec)cell.border={top:{style:'medium',color:{argb:crossBorderColor}},bottom:{style:'medium',color:{argb:crossBorderColor}},left:{style:'medium',color:{argb:crossBorderColor}},right:{style:'medium',color:{argb:crossBorderColor}}}
-          } else if(sl.type==='bad'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:isHighlight?{argb:'FFFFFF99'}:{argb:'FFFDEAEA'}};
-            cell.value='—';
-            cell.font={bold:true,color:isHighlight?{argb:'FF7A5000'}:{argb:'FFC00000'},name:'Arial',size:11};
-            if(isConsec)cell.border={top:{style:'medium',color:{argb:'FFFF9800'}},bottom:{style:'medium',color:{argb:'FFFF9800'}},left:{style:'medium',color:{argb:'FFFF9800'}},right:{style:'medium',color:{argb:'FFFF9800'}}};
-            if(isCross&&!isConsec)cell.border={top:{style:'medium',color:{argb:crossBorderColor}},bottom:{style:'medium',color:{argb:crossBorderColor}},left:{style:'medium',color:{argb:crossBorderColor}},right:{style:'medium',color:{argb:crossBorderColor}}}
-          } else if(sl.type==='bad_tbd'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:isHighlight?{argb:'FFFFFF99'}:{argb:'FFD6E4FF'}};
-            cell.value='ТТБД';
-            cell.font={bold:true,color:isHighlight?{argb:'FF7A5000'}:{argb:'FF1A4BC4'},name:'Arial',size:9};
-            if(isConsec)cell.border={top:{style:'medium',color:{argb:'FFFF9800'}},bottom:{style:'medium',color:{argb:'FFFF9800'}},left:{style:'medium',color:{argb:'FFFF9800'}},right:{style:'medium',color:{argb:'FFFF9800'}}};
-            if(isCross&&!isConsec)cell.border={top:{style:'medium',color:{argb:crossBorderColor}},bottom:{style:'medium',color:{argb:crossBorderColor}},left:{style:'medium',color:{argb:crossBorderColor}},right:{style:'medium',color:{argb:crossBorderColor}}}
-          }
-        });dr.height=16
+          mxLn=Math.max(mxLn,fillCell(cell,s,pos,consecSets[si].has(pos),crossSets[si].has(pos)));
+        });dr.height=mxLn>=3?38:mxLn===2?27:16
       }
 
       // Дүн мөр
@@ -5048,7 +5071,7 @@ async function exportPu5Book(scope){
       // Тайлбар
       wsConn.mergeCells(2,1,2,connSecs.length+1);
       const cleg=wsConn.getCell(2,1);
-      cleg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан';
+      cleg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан   ●   Зураасны ДЭЭР=сольсон он/сар (26/8), ДООР: С=солигдсон, У=тэнцэхгүй хэвээр';
       cleg.font={italic:true,color:{argb:'FF566172'},name:'Arial',size:9};
       cleg.alignment={horizontal:'center',vertical:'middle'};
       cleg.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3EEFF'}};wsConn.getRow(2).height=16;
@@ -5080,27 +5103,12 @@ async function exportPu5Book(scope){
         const dr=wsConn.getRow(pos+4);
         const pc=dr.getCell(1);pc.value=pos+1;pc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF5B2FA8'}};
         pc.font={bold:true,color:C.white,name:'Arial',size:9};pc.alignment={horizontal:'center',vertical:'middle'};bdr(pc);
+        let mxLn=1;
         connSecs.forEach((s,si)=>{
           const cell=dr.getCell(si+2);cell.alignment={horizontal:'center',vertical:'middle'};bdr(cell);
           if(pos>=s.sleepers.length){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2C2C2C'}};return}
-          const sl=s.sleepers[pos];
-          const isConsec=cConsecSets[si].has(pos);
-          if(sl.type==='normal'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}}
-          } else if(sl.type==='tbd'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:isConsec?{argb:'FFFFFF99'}:{argb:'FFFDEAEA'}};
-            cell.value='ТБД';cell.font={bold:true,color:isConsec?{argb:'FF7A5000'}:{argb:'FFC00000'},name:'Arial',size:9};
-            if(isConsec)cell.border={top:{style:'medium',color:{argb:'FFFF9800'}},bottom:{style:'medium',color:{argb:'FFFF9800'}},left:{style:'medium',color:{argb:'FFFF9800'}},right:{style:'medium',color:{argb:'FFFF9800'}}}
-          } else if(sl.type==='bad'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:isConsec?{argb:'FFFFFF99'}:{argb:'FFFDEAEA'}};
-            cell.value='—';cell.font={bold:true,color:isConsec?{argb:'FF7A5000'}:{argb:'FFC00000'},name:'Arial',size:11};
-            if(isConsec)cell.border={top:{style:'medium',color:{argb:'FFFF9800'}},bottom:{style:'medium',color:{argb:'FFFF9800'}},left:{style:'medium',color:{argb:'FFFF9800'}},right:{style:'medium',color:{argb:'FFFF9800'}}}
-          } else if(sl.type==='bad_tbd'){
-            cell.fill={type:'pattern',pattern:'solid',fgColor:isConsec?{argb:'FFFFFF99'}:{argb:'FFD6E4FF'}};
-            cell.value='ТТБД';cell.font={bold:true,color:isConsec?{argb:'FF7A5000'}:{argb:'FF1A4BC4'},name:'Arial',size:9};
-            if(isConsec)cell.border={top:{style:'medium',color:{argb:'FFFF9800'}},bottom:{style:'medium',color:{argb:'FFFF9800'}},left:{style:'medium',color:{argb:'FFFF9800'}},right:{style:'medium',color:{argb:'FFFF9800'}}}
-          }
-        });dr.height=16
+          mxLn=Math.max(mxLn,fillCell(cell,s,pos,cConsecSets[si].has(pos),false));
+        });dr.height=mxLn>=3?38:mxLn===2?27:16
       }
 
       // Дүн мөр
@@ -5155,7 +5163,7 @@ async function exportPu5Book(scope){
     let rowIdx=4,tot3=0,tot4=0,tot5p=0,totAll=0,totCross=0;
     tracks.forEach(t=>{
       // ★ Track-level дараалал (үе дамнасан)
-      const allTrackGroups=findConsecutiveBadForTrack(t.sections);
+      const allTrackGroups=findConsecutiveBadForTrack(origSections(t));
       if(!allTrackGroups.length)return;
       let tTrack3=0,tTrack4=0,tTrack5p=0,tTrackAll=0,tTrackCross=0;
       allTrackGroups.forEach((g,gi)=>{
@@ -6058,7 +6066,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·71';
+const APP_BUILD='2026.08.25·72';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
