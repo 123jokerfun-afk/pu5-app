@@ -1151,7 +1151,7 @@ button{font-family:inherit}
     </div>
     <div class="joystick-wrap">
       <div class="joy-ring"></div>
-      <div class="joy-hint jh-bot">↓ Тэнцэхгүй</div>
+      <div class="joy-hint jh-top">↑ Тэнцэхгүй</div>
       <div class="joy-btn" id="swJoyBtn">
         <div class="joy-icon" id="swJoyIcon">●</div>
         <div class="joy-lbl" id="swJoyLbl">Хэвийн</div>
@@ -6766,16 +6766,19 @@ function renderSwRec(focus){
   let html='';
   // Дугаарлалт: рам замын дэр 1-ээс, дүнз эхлэхэд ДАХИН 1-ээс эхэлнэ
   const no=i=>(i<head?i+1:i-head+1);
+  const dMap=swResolveDRepl(t);      // өмнөх паспортоос уламжилсныг оруулаад
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),bad=t.it[i]==='b';
     const isSl=sl.kind==='дэр';
     const cls=isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok';
-    const rp=isSl?(t.slRepl||{})[i]:swDzRepl(t,i);
+    const dr=isSl?null:dMap[i];
+    const rp=isSl?(t.slRepl||{})[i]:(dr?dr.rec:null);
+    const prev=!!(dr&&!dr.own);       // өмнөх паспортынх — зөвхөн тэмдэглэгээ
     html+=`<div class="drow dr-rec ${cls}" data-i="${i}" data-rec="1">
       <span class="dr-num">#${no(i)}</span>
       <span class="sw-kind">${isSl?'Дэр':swLen(sl.len)+' пог/м'}</span>
       <span class="sw-state">${bad?'Тэнцэхгүй':'Хэвийн'}</span>
-      ${rp?`<span class="repl-date">${fmtReplDate(rp.d)}</span>`:''}
+      ${rp?`<span class="repl-date${prev?' rd-prev':''}">${fmtReplDate(rp.d)}</span>`:''}
       <span class="dr-edit">${ic('edit',12)}</span></div>`
   }
   html+=`<div class="drow dr-slot" data-i="${n}" data-rec="0" data-slot="1">
@@ -6839,7 +6842,8 @@ function swUndo(){
   const btn=document.getElementById('swJoyBtn');if(!btn)return;
   const lbl=document.getElementById('swJoyLbl'),icn=document.getElementById('swJoyIcon');
   let st=null;
-  const kind=(dx,dy)=>(Math.sqrt(dx*dx+dy*dy)<16?'n':(dy>0&&dy>Math.abs(dx)?'b':null));
+  // Дарвал Хэвийн, ДЭЭШ шудрахад Тэнцэхгүй (дэр бүртгэлтэй ижил чиглэл)
+  const kind=(dx,dy)=>(Math.sqrt(dx*dx+dy*dy)<16?'n':(dy<0&&-dy>Math.abs(dx)?'b':null));
   const show=k=>{
     btn.style.background=k==='b'?'linear-gradient(145deg,#FFB86B,#F59E0B)':'';
     lbl.textContent=k==='b'?'Тэнцэхгүй':'Хэвийн';icn.textContent=k==='b'?'~':'●'
@@ -6917,6 +6921,31 @@ function clearSwSlRepl(){
 //   Бодит уртыг зөвхөн "Дүнзний бодит мэдээлэл"-д харуулна.
 // ══════════════════════════════════════════════
 function swDzRepl(to,i){return (to.dRepl||{})[i]||null}
+// Паспортуудыг огноогоор нь эрт → хожуу
+function swFoldersByDate(){
+  return swFolders().slice().sort((a,b)=>
+    String(a.date||a.year||'').localeCompare(String(b.date||b.year||'')))
+}
+// Тухайн сумын дүнз бүрийн ХҮЧИНТЭЙ солилт: эхлээд энэ паспортынх, дараа нь
+// өмнөх паспортууд руу хожуугаас эрт рүү ухарч хайна. Ингэснээр дараагийн
+// паспортад бүртгэл хийхэд тухайн дүнз дээр СОЛЬСОН ОГНОО нь хэвээр харагдана.
+// Уламжилсан тэмдэглэгээ нь энэ паспортын тайлан, тооцоонд ОРОХГҮЙ — зөвхөн
+// тэмдэглэгээ төдий.
+function swResolveDRepl(to){
+  const out={};
+  const own=to.dRepl||{};
+  Object.keys(own).forEach(k=>{out[k]={rec:own[k],own:true}});
+  const all=swFoldersByDate();
+  const cur=all.findIndex(f=>f.id===swFolderId);
+  if(cur<0)return out;
+  for(let i=cur-1;i>=0;i--){
+    const pt=(all[i].turnouts||[]).find(x=>
+      x.num===to.num&&x.mak===to.mak&&x.mark===to.mark);
+    if(!pt||!pt.dRepl)continue;
+    Object.keys(pt.dRepl).forEach(k=>{if(!(k in out))out[k]={rec:pt.dRepl[k],own:false}})
+  }
+  return out
+}
 // Үзлэгийн эх төлөв: сольсон бөгөөд өмнө нь тэнцэхгүй байсныг буцаана
 function swOrigIt(to){
   const it=(to.it||'').split(''),rp=to.dRepl||{};
@@ -6952,13 +6981,16 @@ function openSwDz(i){
   const t=swTurnout();if(!t||i>=(t.it||'').length)return;
   _swDzIdx=i;
   const head=t.head||0,len=swSlot(t,i).len,rp=swDzRepl(t,i);
+  const dr=swResolveDRepl(t)[i],prev=!!(dr&&!dr.own);
   document.getElementById('swDzTitle').textContent=`#${i-head+1} дүнз · ${swLen(len)} пог/м`;
   document.getElementById('swDzSub').textContent=
     rp?`Сольсон: ${fmtReplDate(rp.d)} · ${swLen(rp.L||len)} м дүнзээр`
+      :prev?`Өмнөх паспортод сольсон: ${fmtReplDate(dr.rec.d)} · ${swLen(dr.rec.L||len)} м`
       :'Бүртгэлд ' + swLen(len) + ' пог/м гэж тооцогдоно';
   document.getElementById('swDzTypeNow').textContent=t.it[i]==='b'?'Тэнцэхгүй':'Хэвийн';
   const b=document.getElementById('swDzReplBtn');
-  if(b)b.lastChild.textContent=rp?` Сольсон: ${fmtReplDate(rp.d)} — засах`:' Сольсон мэдээлэл оруулах';
+  if(b)b.lastChild.textContent=rp?` Сольсон: ${fmtReplDate(rp.d)} — засах`
+    :prev?` Өмнө сольсон: ${fmtReplDate(dr.rec.d)} — дахин солих`:' Сольсон мэдээлэл оруулах';
   openModal('swDzModal')
 }
 function toggleSwDzType(){
@@ -7336,7 +7368,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·78';
+const APP_BUILD='2026.08.25·79';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
