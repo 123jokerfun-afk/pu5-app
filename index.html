@@ -134,7 +134,11 @@ button{font-family:inherit}
 .sheet{background:rgba(252,252,250,.97);border-radius:32px 32px 0 0;
   padding:0 0 calc(20px + var(--sab));width:100%;max-height:88vh;overflow-y:auto;
   backdrop-filter:blur(20px);box-shadow:0 -12px 48px rgba(150,95,25,.2)}
-.sheet-handle{width:44px;height:5px;background:var(--border2);border-radius:3px;margin:12px auto 6px;opacity:.7}
+.sheet-handle{width:44px;height:5px;background:var(--border2);border-radius:3px;margin:12px auto 6px;
+  opacity:.7;position:relative;touch-action:none;cursor:grab}
+/* Хуруугаар барихад амар байхаар үл үзэгдэх өргөн талбай өгнө */
+.sheet-handle::after{content:'';position:absolute;left:-70px;right:-70px;top:-16px;bottom:-6px}
+.sheet-handle:active{opacity:1;background:var(--ink4)}
 .sheet-inner{padding:4px 20px 0}
 .sheet-title{font-size:18px;font-weight:800;letter-spacing:-.4px;color:var(--ink);margin-bottom:16px}
 .ff{margin-bottom:12px}
@@ -584,6 +588,11 @@ button{font-family:inherit}
 /* Бүртгэлийн мөрөнд харагдах улаан огноо */
 .repl-date{font-size:9px;padding:2px 5px;border-radius:5px;font-weight:800;flex-shrink:0;
   background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-variant-numeric:tabular-nums}
+/* Өмнөх паспортоос уламжилсан огноо — энэ паспортын бүртгэл БИШ, зүгээр тэмдэглэгээ */
+.repl-date.rd-prev{background:var(--bg);color:var(--ink3);border-color:var(--border2);
+  border-style:dashed;font-weight:700}
+/* Төрөл сонгох цонхонд одоогийн төрлийг тодруулна */
+.etb.sel{box-shadow:0 0 0 2.5px var(--ink) inset;filter:saturate(1.15)}
 /* Тайлангийн жагсаалт */
 .consec-summary.cs-4{grid-template-columns:repeat(4,1fr)}
 .cs-btn{cursor:pointer;font-family:inherit;transition:all .14s;position:relative}
@@ -912,15 +921,27 @@ button{font-family:inherit}
       <div class="sheet-title" style="margin:0" id="editSleeperTitle">Дэр засах</div>
       <button onclick="closeModal('editSleeperModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
     </div>
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Шинэ төрөл сонгоно уу:</div>
-    <div class="edit-grid">
-      <button class="etb etb-n" onclick="editSleeper('normal')"><span class="etb-icon">✓</span>Хэвийн</button>
-      <button class="etb etb-b" onclick="editSleeper('bad')"><span class="etb-icon">~</span>Тэнцэхгүй</button>
-      <button class="etb etb-t" onclick="editSleeper('tbd')"><span class="etb-icon">■</span>ТБД</button>
-      <button class="etb etb-bt" onclick="editSleeper('bad_tbd')"><span class="etb-icon">✕</span>Тэнцэхгүй ТБД</button>
-    </div>
+    <button class="etb" id="typeBtn" onclick="openTypeModal()" style="width:100%;margin-top:10px;padding:14px;display:flex;align-items:center;gap:10px;text-align:left"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="flex:1">Төрөл өөрчлөх</span><span id="typeBtnNow" style="font-weight:900;color:var(--ink3);font-size:12px"></span><span style="font-weight:900;color:var(--ink4)">›</span></button>
     <button class="etb" id="replBtn" onclick="openReplModal()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
     <button class="etb etb-del" onclick="deleteSleeper()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг устгах</button>
+  </div></div>
+</div>
+
+<!-- ДЭРИЙН ТӨРӨЛ ӨӨРЧЛӨХ (editSleeperModal-аас дээр гарна) -->
+<div class="overlay" id="typeModal" style="z-index:430">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="typeModalTitle">Төрөл</div>
+      <button onclick="closeModal('typeModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Шинэ төрөл сонгоно уу:</div>
+    <div class="edit-grid">
+      <button class="etb etb-n" id="tmB_normal" onclick="editSleeper('normal')"><span class="etb-icon">✓</span>Хэвийн</button>
+      <button class="etb etb-b" id="tmB_bad" onclick="editSleeper('bad')"><span class="etb-icon">~</span>Тэнцэхгүй</button>
+      <button class="etb etb-t" id="tmB_tbd" onclick="editSleeper('tbd')"><span class="etb-icon">■</span>ТБД</button>
+      <button class="etb etb-bt" id="tmB_bad_tbd" onclick="editSleeper('bad_tbd')"><span class="etb-icon">✕</span>Тэнцэхгүй ТБД</button>
+    </div>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('typeModal')">Буцах</button>
   </div></div>
 </div>
 
@@ -957,7 +978,7 @@ button{font-family:inherit}
 
 <!-- ҮЕИЙН ТӨРӨЛ: материал + бэхэлгээ өөрчлөх -->
 <div class="overlay" id="secTypeModal">
-  <div class="sheet"><div class="sheet-inner">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="sheet-title" style="margin:0" id="secTypeTitle">Дэрийн төрөл</div>
       <button onclick="closeModal('secTypeModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
@@ -981,7 +1002,7 @@ button{font-family:inherit}
 
 <!-- ҮЕД НИЙТ ДЭР ОРУУЛАХ -->
 <div class="overlay" id="bulkModal">
-  <div class="sheet"><div class="sheet-inner">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="sheet-title" style="margin:0" id="bulkTitle">Нийт дэр оруулах</div>
       <button onclick="closeModal('bulkModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
@@ -1055,7 +1076,7 @@ button{font-family:inherit}
 
 <!-- СОЛИГДСОН ДЭР: огноо + төрөл сонгох -->
 <div class="overlay" id="replModal">
-  <div class="sheet"><div class="sheet-inner">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="sheet-title" style="margin:0" id="replTitle">Сольсон огноо</div>
       <button onclick="closeModal('replModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
@@ -1699,7 +1720,9 @@ function saveDB(){
 // Энэ нь _packDB-д хөндөгдөхгүй тул шахалт хэвээрээ үлдэнэ.
 function getRepl(sec,idx){return sec&&sec.repl?sec.repl[idx]||null:null}
 // r = {d:огноо, t:шинэ төрөл, m:'wood'|'tbd' материал, s:1 бол СИЙРЭГЖИЛТ
-//      (дараалсан цэг таслахын тулд сольсон), o:1 бол солихын өмнө тэнцэхгүй байсан}
+//      (дараалсан цэг таслахын тулд сольсон), o:1 бол солихын өмнө тэнцэхгүй байсан,
+//      n:1 бол хэрэглэгч "энэ сийрэгжилтээр солигдоогүй" гэж хариулсан —
+//      дараалсан цэгт хамаарч байсан ч сийрэгжилтэд тооцохгүй}
 function setReplAt(sec,idx,d,t,m,s,o){
   if(!sec.repl)sec.repl={};
   const r={d,t};
@@ -1888,18 +1911,78 @@ function goTrack(){_fromConsec=false;
 function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open')}
 function openModal(id){hap(6);document.getElementById(id).classList.add('open')}
 function showToast(msg,dur=2000){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
-function appConfirm(msg,okLabel='Тийм'){
+function appConfirm(msg,okLabel='Тийм',cancelLabel='Болих'){
   return new Promise(resolve=>{
     hap(6);
     document.getElementById('appConfirmMsg').textContent=msg;
     const okBtn=document.getElementById('appConfirmOkBtn');
     const cancelBtn=document.getElementById('appConfirmCancelBtn');
     okBtn.textContent=okLabel;
+    cancelBtn.textContent=cancelLabel;
     const modal=document.getElementById('appConfirmModal');
     const done=result=>{modal.classList.remove('open');okBtn.onclick=null;cancelBtn.onclick=null;resolve(result)};
     okBtn.onclick=()=>done(true);
     cancelBtn.onclick=()=>done(false);
     modal.classList.add('open')
+  })
+}
+
+// ══════════════════════════════════════════════
+// ЦОНХ ХААХ ДОХИО — дээрх зураасаар доош шудрах, ард дэлгэц дээр дарах
+// ══════════════════════════════════════════════
+// Цонх бүрийг өөрийнх нь зөв хаагчаар хаана (зарим цонх нэмэлт цэгцлэлттэй)
+function dismissOverlay(ov){
+  if(!ov||!ov.id)return;
+  if(ov.id==='carveReportModal')closeCarveReport();
+  else closeModal(ov.id)
+}
+// Баталгаажуулах цонх бол санамсаргүй хаагдаж болохгүй — шийдвэр шаардана
+const _NO_DISMISS={appConfirmModal:1};
+function initSheetGestures(){
+  document.querySelectorAll('.overlay').forEach(ov=>{
+    if(ov._gest||_NO_DISMISS[ov.id])return;
+    ov._gest=1;
+    const sheet=ov.querySelector('.sheet');
+    // ── 1. Ард харагдаж байгаа дэлгэц дээр дарах → тэр дэлгэц рүүгээ буцна ──
+    // Хуруу цонхон дотор эхэлж ард дуусвал хаахгүй (санамсаргүй хаалтаас сэргийлнэ)
+    let downBd=false;
+    ov.addEventListener('pointerdown',e=>{downBd=(e.target===ov)},true);
+    ov.addEventListener('click',e=>{
+      if(e.target===ov&&downBd){downBd=false;hap(6);dismissOverlay(ov)}
+    });
+    // ── 2. Дээрх жижиг зураасаар доош шудрах → мөн адил буцна ──
+    const h=ov.querySelector('.sheet-handle');
+    if(!sheet||!h)return;
+    let y0=null,dy=0,pid=null;
+    const reset=()=>{sheet.style.transition='';sheet.style.transform=''};
+    h.addEventListener('pointerdown',e=>{
+      y0=e.clientY;dy=0;pid=e.pointerId;
+      sheet.style.transition='none';
+      try{h.setPointerCapture(pid)}catch(_){}
+    });
+    h.addEventListener('pointermove',e=>{
+      if(y0===null)return;
+      dy=e.clientY-y0;
+      // Дээш чирэхийг бага зэрэг л мэдрүүлнэ (уян хатан мэдрэмж)
+      const off=dy>0?dy:dy/4;
+      sheet.style.transform='translateY('+off+'px)';
+      if(e.cancelable)e.preventDefault()
+    });
+    const end=()=>{
+      if(y0===null)return;
+      y0=null;
+      try{h.releasePointerCapture(pid)}catch(_){}
+      sheet.style.transition='transform .2s ease';
+      if(dy>70){                       // хангалттай шударсан — хаана
+        sheet.style.transform='translateY(110%)';
+        hap(6);
+        setTimeout(()=>{reset();dismissOverlay(ov)},170)
+      } else sheet.style.transform=''  // хүрэлцээгүй — буцаж наалдана
+    };
+    h.addEventListener('pointerup',end);
+    h.addEventListener('pointercancel',end);
+    // Цонх дахин нээгдэхэд өмнөх шилжилт үлдэхгүй байх
+    ov.addEventListener('transitionend',()=>{if(y0===null)sheet.style.transition=''})
   })
 }
 
@@ -3231,7 +3314,9 @@ function renderRecordLog(sec,focusIdx){
       const tc={normal:'dr-normal',bad:'dr-bad',tbd:'dr-tbd',bad_tbd:'dr-bad-tbd'}[sl.type]||'';
       // Сольсон дэр бол огноог улаан хүрээтэй жижиг хайрцагт харуулна
       const rp=replMap[i];
-      const rb=rp?'<span class="repl-date">'+fmtReplDate(rp.rec.d)+'</span>':'';
+      // Өмнөх паспортоос уламжилсан бол зүгээр тэмдэглэгээ төдий (тасархай саарал),
+      // энэ паспорт дээр сольсон бол улаанаар
+      const rb=rp?'<span class="repl-date'+(rp.own?'':' rd-prev')+'">'+fmtReplDate(rp.rec.d)+'</span>':'';
       // Бэхэлгээ (гол замын ТБД үед бүх дэр дээр, өртөөнд зөвхөн ТБД дээр)
       const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
@@ -3365,14 +3450,31 @@ function openEditSleeper(idx){
   if(rb)rb.lastChild.textContent=!rp?' Энэ дэрийг сольсон'
     :rp.own?` Сольсон: ${fmtReplDate(rp.rec.d)} — засах`
            :` Өмнө сольсон: ${fmtReplDate(rp.rec.d)} — дахин солих`;
+  const tn=document.getElementById('typeBtnNow');
+  if(tn)tn.textContent=TYPES[sec.sleepers[idx].type]?TYPES[sec.sleepers[idx].type].label:'';
   openModal('editSleeperModal')
+}
+// Төрөл өөрчлөх нь тусдаа цонхонд. Дэр засах цонх нээлттэй хэвээр үлдэх тул
+// "Буцах"/арын товч дарахад төрлийн цонх л хаагдаж, дэр засах руугаа эргэнэ.
+function openTypeModal(){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  const cur=sec.sleepers[editIdx].type;
+  document.getElementById('typeModalTitle').textContent=
+    `#${editIdx+1} дэрийн төрөл`;
+  ['normal','bad','tbd','bad_tbd'].forEach(k=>{
+    const b=document.getElementById('tmB_'+k);
+    if(b)b.classList.toggle('sel',k===cur)
+  });
+  openModal('typeModal')
 }
 function editSleeper(newType){
   const sec=activeSec();if(!sec||editIdx<0)return;
   const oldType=sec.sleepers[editIdx].type;
+  if(oldType===newType){closeModal('typeModal');showToast('Төрөл хэвээрээ');return}
   syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
   sec.sleepers[editIdx].type=newType;
-  saveDB();closeModal('editSleeperModal');renderRecordView();showToast(`#${editIdx+1} → ${TYPES[newType].label}`)
+  saveDB();closeModal('typeModal');closeModal('editSleeperModal');
+  renderRecordView();showToast(`#${editIdx+1} → ${TYPES[newType].label}`)
 }
 // ══════════════════════════════════════════════
 // ҮЕИЙН ДЭРИЙН ТӨРӨЛ (материал + бэхэлгээ)
@@ -3526,6 +3628,7 @@ function _replSyncDays(keepDay){
 }
 function openReplModal(){
   const sec=activeSec();if(!sec||editIdx<0)return;
+  closeModal('typeModal');
   const ex=getRepl(sec,editIdx);
   const t=mnToday();
   _replY=t.y;                            // он тухайн оноороо — солигдохгүй
@@ -3595,6 +3698,8 @@ function inConsecRun(t,sec,idx){
 // Замын бүх солилтын сийрэгжилтийн тэмдгийг дахин тооцно.
 // Дараалсан цэгт хамаарч байсан дэрийг сольсон бол → сийрэгжилт.
 // Хэдэн ч дэр, ямар ч дарааллаар сольсон бай ялгаагүй.
+// ГАНЦ үл хамаарах зүйл: хэрэглэгч "энэ сийрэгжилтээр солигдоогүй" гэж
+// хариулсан дэр (n:1) — түүнийг хэзээ ч автоматаар сийрэгжилт болгохгүй.
 function recomputeCarve(t){
   if(!t||!t.sections)return;
   const inRun=origRunSet(t);
@@ -3602,33 +3707,45 @@ function recomputeCarve(t){
     const r=s.repl;if(!r)return;
     Object.keys(r).forEach(k=>{
       const e=r[k],cur=(s.sleepers||[])[+k];
-      if(replWasBad(e)&&cur&&!isBadSleeper(cur.type)&&inRun.has(s.id+'#'+(+k+1)))e.s=1;
+      if(e.n)delete e.s;
+      else if(replWasBad(e)&&cur&&!isBadSleeper(cur.type)&&inRun.has(s.id+'#'+(+k+1)))e.s=1;
       else delete e.s
     })
   })
 }
-function saveRepl(newType){
+async function saveRepl(newType){
   const sec=activeSec();if(!sec||editIdx<0)return;
   const t=activeTrack();
+  const idx=editIdx;              // асуулт хариулах хооронд editIdx өөрчлөгдөж болзошгүй
   const p=n=>(n<10?'0':'')+n;
   const date=_replY+'-'+p(_replM)+'-'+p(_replD);
-  const oldType=sec.sleepers[editIdx].type;
+  const oldType=sec.sleepers[idx].type;
   const wasBad=isBadSleeper(oldType);
   // Сонгосон төрлөөр дэрийн төрлийг солино (модон → Хэвийн, ТБД → ТБД)
   if(oldType!==newType){
     syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
-    sec.sleepers[editIdx].type=newType
+    sec.sleepers[idx].type=newType
   }
-  setReplAt(sec,editIdx,date,newType,newType==='tbd'?'tbd':'wood',0,wasBad);
+  setReplAt(sec,idx,date,newType,newType==='tbd'?'tbd':'wood',0,wasBad);
+  // Дараалсан цэгт (3 ба түүнээс дээш) хамаарч байсан дэр бол явцын сүүлд
+  // асууна: энэ сийрэгжилтээр солигдож байгаа дэр мөн үү?
+  //   Тийм → сийрэгжилтэд бүртгэнэ (s:1)
+  //   Үгүй → зүгээр солигдсон дэрд бүртгэнэ (n:1 — цаашид ч хөндөгдөхгүй)
+  if(inConsecRun(t,sec,idx)){
+    const yes=await appConfirm(
+      `#${idx+1} дэр — энэ сийрэгжилтээр солигдож байгаа дэр мөн үү?`,'Тийм','Үгүй');
+    const e=sec.repl[idx];
+    if(e){if(yes)delete e.n;else e.n=1}
+  }
   // Дараалсан цэгт хамаарч байсан дэрийг сольсон бол СИЙРЭГЖИЛТ. Дараалал
   // аль хэдийн эвдэрсэн ч, хэдэн ч дэр сольсон ч ялгаагүй — бүгдийг нь
   // дахин тооцно (өмнөх солилтуудын тэмдэг ч шинэчлэгдэнэ).
   recomputeCarve(t);
-  const carve=!!(sec.repl[editIdx]&&sec.repl[editIdx].s);
+  const carve=!!(sec.repl[idx]&&sec.repl[idx].s);
   saveDB();closeModal('replModal');renderRecordView();renderHome();
   showToast(carve
-    ?`🔧 #${editIdx+1} сийрэгжилт · ${fmtReplDate(date)}`
-    :`#${editIdx+1} сольсон · ${fmtReplDate(date)}`,2600)
+    ?`🔧 #${idx+1} сийрэгжилт · ${fmtReplDate(date)}`
+    :`#${idx+1} сольсон · ${fmtReplDate(date)}`,2600)
 }
 function clearRepl(){
   const sec=activeSec();if(!sec||editIdx<0)return;
@@ -5648,12 +5765,14 @@ async function adminExportExcel(){
 // ══════════════════════════════════════════════
 function _appBack(){
   // 1. Нээлттэй modal байвал хаана
+  // Хамгийн дээр харагдаж буй цонх = z-index хамгийн өндөр нь (тэнцвэл DOM-д
+  // сүүлд байгаа нь). Өмнө нь DOM-ын ЭХНИЙ цонхыг хаадаг байсан тул цонхон
+  // дотроос цонх нээхэд буруу нэгийг нь хаадаг байв.
   const ov=Array.from(document.querySelectorAll('.overlay.open'))
-    .filter(e=>e.style.display!=='none')[0];
-  if(ov&&ov.id){
-    if(ov.id==='carveReportModal')closeCarveReport();
-    else closeModal(ov.id);
-    return true}
+    .filter(e=>e.style.display!=='none')
+    .sort((a,b)=>(parseInt(getComputedStyle(a).zIndex,10)||0)
+                -(parseInt(getComputedStyle(b).zIndex,10)||0)).pop();
+  if(ov&&ov.id){dismissOverlay(ov);return true}
   // 2. Интро байвал алгасна
   const intro=document.getElementById('introOverlay');
   if(intro){intro.click();return true}
@@ -5687,7 +5806,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·63';
+const APP_BUILD='2026.08.25·65';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
@@ -5806,7 +5925,7 @@ try{
   document.querySelectorAll('.build-tag').forEach(function(e){e.textContent='v '+APP_BUILD});
 })();
 initScreenSwipe();initKmSwipe();
-initRipple();
+initRipple();initSheetGestures();
 
 // ══════════════════════════════════════════════
 // АВТОМАТ ШИНЭЧЛЭЛТ ШАЛГАГЧ
