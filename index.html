@@ -4927,13 +4927,16 @@ async function exportPu5Book(scope){
       const bad=isBadSleeper(sl.type);
       const rp=bad?replAt(sec.id,pos):null;
       const top=rp?shortYm(rp.d):'';
-      const bot=bad?(rp?'С':'У'):'';
+      // Үсэг зөвхөн СОЛИГДСОН дэр дээр. С = сийрэгжилт (дараалсан цэгийн
+      // дэрийг сольсон), У = бусад солигдсон дэр. Тэнцэхгүй хэвээр байгаа
+      // дэр дээр үсэг байхгүй — зөвхөн зураас нь үлдэнэ.
+      const bot=rp?(rp.s?'С':'У'):'';
       const mfg=hi?'FF7A5000':fg;
       const rt=[];
       if(top)rt.push({font:{name:'Arial',size:7,bold:true,color:{argb:'FF1A4BC4'}},text:top+'\n'});
       rt.push({font:{name:'Arial',size:sz,bold:true,color:{argb:mfg}},text:mark});
       if(bot)rt.push({font:{name:'Arial',size:8,bold:true,
-        color:{argb:bot==='С'?'FF0D6E46':'FFC00000'}},text:'\n'+bot});
+        color:{argb:bot==='С'?'FF0D6E46':'FF1A4BC4'}},text:'\n'+bot});
       cell.value=rt.length>1?{richText:rt}:mark;
       cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hi?'FFFFFF99':bg}};
       cell.font={bold:true,color:{argb:mfg},name:'Arial',size:sz};
@@ -5003,7 +5006,7 @@ async function exportPu5Book(scope){
       // Тайлбар
       wsM.mergeCells(2,1,2,sg.length+1);
       const leg=wsM.getCell(2,1);
-      leg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан (үе дамнасан 🔀)   ●   Зураасны ДЭЭР=сольсон он/сар (26/8), ДООР: С=солигдсон, У=тэнцэхгүй хэвээр';
+      leg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан (үе дамнасан 🔀)   ●   Сольсон дэр: ДЭЭР=он/сар (26/8), ДООР: С=сийрэгжилт (дараалсан), У=бусад солилт';
       leg.font={italic:true,color:{argb:'FF566172'},name:'Arial',size:9};
       leg.alignment={horizontal:'center',vertical:'middle'};
       leg.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFDE7'}};wsM.getRow(2).height=16;
@@ -5071,7 +5074,7 @@ async function exportPu5Book(scope){
       // Тайлбар
       wsConn.mergeCells(2,1,2,connSecs.length+1);
       const cleg=wsConn.getCell(2,1);
-      cleg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан   ●   Зураасны ДЭЭР=сольсон он/сар (26/8), ДООР: С=солигдсон, У=тэнцэхгүй хэвээр';
+      cleg.value='Хоосон=Хэвийн | —=Тэнцэхгүй мод | ТБД=бетон | ТТБД=Тэнцэхгүй бетон | 🟡 Шар=3+ дараалсан   ●   Сольсон дэр: ДЭЭР=он/сар (26/8), ДООР: С=сийрэгжилт (дараалсан), У=бусад солилт';
       cleg.font={italic:true,color:{argb:'FF566172'},name:'Arial',size:9};
       cleg.alignment={horizontal:'center',vertical:'middle'};
       cleg.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF3EEFF'}};wsConn.getRow(2).height=16;
@@ -6066,7 +6069,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·72';
+const APP_BUILD='2026.08.25·73';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
