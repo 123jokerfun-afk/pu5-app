@@ -1699,7 +1699,9 @@ function saveDB(){
 // Энэ нь _packDB-д хөндөгдөхгүй тул шахалт хэвээрээ үлдэнэ.
 function getRepl(sec,idx){return sec&&sec.repl?sec.repl[idx]||null:null}
 // r = {d:огноо, t:шинэ төрөл, m:'wood'|'tbd' материал, s:1 бол СИЙРЭГЖИЛТ
-//      (дараалсан цэг таслахын тулд сольсон), o:1 бол солихын өмнө тэнцэхгүй байсан}
+//      (дараалсан цэг таслахын тулд сольсон), o:1 бол солихын өмнө тэнцэхгүй байсан,
+//      n:1 бол хэрэглэгч "энэ сийрэгжилтээр солигдоогүй" гэж хариулсан —
+//      дараалсан цэгт хамаарч байсан ч сийрэгжилтэд тооцохгүй}
 function setReplAt(sec,idx,d,t,m,s,o){
   if(!sec.repl)sec.repl={};
   const r={d,t};
@@ -1888,13 +1890,14 @@ function goTrack(){_fromConsec=false;
 function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open')}
 function openModal(id){hap(6);document.getElementById(id).classList.add('open')}
 function showToast(msg,dur=2000){const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur)}
-function appConfirm(msg,okLabel='Тийм'){
+function appConfirm(msg,okLabel='Тийм',cancelLabel='Болих'){
   return new Promise(resolve=>{
     hap(6);
     document.getElementById('appConfirmMsg').textContent=msg;
     const okBtn=document.getElementById('appConfirmOkBtn');
     const cancelBtn=document.getElementById('appConfirmCancelBtn');
     okBtn.textContent=okLabel;
+    cancelBtn.textContent=cancelLabel;
     const modal=document.getElementById('appConfirmModal');
     const done=result=>{modal.classList.remove('open');okBtn.onclick=null;cancelBtn.onclick=null;resolve(result)};
     okBtn.onclick=()=>done(true);
@@ -3595,6 +3598,8 @@ function inConsecRun(t,sec,idx){
 // Замын бүх солилтын сийрэгжилтийн тэмдгийг дахин тооцно.
 // Дараалсан цэгт хамаарч байсан дэрийг сольсон бол → сийрэгжилт.
 // Хэдэн ч дэр, ямар ч дарааллаар сольсон бай ялгаагүй.
+// ГАНЦ үл хамаарах зүйл: хэрэглэгч "энэ сийрэгжилтээр солигдоогүй" гэж
+// хариулсан дэр (n:1) — түүнийг хэзээ ч автоматаар сийрэгжилт болгохгүй.
 function recomputeCarve(t){
   if(!t||!t.sections)return;
   const inRun=origRunSet(t);
@@ -3602,33 +3607,45 @@ function recomputeCarve(t){
     const r=s.repl;if(!r)return;
     Object.keys(r).forEach(k=>{
       const e=r[k],cur=(s.sleepers||[])[+k];
-      if(replWasBad(e)&&cur&&!isBadSleeper(cur.type)&&inRun.has(s.id+'#'+(+k+1)))e.s=1;
+      if(e.n)delete e.s;
+      else if(replWasBad(e)&&cur&&!isBadSleeper(cur.type)&&inRun.has(s.id+'#'+(+k+1)))e.s=1;
       else delete e.s
     })
   })
 }
-function saveRepl(newType){
+async function saveRepl(newType){
   const sec=activeSec();if(!sec||editIdx<0)return;
   const t=activeTrack();
+  const idx=editIdx;              // асуулт хариулах хооронд editIdx өөрчлөгдөж болзошгүй
   const p=n=>(n<10?'0':'')+n;
   const date=_replY+'-'+p(_replM)+'-'+p(_replD);
-  const oldType=sec.sleepers[editIdx].type;
+  const oldType=sec.sleepers[idx].type;
   const wasBad=isBadSleeper(oldType);
   // Сонгосон төрлөөр дэрийн төрлийг солино (модон → Хэвийн, ТБД → ТБД)
   if(oldType!==newType){
     syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
-    sec.sleepers[editIdx].type=newType
+    sec.sleepers[idx].type=newType
   }
-  setReplAt(sec,editIdx,date,newType,newType==='tbd'?'tbd':'wood',0,wasBad);
+  setReplAt(sec,idx,date,newType,newType==='tbd'?'tbd':'wood',0,wasBad);
+  // Дараалсан цэгт (3 ба түүнээс дээш) хамаарч байсан дэр бол явцын сүүлд
+  // асууна: энэ сийрэгжилтээр солигдож байгаа дэр мөн үү?
+  //   Тийм → сийрэгжилтэд бүртгэнэ (s:1)
+  //   Үгүй → зүгээр солигдсон дэрд бүртгэнэ (n:1 — цаашид ч хөндөгдөхгүй)
+  if(inConsecRun(t,sec,idx)){
+    const yes=await appConfirm(
+      `#${idx+1} дэр — энэ сийрэгжилтээр солигдож байгаа дэр мөн үү?`,'Тийм','Үгүй');
+    const e=sec.repl[idx];
+    if(e){if(yes)delete e.n;else e.n=1}
+  }
   // Дараалсан цэгт хамаарч байсан дэрийг сольсон бол СИЙРЭГЖИЛТ. Дараалал
   // аль хэдийн эвдэрсэн ч, хэдэн ч дэр сольсон ч ялгаагүй — бүгдийг нь
   // дахин тооцно (өмнөх солилтуудын тэмдэг ч шинэчлэгдэнэ).
   recomputeCarve(t);
-  const carve=!!(sec.repl[editIdx]&&sec.repl[editIdx].s);
+  const carve=!!(sec.repl[idx]&&sec.repl[idx].s);
   saveDB();closeModal('replModal');renderRecordView();renderHome();
   showToast(carve
-    ?`🔧 #${editIdx+1} сийрэгжилт · ${fmtReplDate(date)}`
-    :`#${editIdx+1} сольсон · ${fmtReplDate(date)}`,2600)
+    ?`🔧 #${idx+1} сийрэгжилт · ${fmtReplDate(date)}`
+    :`#${idx+1} сольсон · ${fmtReplDate(date)}`,2600)
 }
 function clearRepl(){
   const sec=activeSec();if(!sec||editIdx<0)return;
@@ -5687,7 +5704,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·63';
+const APP_BUILD='2026.08.25·64';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
