@@ -249,6 +249,12 @@ button{font-family:inherit}
   filter:saturate(1.2) contrast(1.04)}
 .drow{transition:filter .18s ease,box-shadow .18s ease}
 .dr-num{font-size:12px;font-weight:800;min-width:28px;font-variant-numeric:tabular-nums}
+/* Дараалсан (3+) тэнцэхгүй цэгийн дэс дугаар — мөрийн баруун талд */
+.dr-run{margin-left:auto;min-width:22px;height:20px;padding:0 5px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:10.5px;font-weight:900;font-variant-numeric:tabular-nums;
+  background:var(--purple-bg);color:var(--purple);border:1px solid rgba(164,77,232,.35)}
+.dr-run+.dr-edit{margin-left:6px}
 .dr-edit{margin-left:auto;width:24px;height:24px;background:rgba(0,0,0,.06);
   border-radius:6px;display:flex;align-items:center;justify-content:center;
   color:var(--ink2);flex-shrink:0}
@@ -3439,6 +3445,9 @@ function renderRecordLog(sec,focusIdx){
   const total=n;
   // Сольсон огноог нэг удаа тооцно (өмнөх паспортуудаас уламжилсныг оруулаад)
   const replMap=resolveReplMap(t,sec);
+  // Дараалсан цэгийн дугаарлалт — үзлэгийн ЭХ байдлаар тооцно. Ингэснээр
+  // нэг нэгээр нь сольж байхад дугаар нь алга болохгүй, бүлгээ хардаг.
+  const runNo=origRunOrder(t);
   let html='';
   for(let i=0;i<total;i++){
     const sl=sec.sleepers[i],tp=TYPES[sl.type];
@@ -3451,9 +3460,11 @@ function renderRecordLog(sec,focusIdx){
       const rb=rp?'<span class="repl-date'+(rp.own?'':' rd-prev')+'">'+fmtReplDate(rp.rec.d)+'</span>':'';
       // Бэхэлгээ (гол замын ТБД үед бүх дэр дээр, өртөөнд зөвхөн ТБД дээр)
       const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
+      const rno=runNo[sec.id+'#'+(i+1)];
+      const rn=rno?'<span class="dr-run">'+rno+'</span>':'';
       html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
-        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+
+        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+rn+
         '<span class="dr-edit">'+ic('edit',12)+'</span></div>';
     }
   }
@@ -3605,8 +3616,9 @@ function editSleeper(newType){
   if(oldType===newType){closeModal('typeModal');showToast('Төрөл хэвээрээ');return}
   syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
   sec.sleepers[editIdx].type=newType;
+  const idx=editIdx;
   saveDB();closeModal('typeModal');closeModal('editSleeperModal');
-  renderRecordView();showToast(`#${editIdx+1} → ${TYPES[newType].label}`)
+  renderRecordView(idx);showToast(`#${idx+1} → ${TYPES[newType].label}`)
 }
 // ══════════════════════════════════════════════
 // ҮЕИЙН ДЭРИЙН ТӨРӨЛ (материал + бэхэлгээ)
@@ -3822,6 +3834,14 @@ function origRunSet(t){
     g.items.forEach(it=>set.add(it.secId+'#'+it.posInSec)));
   return set
 }
+// 'secId#байрлал' → тухайн дараалал доторх дэс дугаар (1,2,3...).
+// Үе дамнасан дараалалд дугаар нь тасралтгүй үргэлжилнэ.
+function origRunOrder(t){
+  const map={};
+  findConsecutiveBadForTrack(origSections(t)).forEach(g=>
+    g.items.forEach((it,i)=>{map[it.secId+'#'+it.posInSec]=i+1}));
+  return map
+}
 // Энэ дэр 3 ба түүнээс дээш дараалсан цэгт хамаарч байсан эсэх
 function inConsecRun(t,sec,idx){
   if(!t||!sec)return false;
@@ -3874,15 +3894,16 @@ async function saveRepl(newType){
   // дахин тооцно (өмнөх солилтуудын тэмдэг ч шинэчлэгдэнэ).
   recomputeCarve(t);
   const carve=!!(sec.repl[idx]&&sec.repl[idx].s);
-  saveDB();closeModal('replModal');renderRecordView();renderHome();
+  saveDB();closeModal('replModal');renderRecordView(idx);renderHome();
   showToast(carve
     ?`🔧 #${idx+1} сийрэгжилт · ${fmtReplDate(date)}`
     :`#${idx+1} сольсон · ${fmtReplDate(date)}`,2600)
 }
 function clearRepl(){
   const sec=activeSec();if(!sec||editIdx<0)return;
-  clearReplAt(sec,editIdx);
-  saveDB();closeModal('replModal');renderRecordView();renderHome();
+  const idx=editIdx;
+  clearReplAt(sec,idx);
+  saveDB();closeModal('replModal');renderRecordView(idx);renderHome();
   showToast('Тэмдэглэгээ ариллаа')
 }
 
@@ -6037,7 +6058,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·70';
+const APP_BUILD='2026.08.25·71';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
