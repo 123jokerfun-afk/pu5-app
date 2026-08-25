@@ -153,6 +153,53 @@ button{font-family:inherit}
 .sw-r-bad .sw-state{color:var(--orange);font-weight:800}
 .sw-r-sl{background:#F5F0FF;border-color:#DDD6FE}
 .sw-r-sl .sw-kind{background:#EDE4FF;border-color:#C4B5FD;color:#6D28D9}
+/* Нэмэх тэмдэг — авангард градиент цагираг */
+.sw-add{width:38px;height:38px;border-radius:13px;border:none;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;color:#6D28D9;position:relative;
+  background:linear-gradient(140deg,#fff,#F3E8FF);
+  box-shadow:0 4px 16px rgba(76,12,120,.32),0 0 0 1.5px rgba(255,255,255,.55) inset;
+  transition:transform .16s cubic-bezier(.22,1,.36,1),box-shadow .16s}
+.sw-add::after{content:'';position:absolute;inset:-4px;border-radius:17px;
+  border:1.5px dashed rgba(255,255,255,.5);animation:swSpin 9s linear infinite}
+@keyframes swSpin{to{transform:rotate(360deg)}}
+.sw-add:active{transform:scale(.9) rotate(90deg);box-shadow:0 2px 8px rgba(76,12,120,.4)}
+/* Загварын каталог */
+.spc-card{background:var(--card);border:1px solid var(--border);border-radius:15px;
+  padding:11px 12px 10px;margin-bottom:8px;box-shadow:var(--sh-sm)}
+.spc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.spc-name{font-size:14.5px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:6px}
+.spc-mark{font-size:11px;font-weight:800;padding:2px 8px;border-radius:7px;
+  background:var(--purple-bg);color:#7E22CE}
+.spc-new{font-size:9px;font-weight:900;padding:2px 6px;border-radius:5px;
+  background:var(--g100);color:var(--g600);text-transform:uppercase;letter-spacing:.05em}
+.spc-tot{font-size:15px;font-weight:900;color:#6D28D9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.spc-tot i{font-size:9px;font-weight:800;color:var(--ink4);font-style:normal}
+.spc-proj{font-size:10.5px;font-weight:700;color:var(--ink3);margin-top:4px}
+.spc-grid{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.spc-chip{display:inline-flex;align-items:baseline;gap:3px;padding:3px 7px;border-radius:7px;
+  background:var(--bg);border:1px solid var(--border);font-variant-numeric:tabular-nums}
+.spc-chip b{font-size:11px;font-weight:900;color:var(--ink2)}
+.spc-chip i{font-size:11px;font-weight:900;color:#7E22CE;font-style:normal}
+.spc-chip i::before{content:'·';color:var(--ink4);margin-right:2px;font-weight:700}
+.spc-del{margin-top:9px;width:100%;padding:8px;border-radius:9px;border:1px solid #F5A0A0;
+  background:var(--red-bg);color:var(--red);font-size:11.5px;font-weight:800;font-family:inherit;cursor:pointer}
+.spc-h{font-size:10px;font-weight:900;color:var(--ink4);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:8px}
+.spc-scroll{max-height:184px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:8px 8px 1px}
+.spc-sum{margin-top:10px;text-align:center;font-size:13px;font-weight:800;color:#6D28D9;
+  background:#F5F0FF;border:1px solid #DDD6FE;border-radius:11px;padding:10px}
+/* Урт тус бүрийн жижиг гүйлгэгч */
+.spw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.spw{text-align:center}
+.spw-l{font-size:11px;font-weight:900;color:var(--ink2);margin-bottom:3px;
+  font-variant-numeric:tabular-nums;line-height:1.1}
+.spw-l i{display:block;font-size:8px;font-weight:800;color:var(--ink4);font-style:normal}
+.spw-box{position:relative}
+.spw-w{height:126px!important;border-radius:11px}
+.spw-band{position:absolute;left:0;right:0;top:42px;height:42px;pointer-events:none;
+  border-top:1.5px solid var(--gold-deep);border-bottom:1.5px solid var(--gold-deep);
+  background:rgba(255,210,63,.1)}
 /* Сумын карт */
 .sw-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
   padding:13px 14px 12px;margin-bottom:9px;box-shadow:var(--sh-sm);position:relative;
@@ -1024,7 +1071,11 @@ button{font-family:inherit}
         <div class="hero-text-title" style="font-size:19px">СШ ПУ-5</div>
         <div class="hero-text-sub" id="swLoc">Сум шилжүүлгийн дүнз</div>
       </div>
-      <div style="width:88px"></div>
+      <div style="width:88px;display:flex;justify-content:flex-end">
+        <button class="sw-add" id="swAddSpecBtn" onclick="hap(10);openSwSpecAdd()" style="display:none" aria-label="Сум мэдээлэл нэмэх">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
     </div>
     <div class="hero-stats" id="swHeroStats">
       <div class="hero-stat"><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
@@ -1039,6 +1090,13 @@ button{font-family:inherit}
       <button class="add-track-btn" onclick="openSwFolder()" style="border-color:#C084FC;color:#7E22CE">
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Шинэ паспорт нэмэх
       </button>
+    </div>
+    <div class="home-section" style="margin-top:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div class="sec-lbl" style="margin-top:0">Сумын дүнзний загвар</div>
+        <span id="swSpecHint" style="font-size:10.5px;font-weight:700;color:var(--ink4)"></span>
+      </div>
+      <div id="swSpecList"></div>
     </div>
     <div class="lp-hint" style="margin-top:14px">Баруун тийш шудран Дэр ПУ-5 руу буцна →</div>
     <div class="build-tag" style="text-align:center;padding:18px 0 26px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
@@ -1560,6 +1618,35 @@ button{font-family:inherit}
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('swTurnoutModal')">Болих</button>
       <button class="btn-ok" onclick="addSwTurnout()">Нэмэх</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: сумын дүнзний загвар нэмэх -->
+<div class="overlay" id="swSpecModal" style="z-index:450">
+  <div class="sheet" style="max-height:94vh"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Сум мэдээлэл нэмэх</div>
+      <button onclick="closeModal('swSpecModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--ink3);margin-bottom:12px;font-weight:600;line-height:1.6">
+      Нэмсэн загвар <b>бүх хэсгийн аппад</b> хүрч, сум нэмэхэд сонгогдоно.
+    </div>
+    <div class="spc-h">Одоо байгаа загварууд</div>
+    <div id="spCurList" class="spc-scroll"></div>
+    <div class="spc-h" style="margin-top:16px">Шинэ загвар</div>
+    <div class="ff-row">
+      <div class="ff"><label>Сумын маяг</label><input type="text" id="spMak" placeholder="Р-65"></div>
+      <div class="ff"><label>Сумын марк</label><input type="text" id="spMark" placeholder="1/11"></div>
+    </div>
+    <div class="ff"><label>Зураг төслийн дугаар <span style="text-transform:none;font-weight:600;color:var(--ink4)">(заавал биш)</span></label>
+      <input type="text" id="spProj" placeholder="2764 2433 — зайгаар тусгаарлана"></div>
+    <div class="ff" style="margin-bottom:6px"><label>Дүнзний тоо — уртаар нь</label></div>
+    <div class="spw-grid" id="spWheels"></div>
+    <div id="spSum" class="spc-sum">—</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('swSpecModal')">Болих</button>
+      <button class="btn-ok" id="spSaveBtn" onclick="addSwSpec()">Баталгаажуулах</button>
     </div>
   </div></div>
 </div>
@@ -5922,6 +6009,8 @@ async function _afterLoginInner(){
   activeFolderId=null;DB.tracks=[];
   renderHome();
   startRealtimeSync();
+  loadSwSpecs().then(()=>{                 // сумын дүнзний загварын нийтлэг каталог
+    if(document.getElementById('swHomeView').classList.contains('active'))renderSwHome()});
   showToast('✓ '+_sectionCode+' нэвтэрлээ',2000);
   if(!_cloudLoaded||!_dbHasData(DB)){_autoTry=0;_scheduleAutoLoad()}
   // Хуучин localStorage өгөгдөл шалгах — үүлэнд өгөгдөл байхгүй үед л санал болгоно
@@ -6371,6 +6460,8 @@ async function adminExportExcel(){
 //          Эхний head ширхэг нь ДЭР, түүнээс хойш ДҮНЗ.
 // ══════════════════════════════════════════════
 // Маяг × марк бүрийн дүнзний хуваарь: [урт пог/м, ширхэг]
+// Дүнзний боломжит урт (пог/м)
+const SW_LENS=[3,3.25,3.5,3.75,4,4.25,4.5,4.75,5,5.25,5.5];
 const SW_SPECS=[
   {mak:'Р-65',mark:'1/11',proj:['2764','2433'],
    sch:[[3,18],[3.25,10],[3.5,8],[3.75,7],[4,5],[4.25,6],[4.5,5],[4.75,6],[5,5],[5.25,6],[5.5,4]]},
@@ -6379,9 +6470,10 @@ const SW_SPECS=[
   {mak:'Р-50',mark:'1/11',proj:['2642'],
    sch:[[3,18],[3.25,8],[3.5,7],[3.75,8],[4,4],[4.25,6],[4.5,5],[4.75,5],[5,5],[5.25,6],[5.5,3]]}
 ];
-const SW_MAKS=[...new Set(SW_SPECS.map(x=>x.mak))];
-function swSpec(mak,mark){return SW_SPECS.find(x=>x.mak===mak&&x.mark===mark)||null}
-function swMarksOf(mak){return SW_SPECS.filter(x=>x.mak===mak).map(x=>x.mark)}
+// Загварын жагсаалт нь нэмэлттэй байж болох тул үргэлж swSpecsAll()-оор
+function swMaks(){return [...new Set(swSpecsAll().map(x=>x.mak))]}
+function swSpec(mak,mark){return swSpecsAll().find(x=>x.mak===mak&&x.mark===mark)||null}
+function swMarksOf(mak){return swSpecsAll().filter(x=>x.mak===mak).map(x=>x.mark)}
 function swSchTotal(sp){return sp?sp.sch.reduce((s,x)=>s+x[1],0):0}
 // Уртыг эмх цэгцтэй бичих: 3.25 → "3,25"
 function swLen(v){return String(v).replace('.',',')}
@@ -6431,7 +6523,8 @@ function swFolder(){return swFolders().find(f=>f.id===swFolderId)||null}
 function swTurnout(){const f=swFolder();return f?(f.turnouts||[]).find(t=>t.id===swTurnoutId)||null:null}
 
 // ── Шилжилт ──
-function goSwHome(){hap(6);showView('swHomeView');renderSwHome()}
+function goSwHome(){hap(6);showView('swHomeView');renderSwHome();
+  loadSwSpecs().then(renderSwHome)}
 function goDerHome(){showView('homeView',true);renderHome()}
 // Нүүр ↔ СШ ПУ-5: зүүн шудрахад СШ рүү, баруун шудрахад Дэр рүү буцна.
 // Дэлгэц босоо гүйдэг тул зөвхөн тодорхой ХӨНДЛӨН шудралтад ажиллана.
@@ -6472,6 +6565,13 @@ function renderSwHome(){
     nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   set('swHsT',nT);set('swHsD',nD);set('swHsP',nM?(nMB/nM*100).toFixed(1)+'%':'—');
+  // Нэмэх тэмдэг зөвхөн ПД-6 хаяг дээр
+  const ab=document.getElementById('swAddSpecBtn');
+  if(ab)ab.style.display=swCanEdit()?'flex':'none';
+  renderSwSpecList('swSpecList');
+  const sh=document.getElementById('swSpecHint');
+  if(sh)sh.textContent=swCanEdit()?`${swSpecsAll().length} загвар · нэмж болно`
+    :`${swSpecsAll().length} загвар`;
   const g=document.getElementById('swFolders');if(!g)return;
   if(!swFolders().length){
     g.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return}
@@ -6558,20 +6658,20 @@ function renderSwList(){
   renderSwFolderCards()
 }
 // ── Сум нэмэх ──
-let _swMak=SW_MAKS[0],_swMark=swMarksOf(SW_MAKS[0])[0],_swProj='';
+let _swMak='',_swMark='',_swProj='';
 function openSwTurnout(){
   const f=swFolder();if(!f)return;
   document.getElementById('swtStation').value=DB.location||'';
   const mx=(f.turnouts||[]).reduce((m,t)=>Math.max(m,t.num||0),0);
   document.getElementById('swtNum').value=mx+1;
-  _swMak=SW_MAKS[0];_swMark=swMarksOf(_swMak)[0];_swProj='';
+  _swMak=swMaks()[0]||'';_swMark=swMarksOf(_swMak)[0]||'';_swProj='';
   renderSwPick();openModal('swTurnoutModal')
 }
 function pickSwMak(m){_swMak=m;const mk=swMarksOf(m);if(!mk.includes(_swMark))_swMark=mk[0];_swProj='';hap(6);renderSwPick()}
 function pickSwMark(m){_swMark=m;_swProj='';hap(6);renderSwPick()}
 function pickSwProj(p){_swProj=(_swProj===p?'':p);hap(6);renderSwPick()}
 function renderSwPick(){
-  document.getElementById('swtMakGrid').innerHTML=SW_MAKS.map(m=>
+  document.getElementById('swtMakGrid').innerHTML=swMaks().map(m=>
     `<button type="button" class="etb mat-btn${m===_swMak?' selected':''}" onclick="pickSwMak('${m}')">${m}</button>`).join('');
   document.getElementById('swtMarkGrid').innerHTML=swMarksOf(_swMak).map(m=>
     `<button type="button" class="etb mat-btn${m===_swMark?' selected':''}" onclick="pickSwMark('${m}')">${m}</button>`).join('');
@@ -6816,7 +6916,6 @@ function clearSwSlRepl(){
 //   3,5м-ээр сольсон ч бүртгэлд 3м хэвээр — тиймээс дүн өөрчлөгдөхгүй.
 //   Бодит уртыг зөвхөн "Дүнзний бодит мэдээлэл"-д харуулна.
 // ══════════════════════════════════════════════
-const SW_LENS=[3,3.25,3.5,3.75,4,4.25,4.5,4.75,5,5.25,5.5];
 function swDzRepl(to,i){return (to.dRepl||{})[i]||null}
 // Үзлэгийн эх төлөв: сольсон бөгөөд өмнө нь тэнцэхгүй байсныг буцаана
 function swOrigIt(to){
@@ -7063,6 +7162,132 @@ function openSwRealRep(){
 }
 
 // ══════════════════════════════════════════════
+// СУМЫН ДҮНЗНИЙ ЗАГВАРЫН КАТАЛОГ
+// Суурь загварууд SW_SPECS дотор. Нэмэлтийг зөвхөн ПД-6 хаяг оруулна
+// бөгөөд бүх хэсэгт нийтлэг байхаар sections/__SWSPECS__ баримтад
+// хадгална — тиймээс бусад хэсгийн аппад ч шууд нэмэгдэнэ.
+// ══════════════════════════════════════════════
+const SW_SPECS_DOC='__SWSPECS__',SW_SPECS_LS='sw_specs_v1';
+const SW_EDIT_CODE='ПД-6';
+let SW_CUSTOM=[];
+function swCanEdit(){return String(_sectionCode||'').trim().toUpperCase()===SW_EDIT_CODE}
+// Суурь + нэмэлт. Ижил маяг/марк бол нэмэлт нь дарж бичнэ.
+function swSpecsAll(){
+  const out=SW_SPECS.map(x=>x);
+  SW_CUSTOM.forEach(c=>{
+    if(!c||!c.mak||!c.mark||!Array.isArray(c.sch))return;
+    const i=out.findIndex(x=>x.mak===c.mak&&x.mark===c.mark);
+    if(i>=0)out[i]=c;else out.push(c)
+  });
+  return out
+}
+async function loadSwSpecs(){
+  try{const s=localStorage.getItem(SW_SPECS_LS);if(s)SW_CUSTOM=JSON.parse(s)||[]}catch(e){}
+  if(!fbDb)return;
+  try{
+    const d=await fbDb.collection('sections').doc(SW_SPECS_DOC).get();
+    const sp=d.exists&&d.data()?d.data().specs:null;
+    if(Array.isArray(sp)){
+      SW_CUSTOM=sp;
+      try{localStorage.setItem(SW_SPECS_LS,JSON.stringify(SW_CUSTOM))}catch(e){}
+    }
+  }catch(e){console.warn('Сумын загвар татахад:',e&&e.message)}
+}
+async function saveSwSpecs(){
+  try{localStorage.setItem(SW_SPECS_LS,JSON.stringify(SW_CUSTOM))}catch(e){}
+  if(!fbDb)return false;
+  try{
+    await fbDb.collection('sections').doc(SW_SPECS_DOC).set({
+      specs:SW_CUSTOM,by:_sectionCode||'',
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    return true
+  }catch(e){console.error('Сумын загвар хадгалахад:',e);return false}
+}
+// ── Каталогийн жагсаалт (бүх хэсэг харна) ──
+function renderSwSpecList(elId,compact){
+  const el=document.getElementById(elId);if(!el)return;
+  const all=swSpecsAll();
+  el.innerHTML=all.map(sp=>{
+    const tot=swSchTotal(sp);
+    const chips=sp.sch.map(([l,n])=>
+      `<span class="spc-chip"><b>${swLen(l)}</b><i>${n}</i></span>`).join('');
+    return`<div class="spc-card">
+      <div class="spc-top">
+        <div class="spc-name">${sp.mak}<span class="spc-mark">${sp.mark}</span>
+          ${sp.custom?'<span class="spc-new">нэмсэн</span>':''}</div>
+        <span class="spc-tot">${tot} <i>дүнз</i></span>
+      </div>
+      ${(sp.proj&&sp.proj.length)?`<div class="spc-proj">Зураг төсөл: ${sp.proj.join(' · ')}</div>`:''}
+      <div class="spc-grid">${chips}</div>
+      ${(!compact&&sp.custom&&swCanEdit())?`<button class="spc-del" onclick="event.stopPropagation();delSwSpec('${sp.mak}','${sp.mark}')">Устгах</button>`:''}
+    </div>`}).join('')
+}
+// ── Нэмэх цонх ──
+const SW_CNT_MAX=60;
+let _spNew={mak:'',mark:'',proj:'',sch:{}};
+function openSwSpecAdd(){
+  if(!swCanEdit()){showToast('Зөвхөн '+SW_EDIT_CODE+' хаяг нэмнэ',2600);return}
+  _spNew={mak:'',mark:'',proj:'',sch:{}};
+  SW_LENS.forEach(l=>{_spNew.sch[l]=0});
+  document.getElementById('spMak').value='';
+  document.getElementById('spMark').value='';
+  document.getElementById('spProj').value='';
+  renderSwSpecList('spCurList',true);
+  document.getElementById('spWheels').innerHTML=SW_LENS.map((l,i)=>
+    `<div class="spw"><div class="spw-l">${swLen(l)}<i>пог/м</i></div>
+      <div class="spw-box"><div class="wheel spw-w" id="spw${i}" data-i="${i}"></div>
+      <div class="spw-band"></div></div></div>`).join('');
+  updateSwSpecSum();
+  openModal('swSpecModal');
+  setTimeout(_spWheels,60)
+}
+function _spWheels(){
+  SW_LENS.forEach((l,i)=>{
+    const el=document.getElementById('spw'+i);if(!el)return;
+    const vals=[];for(let v=0;v<=SW_CNT_MAX;v++)vals.push(v);
+    _wheelFill(el,vals,_spNew.sch[l]||0);
+    el.scrollTop=(_spNew.sch[l]||0)*_WH_IH;
+    if(!el._bound){el._bound=1;
+      _wheelBind(el,()=>SW_CNT_MAX+1,k=>{_spNew.sch[l]=k;updateSwSpecSum()})}
+  })
+}
+function updateSwSpecSum(){
+  const tot=SW_LENS.reduce((s,l)=>s+(_spNew.sch[l]||0),0);
+  const m=SW_LENS.reduce((s,l)=>s+l*(_spNew.sch[l]||0),0);
+  const e=document.getElementById('spSum');
+  if(e)e.innerHTML=tot?`Нийт <b>${tot}</b> дүнз · <b>${swM(m)}</b> пог/м`
+    :'Дүнзний тоог гүйлгэж оруулна уу';
+  const b=document.getElementById('spSaveBtn');
+  if(b)b.disabled=!tot
+}
+async function addSwSpec(){
+  const mak=(document.getElementById('spMak').value||'').trim();
+  const mark=(document.getElementById('spMark').value||'').trim();
+  if(!mak){showToast('Сумын маягийг бичнэ үү');return}
+  if(!mark){showToast('Сумын маркийг бичнэ үү');return}
+  const sch=SW_LENS.filter(l=>_spNew.sch[l]>0).map(l=>[l,_spNew.sch[l]]);
+  if(!sch.length){showToast('Дүнзний тоог оруулна уу');return}
+  const proj=(document.getElementById('spProj').value||'').split(/[,;\s]+/).filter(Boolean);
+  const ex=swSpecsAll().find(x=>x.mak===mak&&x.mark===mark);
+  if(ex&&!await appConfirm(`${mak} · ${mark} аль хэдийн байна. Дарж бичих үү?`,'Дарж бичих'))return;
+  const spec={mak,mark,proj,sch,custom:1};
+  const i=SW_CUSTOM.findIndex(x=>x.mak===mak&&x.mark===mark);
+  if(i>=0)SW_CUSTOM[i]=spec;else SW_CUSTOM.push(spec);
+  const ok=await saveSwSpecs();
+  closeModal('swSpecModal');renderSwHome();
+  showToast(ok?`✓ ${mak} · ${mark} нэмэгдлээ — бүх хэсэгт хүрнэ`
+    :`${mak} · ${mark} нэмэгдлээ (утсанд) — үүлэнд хадгалагдсангүй`,3200)
+}
+async function delSwSpec(mak,mark){
+  if(!swCanEdit())return;
+  if(!await appConfirm(`${mak} · ${mark} загварыг устгах уу?`,'Устгах'))return;
+  SW_CUSTOM=SW_CUSTOM.filter(x=>!(x.mak===mak&&x.mark===mark));
+  await saveSwSpecs();renderSwHome();
+  if(document.getElementById('swSpecModal').classList.contains('open'))renderSwSpecList('spCurList',true);
+  showToast('Устлаа')
+}
+
+// ══════════════════════════════════════════════
 // ANDROID BACK BUTTON
 // ══════════════════════════════════════════════
 function _appBack(){
@@ -7111,7 +7336,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·77';
+const APP_BUILD='2026.08.25·78';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
