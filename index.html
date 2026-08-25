@@ -153,6 +153,56 @@ button{font-family:inherit}
 .sw-r-bad .sw-state{color:var(--orange);font-weight:800}
 .sw-r-sl{background:#F5F0FF;border-color:#DDD6FE}
 .sw-r-sl .sw-kind{background:#EDE4FF;border-color:#C4B5FD;color:#6D28D9}
+/* Сумын карт */
+.sw-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:13px 14px 12px;margin-bottom:9px;box-shadow:var(--sh-sm);position:relative;
+  overflow:hidden;cursor:pointer;transition:transform .14s,box-shadow .14s}
+.sw-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;
+  background:linear-gradient(180deg,#A855F7,#6D28D9)}
+.sw-card:active{transform:scale(.99);box-shadow:none}
+.sw-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-left:6px}
+.sw-card-name{font-size:15.5px;font-weight:900;letter-spacing:-.3px;color:var(--ink);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sw-tag{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;
+  background:var(--purple-bg);color:#7E22CE;letter-spacing:0}
+.sw-card-sub{font-size:11.5px;font-weight:600;color:var(--ink3);margin-top:3px}
+.sw-badge{font-size:12px;font-weight:900;padding:4px 10px;border-radius:20px;
+  background:var(--purple-bg);color:#7E22CE;white-space:nowrap;flex-shrink:0;
+  font-variant-numeric:tabular-nums}
+.sw-empty-line{font-size:11.5px;color:var(--ink4);margin:8px 0 0 6px;font-weight:600}
+/* Гурван баганат тоон блок */
+.sw-st{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:11px 0 0 6px}
+.sw-st-c{background:var(--bg);border:1px solid var(--border);border-radius:11px;
+  padding:8px 4px 7px;text-align:center}
+.sw-st-n{font-size:20px;font-weight:900;line-height:1.05;color:var(--ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.sw-st-s{font-size:9.5px;font-weight:800;color:var(--ink3);margin-top:2px;
+  font-variant-numeric:tabular-nums}
+.sw-st-l{font-size:8.5px;font-weight:800;color:var(--ink4);margin-top:3px;
+  text-transform:uppercase;letter-spacing:.05em}
+/* Тайлангийн багана хэлбэрийн мөр */
+.sw-tr{display:grid;grid-template-columns:74px 52px 1fr 1fr;align-items:center;gap:6px;
+  padding:8px 10px;border-bottom:1px solid var(--border);background:var(--card)}
+.sw-tr:last-of-type{border-bottom:none}
+.sw-tr-h{background:var(--bg);border-bottom:1.5px solid var(--border2)}
+.sw-tr-h span{font-size:9px!important;font-weight:900!important;color:var(--ink4)!important;
+  text-transform:uppercase;letter-spacing:.05em}
+.sw-tr-d{background:var(--blue-bg)}
+.sw-c1{font-size:11.5px;font-weight:800;color:var(--ink3);font-variant-numeric:tabular-nums}
+.sw-c2{font-size:13px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.sw-c3,.sw-c4{font-size:16px;font-weight:900;text-align:center;font-variant-numeric:tabular-nums;
+  letter-spacing:-.3px}
+.sw-c3{color:var(--ink2)}
+.sw-c4{color:var(--blue)}
+.sw-tr-d .sw-c4{color:#1D4ED8}
+.sw-tr:not(.sw-tr-h) .sw-c3::after{content:'м';font-size:9px;font-weight:800;color:var(--ink4);margin-left:2px}
+.sw-tr:not(.sw-tr-h) .sw-c4::after{content:'м';font-size:9px;font-weight:800;opacity:.6;margin-left:2px}
+.sw-c34{grid-column:3 / span 2;font-size:16px;font-weight:900;text-align:center;
+  color:var(--ink2);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.sw-tr:not(.sw-tr-h) .sw-c34::after{content:'м';font-size:9px;font-weight:800;color:var(--ink4);margin-left:2px}
+/* Дараалсан цэгийн урт */
+.sw-run-n{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;
+  justify-content:center;color:#fff;font-size:13px;font-weight:900;flex-shrink:0}
 .sw-meters{margin-top:8px;font-size:11.5px;font-weight:800;color:var(--ink2);
   background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:7px 11px}
 .sw-slpanel{margin-top:8px;background:#F5F0FF;border:1px solid #DDD6FE;
@@ -6491,19 +6541,19 @@ function renderSwList(){
     const a=swTally(t),pl=swPlanned(t),done=(t.it||'').length;
     const pc=a.total?a.pct:0;
     const col=!done?'var(--ink4)':pc>=25?'var(--red)':pc>=15?'var(--orange)':'var(--g600)';
-    return`<div class="sec-card type-connecting" onclick="hap();openSwRec('${t.id}')">
-      <div class="sec-card-top">
-        <div>
-          <div class="sec-name">Сум ${t.num} · ${t.mak} · ${t.mark}</div>
-          <div class="sec-meta">${t.station||'—'}${t.proj?' · төсөл '+t.proj:''}</div>
+    return`<div class="sw-card" onclick="hap();openSwRec('${t.id}')">
+      <div class="sw-card-top">
+        <div style="min-width:0">
+          <div class="sw-card-name">Сум ${t.num}<span class="sw-tag">${t.mak}</span><span class="sw-tag">${t.mark}</span></div>
+          <div class="sw-card-sub">${t.station||'—'}${t.proj?' · төсөл '+t.proj:''}</div>
         </div>
-        <span class="sec-badge sec-badge-connecting">${done}/${pl}</span>
+        <span class="sw-badge">${done}<span style="opacity:.55">/${pl}</span></span>
       </div>
-      ${done?`<div class="sec-stats">
-        <div class="sec-stat"><span class="ss-n">${a.total}<span style="font-size:9px;font-weight:700;color:var(--ink3)"> · ${swM(a.m)}м</span></span><span class="ss-l">Нийт дүнз</span></div>
-        <div class="sec-stat"><span class="ss-n" style="color:var(--orange)">${a.bad}<span style="font-size:9px;font-weight:700;color:var(--ink3)"> · ${swM(a.mBad)}м</span></span><span class="ss-l">Тэнцэхгүй</span></div>
-        <div class="sec-stat"><span class="ss-n" style="color:${col}">${a.m?a.pct.toFixed(1)+'%':'—'}</span><span class="ss-l">Эзлэх % (пог/м)</span></div>
-      </div>`:'<div class="sec-meta" style="margin-top:6px">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
+      ${done?`<div class="sw-st">
+        <div class="sw-st-c"><div class="sw-st-n">${a.total}</div><div class="sw-st-s">${swM(a.m)} пог/м</div><div class="sw-st-l">Нийт дүнз</div></div>
+        <div class="sw-st-c"><div class="sw-st-n" style="color:var(--orange)">${a.bad}</div><div class="sw-st-s">${swM(a.mBad)} пог/м</div><div class="sw-st-l">Тэнцэхгүй</div></div>
+        <div class="sw-st-c"><div class="sw-st-n" style="color:${col}">${a.m?a.pct.toFixed(1)+'%':'—'}</div><div class="sw-st-s">пог/м-ээр</div><div class="sw-st-l">Эзлэх хувь</div></div>
+      </div>`:'<div class="sw-empty-line">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
     </div>`}).join('')+'<div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>';
   renderSwFolderCards()
 }
@@ -6916,13 +6966,15 @@ function openSwReplRep(){
   ts.forEach(t=>{
     const rows=swReplRows(t);if(!rows.length)return;
     let m=0;
-    html+=_swHd(`Сум ${t.num} · ${t.mak} · ${t.mark}`);
+    html+=_swHd(`Сум ${t.num} · ${t.mak} · ${t.mark}`)
+      +`<div class="sw-tr sw-tr-h"><span class="sw-c1">Огноо</span><span class="sw-c2">Дүнз</span>
+         <span class="sw-c34">Урт (пог/м)</span></div>`;
     rows.forEach(r=>{m+=r.nom;
-      html+=`<div class="rp-row">
-        <span style="flex:1;font-weight:700;color:var(--ink2)">#${r.no} дүнз</span>
-        <span class="mat-tag">${swLen(r.nom)} пог/м</span>
-        <span class="repl-date">${fmtReplDate(r.d)}</span></div>`});
-    html+=`<div class="rp-sub"><span>Сум ${t.num}</span><span>${rows.length} ш · ${swM(m)} пог/м</span></div></div>`;
+      html+=`<div class="sw-tr">
+        <span class="sw-c1">${fmtReplDate(r.d)}</span>
+        <span class="sw-c2">#${r.no}</span>
+        <span class="sw-c34">${swLen(r.nom)}</span></div>`});
+    html+=`<div class="rp-sub"><span>Сум ${t.num} · ${rows.length} ш</span><span>${swM(m)} пог/м</span></div></div>`;
     N+=rows.length;M+=m
   });
   const b=document.getElementById('swReplRepBody');
@@ -6930,25 +6982,46 @@ function openSwReplRep(){
     :_swEmpty('Сольсон дүнз алга');
   openModal('swReplRepModal')
 }
-// 2. Дараалсан дүнз — дарвал тэр дүнз рүү очно
-let _swFromRun=false;
+// 2. Дараалсан дүнз — уртаар нь шүүж болно, дарвал тэр дүнз рүү очно
+let _swFromRun=false,_swRunFilter=0;   // 0=нийт, 3, 4, 5 (5 ба дээш)
+function setSwRunFilter(n){_swRunFilter=(_swRunFilter===n?0:n);hap(6);openSwRunRep()}
 function openSwRunRep(){
-  const ts=swAllTurnouts();let html='',N=0;
+  const ts=swAllTurnouts();
+  // Эхлээд бүх цэгийг цуглуулж, уртаар нь тоолно
+  const all=[];
+  ts.forEach(t=>swRuns(t).forEach(run=>all.push({t,run})));
+  const cnt=k=>all.filter(x=>k===5?x.run.length>=5:x.run.length===k).length;
+  const c3=cnt(3),c4=cnt(4),c5=cnt(5);
+  const keep=x=>!_swRunFilter||(_swRunFilter===5?x.run.length>=5:x.run.length===_swRunFilter);
+  const cell=(n,v,lbl,color)=>`<button class="cs-cell cs-btn${_swRunFilter===n?' sel':''}"
+      style="background:${color[1]};border-color:${color[2]}" onclick="setSwRunFilter(${n})">
+      <div class="cs-n" style="color:${color[0]}">${v}</div><div class="cs-l" style="color:${color[0]}">${lbl}</div></button>`;
+  let head=`<div class="consec-summary cs-4" style="margin-bottom:12px">
+    ${cell(0,all.length,'Нийт',['#6D28D9','var(--purple-bg)','#C4B5FD'])}
+    ${cell(3,c3,'3',['#7A5000','#FFFDE7','#F5C272'])}
+    ${cell(4,c4,'4',['#C00000','var(--orange-bg)','#F5C272'])}
+    ${cell(5,c5,'5 ба<',['#8B1818','var(--red-bg)','#F5A0A0'])}
+  </div>`;
+  let html='',N=0;
   ts.forEach(t=>{
-    const runs=swRuns(t);if(!runs.length)return;
-    const head=t.head||0;
+    const runs=swRuns(t).map(run=>({t,run})).filter(keep);
+    if(!runs.length)return;
+    const hd=t.head||0;
     html+=_swHd(`Сум ${t.num} · ${t.mak} · ${t.mark}`);
-    runs.forEach((run,gi)=>{
-      const nums=run.map(i=>i-head+1);
-      html+=`<div class="rp-row" style="cursor:pointer" onclick="hap();swGotoDz('${t.id}',${run[0]})">
-        <span style="flex:1;font-weight:700;color:var(--purple)">${gi+1}. #${nums.join(', #')}</span>
-        <span class="mat-tag">${run.length} дараалсан</span>
-        <span style="font-weight:900;color:var(--purple)">›</span></div>`});
+    runs.forEach((x,gi)=>{
+      const nums=x.run.map(i=>i-hd+1);
+      const col=x.run.length>=5?'#8B1818':x.run.length===4?'#C00000':'#7A5000';
+      html+=`<div class="rp-row" style="cursor:pointer" onclick="hap();swGotoDz('${t.id}',${x.run[0]})">
+        <span class="sw-run-n" style="background:${col}">${x.run.length}</span>
+        <span style="flex:1;font-weight:800;color:var(--ink2);margin-left:8px">#${nums.join(' · #')}</span>
+        <span style="font-weight:900;color:var(--purple);font-size:16px">›</span></div>`});
     html+=`<div class="rp-sub"><span>Сум ${t.num}</span><span>${runs.length} цэг</span></div></div>`;
     N+=runs.length
   });
   const b=document.getElementById('swRunRepBody');
-  b.innerHTML=html?html+`<div class="rp-total"><span>Нийт</span><span>${N} цэг</span></div>`
+  b.innerHTML=all.length
+    ?head+(html?html+`<div class="rp-total"><span>${_swRunFilter?(_swRunFilter===5?'5 ба дээш':_swRunFilter+' дараалсан'):'Нийт'}</span><span>${N} цэг</span></div>`
+      :_swEmpty('Энэ шүүлтүүрт тохирох цэг алга'))
     :_swEmpty('3 ба түүнээс дээш дараалсан дүнз алга');
   openModal('swRunRepModal')
 }
@@ -6964,21 +7037,27 @@ function swBackFromRec(){
 }
 // 3. Дүнзний бодит мэдээлэл — анхны урт → бодит урт
 function openSwRealRep(){
-  const ts=swAllTurnouts();let html='',N=0,D=0;
+  const ts=swAllTurnouts();let html='',N=0,D=0,MN=0,MR=0;
+  const hdr=`<div class="sw-tr sw-tr-h">
+    <span class="sw-c1">Огноо</span><span class="sw-c2">Дүнз</span>
+    <span class="sw-c3">Байсан</span><span class="sw-c4">Сольсон</span></div>`;
   ts.forEach(t=>{
     const rows=swReplRows(t);if(!rows.length)return;
-    html+=_swHd(`Сум ${t.num} · ${t.mak} · ${t.mark}`);
+    let mn=0,mr=0;
+    html+=_swHd(`Сум ${t.num} · ${t.mak} · ${t.mark}`)+hdr;
     rows.slice().sort((a,b)=>String(a.d).localeCompare(String(b.d))||a.no-b.no).forEach(r=>{
-      const diff=r.real!==r.nom;if(diff)D++;
-      html+=`<div class="rp-row${diff?' rp-carve':''}">
-        <span class="repl-date${diff?' rd-carve':''}" style="min-width:66px">${fmtReplDate(r.d)}</span>
-        <span style="flex:1;font-weight:700;color:${diff?'var(--blue)':'var(--ink2)'};margin-left:6px">#${r.no} дүнз</span>
-        <span class="mat-tag">${swLen(r.nom)} → <b>${swLen(r.real)}</b> м</span></div>`});
-    html+=`<div class="rp-sub"><span>Сум ${t.num}</span><span>${rows.length} солилт</span></div></div>`;
-    N+=rows.length
+      const diff=r.real!==r.nom;if(diff)D++;mn+=r.nom;mr+=r.real;
+      html+=`<div class="sw-tr${diff?' sw-tr-d':''}">
+        <span class="sw-c1">${fmtReplDate(r.d)}</span>
+        <span class="sw-c2">#${r.no}</span>
+        <span class="sw-c3">${swLen(r.nom)}</span>
+        <span class="sw-c4">${swLen(r.real)}</span></div>`});
+    html+=`<div class="rp-sub"><span>Сум ${t.num} · ${rows.length} солилт</span><span>${swM(mn)} → ${swM(mr)} пог/м</span></div></div>`;
+    N+=rows.length;MN+=mn;MR+=mr
   });
   const b=document.getElementById('swRealRepBody');
-  b.innerHTML=html?html+`<div class="rp-total"><span>Нийт</span><span>${N} солилт · ${D} нь өөр урттай</span></div>`
+  b.innerHTML=html?html+`<div class="rp-total"><span>Нийт ${N} ш · ${D} нь өөр урттай</span>
+      <span>${swM(MN)} → ${swM(MR)} пог/м</span></div>`
     :_swEmpty('Бүртгэл алга');
   openModal('swRealRepModal')
 }
@@ -7032,7 +7111,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·76';
+const APP_BUILD='2026.08.25·77';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
