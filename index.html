@@ -4747,7 +4747,8 @@ async function exportColoredExcel(){
         if(!a.total||a.bad/a.total*100<25)return;
         const cur=(t.sections||[]).find(x=>x.id===os.id)||{};
         const rp=cur.repl||{};
-        const reps=Object.keys(rp).map(k=>({pos:+k+1,d:rp[k]&&rp[k].d}))
+        const reps=Object.keys(rp).filter(k=>replWasBad(rp[k]))
+          .map(k=>({pos:+k+1,d:rp[k]&&rp[k].d}))
           .filter(x=>x.d).sort((x,y)=>x.pos-y.pos);
         rows.push({label:os.label,wood:a.wood,bad:a.bad,total:a.total,reps})
       });
@@ -4761,7 +4762,7 @@ async function exportColoredExcel(){
         P(ws,`G${r}`,{formula:`IFERROR(F${r}/L${r}*100,"")`},{fmt:'0.0'});
         P(ws,'H'+r,d.reps.length||'');
         // Цаашид хэдэн дэр солибол 25%-даа орох вэ (сольсныг хассан)
-        P(ws,`I${r}`,{formula:`MAX(0,F${r}-(CEILING(L${r}*0.25,1)-1)-H${r})`});
+        P(ws,`I${r}`,{formula:`MAX(0,ROUNDUP(F${r}-L${r}*0.25,0)-H${r})`});
         P(ws,'J'+r,d.reps.length?d.reps.map(x=>x.pos).join(','):'');
         const ds=[...new Set(d.reps.map(x=>x.d))];
         if(ds.length===1)P(ws,'K'+r,_xlsDate(ds[0]),{fmt:'mm-dd-yy'});
@@ -6036,7 +6037,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·69';
+const APP_BUILD='2026.08.25·70';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
