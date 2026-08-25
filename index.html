@@ -2569,15 +2569,18 @@ function collectCarveForm(){
       const rep=[];
       g.items.forEach(it=>{
         const sec=byId[it.secId],r=sec&&sec.repl&&sec.repl[it.posInSec-1];
-        if(r&&r.s&&r.d)rep.push({pos:it.posInSec,d:r.d})
+        if(r&&r.s&&r.d)rep.push({pos:it.posInSec,d:r.d,secId:it.secId})
       });
       if(!rep.length)return;                       // сийрэгжилт хийгээгүй цэг
       const secs=[...new Set(g.items.map(it=>it.secId))].map(id=>byId[id]).filter(Boolean);
-      const ep=[...new Set(secs.map(x=>analyzeSection(x).woodTotal))];
+      // Эпюр нь ЯГ СОЛИГДСОН дэрийн үеийнхээр бичигдэнэ. Үе дамнасан
+      // дараалалд дэр аль үед нь солигдсоноос хамаарч эпюр өөр өөр байна.
+      const repSecs=[...new Set(rep.map(x=>x.secId))].map(id=>byId[id]).filter(Boolean);
+      const ep=[...new Set(repSecs.map(x=>analyzeSection(x).woodTotal))];
       out.push({
         track:trackLabel(t),
         ue:secs.map(x=>_ueNum(x.label)).join('/'),  // үе дамнасан бол "40/41"
-        epur:ep.length===1?ep[0]:ep.join('/'),      // үен дэх модон дэрийн эпюр
+        epur:ep.length===1?ep[0]:ep.join('/'),      // солигдсон дэрийн үеийн эпюр
         len:g.len,                                  // 3 / 4 / 5 ба<
         nums:g.items.map(it=>it.posInSec).join('.'),// дараалан муудсан дэрийн дугаар
         dates:[...new Set(rep.map(r=>r.d))].sort(),
@@ -5945,7 +5948,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·66';
+const APP_BUILD='2026.08.25·67';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
@@ -6080,8 +6083,37 @@ initRipple();initSheetGestures();
   const sGet=k=>{try{return sessionStorage.getItem(k)}catch(e){return null}};
   const sSet=(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}};
 
+  // ── Шинэчлэлт УДААШРАХ гол шалтгаан ──
+  // GitHub Pages нь index.html-г CDN дээр ~10 минут кэшилдэг. Тиймээс
+  // location.reload() хийхэд хөтөч/CDN хуучин файлаа буцаасаар байдаг.
+  // Хаяг дээр ?v=<хувилбар> нэмбэл кэшийн түлхүүр өөрчлөгдөж, шинэ файл
+  // шууд ирнэ. (version.txt нь no-store тул илрүүлэлт нь аль хэдийн шуурхай.)
+  function hardReload(remote){
+    const url=location.origin+location.pathname+'?v='+encodeURIComponent(remote);
+    try{location.replace(url)}catch(e){location.href=url}
+  }
+  // Ажиллаж байх үед хүчээр сэргээвэл бөглөж буй өгөгдөл алдагдана —
+  // тиймээс дарж сэргээх мэдэгдэл гаргана
+  function showUpdBanner(remote){
+    if(document.getElementById('updBanner'))return;
+    const d=document.createElement('div');d.id='updBanner';
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));z-index:9998;'+
+      'background:linear-gradient(135deg,#FFD23F,#FF8E3C);color:#fff;border-radius:18px;'+
+      'padding:12px 14px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;'+
+      'box-shadow:0 8px 28px rgba(160,90,20,.35);text-shadow:0 1px 3px rgba(140,90,20,.25)';
+    d.innerHTML='<span style="flex:1;line-height:1.35">Шинэ хувилбар гарлаа<br>'+
+      '<span style="font-weight:600;opacity:.9;font-size:11px">Дарж шинэчилнэ үү</span></span>'+
+      '<button id="updNowBtn" style="border:none;border-radius:99px;padding:9px 16px;'+
+      'background:rgba(255,255,255,.95);color:#C2410C;font-weight:900;font-size:13px;cursor:pointer">Шинэчлэх</button>'+
+      '<button id="updLaterBtn" aria-label="Хаах" style="border:none;background:none;color:#fff;'+
+      'font-size:22px;line-height:1;cursor:pointer;padding:0 2px">×</button>';
+    document.body.appendChild(d);
+    d.querySelector('#updNowBtn').onclick=()=>{sSet(TRY_KEY,remote);hardReload(remote)};
+    d.querySelector('#updLaterBtn').onclick=()=>d.remove()
+  }
+
   async function check(startup){
-    if(Date.now()-lastCheck<60000)return;
+    if(!startup&&Date.now()-lastCheck<20000)return;
     lastCheck=Date.now();
     let remote;
     try{
@@ -6101,20 +6133,19 @@ initRipple();initSheetGestures();
         return
       }
       sSet(TRY_KEY,remote);
-      // HTTP кэшийг тойрч шинэ index.html-г татаад дараа нь сэргээнэ
-      try{await fetch(location.href,{cache:'reload'})}catch(e){}
-      location.reload()
+      hardReload(remote)
     } else if(!notified){
-      // Ажиллаж байх үед хүчээр сэргээвэл бөглөж буй өгөгдөл алдагдана —
-      // тиймээс зөвхөн мэдэгдэж, сэргээх эсэхийг хэрэглэгч шийднэ
       notified=true;
-      showToast('Шинэ хувилбар гарлаа — аппаа хаагаад дахин нээнэ үү',5000)
+      showUpdBanner(remote)
     }
   }
 
   check(true);
-  // Апп руу буцаж орох бүрд шалгана (60 секундэд нэгээс олонгүй)
+  // Апп руу буцаж орох бүрд шалгана (20 секундэд нэгээс олонгүй)
   document.addEventListener('visibilitychange',function(){if(!document.hidden)check(false)});
+  // Нээлттэй байхад ч 2 минут тутамд шалгана — аппаа хаалгүй ажилладаг
+  // хэрэглэгч шинэчлэлтийг удаан мэддэггүй байв
+  setInterval(function(){if(!document.hidden)check(false)},120000);
 })();
 </script>
 </body>
