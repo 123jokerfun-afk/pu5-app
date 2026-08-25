@@ -1112,6 +1112,7 @@ button{font-family:inherit}
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">
       3 ба түүнээс дээш дараалсан цэгт хамаарч байсан дэрүүдээс сольсон нь. Хэдэн ч дэрийг, ямар ч өдөр сольсон бай энд бүртгэгдэнэ. Эдгээр нь "Солигдсон дэр" жагсаалтад ч цэнхэрээр орсон байна.
     </div>
+    <button class="btn-ok" id="carveXlsBtn" onclick="exportCarveForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сийрэгжилт татах (Маягт-1 Хавсралт-4)</button>
     <div id="carveReportBody"></div>
   </div></div>
 </div>
@@ -1191,6 +1192,7 @@ button{font-family:inherit}
       <div class="ff"><label>Он</label><input type="number" id="rptYear" placeholder="2026" min="2020" max="2040"></div>
     </div>
     <div class="ff"><label>Тайлан огноо</label><input type="date" id="rptDate"></div>
+    <div class="ff"><label>Гарын үсэг (нэр)</label><input type="text" id="rptSign" placeholder="Н.Золжаргал"></div>
     <div style="background:var(--blue-bg);border-radius:var(--rs);padding:10px 12px;margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">Хавсралт-3 гарчгийн жишээ:</div>
       <div id="rptPreview" style="font-size:11px;color:var(--ink2);font-weight:600;line-height:1.6"></div>
@@ -2546,6 +2548,144 @@ function closeCarveReport(){
     renderReplReport()          // openModal дуудахгүй — түүх нь хэвээрээ
   }
 }
+// ══════════════════════════════════════════════
+// СИЙРЭГЖИЛТИЙН МАЯГТ — "Маягт-1 Хавсралт-4"
+// 3 ба түүнээс дээш дараалан муудсан дэрийн жагсаалт (Сийрэгжилт)
+// ══════════════════════════════════════════════
+// Мөр бүр = НЭГ дараалсан цэг. Зөвхөн сийрэгжилт хийсэн (дор хаяж нэг дэр нь
+// сийрэгжилтээр солигдсон) цэгүүд маягтад орно.
+// Дараалсан цэгийг СОЛИХЫН ӨМНӨХ байдлаар нь тооцно (origSections) — эс тэгвэл
+// сольчихсон дараалал алга болж, маягтад юу ч үлдэхгүй.
+function _ueNum(label){
+  const m=String(label||'').match(/^(\d+)-р үе/);
+  return m?m[1]:String(label||'')
+}
+function collectCarveForm(){
+  const out=[];
+  allTracks().forEach(t=>{
+    const byId={};(t.sections||[]).forEach(x=>{byId[x.id]=x});
+    findConsecutiveBadForTrack(origSections(t)).forEach(g=>{
+      // Энэ дараалалд хамаарч байсан дэрүүдээс СИЙРЭГЖИЛТЭЭР солигдсон нь
+      const rep=[];
+      g.items.forEach(it=>{
+        const sec=byId[it.secId],r=sec&&sec.repl&&sec.repl[it.posInSec-1];
+        if(r&&r.s&&r.d)rep.push({pos:it.posInSec,d:r.d,secId:it.secId})
+      });
+      if(!rep.length)return;                       // сийрэгжилт хийгээгүй цэг
+      const secs=[...new Set(g.items.map(it=>it.secId))].map(id=>byId[id]).filter(Boolean);
+      // Эпюр нь ЯГ СОЛИГДСОН дэрийн үеийнхээр бичигдэнэ. Үе дамнасан
+      // дараалалд дэр аль үед нь солигдсоноос хамаарч эпюр өөр өөр байна.
+      const repSecs=[...new Set(rep.map(x=>x.secId))].map(id=>byId[id]).filter(Boolean);
+      const ep=[...new Set(repSecs.map(x=>analyzeSection(x).woodTotal))];
+      out.push({
+        track:trackLabel(t),
+        ue:secs.map(x=>_ueNum(x.label)).join('/'),  // үе дамнасан бол "40/41"
+        epur:ep.length===1?ep[0]:ep.join('/'),      // солигдсон дэрийн үеийн эпюр
+        len:g.len,                                  // 3 / 4 / 5 ба<
+        nums:g.items.map(it=>it.posInSec).join('.'),// дараалан муудсан дэрийн дугаар
+        dates:[...new Set(rep.map(r=>r.d))].sort(),
+        cnt:rep.length,
+        repNums:rep.map(r=>r.pos).join('.')
+      })
+    })
+  });
+  return out
+}
+// '2026-04-29' → Excel-д зөв суух орон нутгийн Date (цагийн бүсээр хоног ухрахаас сэргийлж үд дунд)
+function _xlsDate(d){
+  const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?new Date(+m[1],+m[2]-1,+m[3],12,0,0):null
+}
+// '2026-04-29' → '29/4/2026' (маягтын толгойн бичиглэл)
+function _formHdrDate(d){
+  const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m)return`${+m[3]}/${+m[2]}/${m[1]}`;
+  const t=mnToday();return`${t.d}/${t.m}/${t.y}`
+}
+async function exportCarveForm(){
+  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй — сүлжээгээ шалгана уу',3200);return}
+  const rows=collectCarveForm();
+  if(!rows.length){showToast('Сийрэгжилт бүртгэгдээгүй байна',2600);return}
+  const r=DB.rpt||{};
+  const hesegNm=r.secName||('ПД-'+(r.sec||''));
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  const ws=wb.addWorksheet('Маягт 1-4 өртөө-сийрэгжилт',{
+    pageSetup:{orientation:'portrait',scale:93,
+      margins:{left:.7,right:.7,top:.75,bottom:.75,header:.3,footer:.3}}
+  });
+  // Багана: эх маягтын өргөнөөр (G,H,L нь Excel-ийн үндсэн 8.43)
+  ws.columns=[{width:4.33},{width:5.66},{width:9.44},{width:8.44},{width:7.11},
+              {width:7.33},{width:8.43},{width:8.43},{width:13.44},{width:9.11},
+              {width:8.89},{width:8.43}];
+  const AR=(sz,b)=>({name:'Arial',size:sz||10,bold:!!b});
+  // Ганц тоо бол Excel-д ТОО болгож бичнэ (эх маягтад ч тоогоор орсон);
+  // "40/41", "22.1.2" зэрэг нийлмэл утга бичвэрээрээ үлдэнэ
+  const N=v=>(typeof v==='string'&&/^\d+$/.test(v))?+v:v;
+  const TH={style:'thin'};
+  const box=c=>{c.border={top:TH,bottom:TH,left:TH,right:TH}};
+  const put=(addr,v,opt)=>{
+    const c=ws.getCell(addr);c.value=v;const o=opt||{};
+    c.font=o.font||AR(10);
+    c.alignment=Object.assign({horizontal:'center',vertical:'middle'},o.align||{});
+    if(o.box!==false)box(c);
+    if(o.fmt)c.numFmt=o.fmt;
+    return c
+  };
+  // ── Толгой ──
+  ws.mergeCells('A1:G1');put('A1','Маягт-1 Хавсралт-4',{box:false});
+  ws.mergeCells('J1:L1');put('J1','',{box:false});
+  ws.mergeCells('A2:L2');
+  put('A2','3 ба түүнээс дээш дараалан муудсан дэрийн жагсаалт.(Сийрэгжилт)',{box:false});
+  ws.mergeCells('A3:L3');put('A3','/ өртөө замд/',{box:false});
+  ws.mergeCells('I4:L4');
+  const hd=put('I4',_formHdrDate(r.date),{align:{horizontal:'right'},box:false});
+  hd.border={bottom:TH};
+  // ── Хүснэгтийн толгой (5-6-р мөр) ──
+  [['A5:A6','Д/д'],['B5:B6','Хэсэг '],['C5:C6','Км'],['D5:D6','Үе'],
+   ['E5:E6','Үен дэх модон дэрийн эпюр'],['F5:H5','Дараалан муудсан дэр'],
+   ['I5:I6','Дараалан муудсан дэрийн дугаар'],['J5:L5','Сийрэгжилт хийсэн']
+  ].forEach(([rng,txt])=>{
+    ws.mergeCells(rng);put(rng.split(':')[0],txt,{align:{wrapText:true}})
+  });
+  [['F6',3],['G6',4],['H6','5 ба<'],['J6','огноо'],
+   ['K6','сольсон дэрийн тоо'],['L6','сольсон дэрийн дугаар']
+  ].forEach(([a,v])=>put(a,v,{align:{wrapText:true}}));
+  // Нэгтгэсэн нүдний ХОЁР ДАХЬ мөрөнд ч хүрээ үлдээнэ (эс тэгвэл шугам тасарна)
+  ['A6','B6','C6','D6','E6','I6'].forEach(a=>box(ws.getCell(a)));
+  ['F5','G5','H5','J5','K5','L5'].forEach(a=>box(ws.getCell(a)));
+  ws.getRow(5).height=19.5;ws.getRow(6).height=52.2;
+  // ── Өгөгдлийн мөрүүд ──
+  let rn=7;
+  rows.forEach((d,i)=>{
+    const wrap={wrapText:true};
+    put('A'+rn,i+1);
+    put('B'+rn,hesegNm);
+    put('C'+rn,d.track,{font:AR(9,true),align:wrap});
+    put('D'+rn,N(d.ue),{font:AR(9,true),align:wrap});
+    put('E'+rn,N(d.epur));
+    put('F'+rn,d.len===3?1:'',{font:AR(9,d.len===3),align:wrap});
+    put('G'+rn,d.len===4?1:'',{font:AR(9,d.len===4),align:wrap});
+    put('H'+rn,d.len>=5?1:'',{font:AR(9,d.len>=5),align:wrap});
+    put('I'+rn,d.nums,{font:AR(9),align:wrap});
+    // Нэг цэгийг өөр өөр өдөр сольсон бол огноонуудыг бичвэрээр нэгтгэнэ
+    if(d.dates.length===1)put('J'+rn,_xlsDate(d.dates[0]),{fmt:'mm-dd-yy'});
+    else put('J'+rn,d.dates.map(fmtReplDate).join(', '),{font:AR(9),align:wrap});
+    put('K'+rn,d.cnt);
+    put('L'+rn,N(d.repNums));
+    rn++
+  });
+  // ── Гарын үсэг ──
+  const sr=rn+2;
+  const sc=ws.getCell('E'+sr);
+  sc.value=hesegNm+'                                         '+(r.sign||'');
+  sc.font=AR(11);sc.alignment={horizontal:'center',vertical:'middle'};
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    dlBlob(blob,`Сийрэгжилт_Маягт1-Хавсралт4_${(r.date||new Date().toISOString().slice(0,10))}.xlsx`);
+    if(!isIOS())showToast(`✓ ${rows.length} цэг татагдлаа`,2600)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
 // ── Дараалсан цэг (3 ба түүнээс дээш) ──
 // Дээд талын нүднүүд нь шүүлтүүр: Нийт / 3 / 4 / 5+
 let _consecFilter='all';
@@ -2636,6 +2776,7 @@ function openRptSettings(){
   document.getElementById('rptSeason').value=r.season||'хавар';
   document.getElementById('rptYear').value=r.year||new Date().getFullYear();
   document.getElementById('rptDate').value=r.date||new Date().toISOString().slice(0,10);
+  document.getElementById('rptSign').value=r.sign||'';
   updateRptPreview();openModal('rptModal')
 }
 function updateRptPreview(){
@@ -2652,14 +2793,15 @@ function updateRptPreview(){
   document.getElementById(id)?.addEventListener('change',updateRptPreview);
 });
 function saveRptSettings(){
-  DB.rpt={
+  DB.rpt=Object.assign(DB.rpt||{},{
     cls:document.getElementById('rptCls').value||'3',
     sec:document.getElementById('rptSec').value||'6',
     secName:document.getElementById('rptSecName').value||'ПД-6',
     season:document.getElementById('rptSeason').value||'хавар',
     year:document.getElementById('rptYear').value||new Date().getFullYear(),
-    date:document.getElementById('rptDate').value||new Date().toISOString().slice(0,10)
-  };
+    date:document.getElementById('rptDate').value||new Date().toISOString().slice(0,10),
+    sign:(document.getElementById('rptSign').value||'').trim()
+  });
   saveDB();closeModal('rptModal');renderRptInfoCard();showToast('✓ Тайлангийн тохиргоо хадгалагдлаа')
 }
 function renderRptInfoCard(){
@@ -5806,7 +5948,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·65';
+const APP_BUILD='2026.08.25·67';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
@@ -5941,8 +6083,37 @@ initRipple();initSheetGestures();
   const sGet=k=>{try{return sessionStorage.getItem(k)}catch(e){return null}};
   const sSet=(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}};
 
+  // ── Шинэчлэлт УДААШРАХ гол шалтгаан ──
+  // GitHub Pages нь index.html-г CDN дээр ~10 минут кэшилдэг. Тиймээс
+  // location.reload() хийхэд хөтөч/CDN хуучин файлаа буцаасаар байдаг.
+  // Хаяг дээр ?v=<хувилбар> нэмбэл кэшийн түлхүүр өөрчлөгдөж, шинэ файл
+  // шууд ирнэ. (version.txt нь no-store тул илрүүлэлт нь аль хэдийн шуурхай.)
+  function hardReload(remote){
+    const url=location.origin+location.pathname+'?v='+encodeURIComponent(remote);
+    try{location.replace(url)}catch(e){location.href=url}
+  }
+  // Ажиллаж байх үед хүчээр сэргээвэл бөглөж буй өгөгдөл алдагдана —
+  // тиймээс дарж сэргээх мэдэгдэл гаргана
+  function showUpdBanner(remote){
+    if(document.getElementById('updBanner'))return;
+    const d=document.createElement('div');d.id='updBanner';
+    d.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(14px + var(--sab));z-index:9998;'+
+      'background:linear-gradient(135deg,#FFD23F,#FF8E3C);color:#fff;border-radius:18px;'+
+      'padding:12px 14px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px;'+
+      'box-shadow:0 8px 28px rgba(160,90,20,.35);text-shadow:0 1px 3px rgba(140,90,20,.25)';
+    d.innerHTML='<span style="flex:1;line-height:1.35">Шинэ хувилбар гарлаа<br>'+
+      '<span style="font-weight:600;opacity:.9;font-size:11px">Дарж шинэчилнэ үү</span></span>'+
+      '<button id="updNowBtn" style="border:none;border-radius:99px;padding:9px 16px;'+
+      'background:rgba(255,255,255,.95);color:#C2410C;font-weight:900;font-size:13px;cursor:pointer">Шинэчлэх</button>'+
+      '<button id="updLaterBtn" aria-label="Хаах" style="border:none;background:none;color:#fff;'+
+      'font-size:22px;line-height:1;cursor:pointer;padding:0 2px">×</button>';
+    document.body.appendChild(d);
+    d.querySelector('#updNowBtn').onclick=()=>{sSet(TRY_KEY,remote);hardReload(remote)};
+    d.querySelector('#updLaterBtn').onclick=()=>d.remove()
+  }
+
   async function check(startup){
-    if(Date.now()-lastCheck<60000)return;
+    if(!startup&&Date.now()-lastCheck<20000)return;
     lastCheck=Date.now();
     let remote;
     try{
@@ -5962,20 +6133,19 @@ initRipple();initSheetGestures();
         return
       }
       sSet(TRY_KEY,remote);
-      // HTTP кэшийг тойрч шинэ index.html-г татаад дараа нь сэргээнэ
-      try{await fetch(location.href,{cache:'reload'})}catch(e){}
-      location.reload()
+      hardReload(remote)
     } else if(!notified){
-      // Ажиллаж байх үед хүчээр сэргээвэл бөглөж буй өгөгдөл алдагдана —
-      // тиймээс зөвхөн мэдэгдэж, сэргээх эсэхийг хэрэглэгч шийднэ
       notified=true;
-      showToast('Шинэ хувилбар гарлаа — аппаа хаагаад дахин нээнэ үү',5000)
+      showUpdBanner(remote)
     }
   }
 
   check(true);
-  // Апп руу буцаж орох бүрд шалгана (60 секундэд нэгээс олонгүй)
+  // Апп руу буцаж орох бүрд шалгана (20 секундэд нэгээс олонгүй)
   document.addEventListener('visibilitychange',function(){if(!document.hidden)check(false)});
+  // Нээлттэй байхад ч 2 минут тутамд шалгана — аппаа хаалгүй ажилладаг
+  // хэрэглэгч шинэчлэлтийг удаан мэддэггүй байв
+  setInterval(function(){if(!document.hidden)check(false)},120000);
 })();
 </script>
 </body>
