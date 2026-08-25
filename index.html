@@ -1082,11 +1082,11 @@ button{font-family:inherit}
 </div>
 
 <!-- СОЛИГДСОН ДЭР: тайлан -->
-<div class="overlay" id="carveReportModal">
+<div class="overlay" id="carveReportModal" style="z-index:420">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div class="sheet-title" style="margin:0;color:var(--blue)">🔧 Сийрэгжилт</div>
-      <button onclick="closeModal('carveReportModal')" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
+      <button onclick="closeCarveReport()" style="background:none;border:none;font-size:26px;cursor:pointer;color:var(--ink4);line-height:1">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">
       Дараалсан цэгийг таслахын тулд сольсон дэрүүд. Эдгээр нь "Солигдсон дэр" жагсаалтад ч цэнхэрээр орсон байна.
@@ -1690,13 +1690,14 @@ function saveDB(){
 // Тиймээс үеийн түвшинд { дэрийн индекс: {d:'YYYY-MM-DD', t:'normal'|'tbd'} } гэж хадгална.
 // Энэ нь _packDB-д хөндөгдөхгүй тул шахалт хэвээрээ үлдэнэ.
 function getRepl(sec,idx){return sec&&sec.repl?sec.repl[idx]||null:null}
-// r = {d:огноо, t:шинэ төрөл, m:'wood'|'tbd' материал, s:1 бол СИЙЛЭГЖИЛТ
-//      (дараалсан цэг таслахын тулд сольсон)}
-function setReplAt(sec,idx,d,t,m,s){
+// r = {d:огноо, t:шинэ төрөл, m:'wood'|'tbd' материал, s:1 бол СИЙРЭГЖИЛТ
+//      (дараалсан цэг таслахын тулд сольсон), o:1 бол солихын өмнө тэнцэхгүй байсан}
+function setReplAt(sec,idx,d,t,m,s,o){
   if(!sec.repl)sec.repl={};
   const r={d,t};
   if(m)r.m=m;
   if(s)r.s=1;
+  if(o)r.o=1;
   sec.repl[idx]=r
 }
 // Хуучин бүртгэлд материал байхгүй бол төрлөөс нь тааварлана
@@ -2386,27 +2387,47 @@ function collectCarve(){
   return collectRepl().map(t=>({name:t.name,num:t.num,
     rows:t.rows.filter(r=>r.carve)})).filter(t=>t.rows.length)
 }
+// "Солигдсон дэр" цонхноос орж ирсэн эсэх — хаахад тийшээ буцна
+let _carveFromRepl=false;
 function openCarveReport(){
+  // Хоёр цонх зэрэг нээлттэй байвал "Солигдсон дэр" нь дээр нь бүрхэж,
+  // холилдсон жагсаалт хэвээр харагдана. Тиймээс эхлээд түүнийг хаана.
+  const rp=document.getElementById('replReportModal');
+  _carveFromRepl=!!(rp&&rp.classList.contains('open'));
+  if(_carveFromRepl)closeModal('replReportModal');
   const data=collectCarve();
   const body=document.getElementById('carveReportBody');
   if(!data.length){
     body.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Сийрэгжилт хийгээгүй байна.<br><span style="font-size:11px">Дараалсан цэгийн дэрийг сольж тэмдэглэвэл энд бүртгэгдэнэ.</span></div>';
     openModal('carveReportModal');return
   }
+  // Зөвхөн сийрэгжилт хийсэн дэрүүд — сар сараар, дотор нь замаар
+  const months={};
+  data.forEach(t=>t.rows.forEach(r=>{
+    const m=replMonth(r.date);
+    const mo=months[m.key]||(months[m.key]={label:m.label,tracks:{},n:0});
+    (mo.tracks[t.name]||(mo.tracks[t.name]=[])).push(r);mo.n++
+  }));
   let total=0,wood=0,tbd=0,html='';
-  data.forEach(t=>{
-    total+=t.rows.length;
-    html+=`<div class="rp-track"><div class="rp-track-hd" style="background:var(--blue-bg);color:var(--blue)">${t.name}</div>`;
-    t.rows.forEach(r=>{
-      if(r.mat==='tbd')tbd++;else wood++;
-      html+=`<div class="rp-row rp-carve">
-        <span style="flex:1;font-weight:700;color:var(--blue)">${r.sec}</span>
-        <span style="font-weight:800;color:var(--blue);min-width:44px">#${r.idx}</span>
-        <span class="mat-tag">${matLabel(r.mat)}</span>
-        <span class="repl-date rd-carve">${fmtReplDate(r.date)}</span>
-      </div>`
+  Object.keys(months).sort().reverse().forEach(k=>{
+    const mo=months[k];total+=mo.n;
+    html+=`<div class="rp-month">
+      <div class="rp-month-hd" style="background:var(--blue-bg);color:var(--blue)"><span>📅 ${mo.label}</span><span>${mo.n} дэр</span></div>`;
+    Object.keys(mo.tracks).forEach(tn=>{
+      const rows=mo.tracks[tn];
+      html+=`<div class="rp-track"><div class="rp-track-hd" style="background:var(--blue-bg);color:var(--blue)">${tn}</div>`;
+      rows.forEach(r=>{
+        if(r.mat==='tbd')tbd++;else wood++;
+        html+=`<div class="rp-row rp-carve">
+          <span style="flex:1;font-weight:700;color:var(--blue)">${r.sec}</span>
+          <span style="font-weight:800;color:var(--blue);min-width:44px">#${r.idx}</span>
+          <span class="mat-tag">${matLabel(r.mat)}</span>
+          <span class="repl-date rd-carve">${fmtReplDate(r.date)}</span>
+        </div>`
+      });
+      html+=`<div class="rp-sub" style="background:var(--blue-bg);color:var(--blue)"><span>${tn}</span><span>${rows.length} дэр</span></div></div>`
     });
-    html+=`<div class="rp-sub" style="background:var(--blue-bg);color:var(--blue)"><span>${t.name}</span><span>${t.rows.length} дэр</span></div></div>`
+    html+=`</div>`
   });
   html=`<div class="consec-summary" style="margin-bottom:12px">
       <div class="cs-cell" style="background:var(--blue-bg);border-color:var(--blue-mid)">
@@ -2419,9 +2440,14 @@ function openCarveReport(){
         <div class="cs-n" style="color:var(--red)">${tbd}</div>
         <div class="cs-l" style="color:var(--red)">ТБД</div></div>
     </div>`+html+
-    `<div class="rp-total" style="background:linear-gradient(135deg,var(--blue),var(--blue-mid))"><span>Бүх замын нийт</span><span>${total} дэр</span></div>`;
+    `<div class="rp-total" style="background:linear-gradient(135deg,var(--blue),var(--blue-mid))"><span>Бүх сарын нийт</span><span>${total} дэр</span></div>`;
   body.innerHTML=html;
   openModal('carveReportModal')
+}
+// Хаахад "Солигдсон дэр" жагсаалт руугаа эргэж очно
+function closeCarveReport(){
+  closeModal('carveReportModal');
+  if(_carveFromRepl){_carveFromRepl=false;openReplReport()}
 }
 // ── Дараалсан цэг (3 ба түүнээс дээш) ──
 // Дээд талын нүднүүд нь шүүлтүүр: Нийт / 3 / 4 / 5+
@@ -3514,10 +3540,30 @@ function openReplModal(){
     }
   },40)
 }
-// Энэ дэр 3 ба түүнээс дээш дараалсан цэгийн дотор байгаа эсэх
-function inConsecRun(t,sec,idx){
+// Тухайн ӨДӨР сольсон (өмнө нь тэнцэхгүй байсан) дэрүүдийг буцаан
+// "тэнцэхгүй" болгож сэргээсэн хуулбар. Ингэснээр 5 дараалсны дундахыг
+// эхэлж сольж дараалал нь эвдэрсэн ч, ТЭР ӨДӨР сольсон бусад дэр нь
+// мөн адил сийрэгжилтэд тооцогдоно.
+function sectionsAsOfDate(t,date){
+  return ((t&&t.sections)||[]).map(s=>{
+    const r=s.repl;if(!r)return s;
+    const back=Object.keys(r).filter(k=>r[k]&&r[k].d===date&&(r[k].o||r[k].s));
+    if(!back.length)return s;
+    const cp=Object.assign({},s,{sleepers:s.sleepers.slice()});
+    back.forEach(k=>{
+      const i=+k;
+      if(cp.sleepers[i]&&!isBadSleeper(cp.sleepers[i].type))
+        cp.sleepers[i]=Object.assign({},cp.sleepers[i],{type:'bad'})
+    });
+    return cp
+  })
+}
+// Энэ дэр 3 ба түүнээс дээш дараалсан цэгийн дотор байгаа эсэх.
+// date өгвөл тэр өдрийн ЭХНИЙ (солихоос өмнөх) байдлаар нь шалгана.
+function inConsecRun(t,sec,idx,date){
   if(!t||!sec)return false;
-  return findConsecutiveBadForTrack(t.sections||[]).some(g=>
+  const secs=date?sectionsAsOfDate(t,date):(t.sections||[]);
+  return findConsecutiveBadForTrack(secs).some(g=>
     g.items.some(it=>it.secId===sec.id&&it.posInSec===idx+1))
 }
 function saveRepl(newType){
@@ -3526,15 +3572,17 @@ function saveRepl(newType){
   const p=n=>(n<10?'0':'')+n;
   const date=_replY+'-'+p(_replM)+'-'+p(_replD);
   const oldType=sec.sleepers[editIdx].type;
-  // Солихоос ӨМНӨ дараалсан цэгийн дотор байсан бол энэ нь СИЙЛЭГЖИЛТ —
-  // дараалсан цэгийг таслах зорилготой солилт
-  const carve=isBadSleeper(oldType)&&!isBadSleeper(newType)&&inConsecRun(t,sec,editIdx);
+  const wasBad=isBadSleeper(oldType);
+  // Тэр өдрийн эхний байдлаар нь үзэхэд дараалсан цэгийн дотор байсан бол энэ нь
+  // СИЙРЭГЖИЛТ — дараалсан цэгийг таслах зорилготой солилт. Нэг өдөр хэдэн ч
+  // дэр сольсон бай, бүгд нь сийрэгжилтэд тооцогдоно.
+  const carve=wasBad&&!isBadSleeper(newType)&&inConsecRun(t,sec,editIdx,date);
   // Сонгосон төрлөөр дэрийн төрлийг солино (модон → Хэвийн, ТБД → ТБД)
   if(oldType!==newType){
     syncManual(sec,oldType,-1);syncManual(sec,newType,+1);
     sec.sleepers[editIdx].type=newType
   }
-  setReplAt(sec,editIdx,date,newType,newType==='tbd'?'tbd':'wood',carve);
+  setReplAt(sec,editIdx,date,newType,newType==='tbd'?'tbd':'wood',carve,wasBad);
   saveDB();closeModal('replModal');renderRecordView();renderHome();
   showToast(carve
     ?`🔧 #${editIdx+1} сийрэгжилт · ${fmtReplDate(date)}`
@@ -5559,7 +5607,10 @@ async function adminExportExcel(){
 function _appBack(){
   // 1. Нээлттэй modal байвал хаана
   const ov=document.querySelector('.overlay.open');
-  if(ov&&ov.id){closeModal(ov.id);return true}
+  if(ov&&ov.id){
+    if(ov.id==='carveReportModal')closeCarveReport();
+    else closeModal(ov.id);
+    return true}
   // 2. Интро байвал алгасна
   const intro=document.getElementById('introOverlay');
   if(intro){intro.click();return true}
@@ -5593,7 +5644,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.24·61';
+const APP_BUILD='2026.08.25·62';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
