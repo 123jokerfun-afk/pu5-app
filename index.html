@@ -6040,12 +6040,35 @@ async function _afterLoginInner(){
   if(_isAdmin){showView('adminView');await loadAdminView();return}
   showView('homeView');
   _errBanner('⏳ Үүлнээс өгөгдөл татаж байна...','Хүлээнэ үү');
+  // ★ Сүлжээгүйд хийгээд илгээгдээгүй үлдсэн ажил утсанд байгаа эсэх.
+  //   Байвал үүлэн дэх ХУУЧИН өгөгдлөөр дарж бичихгүй.
+  let _locDB=null;
+  try{const _d=_lsRead();if(_d)_locDB=_unpackDB(_d)}catch(e){}
+  const _dt=_dirtyAt(),_hasLoc=!!(_dt&&_locDB&&_dbHasData(_locDB));
   try{
     const doc=await _readCloud(3);
     if(doc.exists&&doc.data()&&doc.data().db){
-      DB=_unpackDB(doc.data().db);
-      _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
-      if(!_cloudHadData)_errBanner('Үүлэн дээр өгөгдөл хоосон байна','sections/'+_sectionCode+' — паспорт олдсонгүй');
+      let _cms=0;
+      try{const u=doc.data().updatedAt;if(u&&u.toMillis)_cms=u.toMillis()}catch(e){}
+      if(_hasLoc&&!(_cms>_dt+2000)){
+        // Утсан дахь нь шинэ — сэргээж, үүлэн рүү илгээнэ
+        DB=_locDB;_cloudLoaded=true;_cloudHadData=true;
+        flushSave(true);
+        showToast('✓ Сүлжээгүйд хийсэн ажлыг үүлэн рүү илгээлээ',3200)
+      } else if(_hasLoc){
+        // Хоёулаа шинэ — хэрэглэгч шийднэ
+        DB=_locDB;_cloudLoaded=true;_cloudHadData=true;
+        setTimeout(()=>_unsentBanner(_cms),400)
+      } else {
+        DB=_unpackDB(doc.data().db);
+        _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
+        if(!_cloudHadData)_errBanner('Үүлэн дээр өгөгдөл хоосон байна','sections/'+_sectionCode+' — паспорт олдсонгүй');
+      }
+    } else if(_hasLoc){
+      // Үүлэн дээр юу ч алга, гэхдээ утсанд илгээгдээгүй ажил байна
+      DB=_locDB;_cloudLoaded=true;_cloudHadData=true;
+      flushSave(true);
+      showToast('✓ Сүлжээгүйд хийсэн ажлыг үүлэн рүү илгээлээ',3200)
     } else {
       DB={location:_sectionCode,tracks:[],v:3,folders:[],
         rpt:{cls:'3',sec:'6',secName:_sectionCode,season:'хавар',year:new Date().getFullYear()+'',date:new Date().toISOString().slice(0,10)}};
@@ -7546,7 +7569,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·81';
+const APP_BUILD='2026.08.25·82';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
