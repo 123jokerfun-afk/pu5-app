@@ -217,6 +217,16 @@ button{font-family:inherit}
   background:var(--purple-bg);color:#7E22CE;white-space:nowrap;flex-shrink:0;
   font-variant-numeric:tabular-nums}
 .sw-empty-line{font-size:11.5px;color:var(--ink4);margin:8px 0 0 6px;font-weight:600}
+/* Илгээгдээгүй өөрчлөлтийн тэмдэг */
+.save-badge{position:fixed;left:12px;bottom:calc(12px + var(--sab));z-index:9997;
+  display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:99px;border:none;
+  background:linear-gradient(135deg,#8A5009,#B45309);color:#fff;font-family:inherit;
+  font-size:11.5px;font-weight:800;cursor:pointer;box-shadow:0 5px 18px rgba(138,80,9,.4)}
+.save-badge .sb-dot{width:8px;height:8px;border-radius:50%;background:#FFD23F;
+  animation:sbPulse 1.5s ease-in-out infinite;flex-shrink:0}
+.save-badge .sb-go{background:rgba(255,255,255,.9);color:#8A5009;border-radius:99px;
+  padding:2px 8px;font-size:10.5px;font-weight:900}
+@keyframes sbPulse{0%,100%{opacity:1}50%{opacity:.35}}
 /* Устгах товч — удаан дарж идэвхжих хүртэл бүдэг, идэвхгүй харагдана */
 .lp-del .folder-del{opacity:.28;filter:grayscale(1);transition:opacity .18s,filter .18s,transform .18s}
 .lp-del.del-armed .folder-del{opacity:1;filter:none;background:var(--red-bg);
@@ -2125,6 +2135,9 @@ function saveDB(){
   const packed=_packDB(DB);
   _lsWrite(packed);
   if(!fbDb||!_sectionCode)return;
+  // Утсанд бичигдсэн ч үүлэнд хараахан очоогүй гэж тэмдэглэнэ.
+  // Амжилттай бичигдэхэд л арилна — ингэснээр алдагдсан өөрчлөлт мэдэгдэнэ.
+  _dirtySet();
   if(!_cloudLoaded){console.warn('Үүлнээс уншаагүй тул бичихгүй');return}
   if(_cloudHadData&&!_dbHasData(DB)){
     _errBanner('Хоосон өгөгдөл хадгалахаас сэргийллээ','Үүлэн дэх өгөгдөл хамгаалагдлаа');
@@ -2134,7 +2147,7 @@ function saveDB(){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_packDB(DB),updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>setTimeout(()=>{_localWriting=false},600))
+      .then(()=>{_dirtyClear();setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Save err:',e);_localWriting=false})
   },1500)
 }
@@ -5986,6 +5999,20 @@ async function cloudReload(silent){
     if(!doc.exists){if(!silent)_errBanner('Баримт олдсонгүй','sections/'+_sectionCode);_scheduleAutoLoad();return}
     const raw=doc.data()&&doc.data().db;
     if(!raw){if(!silent)_errBanner('db талбар хоосон','sections/'+_sectionCode);_scheduleAutoLoad();return}
+    // ★ Утсанд илгээгдээгүй ажил байвал үүлэн дэхээр ДАРЖ БИЧИХГҮЙ
+    let _cms=0;
+    try{const u=doc.data().updatedAt;if(u&&u.toMillis)_cms=u.toMillis()}catch(e){}
+    const _ok=_canOverwriteLocal(_cms);
+    if(_ok===false){                       // утсан дахь нь шинэ — оронд нь илгээнэ
+      _cloudLoaded=true;_cloudHadData=true;_autoTry=0;clearTimeout(_autoTimer);
+      const _e0=document.getElementById('errBanner');if(_e0)_e0.remove();
+      flushSave(true);
+      if(!silent)showToast('Утсан дахь шинэ өөрчлөлтийг үүлэн рүү илгээлээ',3000);
+      return true
+    }
+    if(_ok===null){                        // хоёулаа шинэ — хэрэглэгч шийднэ
+      _unsentBanner(_cms);return
+    }
     DB=_unpackDB(raw);_migrateDB();
     if(!DB.folders)DB.folders=[];
     _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
@@ -6039,6 +6066,8 @@ async function _afterLoginInner(){
   activeFolderId=null;DB.tracks=[];
   renderHome();
   startRealtimeSync();
+  _renderSaveBadge();
+  if(_dirtyAt()&&_dbHasData(DB))flushSave(true);   // өмнөх удаагийн үлдэгдлийг илгээнэ
   loadSwSpecs().then(()=>{                 // сумын дүнзний загварын нийтлэг каталог
     if(document.getElementById('swHomeView').classList.contains('active'))renderSwHome()});
   showToast('✓ '+_sectionCode+' нэвтэрлээ',2000);
@@ -6153,6 +6182,7 @@ function doLogout(){
   _autoTry=99;clearTimeout(_autoTimer);
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
   if(fbAuth)fbAuth.signOut().catch(()=>{});
+  if(_dirtyAt())flushSave(true);          // гарахын өмнө амжиж илгээнэ
   _currentUser=null;_sectionCode=null;_isAdmin=false;
   activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
   showView('loginView')
@@ -6172,6 +6202,8 @@ function startRealtimeSync(){
       if(!remote)return;
       const _r=_unpackDB(remote);
       if(_cloudHadData&&!_dbHasData(_r))return;   // хоосон шинэчлэлт үл тоомсорлоно
+      // Илгээгдээгүй ажил байхад алсын өгөгдлөөр дарж бичихгүй
+      if(_dirtyAt()&&_dbHasData(DB)){flushSave(true);return}
       DB=_r;
       _migrateDB();   // өөр төхөөрөмжөөс паспорт дотор ирсэн км-ийг гол зам руу гаргана
       if(_dbHasData(DB)){_cloudHadData=true;_cloudLoaded=true;_autoTry=0;clearTimeout(_autoTimer);
@@ -7379,6 +7411,93 @@ async function delSwSpec(mak,mark){
 }
 
 // ══════════════════════════════════════════════
+// ХАДГАЛАЛТЫН НАЙДВАРТАЙ БАЙДАЛ
+// Хоёр эрсдэлээс сэргийлнэ:
+//  1) Үүлнээс уншиж чадаагүй үед бүртгэсэн зүйл утсанд л үлдэж, дараа нь
+//     үүлнээс автоматаар татахад ДАРЖ БИЧИГДЭХ
+//  2) 1.5 сек хойшлуулсан хадгалалт аппаа хааход амжихгүй үлдэх
+// Шийдэл: "илгээгдээгүй" тэмдэг (dirty) + шууд илгээх (flush) +
+//         дарж бичихээс хамгаалах шалгуур.
+// ══════════════════════════════════════════════
+function _dirtyKey(){return 'sg_der_dirty_'+(_sectionCode||'')}
+function _dirtyAt(){
+  try{const v=localStorage.getItem(_dirtyKey());return v?parseInt(v,10)||0:0}catch(e){return 0}
+}
+function _dirtySet(){
+  try{if(!localStorage.getItem(_dirtyKey()))localStorage.setItem(_dirtyKey(),String(Date.now()))}catch(e){}
+  _renderSaveBadge()
+}
+function _dirtyClear(){
+  try{localStorage.removeItem(_dirtyKey())}catch(e){}
+  _renderSaveBadge()
+}
+// Илгээгдээгүй байдлыг доод буланд харуулна — дарвал шууд илгээнэ
+function _renderSaveBadge(){
+  let el=document.getElementById('saveBadge');
+  const dt=_dirtyAt();
+  if(!dt||!_sectionCode){if(el)el.remove();return}
+  if(!el){
+    el=document.createElement('button');el.id='saveBadge';el.className='save-badge';
+    el.onclick=function(){flushSave(true);showToast('⏳ Илгээж байна...',1600)};
+    document.body.appendChild(el)
+  }
+  const mins=Math.floor((Date.now()-dt)/60000);
+  el.innerHTML='<span class="sb-dot"></span>Илгээгдээгүй'+(mins>0?` · ${mins} мин`:'')+
+    '<span class="sb-go">илгээх</span>'
+}
+setInterval(_renderSaveBadge,30000);
+// Хойшлуулсан хадгалалтыг ШУУД гүйцэтгэнэ
+function flushSave(force){
+  if(!fbDb||!_sectionCode)return false;
+  if(!_cloudLoaded&&!force)return false;
+  if(!_dirtyAt()&&!force)return false;
+  if(_cloudHadData&&!_dbHasData(DB))return false;   // хоосноор дарж бичихгүй
+  clearTimeout(_saveTimer);_saveTimer=null;
+  _localWriting=true;
+  try{
+    fbDb.collection('sections').doc(_sectionCode)
+      .set({db:_packDB(DB),updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
+      .then(()=>{_dirtyClear();_cloudLoaded=true;
+        setTimeout(()=>{_localWriting=false},600)})
+      .catch(e=>{console.error('Flush err:',e);_localWriting=false});
+    return true
+  }catch(e){_localWriting=false;return false}
+}
+// Апп ар тал руу орох / хаагдахад амжиж илгээнэ
+(function(){
+  const bye=()=>{if(_dirtyAt())flushSave(true)};
+  document.addEventListener('visibilitychange',function(){if(document.hidden)bye()});
+  window.addEventListener('pagehide',bye);
+  window.addEventListener('beforeunload',bye);
+  window.addEventListener('online',function(){if(_dirtyAt())flushSave(true)});
+})();
+// Үүлэн дэх өгөгдлөөр дарж бичихээс өмнөх ШАЛГУУР.
+// true буцаавал — дарж бичиж БОЛНО.
+function _canOverwriteLocal(cloudMs){
+  const dt=_dirtyAt();
+  if(!dt||!_dbHasData(DB))return true;          // илгээгдээгүй ажил алга
+  if(cloudMs&&cloudMs>dt+2000)return null;      // үүлэн дэх нь шинэ — хэрэглэгчээс асууна
+  return false                                  // утсан дахь нь шинэ — илгээх ёстой
+}
+// Хадгалагдаагүй ажил байгаа тухай сонголттой анхааруулга
+function _unsentBanner(cloudMs){
+  const ex=document.getElementById('errBanner');if(ex)ex.remove();
+  const d=document.createElement('div');d.id='errBanner';
+  d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99998;background:#8A5009;color:#fff;'+
+    'padding:10px 12px;font:600 12px/1.5 -apple-system,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.3)';
+  d.innerHTML='⚠ Утсанд илгээгдээгүй өөрчлөлт байна. Үүлэн дээр ч шинэ өгөгдөл байна.'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button id="ubKeep" style="flex:1;padding:8px;border:none;border-radius:8px;background:#fff;color:#8A5009;font-weight:800;font-size:12px;cursor:pointer">Утсан дахийг илгээх</button>'+
+    '<button id="ubCloud" style="flex:1;padding:8px;border:1px solid rgba(255,255,255,.6);border-radius:8px;background:transparent;color:#fff;font-weight:800;font-size:12px;cursor:pointer">Үүлэн дэхийг авах</button>'+
+    '</div>';
+  document.body.appendChild(d);
+  d.querySelector('#ubKeep').onclick=function(){
+    d.remove();_cloudLoaded=true;flushSave(true);showToast('✓ Утсан дахь өгөгдлийг илгээлээ',2600)};
+  d.querySelector('#ubCloud').onclick=async function(){
+    d.remove();_dirtyClear();_cloudLoaded=false;await cloudReload(false)}
+}
+
+// ══════════════════════════════════════════════
 // ANDROID BACK BUTTON
 // ══════════════════════════════════════════════
 function _appBack(){
@@ -7427,7 +7546,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·80';
+const APP_BUILD='2026.08.25·81';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
