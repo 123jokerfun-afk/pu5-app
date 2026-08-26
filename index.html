@@ -217,6 +217,20 @@ button{font-family:inherit}
   background:var(--purple-bg);color:#7E22CE;white-space:nowrap;flex-shrink:0;
   font-variant-numeric:tabular-nums}
 .sw-empty-line{font-size:11.5px;color:var(--ink4);margin:8px 0 0 6px;font-weight:600}
+/* Устгах товч — удаан дарж идэвхжих хүртэл бүдэг, идэвхгүй харагдана */
+.lp-del .folder-del{opacity:.28;filter:grayscale(1);transition:opacity .18s,filter .18s,transform .18s}
+.lp-del.del-armed .folder-del{opacity:1;filter:none;background:var(--red-bg);
+  color:var(--red);border-color:#F5A0A0;animation:swDelIn .2s cubic-bezier(.22,1.2,.36,1)}
+.folder-card.del-armed{border-color:#F5A0A0!important;box-shadow:0 0 0 1.5px rgba(211,47,47,.16)}
+/* Удаан дарахад гарч ирэх устгах товч */
+.sw-del-btn{display:none;width:100%;margin:10px 0 0 6px;padding:9px;border-radius:10px;
+  border:1.5px solid #F5A0A0;background:var(--red-bg);color:var(--red);
+  font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;
+  align-items:center;justify-content:center;gap:6px}
+.sw-card.del-armed .sw-del-btn{display:flex;animation:swDelIn .2s cubic-bezier(.22,1.2,.36,1)}
+.sw-card.del-armed{border-color:#F5A0A0;box-shadow:0 0 0 1.5px rgba(211,47,47,.18)}
+@keyframes swDelIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.sw-del-btn:active{transform:scale(.97);background:#FBD5D5}
 /* Гурван баганат тоон блок */
 .sw-st{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:11px 0 0 6px}
 .sw-st-c{background:var(--bg);border:1px solid var(--border);border-radius:11px;
@@ -904,7 +918,8 @@ button{font-family:inherit}
     </div>
     <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
-      <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px"></div>
+      <div class="lp-hint" id="folderLp" style="display:none">Паспорт дээр удаан дарж устгах товчийг идэвхжүүлнэ</div>
       <button class="add-track-btn" onclick="cloudReload()" style="border-color:#7BD3A0;color:#0F8A4C;margin-bottom:8px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg> Үүлнээс дахин татах
       </button>
@@ -1086,7 +1101,8 @@ button{font-family:inherit}
   <div class="home-body">
     <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
-      <div id="swFolders" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
+      <div id="swFolders" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px"></div>
+      <div class="lp-hint" id="swFolderLp" style="display:none">Паспорт дээр удаан дарж устгах товчийг идэвхжүүлнэ</div>
       <button class="add-track-btn" onclick="openSwFolder()" style="border-color:#C084FC;color:#7E22CE">
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Шинэ паспорт нэмэх
       </button>
@@ -2670,15 +2686,22 @@ async function confirmDeleteTrack(tid){
     if(el){el.classList.remove('lp-hold');el=null}
   }
   function start(e){
-    const tgt=e.target&&e.target.closest?e.target.closest('.lp-del[data-tid]'):null;
+    const tgt=e.target&&e.target.closest?e.target.closest('.lp-del[data-tid],.lp-del[data-swid],.lp-del[data-arm]'):null;
     if(!tgt)return;
     const p=e.touches?e.touches[0]:e;
     clear();el=tgt;sx=p.clientX;sy=p.clientY;
     el.classList.add('lp-hold');
     tmr=setTimeout(function(){
-      const id=el?el.dataset.tid:null;
+      const tid=el?el.dataset.tid:null;
+      const card=el,swid=card&&(card.dataset.swid||card.dataset.arm);
       firedAt=Date.now();swallowEl=el;hap(30);clear();
-      if(id)confirmDeleteTrack(id)
+      // Карт дээр шууд устгахгүй — эхлээд устгах товчийг идэвхжүүлнэ
+      if(swid&&card){
+        document.querySelectorAll('.del-armed').forEach(c=>{
+          if(c!==card)c.classList.remove('del-armed')});
+        card.classList.toggle('del-armed')
+      }
+      else if(tid)confirmDeleteTrack(tid)
     },HOLD)
   }
   function move(e){
@@ -2687,6 +2710,11 @@ async function confirmDeleteTrack(tid){
     // Гулсуулбал устгахгүй — жагсаалт гүйлгэж байна гэсэн үг
     if(Math.abs(p.clientX-sx)>8||Math.abs(p.clientY-sy)>8)clear()
   }
+  // Гадуур дарвал идэвхжүүлсэн устгах товч буцаад унтарна
+  document.addEventListener('pointerdown',function(e){
+    const in_=e.target&&e.target.closest&&e.target.closest('.del-armed');
+    if(!in_)document.querySelectorAll('.del-armed').forEach(c=>c.classList.remove('del-armed'))
+  },true);
   document.addEventListener('touchstart',start,{passive:true});
   document.addEventListener('touchmove',move,{passive:true});
   document.addEventListener('touchend',clear,{passive:true});
@@ -5739,7 +5767,7 @@ function renderFolders(){
       s+(isMainTrack(t)?0:dataSections(t).length),0);
     // Өөр хаягаас орж ирсэн паспортыг ялгаж харуулна
     const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
-    return`<div class="folder-card${isActive?' active-folder':''}" onclick="hap();openFolder('${f.id}')">
+    return`<div class="folder-card lp-del${isActive?' active-folder':''}" data-arm="f-${f.id}" onclick="hap();openFolder('${f.id}')">
       <div class="folder-icon">${isActive
         ?'<svg class="ic" style="font-size:21px;color:var(--gold-deep)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2M3 7v10a2 2 0 002 2h14a2 2 0 002-2l1-7H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
         :'<svg class="ic" style="font-size:21px;color:var(--blue)" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'}</div>
@@ -5749,13 +5777,15 @@ function renderFolders(){
       </div>
       <div class="folder-actions">
         ${isActive?`<button onclick="closeFolder();event.stopPropagation()" style="background:var(--g100);border:1px solid var(--g400);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--g700);cursor:pointer"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Хаах</button>`:''}
-        <button class="folder-del" onclick="deleteFolder('${f.id}',event)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="folder-del" onclick="armedDel(event,()=>deleteFolder('${f.id}',event))" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
     <button class="pu5-btn" onclick="event.stopPropagation();hap();exportPu5Book('${f.id}')">
       <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
     </button>`
-  }).join('')
+  }).join('');
+  const lp=document.getElementById('folderLp');
+  if(lp)lp.style.display=DB.folders.length?'block':'none'
 }
 
 // ══════════════════════════════════════════════
@@ -6579,16 +6609,18 @@ function renderSwHome(){
     const ts=(f.turnouts||[]);
     let d=0,m=0,mb=0;ts.forEach(t=>{const a=swTally(t);d+=a.total;m+=a.m;mb+=a.mBad});
     const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
-    return`<div class="folder-card" style="border-color:#DDD6FE" onclick="hap();openSwFolderView('${f.id}')">
+    return`<div class="folder-card lp-del" style="border-color:#DDD6FE" data-arm="sf-${f.id}" onclick="hap();openSwFolderView('${f.id}')">
       <div class="folder-icon"><svg class="ic" style="font-size:21px;color:#7E22CE" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div class="folder-info">
         <div class="folder-name" style="color:#7E22CE">${f.name}${foreign?` <span class="sc-tag">${f.sc}</span>`:''}</div>
         <div class="folder-meta">${f.year} · ${f.season} · ${ts.length} сум${d?` · ${d} дүнз · ${swM(m)} пог/м · ${(mb/m*100).toFixed(1)}%`:''}</div>
       </div>
       <div class="folder-actions">
-        <button class="folder-del" onclick="delSwFolderById('${f.id}',event)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="folder-del" onclick="armedDel(event,()=>delSwFolderById('${f.id}',event))" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-    </div>`}).join('')
+    </div>`}).join('');
+  const lp=document.getElementById('swFolderLp');
+  if(lp)lp.style.display=swFolders().length?'block':'none'
 }
 // ── Паспорт нэмэх ──
 function updateSwFolderName(){
@@ -6641,7 +6673,7 @@ function renderSwList(){
     const a=swTally(t),pl=swPlanned(t),done=(t.it||'').length;
     const pc=a.total?a.pct:0;
     const col=!done?'var(--ink4)':pc>=25?'var(--red)':pc>=15?'var(--orange)':'var(--g600)';
-    return`<div class="sw-card" onclick="hap();openSwRec('${t.id}')">
+    return`<div class="sw-card lp-del" data-swid="${t.id}" onclick="hap();openSwRec('${t.id}')">
       <div class="sw-card-top">
         <div style="min-width:0">
           <div class="sw-card-name">Сум ${t.num}<span class="sw-tag">${t.mak}</span><span class="sw-tag">${t.mark}</span></div>
@@ -6649,12 +6681,17 @@ function renderSwList(){
         </div>
         <span class="sw-badge">${done}<span style="opacity:.55">/${pl}</span></span>
       </div>
+      <button class="sw-del-btn" onclick="event.stopPropagation();confirmDelSwTurnout('${t.id}')">
+        <svg class="ic" viewBox="0 0 24 24" width="15" height="15"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Устгах
+      </button>
       ${done?`<div class="sw-st">
         <div class="sw-st-c"><div class="sw-st-n">${a.total}</div><div class="sw-st-s">${swM(a.m)} пог/м</div><div class="sw-st-l">Нийт дүнз</div></div>
         <div class="sw-st-c"><div class="sw-st-n" style="color:var(--orange)">${a.bad}</div><div class="sw-st-s">${swM(a.mBad)} пог/м</div><div class="sw-st-l">Тэнцэхгүй</div></div>
         <div class="sw-st-c"><div class="sw-st-n" style="color:${col}">${a.m?a.pct.toFixed(1)+'%':'—'}</div><div class="sw-st-s">пог/м-ээр</div><div class="sw-st-l">Эзлэх хувь</div></div>
       </div>`:'<div class="sw-empty-line">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
-    </div>`}).join('')+'<div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>';
+    </div>`}).join('')
+    +'<div class="lp-hint">Сум дээр удаан дарж устгана</div>'
+    +'<div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>';
   renderSwFolderCards()
 }
 // ── Сум нэмэх ──
@@ -6695,6 +6732,28 @@ function addSwTurnout(){
   (f.turnouts||(f.turnouts=[])).push(t);
   saveDB();closeModal('swTurnoutModal');renderSwList();
   showToast(`✓ Сум ${num} · ${t.mak} · ${t.mark} нэмэгдлээ`,2600)
+}
+// Устгах товч нь ЗӨВХӨН удаан дарж идэвхжүүлсний дараа ажиллана.
+// Энгийн үед дарвал юу ч болохгүй, зөвхөн сануулга гарна.
+function armedDel(e,fn){
+  if(e){e.stopPropagation();e.preventDefault()}
+  const card=e&&e.target&&e.target.closest?e.target.closest('.lp-del'):null;
+  if(card&&!card.classList.contains('del-armed')){
+    hap(8);showToast('Устгахын тулд карт дээр удаан дарна уу',2200);return
+  }
+  fn()
+}
+// Жагсаалтаас сум устгах — удаан дарж гарсан товчоор
+async function confirmDelSwTurnout(id){
+  const f=swFolder();if(!f)return;
+  const t=(f.turnouts||[]).find(x=>x.id===id);if(!t)return;
+  const a=swTally(t),n=(t.it||'').length;
+  const msg=`Сум ${t.num} · ${t.mak} · ${t.mark} устгах уу?`
+    +(n?`\n${a.total} дүнз (${swM(a.m)} пог/м) бүртгэл устана.`:'');
+  if(!await appConfirm(msg,'Тийм','Үгүй'))return;
+  f.turnouts=(f.turnouts||[]).filter(x=>x.id!==id);
+  if(swTurnoutId===id)swTurnoutId=null;
+  saveDB();renderSwList();showToast(`Сум ${t.num} устлаа`)
 }
 async function delSwTurnout(){
   const f=swFolder(),t=swTurnout();if(!f||!t)return;
@@ -7368,7 +7427,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·79';
+const APP_BUILD='2026.08.25·80';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
