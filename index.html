@@ -1862,6 +1862,21 @@ function _codeToEmail(code){
   latin=latin.replace(/\s+/g,'');
   return latin+'@'+FB_DOMAIN
 }
+// Firestore-ийн тохиргоо + ОФЛАЙН ДАРААЛАЛ.
+// enablePersistence нь илгээгдээгүй бичилтийг IndexedDB-д хадгална. Апп
+// хаагдаад дахин нээгдэхэд Firestore ӨӨРӨӨ үлдэгдлийг сүлжээ ормогц
+// илгээнэ — хэрэглэгч юу ч хийх шаардлагагүй.
+let _persistTried=false,_persistOn=false;
+function _fbTune(){
+  if(!fbDb)return;
+  try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){}
+  if(_persistTried)return;_persistTried=true;
+  try{
+    fbDb.enablePersistence({synchronizeTabs:true})
+      .then(function(){_persistOn=true;console.log('Офлайн дараалал асав')})
+      .catch(function(e){console.warn('Офлайн дараалал асаагүй:',e&&e.code)})
+  }catch(e){console.warn('persistence:',e)}
+}
 function _initFB(){
   if(fbApp)return true;
   if(!FB_CONFIG.apiKey||FB_CONFIG.apiKey==='ТАНЫ_API_KEY'){return false}
@@ -1869,7 +1884,7 @@ function _initFB(){
     fbApp=firebase.initializeApp(FB_CONFIG);
     fbAuth=firebase.auth();
     fbDb=firebase.firestore();
-    try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){console.warn('lp:',e)}
+    _fbTune();
     return true
   }catch(e){console.error('FB init:',e);return false}
 }
@@ -5912,14 +5927,14 @@ async function doLogin(){
       fbApp=firebase.initializeApp(FB_CONFIG);
       fbAuth=firebase.auth();
       fbDb=firebase.firestore();
-      try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){}
+      _fbTune();
     }catch(err){
       // Аль хэдийн init хийгдсэн байж болно
       try{
         fbApp=firebase.app();
         fbAuth=firebase.auth();
         fbDb=firebase.firestore();
-        try{fbDb.settings({experimentalForceLongPolling:true,merge:true})}catch(e){}
+        _fbTune();
       }catch(err2){showErr('Firebase холболт алдаатай: '+err2.message);return}
     }
   }
@@ -6050,12 +6065,21 @@ async function _afterLoginInner(){
     if(doc.exists&&doc.data()&&doc.data().db){
       let _cms=0;
       try{const u=doc.data().updatedAt;if(u&&u.toMillis)_cms=u.toMillis()}catch(e){}
-      if(_hasLoc&&!(_cms>_dt+2000)){
+      // Firestore-ийн офлайн дараалал өмнөх удаа аль хэдийн хүргэсэн байж
+      // болзошгүй — агуулга ижил бол тэмдгийг зүгээр арилгана
+      let _eq=false;
+      try{
+        const a=_packDB(_locDB||{}),c=JSON.parse(JSON.stringify(doc.data().db));
+        delete a._sc;delete c._sc;
+        _eq=JSON.stringify(a)===JSON.stringify(c)
+      }catch(e){}
+      if(_hasLoc&&_eq)_dirtyClear();
+      if(_hasLoc&&!_eq&&!(_cms>_dt+2000)){
         // Утсан дахь нь шинэ — сэргээж, үүлэн рүү илгээнэ
         DB=_locDB;_cloudLoaded=true;_cloudHadData=true;
         flushSave(true);
         showToast('✓ Сүлжээгүйд хийсэн ажлыг үүлэн рүү илгээлээ',3200)
-      } else if(_hasLoc){
+      } else if(_hasLoc&&!_eq){
         // Хоёулаа шинэ — хэрэглэгч шийднэ
         DB=_locDB;_cloudLoaded=true;_cloudHadData=true;
         setTimeout(()=>_unsentBanner(_cms),400)
@@ -7466,7 +7490,10 @@ function _renderSaveBadge(){
   }
   const mins=Math.floor((Date.now()-dt)/60000);
   el.innerHTML='<span class="sb-dot"></span>Илгээгдээгүй'+(mins>0?` · ${mins} мин`:'')+
-    '<span class="sb-go">илгээх</span>'
+    '<span class="sb-go">илгээх</span>';
+  el.title=_persistOn
+    ?'Утсанд хадгалагдсан. Сүлжээ ормогц өөрөө илгээгдэнэ — аппаа хаасан ч алдагдахгүй.'
+    :'Утсанд хадгалагдсан. Сүлжээ ормогц илгээгдэнэ.'
 }
 setInterval(_renderSaveBadge,30000);
 // Хойшлуулсан хадгалалтыг ШУУД гүйцэтгэнэ
@@ -7491,7 +7518,11 @@ function flushSave(force){
   const bye=()=>{if(_dirtyAt())flushSave(true)};
   document.addEventListener('visibilitychange',function(){if(document.hidden)bye()});
   window.addEventListener('pagehide',bye);
-  window.addEventListener('beforeunload',bye);
+  window.addEventListener('beforeunload',function(e){
+    bye();
+    // Илгээгдээгүй өгөгдөл байвал хаахын өмнө анхааруулна (хөтөч дэмжвэл)
+    if(_dirtyAt()){e.preventDefault();e.returnValue='';return''}
+  });
   window.addEventListener('online',function(){if(_dirtyAt())flushSave(true)});
 })();
 // Үүлэн дэх өгөгдлөөр дарж бичихээс өмнөх ШАЛГУУР.
@@ -7569,7 +7600,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.25·82';
+const APP_BUILD='2026.08.25·83';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
