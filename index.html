@@ -6800,14 +6800,19 @@ function renderSwHome(){
   const el=document.getElementById('swLoc');
   if(el)el.textContent=DB.location?DB.location+' · Сум шилжүүлгийн дүнз':'Сум шилжүүлгийн дүнз';
   const _sf=swFolder();
-  // Паспорт нээлттэй бол ЗӨВХӨН тэр паспортын дүн, үгүй бол бүгдийн дүн
-  const src=_sf?[_sf]:swFolders();
+  // Дэрийн нүүртэй ЯГ ИЖИЛ зарчим: дээд тоонууд нь ЗӨВХӨН нээлттэй
+  // паспортынх. Паспорт хаалттай үед бүгд 0 — паспорт дарахад тухайн
+  // паспортын тоо руугаа гүйж, хаахад буцаад 0 хүртэл гүйж буурна.
+  const src=_sf?[_sf]:[];
   let nT=0,nD=0,nM=0,nMB=0;
   src.forEach(f=>(f.turnouts||[]).forEach(t=>{
     nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
   const meta=document.getElementById('swHeroMeta');
+  const _r=DB.rpt||{};
   if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
-    :(swFolders().length?`${swFolders().length} паспорт · бүх дүн`:'Паспорт нэмнэ үү');
+    :(swFolders().length
+      ?`${_r.cls||''}${_r.cls?'-р анги ':''}${_r.secName||_r.sec||''} хэсэг · ${swFolders().length} паспорт`
+      :'Паспорт нэмнэ үү');
   // Дэрийн нүүртэй ижил бүтэц: нүд бүр том тоо + шошго, шошгууд нэг
   // шугам дээр. пог/м нь дэд мөр биш, тусдаа бүтэн нүд.
   // Гүйх зуур пог/м-ийг бүхлээр, төгсгөлд нь яг таг утгаар нь бичнэ.
@@ -7975,7 +7980,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·88';
+const APP_BUILD='2026.08.28·89';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
