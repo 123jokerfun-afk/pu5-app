@@ -6858,6 +6858,9 @@ function renderSwList(){
       </div>`:'<div class="sw-empty-line">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
     </div>`}).join('')
     +'<div class="lp-hint">Сум дээр удаан дарж устгана</div>'
+    +'<button class="pu5-btn" style="margin-top:8px;border-radius:var(--rm);border-top:1px dashed var(--border2)"'
+    +' onclick="hap();exportSwForms()">'
+    +'<svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах</button>'
     +'<div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>';
   renderSwFolderCards()
 }
@@ -7293,6 +7296,221 @@ function clearSwDzRepl(){
   saveDB();closeModal('swDzReplModal');renderSwRec(_swDzIdx);showToast('Тэмдэглэгээ ариллаа')
 }
 
+// ══════════════════════════════════════════════
+// ДҮНЗНИЙ МАЯГТ — Маягт-2 + Хавсралт-1 + Хавсралт-1.1
+// Байршуулсан загвар файлын бүтцийг яг хэвээр нь бөглөнө.
+// ══════════════════════════════════════════════
+// Урт тус бүрээр (SW_LENS-ийн дараалалаар) тоо гаргана:
+//   have — бүртгэгдсэн бүх дүнз, bad — ҮЗЛЭГИЙН үеийн тэнцэхгүй
+//   (солиод хэвийн болсныг ч тооцно), repl — сольсон.
+// Сольсон дүнзийг ҮРГЭЛЖ анхны уртаар нь тооцно.
+function swLenTally(to){
+  const it=to.it||'',orig=swOrigIt(to),head=to.head||0,rp=to.dRepl||{};
+  const z=()=>SW_LENS.map(()=>0);
+  const r={have:z(),bad:z(),repl:z()};
+  const at=L=>SW_LENS.indexOf(L);
+  for(let i=head;i<it.length;i++){
+    const k=at(swSlot(to,i).len);if(k<0)continue;
+    r.have[k]++;
+    if(orig[i]==='b')r.bad[k]++
+  }
+  Object.keys(rp).forEach(k=>{
+    const i=+k;if(i<head||!rp[k]||!rp[k].d)return;
+    const j=at(swSlot(to,i).len);if(j>=0)r.repl[j]++
+  });
+  return r
+}
+const _swN=a=>a.reduce((s,x)=>s+x,0);                       // нийт ширхэг
+const _swPm=a=>a.reduce((s,x,i)=>s+x*SW_LENS[i],0);         // нийт пог/м
+// 3 / 4 / 5 ба дээш дараалсан цэгийн тоо
+function swRunBuckets(to){
+  const b=[0,0,0];
+  swRuns(to).forEach(r=>{b[r.length>=5?2:r.length-3]++});
+  return b
+}
+
+async function exportSwForms(){
+  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй — сүлжээгээ шалгана уу',3200);return}
+  const ts=swAllTurnouts().filter(t=>(t.it||'').length);
+  if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
+  if(!await appConfirm('Дүнзний маягт татах уу?','Татах'))return;
+
+  const f=swFolder()||{};
+  const r=DB.rpt||{},td=mnToday();
+  const H={cls:r.cls||'3',sec:r.sec||'6',secName:r.secName||('ПД-'+(r.sec||'')),
+    season:f.season||r.season||'хавар',year:f.year||r.year||String(td.y),today:td};
+  const seasonGen=SEASON_GEN[H.season]||(H.season+'ын');
+
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  const AR=(sz,b)=>({name:'Arial',size:sz||10,bold:!!b});
+  const TH={style:'thin'};
+  const box=c=>{c.border={top:TH,bottom:TH,left:TH,right:TH}};
+  const P=(ws,addr,v,o)=>{
+    const c=ws.getCell(addr);if(v!==undefined&&v!==null)c.value=v;
+    o=o||{};c.font=o.font||AR(10);
+    c.alignment=Object.assign({horizontal:'center',vertical:'middle'},o.align||{});
+    if(o.box!==false)box(c);
+    if(o.fmt)c.numFmt=o.fmt;
+    return c
+  };
+  const MB=(ws,rng,v,o)=>{
+    ws.mergeCells(rng);
+    const [a,b]=rng.split(':');
+    P(ws,a,v,o);
+    const cs=ws.getCell(a).col,ce=ws.getCell(b).col;
+    const rs=ws.getCell(a).row,re=ws.getCell(b).row;
+    if((o||{}).box!==false)
+      for(let i=rs;i<=re;i++)for(let j=cs;j<=ce;j++)box(ws.getCell(i,j))
+  };
+  const colw=(ws,arr)=>{ws.columns=arr.map(w=>({width:w}))};
+  const CL='EFGHIJKLMNO'.split('');          // 3 … 5,5 уртын 11 багана
+
+  // ── Хавсралт-1 / 1.1 — бүтэц ижил, зөвхөн 2 мөрийн утга өөр ──
+  //   kind='have'  → Байгаа / Тэнцэхгүй
+  //   kind='repl'  → Тэнцэхгүй / Сольсон
+  function attach(name,title,sub,eHdr,pHdr,rowA,rowB,pick,footLbl,footFn){
+    const ws=wb.addWorksheet(name,{pageSetup:{orientation:'landscape',
+      paperSize:9,scale:84,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}}});
+    colw(ws,[6.33,13.89,9.33,13, 7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2, 9.55,12.55]);
+    MB(ws,'A1:C1',title,{align:{horizontal:'left'},box:false});
+    MB(ws,'A2:Q2',sub[0],{font:AR(11,true),box:false});
+    MB(ws,'A3:Q3',sub[1],{font:AR(11,true),box:false});
+    ws.getRow(2).height=15;ws.getRow(3).height=15;
+    MB(ws,'A4:Q4','',{box:false});ws.getRow(4).height=15.6;
+    MB(ws,'J5:Q5',`${H.today.y} оны ${H.today.m}-р сарын ${H.today.d}-нд`,
+      {align:{horizontal:'right'},box:false});
+    // Толгой
+    MB(ws,'A6:A7','Д/д',{align:{wrapText:true}});
+    MB(ws,'B6:B7','Өртөө зөрлөг ',{align:{wrapText:true}});
+    MB(ws,'C6:C7','Сум№',{align:{wrapText:true}});
+    MB(ws,'D6:D7','Дүнз',{align:{wrapText:true}});
+    MB(ws,'E6:O6',eHdr,{align:{wrapText:true}});
+    MB(ws,'P6:Q6',pHdr,{align:{wrapText:true}});
+    SW_LENS.forEach((L,i)=>P(ws,CL[i]+'7',L,{font:AR(10,true)}));
+    P(ws,'P7','Тоо',{font:AR(10,true)});P(ws,'Q7','пог.м',{font:AR(10,true)});
+    ws.getRow(6).height=28.95;ws.getRow(7).height=16.2;
+    // Өгөгдөл — сум бүр 2 мөр
+    let rw=8;const firsts=[],seconds=[];
+    ts.forEach((t,i)=>{
+      const d=pick(t);
+      MB(ws,`A${rw}:A${rw+1}`,i+1,{font:AR(10,true)});
+      MB(ws,`B${rw}:B${rw+1}`,t.station||f.name||'',{align:{wrapText:true}});
+      MB(ws,`C${rw}:C${rw+1}`,t.num,{font:AR(10,true)});
+      [[rowA,d[0],rw],[rowB,d[1],rw+1]].forEach(([lbl,arr,y])=>{
+        P(ws,'D'+y,lbl,{align:{horizontal:'left'}});
+        arr.forEach((n,k)=>P(ws,CL[k]+y,n||0));
+        P(ws,`P${y}`,{formula:`SUM(E${y}:O${y})`},{font:AR(10,true)});
+        P(ws,`Q${y}`,{formula:CL.map(c=>`${c}${y}*${c}$7`).join('+')},{font:AR(10,true),fmt:'0.00'})
+      });
+      firsts.push(rw);seconds.push(rw+1);rw+=2
+    });
+    // Нийт 2 мөр
+    const sum=list=>c=>({formula:list.map(y=>`${c}${y}`).join('+')});
+    MB(ws,`A${rw}:A${rw+1}`,ts.length+1,{font:AR(10,true)});
+    MB(ws,`B${rw}:B${rw+1}`,'Нийт ',{font:AR(10,true)});
+    MB(ws,`C${rw}:C${rw+1}`,'',{});
+    [[rowA,firsts,rw],[rowB,seconds,rw+1]].forEach(([lbl,list,y])=>{
+      P(ws,'D'+y,lbl,{font:AR(10,true),align:{horizontal:'left'}});
+      CL.forEach(c=>P(ws,c+y,sum(list)(c),{font:AR(10,true)}));
+      P(ws,`P${y}`,{formula:`SUM(E${y}:O${y})`},{font:AR(10,true)});
+      P(ws,`Q${y}`,{formula:CL.map(c=>`${c}${y}*${c}$7`).join('+')},{font:AR(10,true),fmt:'0.00'})
+    });
+    const a=rw,b=rw+1;rw+=2;
+    // 3 дахь дүнгийн мөр
+    ['A','B','C'].forEach(c=>P(ws,c+rw,''));
+    P(ws,'D'+rw,footLbl,{font:AR(10,true),align:{horizontal:'left'}});
+    CL.forEach(c=>P(ws,c+rw,footFn(c,a,b),{font:AR(10,true),fmt:'0.00'}));
+    P(ws,`P${rw}`,'',{});
+    P(ws,`Q${rw}`,{formula:`SUM(E${rw}:O${rw})`},{font:AR(10,true),fmt:'0.00'});
+    rw+=2;
+    MB(ws,`F${rw}:L${rw}`,`${H.secName}                                        `,
+      {align:{horizontal:'left'},box:false});
+    ws.getRow(rw).height=15.6
+  }
+
+  // ── 1) дүнз ПО-6-маягт-2 — сум бүрийн нэгтгэл (эх файлын дараалал) ──
+  (function(){
+    const ws=wb.addWorksheet('дүнз ПО-6-маягт-2',{pageSetup:{orientation:'landscape',
+      paperSize:9,scale:92,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}}});
+    colw(ws,[6.66,6.11,13.89,7.44,11,10.55,6.11,6.11,6.11,6.33,9.55,16,9.11]);
+    MB(ws,'A1:C1','Маягт-2',{align:{horizontal:'left'},box:false});
+    MB(ws,'J1:L1','ПО-6',{align:{horizontal:'right'},box:false});
+    MB(ws,'A2:D2','',{box:false});ws.getRow(2).height=11.25;
+    MB(ws,'A3:K3',` Замын ${H.cls}-р ангийн  ${H.year} оны ${seasonGen.toLowerCase()}`,{box:false});
+    MB(ws,'A4:K4','паспортын үзлэгээр илэрсэн тэнцэхгүй дүнзний тоо',{box:false});
+    MB(ws,'A5:K5','/өртөө  замд/',{box:false});
+    [3,4,5].forEach(i=>{ws.getRow(i).height=18});
+    MB(ws,'G6:L6','',{box:false});ws.getRow(6).height=14.25;
+    // Толгой
+    [['A7:A8','Хэсэг'],['B7:B8','Сум№'],['C7:C8','Нийт дүнзний тоо/п.м'],
+     ['D7:E7','Тэнцэхгүй солилт шаардагдаж байгаа'],
+     ['F7:F8','Тэнцэхгүй дүнзний эзлэх хувь'],
+     ['G7:I7','3 ба түүнээс дээш ширхэгээр зэрэгцсэн'],
+     ['J7:K7','Тухайн ондоо солигдсон'],
+     ['L7:L8','Сольсны дараах тэнцэхгүй дүнзний хувь'],
+     // Загварт M багана хоосон боловч F, L хувийг үүгээр хуваадаг.
+     // Хоосон орхивол #DIV/0! гарах тул нийт пог/м-ийг бөглөнө.
+     ['M7:M8','Нийт пог/м']
+    ].forEach(([a,v])=>MB(ws,a,v,{align:{wrapText:true}}));
+    [['D8','ш'],['E8','пог/м'],['G8',3],['H8',4],['I8',5],['J8','ш'],['K8','пог/м']
+    ].forEach(([a,v])=>P(ws,a,v,{align:{wrapText:true}}));
+    ws.getRow(7).height=76.5;
+    let rw=9;
+    ts.forEach(t=>{
+      const d=swLenTally(t),rb=swRunBuckets(t);
+      P(ws,'A'+rw,H.secName);P(ws,'B'+rw,t.num,{font:AR(10,true)});
+      P(ws,'C'+rw,_swN(d.have),{font:AR(10,true)});
+      P(ws,'D'+rw,_swN(d.bad)||'',{font:AR(10,true)});
+      P(ws,'E'+rw,_swPm(d.bad)||'',{font:AR(10,true),fmt:'0.00'});
+      P(ws,`F${rw}`,{formula:`IFERROR(E${rw}/M${rw},"")`},{font:AR(10,true),fmt:'0.0%'});
+      P(ws,'G'+rw,rb[0]||'');P(ws,'H'+rw,rb[1]||'');P(ws,'I'+rw,rb[2]||'');
+      P(ws,'J'+rw,_swN(d.repl)||'',{font:AR(10,true)});
+      P(ws,'K'+rw,_swPm(d.repl)||'',{font:AR(10,true),fmt:'0.00'});
+      P(ws,`L${rw}`,{formula:`IFERROR((E${rw}-K${rw})/M${rw},"")`},{font:AR(10,true),fmt:'0.0%'});
+      P(ws,'M'+rw,_swPm(d.have),{fmt:'0.00'});
+      ws.getRow(rw).height=25.2;rw++
+    });
+    const f1=9,l1=rw-1;
+    MB(ws,`A${rw}:B${rw}`,'Нийт',{font:AR(10,true)});
+    ['C','D','E','G','H','I','J','K','M'].forEach(c=>
+      P(ws,c+rw,l1>=f1?{formula:`SUM(${c}${f1}:${c}${l1})`}:0,
+        {font:AR(10,true),fmt:'CEKM'.indexOf(c)>=0&&c!=='C'?'0.00':undefined}));
+    P(ws,`F${rw}`,{formula:`IFERROR(E${rw}/M${rw},"")`},{font:AR(10,true),fmt:'0.0%'});
+    P(ws,`L${rw}`,{formula:`IFERROR((E${rw}-K${rw})/M${rw},"")`},{font:AR(10,true),fmt:'0.0%'});
+    ws.getRow(rw).height=25.2;rw+=2;
+    MB(ws,`A${rw}:D${rw}`,'                          Үзлэгийн комисс:',
+      {align:{horizontal:'left'},box:false});rw+=2;
+    MB(ws,`C${rw}:F${rw}`,`Тайлан гаргасан: ${H.secName}                                     `,
+      {align:{horizontal:'left'},box:false});rw+=2;
+    P(ws,'C'+rw,'Тайлан хүлээн авсан: ПЧИ                                   ',
+      {align:{horizontal:'left'},box:false})
+  })();
+
+  // 2) Хавсралт-1.1 — Тэнцэхгүй / Сольсон
+  attach('тэнцэхгүй дүнз маягт 2-1 ','Маягт-2  Хавсралт-1.1',
+    ['Тэнцэхгүй','сумын дүнзний жагсаалт'],
+    'Солигдсон сумын дүнзнүүд  /м/','Нийт',
+    'Тэнцэхгүй ','Сольсон',
+    t=>{const d=swLenTally(t);return[d.bad,d.repl]},
+    'Тэнцэхгүй ',(c,a,b)=>({formula:`${c}${a}-${c}${b}`}));
+
+  // 3) Хавсралт-1 — Байгаа / Тэнцэхгүй
+  attach('тэнцэхгүй дүнз маягт 2-1','Маягт-2  Хавсралт-1',
+    ['Тэнцэхгүй','сумын дүнзний жагсаалт'],
+    'Тэнцэхгүй гарсан сумын дүнзнүүд  /м/','Тэнцэхгүй гарсан дүнзний ',
+    'Байгаа','Тэнцэхгүй ',
+    t=>{const d=swLenTally(t);return[d.have,d.bad]},
+    'Тэнцэхгүй ',(c,a,b)=>({formula:`${c}${b}*${c}$7`}));
+
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const p=x=>(x<10?'0':'')+x;
+    dlBlob(blob,`Дүнз_Маягт-2_${H.today.y}-${p(H.today.m)}-${p(H.today.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ${ts.length} сум татагдлаа`,2600)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+
 // ── Паспортын доорх 3 хавтас ──
 function renderSwFolderCards(){
   const wrap=document.getElementById('swFolderWrap');if(!wrap)return;
@@ -7688,7 +7906,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.26·84';
+const APP_BUILD='2026.08.27·85';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
