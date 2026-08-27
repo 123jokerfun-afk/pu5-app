@@ -89,6 +89,7 @@ button{font-family:inherit}
   color:rgba(255,255,255,.85);border-radius:var(--rs);padding:6px 12px;
   font-size:12px;cursor:pointer;font-weight:700;backdrop-filter:blur(8px)}
 .hero-stats{display:flex;gap:12px;margin-top:20px;position:relative}
+.hero-stats-2{margin-top:9px}
 .hero-stat{flex:1;background:rgba(255,255,255,.28);border-radius:18px;
   padding:10px 12px;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(12px);
   box-shadow:0 4px 16px rgba(180,110,30,.15)}
@@ -96,7 +97,6 @@ button{font-family:inherit}
   /* Гүйж байхад орон нэмэгдэхэд бичиг хажуу тийш үсэрдэггүй болгоно */
   font-variant-numeric:tabular-nums;will-change:transform}
 .hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.hero-stat-s{font-size:10.5px;color:rgba(255,255,255,.82);font-weight:800;margin-top:1px;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -107,7 +107,6 @@ button{font-family:inherit}
   #swHomeView .hero-stats{gap:7px}
   #swHomeView .hero-stat{padding:9px 7px;border-radius:15px}
   #swHomeView .hero-stat-n{font-size:18px}
-  #swHomeView .hero-stat-s{font-size:9px}
   #swHomeView .hero-stat-l{font-size:8.5px;letter-spacing:.02em}
   .sw-st-n{font-size:17px}
   .sw-st-s{font-size:8.5px;white-space:nowrap}
@@ -1179,10 +1178,14 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
     </div>
     <div class="hero-stats" id="swHeroStats">
       <div class="hero-stat"><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsD">0</div>
-        <div class="hero-stat-s" id="swHsM">—</div><div class="hero-stat-l">Нийт дүнз</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsP">—</div>
-        <div class="hero-stat-s" id="swHsMB">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsD">0</div><div class="hero-stat-l">Нийт дүнз</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+    </div>
+    <!-- пог/м нь тусдаа бүтэн нүд — дээрх мөртэй ижил бүтэцтэй тул
+         шошгууд бүгд нэг шугам дээр таарна -->
+    <div class="hero-stats hero-stats-2">
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsM">0</div><div class="hero-stat-l">Нийт пог/м</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsMB">0</div><div class="hero-stat-l">Тэнцэхгүй пог/м</div></div>
     </div>
   </div>
   <div class="home-body">
@@ -6805,19 +6808,16 @@ function renderSwHome(){
   const meta=document.getElementById('swHeroMeta');
   if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
     :(swFolders().length?`${swFolders().length} паспорт · бүх дүн`:'Паспорт нэмнэ үү');
-  // Дэрийн нүүр шиг 0-оос эхлэн гүйж гарна. Гурван нүд бага зэрэг шаталж,
-  // доорх пог/м мөр нь өөрийн тоотойгоо хамт хөдөлнө.
-  //   пог/м-ийг гүйх зуур бүхлээр, төгсгөлд нь яг таг утгаар нь бичнэ —
-  //   эс тэгвэл "287,03 → 112,7 → 631,5" гэж хэт шуугиантай харагдана.
-  const pm=v=>swM(Math.round(v))+' пог/м';
+  // Дэрийн нүүртэй ижил бүтэц: нүд бүр том тоо + шошго, шошгууд нэг
+  // шугам дээр. пог/м нь дэд мөр биш, тусдаа бүтэн нүд.
+  // Гүйх зуур пог/м-ийг бүхлээр, төгсгөлд нь яг таг утгаар нь бичнэ.
+  const pm=(to)=>(v,done)=>to?(done?swM(to):swM(Math.round(v))):'0';
   countTo(document.getElementById('swHsT'),nT,520);
   countTo(document.getElementById('swHsD'),nD,760,{delay:70});
-  countTo(document.getElementById('swHsM'),nM,760,{delay:70,
-    fmt:(v,done)=>nM?(done?swM(nM)+' пог/м':pm(v)):'—'});
   countTo(document.getElementById('swHsP'),nM?nMB/nM*100:0,800,{delay:140,
     fmt:v=>nM?v.toFixed(1)+'%':'—'});
-  countTo(document.getElementById('swHsMB'),nMB,800,{delay:140,
-    fmt:(v,done)=>nMB?(done?swM(nMB)+' пог/м':pm(v)):'—'});
+  countTo(document.getElementById('swHsM'),nM,760,{delay:210,fmt:pm(nM)});
+  countTo(document.getElementById('swHsMB'),nMB,800,{delay:280,fmt:pm(nMB)});
   const _sec=document.getElementById('swTurnoutsSection');
   if(_sec)_sec.style.display=_sf?'block':'none';
   if(_sf)renderSwList();
@@ -7975,7 +7975,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.27·87';
+const APP_BUILD='2026.08.28·88';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
