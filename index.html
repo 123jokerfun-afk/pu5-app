@@ -92,9 +92,15 @@ button{font-family:inherit}
 .hero-stat{flex:1;background:rgba(255,255,255,.28);border-radius:18px;
   padding:10px 12px;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(12px);
   box-shadow:0 4px 16px rgba(180,110,30,.15)}
-.hero-stat-n{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;text-shadow:0 1px 8px rgba(150,90,20,.3)}
+.hero-stat-n{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;text-shadow:0 1px 8px rgba(150,90,20,.3);
+  /* Гүйж байхад орон нэмэгдэхэд бичиг хажуу тийш үсэрдэггүй болгоно */
+  font-variant-numeric:tabular-nums;will-change:transform}
 .hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+<<<<<<< HEAD
+.hero-stat-s{font-size:10.5px;color:rgba(255,255,255,.82);font-weight:800;margin-top:1px;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
+=======
 .hero-stat-s{font-size:10.5px;color:rgba(255,255,255,.82);font-weight:800;margin-top:1px;line-height:1.15;white-space:nowrap}
+>>>>>>> origin/main
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -391,7 +397,7 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
 .rec-counters{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}
 .cnt{border-radius:16px;padding:9px 4px;text-align:center;border:1px solid transparent;transition:transform .2s cubic-bezier(.34,1.4,.5,1)}
 .cnt:active{transform:scale(.95)}
-.cnt-n{font-size:18px;font-weight:900;line-height:1}
+.cnt-n{font-size:18px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
 .cnt-l{font-size:8px;color:var(--ink3);margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .log-wrap{flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
 .log-empty{text-align:center;padding:60px 20px 40px;color:var(--ink4);font-size:13px;font-weight:600}
@@ -2370,18 +2376,38 @@ function ic(name,cls){return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" 
 function hap(ms){try{if(navigator.vibrate)navigator.vibrate(ms||12)}catch(e){}}
 
 // Тоо гүйж тоолох
-function countTo(el,to,dur){
+// Тоог өмнөх утгаас зорилтот утга руу гүйлгэнэ.
+//   ★ Зорилтот нь БҮХЭЛ тоо бол завсрын утгыг ч бүхлээр харуулна — өмнө нь
+//     "0.4 сум", "22.3 дүнз" гэж бутархай гүйж, эвгүй харагддаг байв.
+//   opt: {fmt(утга,дууссан_эсэх), delay}
+function countTo(el,to,dur,opt){
   if(!el)return;
+  opt=opt||{};
+  const whole=Number.isInteger(to);
+  const fmt=opt.fmt||function(v){return whole?String(Math.round(v))
+    :(Math.round(v*10)/10).toFixed(1)};
   const from=parseFloat(el.dataset.cv||'0')||0;
-  if(from===to){el.textContent=fmtNum(to);return}
+  if(el._ct){cancelAnimationFrame(el._ct);el._ct=0}
   el.dataset.cv=to;
-  const t0=performance.now(),d=dur||620;
+  // Хөдөлгөөнийг багасгах тохиргоотой утсанд шууд эцсийн утгыг тавина
+  const still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(from===to||still){el.textContent=fmt(to,true);return}
+  const d=dur||620,t0=performance.now()+(opt.delay||0);
   function step(t){
-    const p=Math.min(1,(t-t0)/d), e=1-Math.pow(1-p,3);
-    el.textContent=fmtNum(from+(to-from)*e);
-    if(p<1)requestAnimationFrame(step)
+    if(t<t0){el._ct=requestAnimationFrame(step);return}
+    const p=Math.min(1,(t-t0)/d),e=1-Math.pow(1-p,3);
+    el.textContent=fmt(from+(to-from)*e,p>=1);
+    if(p<1)el._ct=requestAnimationFrame(step);
+    else{el._ct=0;_numPop(el)}
   }
-  requestAnimationFrame(step)
+  el._ct=requestAnimationFrame(step)
+}
+// Тоо байрандаа буухад бага зэрэг "тогтох" хөдөлгөөн
+function _numPop(el){
+  el.style.transition='none';el.style.transform='scale(1.07)';
+  requestAnimationFrame(function(){
+    el.style.transition='transform .3s cubic-bezier(.34,1.56,.64,1)';
+    el.style.transform='scale(1)'})
 }
 function fmtNum(v){return Number.isInteger(v)?String(Math.round(v)):(Math.round(v*10)/10).toFixed(1)}
 
@@ -2544,17 +2570,11 @@ function renderHome(){
   DB.tracks.filter(t=>!isMainTrack(t)).forEach(t=>{
     const a=analyzeTrack(t);gTotal+=a.total;gBad+=a.totalBad});
   const _tc=trackCounts(DB.tracks);
-  countTo(document.getElementById('hsTracks'),_tc.st,420);
-  countTo(document.getElementById('hsTotal'),gTotal,700);
+  countTo(document.getElementById('hsTracks'),_tc.st,520);
+  countTo(document.getElementById('hsTotal'),gTotal,760,{delay:70});
   const gp=gTotal>0?(gBad/gTotal*100):null;
-  const hp=document.getElementById('hsPct');
-  if(gp!==null){
-    const t0=parseFloat(hp.dataset.cv||'0')||0;hp.dataset.cv=gp;
-    const s0=performance.now();
-    (function anim(t){const p=Math.min(1,(t-s0)/700),e=1-Math.pow(1-p,3);
-      hp.textContent=(t0+(gp-t0)*e).toFixed(1)+'%';
-      if(p<1)requestAnimationFrame(anim)})(performance.now())
-  } else hp.textContent='—';
+  countTo(document.getElementById('hsPct'),gp===null?0:gp,700,{delay:140,
+    fmt:v=>gp===null?'—':v.toFixed(1)+'%'});
   renderFolders();
   renderMainLineCard();
   renderReplFolder();
@@ -6786,6 +6806,24 @@ function renderSwHome(){
   let nT=0,nD=0,nM=0,nMB=0;
   src.forEach(f=>(f.turnouts||[]).forEach(t=>{
     nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
+<<<<<<< HEAD
+  const meta=document.getElementById('swHeroMeta');
+  if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
+    :(swFolders().length?`${swFolders().length} паспорт · бүх дүн`:'Паспорт нэмнэ үү');
+  // Дэрийн нүүр шиг 0-оос эхлэн гүйж гарна. Гурван нүд бага зэрэг шаталж,
+  // доорх пог/м мөр нь өөрийн тоотойгоо хамт хөдөлнө.
+  //   пог/м-ийг гүйх зуур бүхлээр, төгсгөлд нь яг таг утгаар нь бичнэ —
+  //   эс тэгвэл "287,03 → 112,7 → 631,5" гэж хэт шуугиантай харагдана.
+  const pm=v=>swM(Math.round(v))+' пог/м';
+  countTo(document.getElementById('swHsT'),nT,520);
+  countTo(document.getElementById('swHsD'),nD,760,{delay:70});
+  countTo(document.getElementById('swHsM'),nM,760,{delay:70,
+    fmt:(v,done)=>nM?(done?swM(nM)+' пог/м':pm(v)):'—'});
+  countTo(document.getElementById('swHsP'),nM?nMB/nM*100:0,800,{delay:140,
+    fmt:v=>nM?v.toFixed(1)+'%':'—'});
+  countTo(document.getElementById('swHsMB'),nMB,800,{delay:140,
+    fmt:(v,done)=>nMB?(done?swM(nMB)+' пог/м':pm(v)):'—'});
+=======
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   const meta=document.getElementById('swHeroMeta');
   if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
@@ -6806,6 +6844,7 @@ function renderSwHome(){
         if(q<1)requestAnimationFrame(anim)})(performance.now())
     } else {hp.textContent='—';hp.dataset.cv=0}
   }
+>>>>>>> origin/main
   const _sec=document.getElementById('swTurnoutsSection');
   if(_sec)_sec.style.display=_sf?'block':'none';
   if(_sf)renderSwList();
@@ -7963,7 +8002,11 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
+<<<<<<< HEAD
+const APP_BUILD='2026.08.27·87';
+=======
 const APP_BUILD='2026.08.27·86';
+>>>>>>> origin/main
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
