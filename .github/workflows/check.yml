@@ -1,0 +1,48 @@
+# Аппыг эвдэрсэн хэвээр main дээр гаргахаас сэргийлнэ.
+# v87-д git-ийн зөрчлийн тэмдэглэгээ index.html дотор үлдэж, аппын JS
+# бүхэлдээ ажиллахаа больж, хар дэлгэц дээр гацсан. Тэр давтагдахгүй.
+name: Шалгалт
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Git-ийн зөрчлийн тэмдэглэгээ үлдсэн эсэх
+        run: |
+          if grep -rnE '^(<<<<<<< |=======$|>>>>>>> )' --include='*.html' --include='*.txt' --include='*.js' --include='*.css' .; then
+            echo "::error::Зөрчлийн тэмдэглэгээ үлдсэн байна — нэгтгэлээ дуусгана уу"
+            exit 1
+          fi
+          echo "OK — тэмдэглэгээ алга"
+
+      - name: JS синтакс
+        run: |
+          node -e "
+          const fs=require('fs');
+          const h=fs.readFileSync('index.html','utf8');
+          const re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g;
+          let m,i=0,bad=0;
+          while((m=re.exec(h))){
+            i++;
+            fs.writeFileSync('/tmp/s'+i+'.js',m[1]);
+            try{require('child_process').execFileSync('node',['--check','/tmp/s'+i+'.js'],{stdio:'pipe'})}
+            catch(e){bad++;console.error('script#'+i+' АЛДААТАЙ:\n'+String(e.stderr))}
+          }
+          if(bad)process.exit(1);
+          console.log('OK — '+i+' script цэвэр');
+          "
+
+      - name: Хувилбарын дугаар таарч байгаа эсэх
+        run: |
+          B=$(grep -o "APP_BUILD='[^']*'" index.html | head -1 | sed "s/APP_BUILD='//;s/'//;s/·/-/")
+          V=$(tr -d ' \n\r' < version.txt)
+          echo "index.html=$B  version.txt=$V"
+          [ "$B" = "$V" ] || { echo "::error::APP_BUILD ба version.txt зөрж байна"; exit 1; }
+          echo "OK"

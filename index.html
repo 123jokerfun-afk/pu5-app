@@ -96,11 +96,7 @@ button{font-family:inherit}
   /* Гүйж байхад орон нэмэгдэхэд бичиг хажуу тийш үсэрдэггүй болгоно */
   font-variant-numeric:tabular-nums;will-change:transform}
 .hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-<<<<<<< HEAD
 .hero-stat-s{font-size:10.5px;color:rgba(255,255,255,.82);font-weight:800;margin-top:1px;line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
-=======
-.hero-stat-s{font-size:10.5px;color:rgba(255,255,255,.82);font-weight:800;margin-top:1px;line-height:1.15;white-space:nowrap}
->>>>>>> origin/main
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -6806,7 +6802,6 @@ function renderSwHome(){
   let nT=0,nD=0,nM=0,nMB=0;
   src.forEach(f=>(f.turnouts||[]).forEach(t=>{
     nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
-<<<<<<< HEAD
   const meta=document.getElementById('swHeroMeta');
   if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
     :(swFolders().length?`${swFolders().length} паспорт · бүх дүн`:'Паспорт нэмнэ үү');
@@ -6823,28 +6818,6 @@ function renderSwHome(){
     fmt:v=>nM?v.toFixed(1)+'%':'—'});
   countTo(document.getElementById('swHsMB'),nMB,800,{delay:140,
     fmt:(v,done)=>nMB?(done?swM(nMB)+' пог/м':pm(v)):'—'});
-=======
-  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
-  const meta=document.getElementById('swHeroMeta');
-  if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
-    :(swFolders().length?`${swFolders().length} паспорт · бүх дүн`:'Паспорт нэмнэ үү');
-  // Дэрийн нүүр шиг 0-оос эхлэн гүйж гарна
-  countTo(document.getElementById('swHsT'),nT,420);
-  countTo(document.getElementById('swHsD'),nD,700);
-  set('swHsM',nM?swM(nM)+' пог/м':'—');
-  set('swHsMB',nMB?swM(nMB)+' пог/м':'—');
-  const hp=document.getElementById('swHsP');
-  if(hp){
-    if(nM){
-      const to=nMB/nM*100,from=parseFloat(hp.dataset.cv||'0')||0;
-      hp.dataset.cv=to;
-      const t0=performance.now();
-      (function anim(t){const q=Math.min(1,(t-t0)/700),e=1-Math.pow(1-q,3);
-        hp.textContent=(from+(to-from)*e).toFixed(1)+'%';
-        if(q<1)requestAnimationFrame(anim)})(performance.now())
-    } else {hp.textContent='—';hp.dataset.cv=0}
-  }
->>>>>>> origin/main
   const _sec=document.getElementById('swTurnoutsSection');
   if(_sec)_sec.style.display=_sf?'block':'none';
   if(_sf)renderSwList();
@@ -8002,11 +7975,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-<<<<<<< HEAD
 const APP_BUILD='2026.08.27·87';
-=======
-const APP_BUILD='2026.08.27·86';
->>>>>>> origin/main
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
