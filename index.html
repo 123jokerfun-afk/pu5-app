@@ -94,6 +94,24 @@ button{font-family:inherit}
   box-shadow:0 4px 16px rgba(180,110,30,.15)}
 .hero-stat-n{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;text-shadow:0 1px 8px rgba(150,90,20,.3)}
 .hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.hero-stat-s{font-size:10.5px;color:rgba(255,255,255,.82);font-weight:800;margin-top:1px;line-height:1.15;white-space:nowrap}
+.sw-add-slot{width:88px}
+/* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
+@media (max-width:369px){
+  .sw-add-slot{width:46px}
+  .sw-nav{padding:6px 9px;font-size:11px;gap:2px}
+  #swHomeView .hero-text-title{font-size:16px!important}
+  #swHomeView .hero-text-sub{font-size:10.5px}
+  #swHomeView .hero-stats{gap:7px}
+  #swHomeView .hero-stat{padding:9px 7px;border-radius:15px}
+  #swHomeView .hero-stat-n{font-size:18px}
+  #swHomeView .hero-stat-s{font-size:9px}
+  #swHomeView .hero-stat-l{font-size:8.5px;letter-spacing:.02em}
+  .sw-st-n{font-size:17px}
+  .sw-st-s{font-size:8.5px;white-space:nowrap}
+  .sw-st-c{padding:7px 2px 6px}
+  .sw-st{gap:5px;margin-left:4px}
+}
 .sec-lbl{font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;
   letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -600,6 +618,9 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
   background:linear-gradient(180deg,#FFC93C,#FF9932)}
 .folder-card:active{transform:scale(.98);box-shadow:none}
 .folder-card.active-folder{border-color:var(--g500);background:var(--g50)}
+/* СШ ПУ-5 нь ягаан өнгийн сэдэвтэй тул нээлттэй паспорт нь мөн ягаанаар */
+#swFolders .folder-card.active-folder{border-color:#A855F7!important;background:#FAF5FF}
+#swFolders .folder-card.active-folder::before{background:linear-gradient(180deg,#C084FC,#7E22CE)}
 .folder-icon{width:42px;height:42px;background:var(--gold-bg);border-radius:14px;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
@@ -1141,20 +1162,25 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
       <button class="sw-nav" onclick="hap();goDerHome()">
         <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Дэр ПУ-5
       </button>
-      <div style="flex:1;text-align:center">
+      <div style="flex:1;text-align:center;min-width:0">
         <div class="hero-text-title" style="font-size:19px">СШ ПУ-5</div>
         <div class="hero-text-sub" id="swLoc">Сум шилжүүлгийн дүнз</div>
       </div>
-      <div style="width:88px;display:flex;justify-content:flex-end">
+      <div class="sw-add-slot" style="display:flex;justify-content:flex-end">
         <button class="sw-add" id="swAddSpecBtn" onclick="hap(10);openSwSpecAdd()" style="display:none" aria-label="Сум мэдээлэл нэмэх">
           <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         </button>
       </div>
     </div>
+    <div style="position:relative;margin-top:8px;margin-bottom:4px">
+      <div id="swHeroMeta" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600"></div>
+    </div>
     <div class="hero-stats" id="swHeroStats">
       <div class="hero-stat"><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsD">0</div><div class="hero-stat-l">Нийт дүнз</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsD">0</div>
+        <div class="hero-stat-s" id="swHsM">—</div><div class="hero-stat-l">Нийт дүнз</div></div>
+      <div class="hero-stat"><div class="hero-stat-n" id="swHsP">—</div>
+        <div class="hero-stat-s" id="swHsMB">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
     </div>
   </div>
   <div class="home-body">
@@ -1166,6 +1192,20 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Шинэ паспорт нэмэх
       </button>
     </div>
+    <div id="swTurnoutsSection" style="display:none">
+    <div class="home-section">
+      <div class="sec-lbl" style="margin-top:6px">Сумууд</div>
+      <div id="swTurnoutsGrid" class="stagger"></div>
+      <div class="lp-hint" id="swTurnoutLp" style="display:none">Сум дээр удаан дарж устгана</div>
+      <div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+      <button class="add-track-btn" id="swFormBtn" onclick="hap();exportSwForms()" style="border-color:var(--g400);color:var(--g700);margin-top:10px">
+        <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах
+      </button>
+      <button class="add-track-btn" onclick="openSwTurnout()" style="border-color:#C084FC;color:#7E22CE;margin-top:8px">
+        <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сум нэмэх
+      </button>
+    </div>
+    </div>
     <div class="home-section" style="margin-top:18px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div class="sec-lbl" style="margin-top:0">Сумын дүнзний загвар</div>
@@ -1175,23 +1215,6 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
     </div>
     <div class="lp-hint" style="margin-top:14px">Баруун тийш шудран Дэр ПУ-5 руу буцна →</div>
     <div class="build-tag" style="text-align:center;padding:18px 0 26px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
-  </div>
-</div>
-
-<div class="view" id="swListView">
-  <div class="pg-hdr">
-    <div class="pg-hdr-row">
-      <button class="back-btn" onclick="showView('swHomeView',true);renderSwHome()">Буцах</button>
-      <div style="flex:1">
-        <div class="pg-title" id="swListTitle">—</div>
-        <div class="pg-sub" id="swListSub">—</div>
-      </div>
-      <button class="icon-btn" onclick="delSwFolder()" style="color:var(--red)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    </div>
-  </div>
-  <div class="track-body" id="swListBody"></div>
-  <div class="add-sec-dock">
-    <button class="add-sec-btn asb-turn" style="width:100%" onclick="openSwTurnout()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сум нэмэх</button>
   </div>
 </div>
 
@@ -2392,7 +2415,7 @@ function ring(pct,size,color){
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
 const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
-  swHomeView:1,swListView:2,swRecView:3};
+  swHomeView:1,swRecView:2};
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
@@ -6757,11 +6780,35 @@ function initSwSwipe(){
 function renderSwHome(){
   const el=document.getElementById('swLoc');
   if(el)el.textContent=DB.location?DB.location+' · Сум шилжүүлгийн дүнз':'Сум шилжүүлгийн дүнз';
+  const _sf=swFolder();
+  // Паспорт нээлттэй бол ЗӨВХӨН тэр паспортын дүн, үгүй бол бүгдийн дүн
+  const src=_sf?[_sf]:swFolders();
   let nT=0,nD=0,nM=0,nMB=0;
-  swFolders().forEach(f=>(f.turnouts||[]).forEach(t=>{
+  src.forEach(f=>(f.turnouts||[]).forEach(t=>{
     nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
-  set('swHsT',nT);set('swHsD',nD);set('swHsP',nM?(nMB/nM*100).toFixed(1)+'%':'—');
+  const meta=document.getElementById('swHeroMeta');
+  if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
+    :(swFolders().length?`${swFolders().length} паспорт · бүх дүн`:'Паспорт нэмнэ үү');
+  // Дэрийн нүүр шиг 0-оос эхлэн гүйж гарна
+  countTo(document.getElementById('swHsT'),nT,420);
+  countTo(document.getElementById('swHsD'),nD,700);
+  set('swHsM',nM?swM(nM)+' пог/м':'—');
+  set('swHsMB',nMB?swM(nMB)+' пог/м':'—');
+  const hp=document.getElementById('swHsP');
+  if(hp){
+    if(nM){
+      const to=nMB/nM*100,from=parseFloat(hp.dataset.cv||'0')||0;
+      hp.dataset.cv=to;
+      const t0=performance.now();
+      (function anim(t){const q=Math.min(1,(t-t0)/700),e=1-Math.pow(1-q,3);
+        hp.textContent=(from+(to-from)*e).toFixed(1)+'%';
+        if(q<1)requestAnimationFrame(anim)})(performance.now())
+    } else {hp.textContent='—';hp.dataset.cv=0}
+  }
+  const _sec=document.getElementById('swTurnoutsSection');
+  if(_sec)_sec.style.display=_sf?'block':'none';
+  if(_sf)renderSwList();
   // Нэмэх тэмдэг зөвхөн ПД-6 хаяг дээр
   const ab=document.getElementById('swAddSpecBtn');
   if(ab)ab.style.display=swCanEdit()?'flex':'none';
@@ -6776,13 +6823,17 @@ function renderSwHome(){
     const ts=(f.turnouts||[]);
     let d=0,m=0,mb=0;ts.forEach(t=>{const a=swTally(t);d+=a.total;m+=a.m;mb+=a.mBad});
     const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
-    return`<div class="folder-card lp-del" style="border-color:#DDD6FE" data-arm="sf-${f.id}" onclick="hap();openSwFolderView('${f.id}')">
-      <div class="folder-icon"><svg class="ic" style="font-size:21px;color:#7E22CE" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    const isActive=f.id===swFolderId;
+    return`<div class="folder-card lp-del${isActive?' active-folder':''}" style="border-color:#DDD6FE" data-arm="sf-${f.id}" onclick="hap();openSwFolderView('${f.id}')">
+      <div class="folder-icon">${isActive
+        ?'<svg class="ic" style="font-size:21px;color:#7E22CE" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2M3 7v10a2 2 0 002 2h14a2 2 0 002-2l1-7H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
+        :'<svg class="ic" style="font-size:21px;color:#7E22CE" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'}</div>
       <div class="folder-info">
         <div class="folder-name" style="color:#7E22CE">${esc(f.name)}${foreign?` <span class="sc-tag">${esc(f.sc)}</span>`:''}</div>
-        <div class="folder-meta">${f.year} · ${f.season} · ${ts.length} сум${d?` · ${d} дүнз · ${swM(m)} пог/м · ${(mb/m*100).toFixed(1)}%`:''}</div>
+        <div class="folder-meta">${f.year} · ${f.season} · ${ts.length} сум${d?` · ${d} дүнз · ${swM(m)} пог/м · ${(mb/m*100).toFixed(1)}%`:''}${isActive?' · <b style="color:#7E22CE">нээлттэй</b>':''}</div>
       </div>
       <div class="folder-actions">
+        ${isActive?`<button onclick="closeSwFolder();event.stopPropagation()" style="background:#F5F0FF;border:1px solid #C084FC;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:#7E22CE;cursor:pointer"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Хаах</button>`:''}
         <button class="folder-del" onclick="armedDel(event,()=>delSwFolderById('${f.id}',event))" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>`}).join('');
@@ -6819,23 +6870,33 @@ async function delSwFolderById(id,e){
   if(swFolderId===id)swFolderId=null;
   saveDB();renderSwHome()
 }
-async function delSwFolder(){
-  const f=swFolder();if(!f)return;
-  if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх сумын бүртгэл устана.`,'Устгах'))return;
-  DB.sw=swFolders().filter(x=>x.id!==f.id);swFolderId=null;
-  saveDB();showView('swHomeView',true);renderSwHome()
-}
-
 // ── Паспорт доторх сумын жагсаалт ──
-function openSwFolderView(id){swFolderId=id;showView('swListView');renderSwList()}
+// Дэрийн паспорт шиг — дэлгэц солихгүй, нүүрэн дээрээ доор нь задарна
+function openSwFolderView(id){
+  swFolderId=id;
+  if(!document.getElementById('swHomeView').classList.contains('active'))showView('swHomeView');
+  renderSwHome();                       // хэсгийг өөрөө нээж, дүнг шинэчилнэ
+  const sec=document.getElementById('swTurnoutsSection');
+  if(sec)setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'start'}),100)
+}
+function closeSwFolder(){
+  swFolderId=null;
+  const sec=document.getElementById('swTurnoutsSection');
+  if(sec)sec.style.display='none';
+  renderSwHome()
+}
 function renderSwList(){
-  const f=swFolder();if(!f){showView('swHomeView',true);renderSwHome();return}
-  document.getElementById('swListTitle').textContent=f.name;
-  document.getElementById('swListSub').textContent=`${f.year} · ${f.season} · ${(f.turnouts||[]).length} сум`;
-  const body=document.getElementById('swListBody');
+  const f=swFolder();if(!f)return;
+  const body=document.getElementById('swTurnoutsGrid');if(!body)return;
   const ts=f.turnouts||[];
+  const lp=document.getElementById('swTurnoutLp');
+  if(lp)lp.style.display=ts.length?'block':'none';
+  const fb=document.getElementById('swFormBtn');
+  if(fb)fb.style.display=ts.some(t=>(t.it||'').length)?'':'none';
   if(!ts.length){
-    body.innerHTML='<div style="text-align:center;padding:30px 16px;color:var(--ink4);font-size:13px;font-weight:600">Сум нэмнэ үү<div style="font-size:11px;margin-top:6px">Доод талын "Сум нэмэх" товчийг дарна уу</div></div>';return}
+    body.innerHTML='<div style="text-align:center;padding:22px 16px;color:var(--ink4);font-size:13px;font-weight:600">Сум нэмнэ үү<div style="font-size:11px;margin-top:6px">Доорх "Сум нэмэх" товчийг дарна уу</div></div>';
+    const w=document.getElementById('swFolderWrap');if(w)w.innerHTML='';
+    return}
   body.innerHTML=ts.slice().sort((a,b)=>a.num-b.num).map(t=>{
     const a=swTally(t),pl=swPlanned(t),done=(t.it||'').length;
     const pc=a.total?a.pct:0;
@@ -6856,12 +6917,7 @@ function renderSwList(){
         <div class="sw-st-c"><div class="sw-st-n" style="color:var(--orange)">${a.bad}</div><div class="sw-st-s">${swM(a.mBad)} пог/м</div><div class="sw-st-l">Тэнцэхгүй</div></div>
         <div class="sw-st-c"><div class="sw-st-n" style="color:${col}">${a.m?a.pct.toFixed(1)+'%':'—'}</div><div class="sw-st-s">пог/м-ээр</div><div class="sw-st-l">Эзлэх хувь</div></div>
       </div>`:'<div class="sw-empty-line">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
-    </div>`}).join('')
-    +'<div class="lp-hint">Сум дээр удаан дарж устгана</div>'
-    +'<button class="pu5-btn" style="margin-top:8px;border-radius:var(--rm);border-top:1px dashed var(--border2)"'
-    +' onclick="hap();exportSwForms()">'
-    +'<svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах</button>'
-    +'<div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>';
+    </div>`}).join('');
   renderSwFolderCards()
 }
 // ── Сум нэмэх ──
@@ -6900,7 +6956,7 @@ function addSwTurnout(){
     station:(document.getElementById('swtStation').value||'').trim(),
     mak:_swMak,mark:_swMark,proj:_swProj,head:null,it:''};
   (f.turnouts||(f.turnouts=[])).push(t);
-  saveDB();closeModal('swTurnoutModal');renderSwList();
+  saveDB();closeModal('swTurnoutModal');renderSwHome();
   showToast(`✓ Сум ${num} · ${t.mak} · ${t.mark} нэмэгдлээ`,2600)
 }
 // Устгах товч нь ЗӨВХӨН удаан дарж идэвхжүүлсний дараа ажиллана.
@@ -6923,13 +6979,13 @@ async function confirmDelSwTurnout(id){
   if(!await appConfirm(msg,'Тийм','Үгүй'))return;
   f.turnouts=(f.turnouts||[]).filter(x=>x.id!==id);
   if(swTurnoutId===id)swTurnoutId=null;
-  saveDB();renderSwList();showToast(`Сум ${t.num} устлаа`)
+  saveDB();renderSwHome();showToast(`Сум ${t.num} устлаа`)
 }
 async function delSwTurnout(){
   const f=swFolder(),t=swTurnout();if(!f||!t)return;
   if(!await appConfirm(`Сум ${t.num}-г устгах уу? Бүртгэл нь хамт устана.`,'Устгах'))return;
   f.turnouts=(f.turnouts||[]).filter(x=>x.id!==t.id);swTurnoutId=null;
-  saveDB();showView('swListView',true);renderSwList()
+  saveDB();showView('swHomeView',true);renderSwHome()
 }
 
 // ── Бүртгэл ──
@@ -6951,7 +7007,7 @@ function saveSwHead(){
 }
 function renderSwRec(focus){
   const f=swFolder(),t=swTurnout();
-  if(!f||!t){showView('swListView',true);renderSwList();return}
+  if(!f||!t){showView('swHomeView',true);renderSwHome();return}
   document.getElementById('swRecTitle').textContent=`Сум ${t.num} · ${t.mak} · ${t.mark}`;
   document.getElementById('swRecSub').textContent=
     `${t.station||f.name}${t.proj?' · төсөл '+t.proj:''} · эхэнд ${t.head} дэр`;
@@ -7607,8 +7663,8 @@ function swGotoDz(tid,i){
 }
 // Дараалсан дүнзний жагсаалтаас ирсэн бол буцахад тийшээ эргэнэ
 function swBackFromRec(){
-  if(_swFromRun){_swFromRun=false;showView('swListView',true);renderSwList();openSwRunRep();return}
-  showView('swListView',true);renderSwList()
+  if(_swFromRun){_swFromRun=false;showView('swHomeView',true);renderSwHome();openSwRunRep();return}
+  showView('swHomeView',true);renderSwHome()
 }
 // 3. Дүнзний бодит мэдээлэл — анхны урт → бодит урт
 function openSwRealRep(){
@@ -7883,8 +7939,9 @@ function _appBack(){
       // "Дараалсан цэг"-ээс үсэрч ирсэн бол жагсаалт руугаа буцна
       if(_fromConsec){backToConsec();return true}
       goTrack();return true;
-    case 'swHomeView':goDerHome();return true;
-    case 'swListView':showView('swHomeView',true);renderSwHome();return true;
+    case 'swHomeView':
+      if(swFolderId){closeSwFolder();return true}
+      goDerHome();return true;
     case 'swRecView':swBackFromRec();return true;
     case 'trackView':backFromTrack();return true;
     case 'mainKmView':goHome();return true;
@@ -7906,7 +7963,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.27·85';
+const APP_BUILD='2026.08.27·86';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
