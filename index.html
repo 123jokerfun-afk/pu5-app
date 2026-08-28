@@ -8191,7 +8191,11 @@ function openSwRealRep(){
 // бөгөөд бүх хэсэгт нийтлэг байхаар sections/__SWSPECS__ баримтад
 // хадгална — тиймээс бусад хэсгийн аппад ч шууд нэмэгдэнэ.
 // ══════════════════════════════════════════════
-const SW_SPECS_DOC='__SWSPECS__',SW_SPECS_LS='sw_specs_v1';
+/* Firestore нь __...__ хэлбэрийн баримтын нэрийг нөөцөлсөн байдаг.
+   Хуучин '__SWSPECS__' нэр няцаагдаж, сумын дүнзний загвар үүлэнд
+   ХЭЗЭЭ Ч хадгалагдаагүй — алдаа нь чимээгүй баригдаж, зөвхөн утсанд
+   үлдсээр байв. Хүчинтэй нэр рүү шилжүүлэв. */
+const SW_SPECS_DOC='sw-specs',SW_SPECS_LS='sw_specs_v1';
 const SW_EDIT_CODE='ПД-6';
 let SW_CUSTOM=[];
 function swCanEdit(){return String(_sectionCode||'').trim().toUpperCase()===SW_EDIT_CODE}
@@ -8483,7 +8487,7 @@ function setPartsOn(v){
 async function probeParts(){
   if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй байна'};
   const ref=fbDb.collection('sections').doc(_sectionCode)
-    .collection(PARTS_COL).doc('__probe__');
+    .collection(PARTS_COL).doc('probe-test');
   try{
     await ref.set({t:Date.now(),probe:true});
     const got=await ref.get();
@@ -8846,7 +8850,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·97';
+const APP_BUILD='2026.08.28·98';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
