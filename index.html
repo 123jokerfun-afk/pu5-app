@@ -122,6 +122,46 @@
   border-color:rgba(255,168,60,.7);
   box-shadow:0 8px 34px rgba(255,150,40,.28),inset 0 0 22px rgba(255,180,90,.10)}
 /* Хавтасны дүрсний суурь — тунгалаг, ирмэгийн гэрэл харанхуйд тохирсон */
+/* ══ 3D ШИЛЭН ОБЪЕКТ ══
+   Толгойн ард хөвж буй болор бөмбөлөг. Зөвхөн CSS — зураг татахгүй,
+   агуулгын ард (z-index:0) байрлах тул уншихад саад болохгүй. */
+[data-theme="dark"] .hero::after{
+  content:'';position:absolute;pointer-events:none;z-index:0;
+  right:-52px;top:-46px;width:224px;height:224px;border-radius:50%;
+  background:
+    /* гэрлийн тусгал */
+    radial-gradient(circle at 33% 27%,rgba(255,255,255,.9),rgba(255,255,255,.22) 15%,transparent 38%),
+    /* хугарлын өнгөт ирмэг */
+    radial-gradient(circle at 74% 74%,rgba(76,200,255,.62),transparent 52%),
+    radial-gradient(circle at 24% 78%,rgba(255,107,181,.55),transparent 52%),
+    radial-gradient(circle at 78% 26%,rgba(45,226,160,.4),transparent 46%),
+    /* биет ба гүн */
+    radial-gradient(circle at 50% 50%,rgba(192,132,252,.5),rgba(20,10,48,.72) 72%);
+  box-shadow:0 0 70px rgba(150,90,255,.4),inset 0 0 46px rgba(255,255,255,.10),
+    inset -14px -18px 40px rgba(10,4,30,.6);
+  opacity:.55;filter:blur(1px)}
+/* Агуулга нь бөмбөлгийн ДЭЭР байрлана — товч, тоо бүдгэрэхгүй */
+[data-theme="dark"] .hero-top,
+[data-theme="dark"] .hero-stats,
+[data-theme="dark"] .hero>div{position:relative;z-index:1}
+/* Нарийн дэлгэцэнд жижигрүүлнэ */
+@media (max-width:369px){
+  [data-theme="dark"] .hero::after{width:170px;height:170px;right:-46px;top:-40px}
+}
+/* ══ НИМГЭН, ӨРГӨН ЗАЙТАЙ ҮСЭГ ══
+   Зөвхөн ТОМ гарчиг/тоонд. Жижиг шошго, биет бичиг нь тод хэвээр —
+   гадаа уншихад нимгэн жижиг үсэг хэцүү болдог. */
+[data-theme="dark"] .hero-text-title{
+  font-weight:300;letter-spacing:.14em;text-transform:uppercase;font-size:17px}
+[data-theme="dark"] #swHomeView .hero-text-title{font-size:15px!important}
+[data-theme="dark"] .hero-stat-n{font-weight:300;letter-spacing:.03em}
+[data-theme="dark"] .pg-title{font-weight:300;letter-spacing:.09em;text-transform:uppercase;font-size:15px}
+[data-theme="dark"] .sheet-title{font-weight:300;letter-spacing:.08em;text-transform:uppercase;font-size:16px}
+[data-theme="dark"] .cnt-n,[data-theme="dark"] .sw-st-n,
+[data-theme="dark"] .sum-tot-n,[data-theme="dark"] .ov-pct-n,
+[data-theme="dark"] .track-card-num{font-weight:300;letter-spacing:.02em}
+[data-theme="dark"] .sec-lbl,[data-theme="dark"] .sum-block-title{
+  font-weight:600;letter-spacing:.22em}
 [data-theme="dark"] .folder-icon{background:rgba(255,255,255,.07);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
 [data-theme="dark"] .dr-slot{background:rgba(76,200,255,.08)}
@@ -8104,7 +8144,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·90';
+const APP_BUILD='2026.08.28·91';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
