@@ -2651,7 +2651,8 @@ function saveDB(){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_lastSaveErr='';setTimeout(()=>{_localWriting=false},600)})
+      .then(()=>{_dirtyClear();_lastSaveErr='';_dualWrite(_p);
+        setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Save err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
         if(typeof _syncTabs==='function')_syncTabs()})
@@ -6503,6 +6504,7 @@ async function doLogin(){
     const cred=await fbAuth.signInWithEmailAndPassword(email,pass);
     _currentUser=cred.user;
     _sectionCode=code;
+    _partsErr='';_partsAt=0;
     _isAdmin=(code===ADMIN_CODE);
     if(b){b.textContent='✓';b.disabled=false}
     await _afterLogin();
@@ -8335,6 +8337,131 @@ function _tooBig(n){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   ПАСПОРТ = ТУСДАА БАРИМТ — ШАТ 1: ХОС БИЧИЛТ
+
+   Одоо бүх зүйл ГАНЦ баримтад байгаа тул (а) 1 МиБ хязгаартай,
+   (б) нэг дэр засахад бүтнээрээ дахин илгээгддэг, (в) хоёр утас
+   өөр өөр паспорт засвал сүүлийнх нь нөгөөгийг дарж устгадаг.
+
+   Шийдэл: хэсэг бүрийг тусдаа баримт болгоно.
+     sections/<код>                ← хуучин бүтэн баримт (ХЭВЭЭР)
+     sections/<код>/parts/meta     ← нэр, тайлангийн тохиргоо
+     sections/<код>/parts/main     ← гол зам
+     sections/<код>/parts/p_<id>   ← дэрийн паспорт бүр
+     sections/<код>/parts/s_<id>   ← сумын паспорт бүр
+
+   ЭНЭ ШАТАНД зөвхөн БИЧНЭ. Унших нь хуучин баримтаас хэвээр тул
+   алдаа гарсан ч апп хэвийн ажиллана. Зөвхөн өөрчлөгдсөн хэсэг
+   бичигддэг тул интернэт хэрэглээ нэмэгдэхгүй, харин ч буурна.
+   ══════════════════════════════════════════════════════════════ */
+const PARTS_COL='parts';
+let _partsErr='',_partsAt=0,_partsWrote=0,_partsBytes=0;
+
+function _partId(pfx,id){return pfx+'_'+String(id||'').replace(/[^A-Za-z0-9_-]/g,'')}
+function _partsKey(){return 'sg_parts_'+(_sectionCode||'')}
+function _loadPartHashes(){
+  try{return JSON.parse(localStorage.getItem(_partsKey())||'{}')||{}}catch(e){return {}}}
+function _savePartHashes(h){
+  try{localStorage.setItem(_partsKey(),JSON.stringify(h))}catch(e){}}
+function _clearPartHashes(){try{localStorage.removeItem(_partsKey())}catch(e){}}
+/* DJB2 — өөрчлөгдсөнийг мэдэхэд хангалттай, урттай нь хамт хадгална */
+function _hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return h.toString(36)+':'+s.length}
+
+/* Шахсан DB → хэсгүүд */
+function _splitDB(p){
+  const parts={};
+  parts.meta={location:p.location||'',v:p.v||3,rpt:p.rpt||{}};
+  parts.main={main:p.main||[]};
+  (p.folders||[]).forEach(f=>{if(f&&f.id)parts[_partId('p',f.id)]={folder:f}});
+  (p.sw||[]).forEach(f=>{if(f&&f.id)parts[_partId('s',f.id)]={sw:f}});
+  return parts
+}
+/* Хэсгүүд → шахсан DB (Шат 2-т унших, одоо шалгахад ашиглана) */
+function _joinParts(parts){
+  const out={location:'',v:3,tracks:[],folders:[],main:[],sw:[],rpt:{}};
+  const fo=[],sw=[];
+  Object.keys(parts).forEach(k=>{
+    const d=parts[k]; if(!d)return;
+    if(k==='meta'){out.location=d.location||'';out.v=d.v||3;out.rpt=d.rpt||{}}
+    else if(k==='main')out.main=Array.isArray(d.main)?d.main:[];
+    else if(d.folder)fo.push(d.folder);
+    else if(d.sw)sw.push(d.sw);
+  });
+  out.folders=fo; out.sw=sw; return out
+}
+/* Эрэмбэ хамаарахгүй харьцуулалт */
+function _canon(v){
+  if(Array.isArray(v))return v.map(_canon);
+  if(v&&typeof v==='object'){const o={};
+    Object.keys(v).sort().forEach(k=>{o[k]=_canon(v[k])});return o}
+  return v
+}
+function _cmpKey(o){
+  const c=_canon({location:o.location||'',rpt:o.rpt||{},
+    main:o.main||[],
+    folders:(o.folders||[]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id))),
+    sw:(o.sw||[]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)))});
+  return JSON.stringify(c)
+}
+
+/* Зөвхөн ӨӨРЧЛӨГДСӨН хэсгийг бичнэ. Алга болсныг устгана. */
+function _writeParts(packed){
+  if(!fbDb||!_sectionCode)return Promise.resolve(0);
+  let parts;
+  try{parts=_splitDB(packed)}catch(e){return Promise.resolve(0)}
+  const prev=_loadPartHashes(), now={}, col=fbDb.collection('sections')
+    .doc(_sectionCode).collection(PARTS_COL);
+  const batch=fbDb.batch(); let n=0,bytes=0;
+  Object.keys(parts).forEach(id=>{
+    const json=JSON.stringify(parts[id]), h=_hash(json);
+    now[id]=h;
+    if(prev[id]!==h){batch.set(col.doc(id),parts[id]);n++;bytes+=json.length}
+  });
+  Object.keys(prev).forEach(id=>{if(!(id in now)){batch.delete(col.doc(id));n++}});
+  if(!n)return Promise.resolve(0);
+  return batch.commit().then(()=>{
+    _savePartHashes(now);_partsErr='';_partsAt=Date.now();
+    _partsWrote=n;_partsBytes=bytes;return n});
+}
+/* Хос бичилт — хуучин баримт амжилттай бичигдсэний ДАРАА. Алдаа гарсан ч
+   аппын ажиллагаанд нөлөөлөхгүй; зөвхөн Мэдэгдэл дээр тэмдэглэгдэнэ. */
+function _dualWrite(packed){
+  try{
+    _writeParts(packed).catch(e=>{
+      console.warn('parts write:',e);
+      _partsErr=(e&&e.message)||String(e);
+      _clearPartHashes()})            // дараагийн удаа бүгдийг дахин бичнэ
+  }catch(e){_partsErr=(e&&e.message)||String(e)}
+}
+
+/* Мэдэгдэл дээрх "Шинэ бүтцийг шалгах" товч */
+function runVerifyParts(btn){
+  const m=document.getElementById('vpMsg');
+  if(m)m.textContent='Шалгаж байна…';
+  verifyParts().then(r=>{
+    if(!m)return;
+    m.textContent=r.ok
+      ? '✓ Таарч байна · '+r.count+' баримт · хамгийн том '+fmtBytes(r.biggest)
+      : '⚠ '+(r.why||'Зөрүүтэй');
+  }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e)});
+}
+/* ── Шалгалт: шинэ бүтэц хуучинтайгаа таарч байна уу? ── */
+async function verifyParts(){
+  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй'};
+  const col=fbDb.collection('sections').doc(_sectionCode).collection(PARTS_COL);
+  const snap=await col.get();
+  if(snap.empty)return {ok:false,why:'Шинэ бүтэц хоосон — нэг удаа хадгалаад дахин шалгана уу'};
+  const parts={}; let bytes=0;
+  snap.forEach(d=>{parts[d.id]=d.data();bytes+=_fsSize(d.data())});
+  const rebuilt=_joinParts(parts), local=_packDB(DB);
+  const ok=_cmpKey(rebuilt)===_cmpKey(local);
+  return {ok,count:snap.size,bytes,
+    biggest:Object.keys(parts).reduce((m,k)=>Math.max(m,_fsSize(parts[k])),0),
+    why:ok?'':'Зөрүүтэй байна — өгөгдөл хараахан бүрэн бичигдээгүй байж болно'}
+}
+
+/* ══════════════════════════════════════════════════════════════
    ДООД ТАБ — үндсэн шилжилт
    Таб бүр жинхэнэ очих газартай. Бүртгэлийн дэлгэц дээр нуугдана
    (гарын хүрэлцээ тэнд чухал), нэвтрээгүй үед ч харагдахгүй.
@@ -8409,6 +8536,13 @@ function renderSyncSheet(){
     <button class="pf-row" onclick="hap();closeModal('syncSheet');cloudReload()">
       <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
       <span class="pf-t">Үүлнээс дахин татах<span class="pf-s">Утсан дээрхийг үүлийнхээр солино</span></span>
+      <span class="pf-ar">›</span></button>
+    <button class="pf-row" onclick="hap();runVerifyParts(this)">
+      <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <span class="pf-t">Шинэ бүтцийг шалгах<span class="pf-s" id="vpMsg">${
+        _partsErr?'Сүүлд алдаа гарсан: '+esc(_partsErr)
+        :_partsAt?'Сүүлд бичсэн: '+_agoText(_partsAt)
+        :'Паспорт бүр тусдаа хадгалагдаж эхэлсэн'}</span></span>
       <span class="pf-ar">›</span></button>
     <div style="font-size:11.5px;color:var(--ink3);font-weight:600;line-height:1.6;
       padding:10px 4px 0">Бүртгэл хийх бүрд өөрчлөлт эхлээд утсанд хадгалагдана.
@@ -8518,7 +8652,7 @@ function flushSave(force){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';
+      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';_dualWrite(_p);
         setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Flush err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -8614,7 +8748,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·93';
+const APP_BUILD='2026.08.28·94';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
