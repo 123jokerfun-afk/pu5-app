@@ -8478,10 +8478,28 @@ function _partsOn(){
   try{return localStorage.getItem(PARTS_ONKEY)==='1'}catch(e){return false}}
 function setPartsOn(v){
   try{localStorage.setItem(PARTS_ONKEY,v?'1':'0')}catch(e){}
-  if(v){_partsFails=0;_partsErr='';_clearPartHashes()}   // асаахад бүгдийг дахин бичнэ
-  if(typeof renderSyncSheet==='function')renderSyncSheet();
-  if(typeof _syncTabs==='function')_syncTabs();
-  showToast(v?'Шинэ бүтэц асаалаа':'Шинэ бүтэц унтраалаа',1800)
+  const redraw=()=>{
+    if(typeof renderSyncSheet==='function')renderSyncSheet();
+    if(typeof _syncTabs==='function')_syncTabs()};
+  if(!v){_partsErr='';redraw();showToast('Шинэ бүтэц унтраалаа',1800);return}
+  _partsFails=0;_partsErr='';_clearPartHashes();
+  redraw();
+  /* Асаангуут ШУУД нэг удаа бүтнээр бичнэ. Эс тэгвэл дараагийн
+     хадгалалт болтол шинэ бүтэц хоосон хэвээр байж, хэрэглэгч
+     "ажиллахгүй байна" гэж бодохоор байв. */
+  showToast('Шинэ бүтэц рүү бичиж байна…',1600);
+  try{
+    _writeParts(_packDB(DB)).then(n=>{
+      _partsErr='';redraw();
+      showToast(n?('Шинэ бүтэц бэлэн · '+n+' баримт'):'Шинэ бүтэц бэлэн',2400)
+    }).catch(e=>{
+      _partsErr=(e&&e.message)||String(e);redraw();
+      showToast('Бичиж чадсангүй — 3-р мөрөөс шалтгааныг үзнэ үү',2800)
+    })
+  }catch(e){
+    _partsErr=(e&&e.message)||String(e);redraw();
+    showToast('Бичиж чадсангүй',2400)
+  }
 }
 /* Ганц жижиг бичлэг бичиж → уншиж → устгаж эрхийг батална */
 async function probeParts(){
@@ -8850,7 +8868,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·98';
+const APP_BUILD='2026.08.28·99';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
