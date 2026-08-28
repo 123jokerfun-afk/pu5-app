@@ -1226,6 +1226,8 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 .sy-state.ok .sy-dot{background:var(--g500);box-shadow:0 0 14px var(--g500)}
 .sy-state.warn .sy-dot{background:var(--orange);box-shadow:0 0 14px var(--orange)}
 .sy-state .sy-t{font-size:14px;font-weight:800}
+.micro-hd{font-family:inherit;font-size:9.5px;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ink4);margin:16px 4px 8px}
 .sy-meter{padding:15px;border-radius:18px;margin-bottom:12px;
   border:1px solid var(--border);background:var(--card)}
 .sy-meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
@@ -2686,7 +2688,7 @@ function saveDB(){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_lastSaveErr='';/* _dualWrite(_p); — ТҮР УНТРААВ */
+      .then(()=>{_dirtyClear();_lastSaveErr='';_dualWrite(_p);
         setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Save err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -8461,23 +8463,69 @@ function _writeParts(packed){
 }
 /* Хос бичилт — хуучин баримт амжилттай бичигдсэний ДАРАА. Алдаа гарсан ч
    аппын ажиллагаанд нөлөөлөхгүй; зөвхөн Мэдэгдэл дээр тэмдэглэгдэнэ. */
-/* ТҮР УНТРААЛТТАЙ (v95). Firestore-ын эрхийн дүрэмд
-   sections/<код>/parts/** рүү бичих зөвшөөрөл нэмсэний дараа асаана.
-   PARTS_ON=true болгоход л хангалттай. */
-const PARTS_ON=false;
-function _dualWrite(packed){
-  if(!PARTS_ON)return;
+/* ── Шат 1-ийг АЮУЛГҮЙ асаах хяналт ──────────────────────────
+   v94-д хос бичилтийг шууд асааж, эрх байгаа эсэхийг шалгаагүй.
+   Одоо: (1) эхлээд ганц туршилтын бичлэгээр эрхийг батална,
+   (2) хэрэглэгч өөрөө асаана/унтраана — шинэ хувилбар хүлээхгүй,
+   (3) 3 удаа дараалан алдвал өөрөө унтарна.                     */
+const PARTS_ONKEY='sg_parts_on';
+let _partsFails=0;
+function _partsOn(){
+  try{return localStorage.getItem(PARTS_ONKEY)==='1'}catch(e){return false}}
+function setPartsOn(v){
+  try{localStorage.setItem(PARTS_ONKEY,v?'1':'0')}catch(e){}
+  if(v){_partsFails=0;_partsErr='';_clearPartHashes()}   // асаахад бүгдийг дахин бичнэ
+  if(typeof renderSyncSheet==='function')renderSyncSheet();
+  if(typeof _syncTabs==='function')_syncTabs();
+  showToast(v?'Шинэ бүтэц асаалаа':'Шинэ бүтэц унтраалаа',1800)
+}
+/* Ганц жижиг бичлэг бичиж → уншиж → устгаж эрхийг батална */
+async function probeParts(){
+  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй байна'};
+  const ref=fbDb.collection('sections').doc(_sectionCode)
+    .collection(PARTS_COL).doc('__probe__');
   try{
-    _writeParts(packed).catch(e=>{
+    await ref.set({t:Date.now(),probe:true});
+    const got=await ref.get();
+    if(!got.exists)return {ok:false,why:'Бичигдсэн ч уншигдсангүй'};
+    try{await ref.delete()}catch(e){}
+    return {ok:true}
+  }catch(e){
+    const c=(e&&e.code)||'', m=(e&&e.message)||String(e);
+    return {ok:false,code:c,why:
+      /permission|PERMISSION/.test(c+m)
+        ? 'Эрх байхгүй — Firestore-ын дүрэмд дэд бүлэг рүү бичихийг зөвшөөрөх хэрэгтэй'
+        : m}
+  }
+}
+
+function _dualWrite(packed){
+  if(!_partsOn())return;
+  try{
+    _writeParts(packed).then(()=>{_partsFails=0}).catch(e=>{
       console.warn('parts write:',e);
       _partsErr=(e&&e.message)||String(e);
-      _clearPartHashes()})            // дараагийн удаа бүгдийг дахин бичнэ
+      _clearPartHashes();
+      /* 3 удаа дараалан алдвал өөрөө унтарна — дахин дахин оролдохгүй */
+      if(++_partsFails>=3){
+        try{localStorage.setItem(PARTS_ONKEY,'0')}catch(_){}
+        _partsErr='3 удаа алдсан тул өөрөө унтарлаа: '+_partsErr;
+      }})
   }catch(e){_partsErr=(e&&e.message)||String(e)}
 }
 
 /* Мэдэгдэл дээрх "Шинэ бүтцийг шалгах" товч */
-function runVerifyParts(btn){
+function runProbe(){
   const m=document.getElementById('vpMsg');
+  if(m)m.textContent='Туршиж байна…';
+  probeParts().then(r=>{
+    if(!m)return;
+    m.textContent=r.ok?'✓ Эрх байна — доорх 2-т асааж болно':'⚠ '+r.why;
+    if(r.ok)_partsErr='';
+  }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e)});
+}
+function runVerifyParts(){
+  const m=document.getElementById('vfMsg');
   if(m)m.textContent='Шалгаж байна…';
   verifyParts().then(r=>{
     if(!m)return;
@@ -8577,13 +8625,23 @@ function renderSyncSheet(){
       <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
       <span class="pf-t">Үүлнээс дахин татах<span class="pf-s">Утсан дээрхийг үүлийнхээр солино</span></span>
       <span class="pf-ar">›</span></button>
-    <button class="pf-row" onclick="hap();runVerifyParts(this)">
-      <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
-      <span class="pf-t">Шинэ бүтцийг шалгах<span class="pf-s" id="vpMsg">${
-        _partsErr?'Сүүлд алдаа гарсан: '+esc(_partsErr)
-        :_partsAt?'Сүүлд бичсэн: '+_agoText(_partsAt)
-        :'Паспорт бүр тусдаа хадгалагдаж эхэлсэн'}</span></span>
+    <div class="micro-hd">Паспорт бүрийг тусдаа хадгалах (туршилт)</div>
+    <button class="pf-row" onclick="hap();runProbe()">
+      <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg></span>
+      <span class="pf-t">1. Эрхийг туршиж үзэх<span class="pf-s" id="vpMsg">${
+        _partsErr?'⚠ '+esc(_partsErr)
+        :'Ганц жижиг бичлэг бичиж үзнэ — өгөгдөлд хүрэхгүй'}</span></span>
       <span class="pf-ar">›</span></button>
+    <button class="pf-row" onclick="hap();setPartsOn(!_partsOn())">
+      <span class="pf-ic" style="color:${_partsOn()?'var(--g600)':'var(--ink4)'}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/></svg></span>
+      <span class="pf-t">2. ${_partsOn()?'Асаалттай':'Унтраалттай'}<span class="pf-s">${
+        _partsOn()?(_partsAt?'Сүүлд бичсэн: '+_agoText(_partsAt):'Дараагийн хадгалалтад бичигдэнэ')
+        :'Туршилт амжилттай болсны дараа асаана уу'}</span></span>
+      <span class="pf-ar">${_partsOn()?'унтраах':'асаах'}</span></button>
+    ${_partsOn()?`<button class="pf-row" onclick="hap();runVerifyParts()">
+      <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <span class="pf-t">3. Хуучинтай таарч байгаа эсэх<span class="pf-s" id="vfMsg">Дарж шалгана уу</span></span>
+      <span class="pf-ar">›</span></button>`:''}
     <div style="font-size:11.5px;color:var(--ink3);font-weight:600;line-height:1.6;
       padding:10px 4px 0">Бүртгэл хийх бүрд өөрчлөлт эхлээд утсанд хадгалагдана.
       Интернэт байвал үүл рүү өөрөө илгээгдэнэ. Улаан цэг байвал илгээгдээгүй
@@ -8692,7 +8750,7 @@ function flushSave(force){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';/* _dualWrite(_p); — ТҮР УНТРААВ */
+      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';_dualWrite(_p);
         setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Flush err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -8788,7 +8846,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·96';
+const APP_BUILD='2026.08.28·97';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
