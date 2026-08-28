@@ -228,6 +228,7 @@ button{font-family:inherit}
   /* Гүйж байхад орон нэмэгдэхэд бичиг хажуу тийш үсэрдэггүй болгоно */
   font-variant-numeric:tabular-nums;will-change:transform}
 .hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+#swHero{background:linear-gradient(135deg,#6D28D9,#9333EA 55%,#C026D3)}
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -994,6 +995,206 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
 .rp-total{display:flex;justify-content:space-between;padding:14px 16px;margin-top:6px;
   background:linear-gradient(135deg,#FFD23F,#FF8E3C);color:#fff;border-radius:var(--rm);
   font-size:15px;font-weight:900;box-shadow:0 5px 20px rgba(255,153,50,.35)}
+
+/* ══════════════════════════════════════════════════════════════
+   AURORA GLASS — гүн градиент дэвсгэр, шилэн хавтан, доод таб
+   Зөвхөн харанхуй загварт. Гэрэлтэй загвар хэвээрээ үлдэнэ.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Дэлгэц бүр өөрийн градиент агаартай ───────────────────── */
+[data-theme="dark"] .view::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 88% 52% at 14% -6%,rgba(120,86,255,.34),transparent 62%),
+    radial-gradient(ellipse 74% 44% at 96% 6%,rgba(196,74,220,.22),transparent 60%),
+    radial-gradient(ellipse 70% 40% at 78% 46%,rgba(64,120,255,.16),transparent 62%),
+    linear-gradient(178deg,#20114E 0%,#150C33 34%,#0B0A20 66%,#06070F 100%)}
+/* Дэр — хув шар / улбар шар агаар */
+[data-theme="dark"] #homeView::before{
+  background:
+    radial-gradient(ellipse 88% 52% at 16% -6%,rgba(255,150,54,.38),transparent 60%),
+    radial-gradient(ellipse 76% 44% at 98% 4%,rgba(255,96,74,.24),transparent 58%),
+    radial-gradient(ellipse 70% 40% at 74% 44%,rgba(190,86,255,.14),transparent 62%),
+    linear-gradient(178deg,#4A2410 0%,#2A1526 32%,#120C22 64%,#06070F 100%)}
+/* СШ — нил ягаан / индиго агаар */
+[data-theme="dark"] #swHomeView::before{
+  background:
+    radial-gradient(ellipse 88% 54% at 14% -6%,rgba(126,74,255,.40),transparent 62%),
+    radial-gradient(ellipse 76% 44% at 98% 6%,rgba(200,70,235,.24),transparent 58%),
+    radial-gradient(ellipse 70% 40% at 76% 46%,rgba(70,130,255,.18),transparent 62%),
+    linear-gradient(178deg,#251058 0%,#180B38 34%,#0C0922 66%,#06070F 100%)}
+
+/* Тоо нь булангийн тэмдэг рүү мөргөхгүй — тэмдэгт зай үлдээв */
+[data-theme="dark"] .hero-stats:not(.hero-stats-2) .hero-stat-n{
+  font-size:22px;padding-right:26px}
+[data-theme="dark"] .hero-stats-2 .hero-stat-n{padding-right:30px}
+[data-theme="dark"] .hero-stat-l{padding-right:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+[data-theme="dark"] .hero-stats:not(.hero-stats-2) .hero-stat-l{
+  font-size:8.5px;letter-spacing:.09em}
+
+/* Мөрөнд бичсэн тод ирмэгүүд шилэн гадаргууг эвдэж байсан — үйлдлийн
+   товчнуудыг саармаг шил болгов. Картын утга заасан өнгө хэвээр. */
+[data-theme="dark"] .add-track-btn[style],
+[data-theme="dark"] .exp-btn[style]{
+  border-color:rgba(255,255,255,.18)!important}
+[data-theme="dark"] .track-card[style]{
+  background:linear-gradient(158deg,rgba(255,255,255,.12),rgba(255,255,255,.045))!important;
+  border-color:rgba(255,255,255,.16)!important}
+/* Картын дээрх шар зураас харанхуйд хэт тод байв */
+[data-theme="dark"] .track-card::before{
+  background:linear-gradient(90deg,rgba(255,210,63,.55),rgba(255,107,181,.45));
+  height:2px;opacity:.7}
+
+/* Толгой нь дэвсгэртэйгээ нийлнэ — тасалдсан ирмэг байхгүй */
+[data-theme="dark"] .hero,
+[data-theme="dark"] #swHomeView .hero{
+  background:transparent;box-shadow:none;border-radius:0;
+  padding-bottom:6px}
+[data-theme="dark"] .hero::before{opacity:.16}
+[data-theme="dark"] .hero::after{display:none}   /* v91-ийн бөмбөлгийг авав */
+
+/* ── Шилэн хавтангийн үндсэн жор ───────────────────────────── */
+[data-theme="dark"] .hero-stat,
+[data-theme="dark"] .folder-card,
+[data-theme="dark"] .track-card,
+[data-theme="dark"] .sw-card,
+[data-theme="dark"] .sec-card,
+[data-theme="dark"] .spc-card,
+[data-theme="dark"] .add-track-btn,
+[data-theme="dark"] .exp-btn{
+  background:linear-gradient(158deg,rgba(255,255,255,.13),rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 10px 30px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.20);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%)}
+
+/* ── Толгойн тоон хавтан — булан дээрээ дүрсний тэмдэгтэй ── */
+[data-theme="dark"] .hero-stat{
+  position:relative;border-radius:20px;padding:13px 14px 11px}
+[data-theme="dark"] .hero-stat-n{
+  font-size:26px;font-weight:600;letter-spacing:-.5px;
+  text-shadow:0 0 26px rgba(255,255,255,.30)}
+[data-theme="dark"] .hero-stat-l{
+  font-size:9px;letter-spacing:.13em;color:rgba(255,255,255,.62);margin-top:3px}
+.hero-stat-ic{position:absolute;top:10px;right:10px;width:24px;height:24px;
+  border-radius:8px;display:none;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.92);
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.20)}
+.hero-stat-ic svg{width:13px;height:13px}
+[data-theme="dark"] .hero-stat-ic{display:flex}
+@media (max-width:369px){
+  [data-theme="dark"] .hero-stat-ic{display:none}
+  [data-theme="dark"] .hero-stat-n{font-size:21px}
+}
+
+/* ── Толгойн дугуй товчнууд ────────────────────────────────── */
+[data-theme="dark"] .hero-edit{
+  width:38px;height:38px;padding:0;border-radius:13px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 6px 18px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.22)}
+[data-theme="dark"] .hero-edit:active{background:rgba(255,255,255,.22)}
+[data-theme="dark"] .hero-icon{
+  border-radius:16px;background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:0 8px 22px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.24)}
+[data-theme="dark"] .sw-nav{
+  border-radius:999px;padding:8px 15px;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.20);
+  color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.20)}
+[data-theme="dark"] .sw-add{
+  border-radius:50%;width:44px;height:44px;
+  background:linear-gradient(150deg,rgba(255,255,255,.26),rgba(255,255,255,.10));
+  border:1px solid rgba(255,255,255,.30);color:#fff;
+  box-shadow:0 10px 26px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.35)}
+[data-theme="dark"] .sw-add::after{border-radius:50%;inset:-5px;
+  border-color:rgba(255,255,255,.28)}
+
+/* ── Картууд ───────────────────────────────────────────────── */
+[data-theme="dark"] .folder-card,
+[data-theme="dark"] .track-card,
+[data-theme="dark"] .sw-card{border-radius:20px}
+[data-theme="dark"] .folder-icon{
+  border-radius:14px;
+  background:linear-gradient(150deg,rgba(255,255,255,.18),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24)}
+[data-theme="dark"] .sw-st-c{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);
+  border-radius:14px}
+[data-theme="dark"] .sw-badge,[data-theme="dark"] .sw-tag,[data-theme="dark"] .chip{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14)}
+
+/* ── Товчнууд ──────────────────────────────────────────────── */
+[data-theme="dark"] .add-track-btn,[data-theme="dark"] .exp-btn{
+  border-radius:16px;font-weight:600;letter-spacing:.02em}
+[data-theme="dark"] .add-track-btn[style*="dashed"],
+[data-theme="dark"] .add-track-btn.dashed{border-style:dashed}
+
+/* ── Доод таб — шилэн тавцан ───────────────────────────────── */
+#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:300;display:none;
+  padding:7px 8px calc(7px + var(--sab));
+  background:rgba(10,10,24,.72);
+  border-top:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:0 -10px 34px rgba(0,0,0,.42)}
+body.has-tabbar #tabbar{display:flex}
+body.rec-mode #tabbar{display:none}
+.tab-b{flex:1;background:none;border:0;cursor:pointer;padding:7px 2px 5px;
+  border-radius:15px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:rgba(220,228,255,.55);transition:color .28s ease,background .28s ease;
+  -webkit-tap-highlight-color:transparent}
+.tab-b svg{width:21px;height:21px;stroke-width:1.8}
+.tab-b span{font-size:9.5px;font-weight:600;letter-spacing:.02em}
+.tab-b[aria-current="true"]{color:#fff;
+  background:linear-gradient(158deg,rgba(255,255,255,.20),rgba(255,255,255,.07));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 6px 18px rgba(0,0,0,.3)}
+.tab-dot{position:absolute;top:6px;right:calc(50% - 18px);width:7px;height:7px;
+  border-radius:50%;background:#FF5C86;border:1.5px solid rgba(10,10,24,.9);display:none}
+.tab-b.has-dot{position:relative}
+.tab-b.has-dot .tab-dot{display:block}
+body.has-tabbar .home-body{padding-bottom:calc(112px + var(--sab))}
+body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
+
+/* ── Мэдэгдэл / Профайл хуудасны мөрүүд ────────────────────── */
+.pf-row{display:flex;align-items:center;gap:12px;width:100%;padding:14px;
+  border-radius:16px;border:1px solid var(--border);background:var(--card);
+  color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;text-align:left;
+  margin-bottom:8px;font-family:inherit}
+.pf-row .pf-ic{width:34px;height:34px;flex:0 0 34px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--card);border:1px solid var(--border)}
+.pf-row .pf-t{flex:1;min-width:0;display:block}
+.pf-row .pf-s{display:block;font-size:11px;font-weight:600;color:var(--ink3);margin-top:2px}
+.pf-row .pf-ar{color:var(--ink4);font-weight:800}
+.pf-row:active{background:rgba(255,255,255,.10)}
+[data-theme="dark"] .pf-row{
+  background:linear-gradient(158deg,rgba(255,255,255,.11),rgba(255,255,255,.04));
+  border-color:rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
+[data-theme="dark"] .pf-row .pf-ic{
+  background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.16)}
+.pf-hd{display:flex;align-items:center;gap:13px;padding:4px 2px 16px}
+.pf-hd .pf-av{width:52px;height:52px;border-radius:18px;flex:0 0 52px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#8B5CF6,#C026D3);color:#fff;
+  font-size:19px;font-weight:800;
+  box-shadow:0 10px 26px rgba(139,92,246,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+.pf-hd .pf-nm{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.pf-hd .pf-em{font-size:11.5px;color:var(--ink3);font-weight:600;margin-top:2px;
+  word-break:break-all}
+.sy-state{display:flex;align-items:center;gap:11px;padding:15px;border-radius:18px;
+  margin-bottom:12px;border:1px solid var(--border);background:var(--card)}
+.sy-state .sy-dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px}
+.sy-state.ok .sy-dot{background:var(--g500);box-shadow:0 0 14px var(--g500)}
+.sy-state.warn .sy-dot{background:var(--orange);box-shadow:0 0 14px var(--orange)}
+.sy-state .sy-t{font-size:14px;font-weight:800}
+.sy-state .sy-s{font-size:11.5px;color:var(--ink3);font-weight:600;margin-top:2px}
+[data-theme="dark"] .sy-state{
+  background:linear-gradient(158deg,rgba(255,255,255,.11),rgba(255,255,255,.04));
+  border-color:rgba(255,255,255,.14)}
 </style>
 </head>
 <body>
@@ -1010,6 +1211,54 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
     font-family:-apple-system,sans-serif">Дэлгэц дарж алгасах</div>
 </div>
 <div id="toast"></div>
+<!-- ══ ДООД ТАБ — үндсэн шилжилт ══ -->
+<nav id="tabbar" aria-label="Үндсэн цэс">
+  <button class="tab-b" id="tabHome" onclick="goTab('home')" aria-current="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+    <span>Нүүр</span>
+  </button>
+  <button class="tab-b" id="tabPass" onclick="goTab('pass')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+    <span>Паспорт</span>
+  </button>
+  <button class="tab-b" id="tabSw" onclick="goTab('sw')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3"/></svg>
+    <span>Сумууд</span>
+  </button>
+  <button class="tab-b has-dot" id="tabSync" onclick="goTab('sync')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <span>Мэдэгдэл</span><span class="tab-dot" id="tabSyncDot"></span>
+  </button>
+  <button class="tab-b" id="tabProf" onclick="goTab('prof')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></svg>
+    <span>Профайл</span>
+  </button>
+</nav>
+
+<!-- ══ МЭДЭГДЭЛ — үүлтэй холбоо, илгээгээгүй өөрчлөлт ══ -->
+<div class="overlay" id="syncSheet">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="sheet-title" style="margin:0">Мэдэгдэл</div>
+      <button onclick="closeModal('syncSheet')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div id="syncBody"></div>
+    <div style="height:calc(18px + var(--sab))"></div>
+  </div></div>
+</div>
+
+<!-- ══ ПРОФАЙЛ — хэсэг, тохиргоо, гарах ══ -->
+<div class="overlay" id="profSheet">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="sheet-title" style="margin:0">Профайл</div>
+      <button onclick="closeModal('profSheet')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div id="profBody"></div>
+    <div style="height:calc(18px + var(--sab))"></div>
+  </div></div>
+</div>
+
 <div class="swipe-flash" id="swipeFlash"><div class="flash-pill" id="swipeFlashLabel"></div></div>
 
 <!-- LOGIN -->
@@ -1115,9 +1364,9 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
       <div id="heroMeta" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600"></div>
     </div>
     <div class="hero-stats" id="heroStats">
-      <div class="hero-stat"><div class="hero-stat-n" id="hsTracks">0</div><div class="hero-stat-l">Замын тоо</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="hsTotal">0</div><div class="hero-stat-l">Нийт дэр</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="hsPct">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 21V6M20 21V6M4 10h16M4 15h16M9 3h6"/></svg></span><div class="hero-stat-n" id="hsTracks">0</div><div class="hero-stat-l">Замын тоо</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg></span><div class="hero-stat-n" id="hsTotal">0</div><div class="hero-stat-l">Нийт дэр</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><div class="hero-stat-n" id="hsPct">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
     </div>
   </div>
   <div class="home-body">
@@ -1295,7 +1544,7 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
 
 <!-- ══════════ СШ ПУ-5 — СУМ ШИЛЖҮҮЛГИЙН ДҮНЗ БҮРТГЭЛ ══════════ -->
 <div class="view" id="swHomeView">
-  <div class="hero" style="background:linear-gradient(135deg,#6D28D9,#9333EA 55%,#C026D3)">
+  <div class="hero" id="swHero">
     <div class="hero-top">
       <button class="sw-nav" onclick="hap();goDerHome()">
         <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Дэр ПУ-5
@@ -1314,15 +1563,15 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
       <div id="swHeroMeta" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600"></div>
     </div>
     <div class="hero-stats" id="swHeroStats">
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsD">0</div><div class="hero-stat-l">Нийт дүнз</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3"/></svg></span><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><div class="hero-stat-n" id="swHsD">0</div><div class="hero-stat-l">Нийт дүнз</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
     </div>
     <!-- пог/м нь тусдаа бүтэн нүд — дээрх мөртэй ижил бүтэцтэй тул
          шошгууд бүгд нэг шугам дээр таарна -->
     <div class="hero-stats hero-stats-2">
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsM">0</div><div class="hero-stat-l">Нийт пог/м</div></div>
-      <div class="hero-stat"><div class="hero-stat-n" id="swHsMB">0</div><div class="hero-stat-l">Тэнцэхгүй пог/м</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg></span><div class="hero-stat-n" id="swHsM">0</div><div class="hero-stat-l">Нийт пог/м</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span><div class="hero-stat-n" id="swHsMB">0</div><div class="hero-stat-l">Тэнцэхгүй пог/м</div></div>
     </div>
   </div>
   <div class="home-body">
@@ -2556,7 +2805,7 @@ function fmtNum(v){return Number.isInteger(v)?String(Math.round(v)):(Math.round(
 const _THKEY='sg_der_theme';
 const _SUN='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const _MOON='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1111.2 3a6.6 6.6 0 009.8 9.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-function _themeIs(){try{return localStorage.getItem(_THKEY)||'light'}catch(e){return 'light'}}
+function _themeIs(){try{return localStorage.getItem(_THKEY)||'dark'}catch(e){return 'dark'}}
 function applyTheme(t){
   const dark=t==='dark';
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
@@ -2569,7 +2818,10 @@ function applyTheme(t){
 }
 function toggleTheme(){
   hap(8);
-  const next=_themeIs()==='dark'?'light':'dark';
+  /* Одоо ЯМАР загвар ХЭРЭГЛЭГДЭЖ байгаагаас нь эсрэгийг нь авна. Хадгалсан
+     утгаас авбал хадгалаагүй үед (анхны нээлт) буруу тийш эргэдэг байсан. */
+  const cur=document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light';
+  const next=cur==='dark'?'light':'dark';
   try{localStorage.setItem(_THKEY,next)}catch(e){}
   applyTheme(next);
   showToast(next==='dark'?'Харанхуй загвар':'Гэрэлтэй загвар',1600)
@@ -2622,6 +2874,7 @@ function showView(id,back){
   el.classList.add('active');
   const sc=el.querySelector('.home-body,.track-body,.sum-body');
   if(sc)sc.scrollTop=0;
+  if(typeof _syncTabs==='function')_syncTabs();
 }
 function goHome(){
   _navBack=true;showView('homeView');
@@ -8009,6 +8262,121 @@ async function delSwSpec(mak,mark){
 // Шийдэл: "илгээгдээгүй" тэмдэг (dirty) + шууд илгээх (flush) +
 //         дарж бичихээс хамгаалах шалгуур.
 // ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
+   ДООД ТАБ — үндсэн шилжилт
+   Таб бүр жинхэнэ очих газартай. Бүртгэлийн дэлгэц дээр нуугдана
+   (гарын хүрэлцээ тэнд чухал), нэвтрээгүй үед ч харагдахгүй.
+   ══════════════════════════════════════════════════════════════ */
+const _TABV={home:'homeView',pass:'homeView',sw:'swHomeView'};
+function goTab(t){
+  hap(8);
+  if(t==='sync'){openSyncSheet();return}
+  if(t==='prof'){openProfSheet();return}
+  if(t==='sw'){goSwHome();_syncTabs();return}
+  goDerHome();
+  if(t==='pass'){
+    const sec=document.getElementById('foldersGrid');
+    if(sec)setTimeout(()=>{
+      const h=sec.closest('.home-section');
+      if(h)h.scrollIntoView({behavior:'smooth',block:'start'})},140);
+  }
+  _syncTabs(t)
+}
+function _syncTabs(force){
+  const bar=document.getElementById('tabbar');if(!bar)return;
+  const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active');
+  document.body.classList.toggle('has-tabbar',on);
+  if(!on)return;
+  const sw=document.getElementById('swHomeView').classList.contains('active');
+  const cur=force||(sw?'sw':'home');
+  [['home','tabHome'],['pass','tabPass'],['sw','tabSw'],
+   ['sync','tabSync'],['prof','tabProf']].forEach(([k,id])=>{
+    const b=document.getElementById(id);
+    if(b)b.setAttribute('aria-current',k===cur?'true':'false')});
+  const dot=document.getElementById('tabSync');
+  if(dot)dot.classList.toggle('has-dot',!!_dirtyAt())
+}
+
+/* ── Мэдэгдэл: үүлтэй холбоо ─────────────────────────────── */
+function openSyncSheet(){renderSyncSheet();openModal('syncSheet');_syncTabs('sync')}
+function renderSyncSheet(){
+  const b=document.getElementById('syncBody');if(!b)return;
+  const dt=_dirtyAt();
+  const ago=dt?_agoText(dt):'';
+  b.innerHTML=`
+    <div class="sy-state ${dt?'warn':'ok'}">
+      <span class="sy-dot"></span>
+      <div style="flex:1;min-width:0">
+        <div class="sy-t">${dt?'Илгээгээгүй өөрчлөлт байна':'Бүх өөрчлөлт үүлэнд хадгалагдсан'}</div>
+        <div class="sy-s">${dt?ago+' хадгалагдаагүй байна':'Утас болон үүл ижил байна'}</div>
+      </div>
+    </div>
+    ${dt?`<button class="pf-row" onclick="hap();syncNow()">
+      <span class="pf-ic" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+      <span class="pf-t">Одоо илгээх<span class="pf-s">Өөрчлөлтийг үүл рүү хадгална</span></span>
+      <span class="pf-ar">›</span></button>`:''}
+    <button class="pf-row" onclick="hap();closeModal('syncSheet');cloudReload()">
+      <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
+      <span class="pf-t">Үүлнээс дахин татах<span class="pf-s">Утсан дээрхийг үүлийнхээр солино</span></span>
+      <span class="pf-ar">›</span></button>
+    <div style="font-size:11.5px;color:var(--ink3);font-weight:600;line-height:1.6;
+      padding:10px 4px 0">Бүртгэл хийх бүрд өөрчлөлт эхлээд утсанд хадгалагдана.
+      Интернэт байвал үүл рүү өөрөө илгээгдэнэ. Улаан цэг байвал илгээгдээгүй
+      өөрчлөлт байгаа тул аппыг устгах, өгөгдөл цэвэрлэхээс сэргийлнэ үү.</div>`
+}
+function _agoText(ts){
+  const m=Math.max(0,Math.round((Date.now()-ts)/60000));
+  if(m<1)return 'Саяхнаас';
+  if(m<60)return m+' минутын өмнөөс';
+  const h=Math.round(m/60);
+  if(h<24)return h+' цагийн өмнөөс';
+  return Math.round(h/24)+' өдрийн өмнөөс'
+}
+function syncNow(){
+  showToast('Илгээж байна…',1400);
+  Promise.resolve(flushSave(true)).then(()=>{
+    setTimeout(()=>{renderSyncSheet();_syncTabs('sync');
+      showToast(_dirtyAt()?'Илгээж чадсангүй — сүлжээгээ шалгана уу':'Үүлэнд хадгаллаа',2200)},900)
+  }).catch(()=>showToast('Илгээж чадсангүй — сүлжээгээ шалгана уу',2400))
+}
+
+/* ── Профайл: хэсэг, тохиргоо, гарах ─────────────────────── */
+function openProfSheet(){renderProfSheet();openModal('profSheet');_syncTabs('prof')}
+function renderProfSheet(){
+  const b=document.getElementById('profBody');if(!b)return;
+  const nm=DB.location||'ПУ-5';
+  const em=(_currentUser&&_currentUser.email)||'';
+  const dark=_themeIs()==='dark';
+  const row=(ic,col,t,s,fn)=>`<button class="pf-row" onclick="hap();${fn}">
+    <span class="pf-ic" style="color:${col}">${ic}</span>
+    <span class="pf-t">${t}${s?`<span class="pf-s">${s}</span>`:''}</span>
+    <span class="pf-ar">›</span></button>`;
+  b.innerHTML=`
+    <div class="pf-hd">
+      <span class="pf-av">${esc((nm[0]||'П').toUpperCase())}</span>
+      <div style="min-width:0">
+        <div class="pf-nm">${esc(nm)}</div>
+        <div class="pf-em">${esc(em||('Хэсэг: '+(_sectionCode||'—')))}</div>
+      </div>
+    </div>
+    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+      'var(--purple)','Нэгдсэн дүн','Бүх замын нийлбэр тайлан',"closeModal('profSheet');showSummaryAll()")}
+    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>',
+      'var(--blue)','Хэсгийн нэр засах',esc(nm),"closeModal('profSheet');editLocation()")}
+    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg>',
+      'var(--g600)','Тайлангийн тохиргоо','Гарчиг, албан тушаалтан',"closeModal('profSheet');openReportSettings()")}
+    ${row(dark
+        ?'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>'
+        :'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+      'var(--gold-deep)','Дэлгэцийн загвар',dark?'Харанхуй':'Гэрэлтэй',"toggleTheme();renderProfSheet()")}
+    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+      'var(--red)','Гарах','',"closeModal('profSheet');doLogout()")}
+    <div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
+      font-weight:600;color:var(--ink5)"></div>`;
+  const bt=b.querySelector('.build-tag');
+  if(bt)bt.textContent='Хувилбар '+APP_BUILD;
+}
+
 function _dirtyKey(){return 'sg_der_dirty_'+(_sectionCode||'')}
 function _dirtyAt(){
   try{const v=localStorage.getItem(_dirtyKey());return v?parseInt(v,10)||0:0}catch(e){return 0}
@@ -8144,7 +8512,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·91';
+const APP_BUILD='2026.08.28·92';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
