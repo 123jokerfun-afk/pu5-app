@@ -1191,6 +1191,21 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 .sy-state.ok .sy-dot{background:var(--g500);box-shadow:0 0 14px var(--g500)}
 .sy-state.warn .sy-dot{background:var(--orange);box-shadow:0 0 14px var(--orange)}
 .sy-state .sy-t{font-size:14px;font-weight:800}
+.sy-meter{padding:15px;border-radius:18px;margin-bottom:12px;
+  border:1px solid var(--border);background:var(--card)}
+.sy-meter-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-size:12px;font-weight:700;color:var(--ink2)}
+.sy-meter-top .num{font-variant-numeric:tabular-nums;font-weight:800;font-size:12.5px}
+.sy-bar{height:7px;border-radius:4px;margin-top:9px;overflow:hidden;
+  background:rgba(124,150,200,.18)}
+.sy-bar i{display:block;height:100%;border-radius:4px;
+  transition:width .9s cubic-bezier(.22,.61,.24,1)}
+.sy-meter-s{font-size:11.5px;font-weight:600;color:var(--ink3);
+  margin-top:9px;line-height:1.55}
+[data-theme="dark"] .sy-meter{
+  background:linear-gradient(158deg,rgba(255,255,255,.11),rgba(255,255,255,.04));
+  border-color:rgba(255,255,255,.14)}
+[data-theme="dark"] .sy-bar{background:rgba(255,255,255,.10)}
 .sy-state .sy-s{font-size:11.5px;color:var(--ink3);font-weight:600;margin-top:2px}
 [data-theme="dark"] .sy-state{
   background:linear-gradient(158deg,rgba(255,255,255,.11),rgba(255,255,255,.04));
@@ -2631,11 +2646,15 @@ function saveDB(){
     return}
   clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{
+    const _p=_packForSave();
+    if(_lastDocBytes>DOC_LIMIT){_tooBig(_lastDocBytes);return}
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
-      .set({db:_packDB(DB),updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();setTimeout(()=>{_localWriting=false},600)})
-      .catch(e=>{console.error('Save err:',e);_localWriting=false})
+      .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
+      .then(()=>{_dirtyClear();_lastSaveErr='';setTimeout(()=>{_localWriting=false},600)})
+      .catch(e=>{console.error('Save err:',e);
+        _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
+        if(typeof _syncTabs==='function')_syncTabs()})
   },1500)
 }
 // ── Солигдсон дэр ──
@@ -8263,6 +8282,59 @@ async function delSwSpec(mak,mark){
 //         дарж бичихээс хамгаалах шалгуур.
 // ══════════════════════════════════════════════
 /* ══════════════════════════════════════════════════════════════
+   ҮҮЛЭН ДЭХ ХЭМЖЭЭ — 1 МиБ-ийн хамгаалалт
+   Хэсэг бүрийн БҮХ өгөгдөл Firestore-ын ГАНЦ баримтад ордог.
+   Тэр баримтын хатуу дээд хэмжээ 1 МиБ бөгөөд ямар ч багцад
+   өөрчлөгддөггүй. Хэтэрвэл бичилт няцаагдаж, өөрчлөлт утсан дээр
+   тээглэн үлддэг — өмнө нь энэ нь зөвхөн console дээр бичигддэг
+   тул хэрэглэгч учрыг нь мэдэхгүй байв.
+   ══════════════════════════════════════════════════════════════ */
+const DOC_LIMIT=1048576;              // 1 МиБ — Firestore-ын хатуу хязгаар
+const DOC_WARN=Math.round(DOC_LIMIT*.8);
+let _lastDocBytes=0,_lastSaveErr='',_bigWarned=0;
+
+/* Firestore баримтын хэмжээг ӨӨРИЙНХ нь дүрмээр тооцно:
+   мөр = UTF-8 байт + 1, тоо = 8, map/массив бүрт 32 байт нэмэгдэнэ. */
+function _fsSize(v){
+  if(v===null||v===undefined)return 1;
+  const t=typeof v;
+  if(t==='boolean')return 1;
+  if(t==='number')return 8;
+  if(t==='string'){
+    let n=0;for(let i=0;i<v.length;i++){const c=v.codePointAt(i);
+      n+=c<128?1:c<2048?2:c<65536?3:(i++,4)}
+    return n+1}
+  if(Array.isArray(v)){let n=32;for(let i=0;i<v.length;i++)n+=_fsSize(v[i]);return n}
+  let n=32;
+  for(const k in v)if(Object.prototype.hasOwnProperty.call(v,k))
+    n+=_fsSize(k)+_fsSize(v[k]);
+  return n
+}
+/* Нэг удаа шахаж, хэмжээг нь хамт буцаана — хоёр удаа шахахгүй */
+function _packForSave(){
+  const p=_packDB(DB);
+  _lastDocBytes=_fsSize(p)+_fsSize('db')+_fsSize('updatedAt')+96;  // талбар+баримтын нэмэлт
+  return p
+}
+function docBytes(){try{_packForSave();return _lastDocBytes}catch(e){return _lastDocBytes}}
+function fmtBytes(n){
+  if(n<1024)return n+' Б';
+  if(n<1048576)return (n/1024).toFixed(n<10240?1:0)+' КБ';
+  return (n/1048576).toFixed(2)+' МБ'
+}
+/* Хязгаар давсан үед — бичихийг завдахгүй, шалтгааныг нь хэлнэ */
+function _tooBig(n){
+  _lastSaveErr='Хэмжээ хэтэрсэн: '+fmtBytes(n)+' / '+fmtBytes(DOC_LIMIT);
+  if(typeof _syncTabs==='function')_syncTabs();
+  if(Date.now()-_bigWarned>60000){
+    _bigWarned=Date.now();
+    if(typeof _errBanner==='function')
+      _errBanner('Үүлэнд багтахгүй байна ('+fmtBytes(n)+')',
+        'Өгөгдөл утсанд бүрэн хэвээр. Мэдэгдэл хэсгээс дэлгэрэнгүйг үзнэ үү.');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    ДООД ТАБ — үндсэн шилжилт
    Таб бүр жинхэнэ очих газартай. Бүртгэлийн дэлгэц дээр нуугдана
    (гарын хүрэлцээ тэнд чухал), нэвтрээгүй үед ч харагдахгүй.
@@ -8311,6 +8383,25 @@ function renderSyncSheet(){
         <div class="sy-s">${dt?ago+' хадгалагдаагүй байна':'Утас болон үүл ижил байна'}</div>
       </div>
     </div>
+    ${_lastSaveErr?`<div class="sy-state warn" style="align-items:flex-start">
+      <span class="sy-dot" style="margin-top:5px"></span>
+      <div style="flex:1;min-width:0">
+        <div class="sy-t">Илгээхэд алдаа гарлаа</div>
+        <div class="sy-s">${esc(_lastSaveErr)}</div>
+      </div></div>`:''}
+    ${(()=>{const n=docBytes(),pc=Math.min(100,n/DOC_LIMIT*100);
+      const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g500)';
+      return `<div class="sy-meter">
+        <div class="sy-meter-top">
+          <span>Үүлэн дэх хэмжээ</span>
+          <span class="num" style="color:${col}">${fmtBytes(n)} / ${fmtBytes(DOC_LIMIT)}</span>
+        </div>
+        <div class="sy-bar"><i style="width:${Math.max(1.5,pc).toFixed(1)}%;background:${col}"></i></div>
+        <div class="sy-meter-s">${pc<60
+          ?'Хэсгийн бүх өгөгдөл үүлэн дээрх нэг бичлэгт багтдаг. Одоогоор чөлөөтэй.'
+          :pc<85?'Хагасаас дээш дүүрсэн. Хуучин паспортуудыг Excel болгож татаад устгавал зай гарна.'
+          :'Хязгаарт ойрхон. Хуучин паспортуудыг татаж аваад устгана уу — 1 МБ давбал үүлэнд илгээгдэхээ болино.'}</div>
+      </div>`})()}
     ${dt?`<button class="pf-row" onclick="hap();syncNow()">
       <span class="pf-ic" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
       <span class="pf-t">Одоо илгээх<span class="pf-s">Өөрчлөлтийг үүл рүү хадгална</span></span>
@@ -8369,6 +8460,13 @@ function renderProfSheet(){
         ?'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>'
         :'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
       'var(--gold-deep)','Дэлгэцийн загвар',dark?'Харанхуй':'Гэрэлтэй',"toggleTheme();renderProfSheet()")}
+    ${(()=>{const n=docBytes(),pc=n/DOC_LIMIT*100;
+      const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g600)';
+      return row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h1a3 3 0 010 6H6a4 4 0 01-.7-7.9A5.5 5.5 0 0118 10z"/></svg>',
+        col,'Үүлэн дэх хэмжээ',
+        fmtBytes(n)+' · '+(pc>100?'хязгаар хэтэрсэн'
+          :(pc<0.1?'<0.1':pc.toFixed(pc<10?1:0))+'% дүүрсэн'),
+        "closeModal('profSheet');openSyncSheet()")})()}
     ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
       'var(--red)','Гарах','',"closeModal('profSheet');doLogout()")}
     <div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
@@ -8414,13 +8512,17 @@ function flushSave(force){
   if(!_dirtyAt()&&!force)return false;
   if(_cloudHadData&&!_dbHasData(DB))return false;   // хоосноор дарж бичихгүй
   clearTimeout(_saveTimer);_saveTimer=null;
-  _localWriting=true;
   try{
+    const _p=_packForSave();
+    if(_lastDocBytes>DOC_LIMIT){_tooBig(_lastDocBytes);return false}
+    _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
-      .set({db:_packDB(DB),updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_cloudLoaded=true;
+      .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
+      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';
         setTimeout(()=>{_localWriting=false},600)})
-      .catch(e=>{console.error('Flush err:',e);_localWriting=false});
+      .catch(e=>{console.error('Flush err:',e);
+        _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
+        if(typeof _syncTabs==='function')_syncTabs()});
     return true
   }catch(e){_localWriting=false;return false}
 }
@@ -8512,7 +8614,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·92';
+const APP_BUILD='2026.08.28·93';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
