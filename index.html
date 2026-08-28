@@ -11,6 +11,41 @@
 <meta name="theme-color" content="#FF9932">
 <meta name="description" content="Төмөр замын дэр шалгалт бүртгэх систем">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23FF9932'/%3E%3Crect x='60' y='220' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='60' y='256' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='100' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='172' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='244' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='316' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='388' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='244' y='180' width='28' height='152' rx='8' fill='%23FF6B6B' opacity='.9'/%3E%3C/svg%3E">
+<!-- ══ АЛДААНЫ ХАРУУЛАГЧ ══
+     Бүх скриптээс ӨМНӨ. Хэрэв аппын JS унавал өмнө нь ХАР ДЭЛГЭЦ гарч,
+     хэрэглэгч ч, бид ч шалтгааныг мэдэхгүй байсан (v87, v95). Одоо алдаа
+     дэлгэц дээр улаанаар бичигдэнэ — зураг авч илгээхэд шалтгаан шууд
+     мэдэгдэнэ. Энэ хэсэг өөрөө юунаас ч хамаарахгүй. -->
+<script>
+(function(){
+  var shown=0;
+  function show(msg){
+    if(shown>2)return; shown++;
+    try{
+      var d=document.getElementById('__errbar');
+      if(!d){
+        d=document.createElement('div'); d.id='__errbar';
+        d.style.cssText='position:fixed;left:0;right:0;top:0;z-index:2147483647;'+
+          'background:#B3261E;color:#fff;padding:12px 14px;'+
+          'font:12px/1.55 -apple-system,BlinkMacSystemFont,sans-serif;'+
+          'white-space:pre-wrap;word-break:break-word;max-height:60%;overflow:auto;'+
+          '-webkit-user-select:text;user-select:text';
+        (document.body||document.documentElement).appendChild(d);
+      }
+      d.textContent+=(d.textContent?'\n\n':'')+msg;
+    }catch(e){}
+  }
+  window.addEventListener('error',function(e){
+    if(e&&e.target&&e.target!==window&&e.target.tagName)return;   // зураг/скрипт татагдаагүй нь тусдаа
+    show('⚠ Аппын алдаа\n'+((e&&e.message)||'тодорхойгүй')+
+      '\n'+((e&&e.filename)||'')+' мөр '+((e&&e.lineno)||'?'));
+  },true);
+  window.addEventListener('unhandledrejection',function(e){
+    var r=e&&e.reason;
+    show('⚠ Боловсруулаагүй алдаа\n'+((r&&(r.message||r))||'тодорхойгүй'));
+  });
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -8753,7 +8788,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·95';
+const APP_BUILD='2026.08.28·96';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
