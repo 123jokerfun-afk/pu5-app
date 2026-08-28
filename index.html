@@ -2651,7 +2651,7 @@ function saveDB(){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_lastSaveErr='';_dualWrite(_p);
+      .then(()=>{_dirtyClear();_lastSaveErr='';/* _dualWrite(_p); — ТҮР УНТРААВ */
         setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Save err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -8426,7 +8426,12 @@ function _writeParts(packed){
 }
 /* Хос бичилт — хуучин баримт амжилттай бичигдсэний ДАРАА. Алдаа гарсан ч
    аппын ажиллагаанд нөлөөлөхгүй; зөвхөн Мэдэгдэл дээр тэмдэглэгдэнэ. */
+/* ТҮР УНТРААЛТТАЙ (v95). Firestore-ын эрхийн дүрэмд
+   sections/<код>/parts/** рүү бичих зөвшөөрөл нэмсэний дараа асаана.
+   PARTS_ON=true болгоход л хангалттай. */
+const PARTS_ON=false;
 function _dualWrite(packed){
+  if(!PARTS_ON)return;
   try{
     _writeParts(packed).catch(e=>{
       console.warn('parts write:',e);
@@ -8652,7 +8657,7 @@ function flushSave(force){
     _localWriting=true;
     fbDb.collection('sections').doc(_sectionCode)
       .set({db:_p,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';_dualWrite(_p);
+      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';/* _dualWrite(_p); — ТҮР УНТРААВ */
         setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Flush err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -8748,7 +8753,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·94';
+const APP_BUILD='2026.08.28·95';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
