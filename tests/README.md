@@ -22,7 +22,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 ```bash
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome
-node allC.js     # үүлний бүтэц: sizeguard docid parts probe read2
+node allC.js     # үүлний бүтэц: sizeguard docid parts probe read2 only3
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
 ```
@@ -48,6 +48,7 @@ node sweepB.js   # үлдсэн 3 утас
 | `probe.js` | Шат 1-ийн туршилт, унтраалга, өөрөө унтрах хамгаалалт |
 | `docid.js` | Firestore-ын баримтын нэрийн дүрэм |
 | `read2.js` | Шат 2 — уншилтыг хэсгүүдээс, хуучин руу унах, шилжүүлэх хаалга |
+| `only3.js` | Шат 3 — зөвхөн хэсгүүдэд бичих, сонсогчийн шилжилт, ХУУЧИРСАН баримт ачаалахгүй байх |
 
 ## Дүрэм
 
