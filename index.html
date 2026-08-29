@@ -6576,6 +6576,12 @@ function _withTimeout(p,ms,label){
 }
 async function _readCloud(tries){
   let last=null;
+  // Шат 2 — асаалттай бол хэсгүүдээс уншина. Дутуу/алдаатай бол
+  // доорх хуучин замаар үргэлжилнэ (өгөгдөл алдагдахгүй).
+  if(_partsRead()){
+    try{const p=await _readParts();if(p)return p}
+    catch(e){console.warn('parts read:',e);_partsErr=(e&&e.message)||String(e)}
+  }
   for(let i=0;i<(tries||3);i++){
     try{
       return await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),12000,'Үүлнээс унших')
@@ -8457,7 +8463,10 @@ function _writeParts(packed){
   Object.keys(parts).forEach(id=>{
     const json=JSON.stringify(parts[id]), h=_hash(json);
     now[id]=h;
-    if(prev[id]!==h){batch.set(col.doc(id),parts[id]);n++;bytes+=json.length}
+    if(prev[id]!==h){
+      let d=parts[id];
+      try{d=Object.assign({u:firebase.firestore.FieldValue.serverTimestamp()},d)}catch(e){}
+      batch.set(col.doc(id),d);n++;bytes+=json.length}
   });
   Object.keys(prev).forEach(id=>{if(!(id in now)){batch.delete(col.doc(id));n++}});
   if(!n)return Promise.resolve(0);
@@ -8467,6 +8476,63 @@ function _writeParts(packed){
 }
 /* Хос бичилт — хуучин баримт амжилттай бичигдсэний ДАРАА. Алдаа гарсан ч
    аппын ажиллагаанд нөлөөлөхгүй; зөвхөн Мэдэгдэл дээр тэмдэглэгдэнэ. */
+/* ── ШАТ 2: УНШИЛТЫГ ШИНЭ БҮТЭЦЭЭС ────────────────────────────
+   _readCloud нь хэсгүүдээс БАРИМТ ХЭЛБЭРТЭЙ утга буцаана. Ингэснээр
+   түүнийг дуудаж буй хоёр газар (нэвтрэлт, cloudReload) огт
+   өөрчлөгдөхгүй — тэнд илгээгдээгүй ажлыг хамгаалах нарийн логик
+   байгаа тул хөндөхгүй байх нь чухал.
+
+   Хэсгүүд дутуу бол ХУУЧИН баримт руу өөрөө унана. Realtime сонсогч
+   Шат 2-т хуучин баримтыг сонссоор байна — хос бичилт хоёуланг нь
+   тэнцүү байлгадаг тул аюулгүй, Шат 3-т шилжинэ.                  */
+const PARTS_RDKEY='sg_parts_read';
+function _partsRead(){
+  try{return localStorage.getItem(PARTS_RDKEY)==='1'}catch(e){return false}}
+
+/* Уншилтыг асаах ХААЛГА: хуучин баримт ба хэсгүүдийг зэрэг татаж
+   харьцуулна. Таарсан тохиолдолд Л асаана. */
+async function tryPartsRead(){
+  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй'};
+  if(!_partsOn())return {ok:false,why:'Эхлээд 2-р мөрөөр бичилтийг асаана уу'};
+  let p=null;
+  try{p=await _readParts()}catch(e){return {ok:false,why:(e&&e.message)||String(e)}}
+  if(!p)return {ok:false,why:'Хэсгүүд бүрэн биш — 3-р мөрөөр шалгана уу'};
+  let oldDb=null;
+  try{
+    const d=await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),
+      12000,'Хуучин баримт');
+    oldDb=d.exists&&d.data()?d.data().db:null;
+  }catch(e){return {ok:false,why:(e&&e.message)||String(e)}}
+  if(!oldDb)return {ok:false,why:'Хуучин баримт хоосон — харьцуулах боломжгүй'};
+  if(_cmpKey(p.data().db)!==_cmpKey(oldDb))
+    return {ok:false,why:'Хуучинтай ЗӨРЖ байна — уншилтыг шилжүүлэхгүй'};
+  try{localStorage.setItem(PARTS_RDKEY,'1')}catch(e){}
+  return {ok:true,n:p.__n}
+}
+function setPartsRead(v){
+  try{localStorage.setItem(PARTS_RDKEY,v?'1':'0')}catch(e){}
+  if(typeof renderSyncSheet==='function')renderSyncSheet();
+  showToast(v?'Уншилт шинэ бүтцээс':'Уншилт хуучин бүтцээс',1900)
+}
+
+/* Хэсгүүдийг татаж, баримт хэлбэрт оруулна. Дутуу бол null. */
+async function _readParts(){
+  const col=fbDb.collection('sections').doc(_sectionCode).collection(PARTS_COL);
+  const snap=await _withTimeout(col.get(),12000,'Хэсгүүдийг унших');
+  if(snap.empty)return null;
+  const parts={}; let ms=0, n=0;
+  snap.forEach(d=>{
+    if(d.id==='probe-test')return;
+    const v=d.data(); if(!v)return;
+    parts[d.id]=v; n++;
+    try{const u=v.u; if(u&&u.toMillis)ms=Math.max(ms,u.toMillis())}catch(e){}
+  });
+  if(!n||!parts.meta)return null;            // бүрэн бус — хуучин руу
+  const db=_joinParts(parts);
+  return {exists:true,__parts:true,__n:n,
+    data:()=>({db,updatedAt:ms?{toMillis:()=>ms}:null})};
+}
+
 /* ── Шат 1-ийг АЮУЛГҮЙ асаах хяналт ──────────────────────────
    v94-д хос бичилтийг шууд асааж, эрх байгаа эсэхийг шалгаагүй.
    Одоо: (1) эхлээд ганц туршилтын бичлэгээр эрхийг батална,
@@ -8481,7 +8547,10 @@ function setPartsOn(v){
   const redraw=()=>{
     if(typeof renderSyncSheet==='function')renderSyncSheet();
     if(typeof _syncTabs==='function')_syncTabs()};
-  if(!v){_partsErr='';redraw();showToast('Шинэ бүтэц унтраалаа',1800);return}
+  if(!v){
+    _partsErr='';
+    try{localStorage.setItem(PARTS_RDKEY,'0')}catch(e){}   // уншилтыг ч буцаана
+    redraw();showToast('Шинэ бүтэц унтраалаа',1800);return}
   _partsFails=0;_partsErr='';_clearPartHashes();
   redraw();
   /* Асаангуут ШУУД нэг удаа бүтнээр бичнэ. Эс тэгвэл дараагийн
@@ -8545,6 +8614,18 @@ function runProbe(){
     m.textContent=r.ok?'✓ Эрх байна — доорх 2-т асааж болно':'⚠ '+r.why;
     if(r.ok)_partsErr='';
   }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e)});
+}
+function runPartsRead(){
+  const m=document.getElementById('prMsg');
+  if(_partsRead()){setPartsRead(false);return}          // буцаах
+  if(m)m.textContent='Харьцуулж байна…';
+  tryPartsRead().then(r=>{
+    if(typeof renderSyncSheet==='function')renderSyncSheet();
+    const m2=document.getElementById('prMsg');
+    if(m2&&!r.ok)m2.textContent='⚠ '+r.why;
+    showToast(r.ok?('Уншилт шинэ бүтцээс · '+r.n+' баримт'):'Шилжсэнгүй',2400)
+  }).catch(e=>{const m2=document.getElementById('prMsg');
+    if(m2)m2.textContent='⚠ '+((e&&e.message)||e)});
 }
 function runVerifyParts(){
   const m=document.getElementById('vfMsg');
@@ -8660,6 +8741,12 @@ function renderSyncSheet(){
         _partsOn()?(_partsAt?'Сүүлд бичсэн: '+_agoText(_partsAt):'Дараагийн хадгалалтад бичигдэнэ')
         :'Туршилт амжилттай болсны дараа асаана уу'}</span></span>
       <span class="pf-ar">${_partsOn()?'унтраах':'асаах'}</span></button>
+    ${_partsOn()?`<button class="pf-row" onclick="hap();runPartsRead()">
+      <span class="pf-ic" style="color:${_partsRead()?'var(--g600)':'var(--ink4)'}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
+      <span class="pf-t">4. Уншилт: ${_partsRead()?'шинэ бүтцээс':'хуучин бүтцээс'}<span class="pf-s" id="prMsg">${
+        _partsRead()?'Шилжсэн — буцаахдаа дарна уу'
+        :'Дарвал хуучинтай харьцуулж, таарвал шилжинэ'}</span></span>
+      <span class="pf-ar">›</span></button>`:''}
     ${_partsOn()?`<button class="pf-row" onclick="hap();runVerifyParts()">
       <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
       <span class="pf-t">3. Хуучинтай таарч байгаа эсэх<span class="pf-s" id="vfMsg">Дарж шалгана уу</span></span>
@@ -8868,7 +8955,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.28·99';
+const APP_BUILD='2026.08.29·100';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
