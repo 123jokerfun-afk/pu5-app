@@ -58,7 +58,7 @@ ok('Алдааны шалтгаан харагдав',sheet.errShown);
 // Профайл дээрх мөр
 const pf=await page.evaluate(()=>{closeModal('syncSheet');openProfSheet();
   const t=document.getElementById('profBody').textContent;
-  return {has:/Үүлэн дэх хэмжээ/.test(t),txt:t.replace(/\s+/g,' ').match(/Үүлэн дэх хэмжээ[^›]*/)?.[0]||''}});
+  return {has:/Хамгийн том паспорт/.test(t),txt:t.replace(/\s+/g,' ').match(/Хамгийн том паспорт[^›]*/)?.[0]||''}});
 ok('Профайл дээр хэмжээ',pf.has,pf.txt.trim());
 
 // Хэвийн хэмжээнд эргэж ороход дахин илгээнэ

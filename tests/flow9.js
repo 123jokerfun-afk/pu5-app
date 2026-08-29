@@ -10,11 +10,21 @@ ok('Эхлээд бүх зүйл илгээгдсэн',await page.evaluate(()=>!
 // ── Сүлжээгүй болгож ажил хийх ──
 await page.evaluate(()=>{
   window.__sent=0;
+  // Апп паспорт бүрийг тусдаа баримтад batch-аар бичдэг болсон тул
+  // саатуулалтыг batch.commit дээр тавина (өмнө нь doc.set дээр байв).
+  const ob=fbDb.batch;
+  fbDb.batch=function(){
+    const b=ob.call(fbDb); const oc=b.commit;
+    b.commit=function(){
+      if(window.__offline)return Promise.reject(new Error('offline'));
+      window.__sent++; return oc.call(b)};
+    return b};
+  // Ганц баримтын бичилт үлдсэн бол мөн барина
   const orig=fbDb.collection;
   fbDb.collection=function(c){const r=orig.call(fbDb,c);const od=r.doc;
     r.doc=function(id){const d=od.call(r,id);const os=d.set;
-      d.set=function(v){if(window.__offline)return Promise.reject(new Error('offline'));
-        window.__sent++;return os.call(d,v)};return d};return r}});
+      d.set=function(v,o){if(window.__offline)return Promise.reject(new Error('offline'));
+        window.__sent++;return os.call(d,v,o)};return d};return r}});
 await page.evaluate(()=>{window.__offline=true;
   openFolder('f-test1');openTrack('t1');openSection(DB.tracks[0].sections[0].id);
   record('bad',null);record('bad',null)});

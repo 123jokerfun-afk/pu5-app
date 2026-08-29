@@ -22,7 +22,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 ```bash
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome
-node allC.js     # үүлний бүтэц: sizeguard docid parts probe read2 only3
+node allC.js     # үүлний бүтэц: sizeguard docid parts auto
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
 ```
@@ -34,7 +34,7 @@ node sweepB.js   # үлдсэн 3 утас
 | Файл | Юуг шалгадаг |
 |---|---|
 | `base.js` | Суурь — сервер, Chromium, төхөөрөмжийн жагсаалт |
-| `stub.js` | Firebase-ийн хуурамч хувилбар |
+| `stub.js` | Firebase-ийн хуурамч хувилбар (дэд бүлэг, batch дэмжинэ) |
 | `seed.js` | Туршилтын өгөгдөл |
 | `boot.js` | **Стубгүй** ачаалалт — "апп огт нээгдэхгүй"-г барина |
 | `zero.js` | Хоосон өгөгдөлтэй үеийн байдал |
@@ -45,10 +45,8 @@ node sweepB.js   # үлдсэн 3 утас
 | `swhome.js` | СШ нүүрний тоо, бүтэц |
 | `sizeguard.js` | Firestore 1 МиБ хязгаарын хамгаалалт |
 | `parts.js` | Паспортыг тусдаа баримт болгох — хуваалт/нийлүүлэлт |
-| `probe.js` | Шат 1-ийн туршилт, унтраалга, өөрөө унтрах хамгаалалт |
 | `docid.js` | Firestore-ын баримтын нэрийн дүрэм |
-| `read2.js` | Шат 2 — уншилтыг хэсгүүдээс, хуучин руу унах, шилжүүлэх хаалга |
-| `only3.js` | Шат 3 — зөвхөн хэсгүүдэд бичих, сонсогчийн шилжилт, ХУУЧИРСАН баримт ачаалахгүй байх |
+| `auto.js` | Автомат шилжилт — хэсгүүдээс унших, байхгүй бол хуучнаас уншаад өөрөө шилжих |
 
 ## Дүрэм
 

@@ -2684,7 +2684,7 @@ function saveDB(){
   clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{
     const _p=_packForSave();
-    const _lim=_partsOnly()?_lastPartMax:_lastDocBytes;
+    const _lim=_lastPartMax;   // хязгаар хэсэг тус бүрд хамаарна
     if(_lim>DOC_LIMIT){_tooBig(_lim);return}
     _localWriting=true;
     _pushCloud(_p)
@@ -6578,17 +6578,22 @@ async function _readCloud(tries){
   let last=null;
   // Шат 2 — асаалттай бол хэсгүүдээс уншина. Дутуу/алдаатай бол
   // доорх хуучин замаар үргэлжилнэ (өгөгдөл алдагдахгүй).
-  if(_partsRead()){
-    try{const p=await _readParts();if(p)return p}
-    catch(e){console.warn('parts read:',e);_partsErr=(e&&e.message)||String(e)}
-    // Шат 3-т хуучин баримт бичигдэхээ больсон тул ХУУЧИРСАН байна.
-    // Түүнийг ачаалах нь өгөгдөл буцаах болно — оронд нь "үүлэнд юу ч
-    // алга" гэж хариулж, утсан дахийг хэвээр үлдээнэ.
-    if(_partsOnly())return {exists:false,__parts:true,data:()=>({})};
-  }
+  // 1) Хэсгүүд байвал тэднээс. Уншиж ЧАДААГҮЙ бол хуучин руу ОРОХГҮЙ —
+  //    хуучин нь хуучирсан байж болзошгүй тул утсан дахийг хэвээр үлдээнэ.
+  let _pp=null,_pe=null;
+  try{_pp=await _readParts()}catch(e){_pe=e}
+  if(_pp)return _pp;
+  if(_pe){console.warn('parts read:',_pe);_partsErr=(_pe&&_pe.message)||String(_pe);throw _pe}
   for(let i=0;i<(tries||3);i++){
     try{
-      return await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),12000,'Үүлнээс унших')
+      // 2) Хэсэг алга — хуучин баримтаас уншаад хэсгүүдийг өөрөө үүсгэнэ
+      const _d=await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),
+        12000,'Үүлнээс унших');
+      const _dd=_d.exists?_d.data():null;
+      if(_dd&&_dd.archivedAt)                     // архивлагдсан = хуучирсан
+        return {exists:false,__archived:true,data:()=>({})};
+      if(_dd&&_dd.db)_migrateToParts(_dd.db);     // нэг удаагийн шилжилт
+      return _d
     }catch(e){last=e;if(i<(tries||3)-1)await new Promise(function(r){setTimeout(r,1200)})}
   }
   throw last
@@ -6857,22 +6862,13 @@ function startRealtimeSync(){
   if(!fbDb||!_sectionCode||_isAdmin)return;
   if(_syncUnsub)_syncUnsub();
   const ref=fbDb.collection('sections').doc(_sectionCode);
-  // Шат 3-т хуучин баримт шинэчлэгдэхээ болих тул хэсгүүдийг сонсоно.
-  // Түүнээс өмнө хуучин баримтыг сонссоор — хос бичилт хоёуланг нь
-  // тэнцүү байлгадаг тул аль нь ч зөв.
-  _syncUnsub=_partsOnly()
-    ? ref.collection(PARTS_COL).onSnapshot(snap=>{
-        if(_localWriting)return;
-        if(snap.metadata&&snap.metadata.hasPendingWrites)return;
-        const p=_partsFromSnap(snap);
-        if(p)_applyRemote(p.db);
-      },err=>console.error('Sync err:',err))
-    : ref.onSnapshot(snap=>{
-        if(!snap.exists||_localWriting)return;
-        if(snap.metadata&&snap.metadata.hasPendingWrites)return;
-        const remote=snap.data().db;
-        if(remote)_applyRemote(remote);
-      },err=>console.error('Sync err:',err))
+  // Паспорт бүр тусдаа баримт тул дэд бүлгийг сонсоно.
+  _syncUnsub=ref.collection(PARTS_COL).onSnapshot(snap=>{
+    if(_localWriting)return;
+    if(snap.metadata&&snap.metadata.hasPendingWrites)return;
+    const p=_partsFromSnap(snap);
+    if(p)_applyRemote(p.db);
+  },err=>console.error('Sync err:',err))
 }
 /* Алсаас ирсэн (шахсан) өгөгдлийг хэрэглэх — хоёр сонсогчид нийтлэг */
 function _applyRemote(remote){
@@ -8507,37 +8503,17 @@ function _writeParts(packed){
    Хэсгүүд дутуу бол ХУУЧИН баримт руу өөрөө унана. Realtime сонсогч
    Шат 2-т хуучин баримтыг сонссоор байна — хос бичилт хоёуланг нь
    тэнцүү байлгадаг тул аюулгүй, Шат 3-т шилжинэ.                  */
-const PARTS_RDKEY='sg_parts_read';
-function _partsRead(){
-  try{return localStorage.getItem(PARTS_RDKEY)==='1'}catch(e){return false}}
+/* ── УНШИЛТ ────────────────────────────────────────────────────
+   Хэсгүүд байвал ТЭДГЭЭРЭЭС уншина. Байхгүй бол хуучин баримтаас
+   уншаад, хэсгүүдийг ӨӨРӨӨ үүсгэнэ — нэг удаагийн шилжилт,
+   хэрэглэгч юу ч дарах шаардлагагүй.
 
-/* Уншилтыг асаах ХААЛГА: хуучин баримт ба хэсгүүдийг зэрэг татаж
-   харьцуулна. Таарсан тохиолдолд Л асаана. */
-async function tryPartsRead(){
-  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй'};
-  if(!_partsOn())return {ok:false,why:'Эхлээд 2-р мөрөөр бичилтийг асаана уу'};
-  let p=null;
-  try{p=await _readParts()}catch(e){return {ok:false,why:(e&&e.message)||String(e)}}
-  if(!p)return {ok:false,why:'Хэсгүүд бүрэн биш — 3-р мөрөөр шалгана уу'};
-  let oldDb=null;
-  try{
-    const d=await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),
-      12000,'Хуучин баримт');
-    oldDb=d.exists&&d.data()?d.data().db:null;
-  }catch(e){return {ok:false,why:(e&&e.message)||String(e)}}
-  if(!oldDb)return {ok:false,why:'Хуучин баримт хоосон — харьцуулах боломжгүй'};
-  if(_cmpKey(p.data().db)!==_cmpKey(oldDb))
-    return {ok:false,why:'Хуучинтай ЗӨРЖ байна — уншилтыг шилжүүлэхгүй'};
-  try{localStorage.setItem(PARTS_RDKEY,'1')}catch(e){}
-  return {ok:true,n:p.__n}
-}
-function setPartsRead(v){
-  try{localStorage.setItem(PARTS_RDKEY,v?'1':'0')}catch(e){}
-  if(typeof renderSyncSheet==='function')renderSyncSheet();
-  showToast(v?'Уншилт шинэ бүтцээс':'Уншилт хуучин бүтцээс',1900)
-}
-
-/* Хэсгүүдийг татаж, баримт хэлбэрт оруулна. Дутуу бол null. */
+   Хоёр хамгаалалт:
+   · Хэсгүүдийг уншиж ЧАДААГҮЙ (сүлжээний алдаа) бол хуучин руу
+     ОРОХГҮЙ — утсан дахийг хэвээр үлдээнэ. Зөвхөн "хэсэг үнэхээр
+     байхгүй" гэдэг нь батлагдсан үед л хуучныг уншина.
+   · Хуучин баримт дээр archivedAt тэмдэг байвал хуучирсан гэсэн
+     үг — хэзээ ч уншихгүй.                                       */
 function _partsFromSnap(snap){
   if(!snap||snap.empty)return null;
   const parts={}; let ms=0, n=0;
@@ -8559,163 +8535,32 @@ async function _readParts(){
     data:()=>({db:p.db,updatedAt:p.ms?{toMillis:()=>p.ms}:null})};
 }
 
-/* ── ШАТ 3: ЗӨВХӨН ХЭСГҮҮД ──────────────────────────────────
-   Хуучин баримт руу бичихээ болино → дата хэмнэгдэнэ, 1 МиБ
-   хязгаар хэсэг тус бүрд хамаарах болно.
+/* Хадгалалтын ГАНЦ цэг — үргэлж хэсгүүдэд бичнэ */
+function _pushCloud(packed){return _writeParts(packed).then(function(){})}
 
-   АНХААР: хуучин баримт бичигдэхээ болих тул ХУУЧИРНА. Тиймээс
-   "хэсгүүд дутуу бол хуучин руу унах" хамгаалалт энэ шатанд
-   АЮУЛТАЙ болно — хуучирсан өгөгдөл ачаалах эрсдэлтэй. Оронд нь
-   "үүлэнд юу ч алга" гэж хариулж, утсан дахь өгөгдлийг хэвээр
-   үлдээнэ.                                                      */
-const PARTS_ONLYKEY='sg_parts_only';
-function _partsOnly(){
-  try{return localStorage.getItem(PARTS_ONLYKEY)==='1'}catch(e){return false}}
-
-/* Хадгалалтын ГАНЦ цэг — хоёр зам үүнийг дуудна */
-function _pushCloud(packed){
-  if(_partsOnly())return _writeParts(packed).then(function(){});
-  return fbDb.collection('sections').doc(_sectionCode)
-    .set({db:packed,updatedAt:firebase.firestore.FieldValue.serverTimestamp()})
-    .then(function(){_dualWrite(packed)});
-}
-
-async function tryPartsOnly(){
-  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй'};
-  if(!_partsRead())return {ok:false,why:'Эхлээд 4-р мөрөөр уншилтыг шилжүүлнэ үү'};
-  let p=null;
-  try{p=await _readParts()}catch(e){return {ok:false,why:(e&&e.message)||String(e)}}
-  if(!p)return {ok:false,why:'Хэсгүүд бүрэн биш'};
-  let oldDb=null;
+/* Нэг удаагийн шилжилт: хуучин баримтаас уншсаны дараа хэсгүүдийг үүсгэнэ */
+function _migrateToParts(packedDb){
   try{
-    const d=await _withTimeout(fbDb.collection('sections').doc(_sectionCode).get(),
-      12000,'Хуучин баримт');
-    oldDb=d.exists&&d.data()?d.data().db:null;
-  }catch(e){return {ok:false,why:(e&&e.message)||String(e)}}
-  if(oldDb&&_cmpKey(p.data().db)!==_cmpKey(oldDb))
-    return {ok:false,why:'Хуучинтай ЗӨРЖ байна — шилжүүлэхгүй'};
-  // Хуучин баримтад "архивлагдсан" тэмдэг үлдээнэ — хожим андуурахгүйн тулд
-  try{
-    await fbDb.collection('sections').doc(_sectionCode).set({
-      archivedAt:firebase.firestore.FieldValue.serverTimestamp(),
-      archivedNote:'Шат 3 — цаашид parts/ дэд бүлэгт хадгална'},{merge:true});
-  }catch(e){}
-  try{localStorage.setItem(PARTS_ONLYKEY,'1')}catch(e){}
-  if(typeof startRealtimeSync==='function')startRealtimeSync();   // сонсогчийг шилжүүлнэ
-  return {ok:true,n:p.__n}
-}
-function setPartsOnly(v){
-  try{localStorage.setItem(PARTS_ONLYKEY,v?'1':'0')}catch(e){}
-  if(typeof startRealtimeSync==='function')startRealtimeSync();
-  if(typeof renderSyncSheet==='function')renderSyncSheet();
-  showToast(v?'Зөвхөн шинэ бүтэц':'Хуучин баримтад бас бичнэ',1900)
-}
-
-/* ── Шат 1-ийг АЮУЛГҮЙ асаах хяналт ──────────────────────────
-   v94-д хос бичилтийг шууд асааж, эрх байгаа эсэхийг шалгаагүй.
-   Одоо: (1) эхлээд ганц туршилтын бичлэгээр эрхийг батална,
-   (2) хэрэглэгч өөрөө асаана/унтраана — шинэ хувилбар хүлээхгүй,
-   (3) 3 удаа дараалан алдвал өөрөө унтарна.                     */
-const PARTS_ONKEY='sg_parts_on';
-let _partsFails=0;
-function _partsOn(){
-  try{return localStorage.getItem(PARTS_ONKEY)==='1'}catch(e){return false}}
-function setPartsOn(v){
-  try{localStorage.setItem(PARTS_ONKEY,v?'1':'0')}catch(e){}
-  const redraw=()=>{
-    if(typeof renderSyncSheet==='function')renderSyncSheet();
-    if(typeof _syncTabs==='function')_syncTabs()};
-  if(!v){
-    _partsErr='';
-    try{localStorage.setItem(PARTS_RDKEY,'0')}catch(e){}   // уншилтыг ч буцаана
-    redraw();showToast('Шинэ бүтэц унтраалаа',1800);return}
-  _partsFails=0;_partsErr='';_clearPartHashes();
-  redraw();
-  /* Асаангуут ШУУД нэг удаа бүтнээр бичнэ. Эс тэгвэл дараагийн
-     хадгалалт болтол шинэ бүтэц хоосон хэвээр байж, хэрэглэгч
-     "ажиллахгүй байна" гэж бодохоор байв. */
-  showToast('Шинэ бүтэц рүү бичиж байна…',1600);
-  try{
-    _writeParts(_packDB(DB)).then(n=>{
-      _partsErr='';redraw();
-      showToast(n?('Шинэ бүтэц бэлэн · '+n+' баримт'):'Шинэ бүтэц бэлэн',2400)
-    }).catch(e=>{
-      _partsErr=(e&&e.message)||String(e);redraw();
-      showToast('Бичиж чадсангүй — 3-р мөрөөс шалтгааныг үзнэ үү',2800)
-    })
-  }catch(e){
-    _partsErr=(e&&e.message)||String(e);redraw();
-    showToast('Бичиж чадсангүй',2400)
-  }
-}
-/* Ганц жижиг бичлэг бичиж → уншиж → устгаж эрхийг батална */
-async function probeParts(){
-  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй байна'};
-  const ref=fbDb.collection('sections').doc(_sectionCode)
-    .collection(PARTS_COL).doc('probe-test');
-  try{
-    await ref.set({t:Date.now(),probe:true});
-    const got=await ref.get();
-    if(!got.exists)return {ok:false,why:'Бичигдсэн ч уншигдсангүй'};
-    try{await ref.delete()}catch(e){}
-    return {ok:true}
-  }catch(e){
-    const c=(e&&e.code)||'', m=(e&&e.message)||String(e);
-    return {ok:false,code:c,why:
-      /permission|PERMISSION/.test(c+m)
-        ? 'Эрх байхгүй — Firestore-ын дүрэмд дэд бүлэг рүү бичихийг зөвшөөрөх хэрэгтэй'
-        : m}
-  }
-}
-
-function _dualWrite(packed){
-  if(!_partsOn())return;
-  try{
-    _writeParts(packed).then(()=>{_partsFails=0}).catch(e=>{
-      console.warn('parts write:',e);
-      _partsErr=(e&&e.message)||String(e);
-      _clearPartHashes();
-      /* 3 удаа дараалан алдвал өөрөө унтарна — дахин дахин оролдохгүй */
-      if(++_partsFails>=3){
-        try{localStorage.setItem(PARTS_ONKEY,'0')}catch(_){}
-        _partsErr='3 удаа алдсан тул өөрөө унтарлаа: '+_partsErr;
-      }})
+    _clearPartHashes();
+    _writeParts(packedDb).then(n=>{
+      if(n)console.log('Хэсгүүд рүү шилжив:',n)
+    }).catch(e=>{_partsErr=(e&&e.message)||String(e)})
   }catch(e){_partsErr=(e&&e.message)||String(e)}
 }
 
-/* Мэдэгдэл дээрх "Шинэ бүтцийг шалгах" товч */
-function runProbe(){
-  const m=document.getElementById('vpMsg');
-  if(m)m.textContent='Туршиж байна…';
-  probeParts().then(r=>{
-    if(!m)return;
-    m.textContent=r.ok?'✓ Эрх байна — доорх 2-т асааж болно':'⚠ '+r.why;
-    if(r.ok)_partsErr='';
-  }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e)});
-}
-function runPartsRead(){
-  const m=document.getElementById('prMsg');
-  if(_partsRead()){setPartsRead(false);return}          // буцаах
-  if(m)m.textContent='Харьцуулж байна…';
-  tryPartsRead().then(r=>{
-    if(typeof renderSyncSheet==='function')renderSyncSheet();
-    const m2=document.getElementById('prMsg');
-    if(m2&&!r.ok)m2.textContent='⚠ '+r.why;
-    showToast(r.ok?('Уншилт шинэ бүтцээс · '+r.n+' баримт'):'Шилжсэнгүй',2400)
-  }).catch(e=>{const m2=document.getElementById('prMsg');
-    if(m2)m2.textContent='⚠ '+((e&&e.message)||e)});
-}
-function runPartsOnly(){
-  const m=document.getElementById('poMsg');
-  if(_partsOnly()){setPartsOnly(false);return}          // буцаах
-  if(m)m.textContent='Шалгаж байна…';
-  tryPartsOnly().then(r=>{
-    if(typeof renderSyncSheet==='function')renderSyncSheet();
-    const m2=document.getElementById('poMsg');
-    if(m2&&!r.ok)m2.textContent='⚠ '+r.why;
-    showToast(r.ok?('Зөвхөн шинэ бүтэц · '+r.n+' баримт'):'Шилжсэнгүй',2400)
-  }).catch(e=>{const m2=document.getElementById('poMsg');
-    if(m2)m2.textContent='⚠ '+((e&&e.message)||e)});
+/* ── Оношилгоо (Профайл дээрээс) ─────────────────────────────── */
+async function verifyParts(){
+  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй'};
+  const col=fbDb.collection('sections').doc(_sectionCode).collection(PARTS_COL);
+  const snap=await col.get();
+  if(snap.empty)return {ok:false,why:'Үүлэнд хэсэг алга — нэг удаа хадгалаад дахин шалгана уу'};
+  const parts={}; let bytes=0;
+  snap.forEach(d=>{parts[d.id]=d.data();bytes+=_fsSize(d.data())});
+  const rebuilt=_joinParts(parts), local=_packDB(DB);
+  const ok=_cmpKey(rebuilt)===_cmpKey(local);
+  return {ok,count:snap.size,bytes,
+    biggest:Object.keys(parts).reduce((m,k)=>Math.max(m,_fsSize(parts[k])),0),
+    why:ok?'':'Зөрүүтэй байна — өгөгдөл хараахан бүрэн бичигдээгүй байж болно'}
 }
 function runVerifyParts(){
   const m=document.getElementById('vfMsg');
@@ -8726,20 +8571,6 @@ function runVerifyParts(){
       ? '✓ Таарч байна · '+r.count+' баримт · хамгийн том '+fmtBytes(r.biggest)
       : '⚠ '+(r.why||'Зөрүүтэй');
   }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e)});
-}
-/* ── Шалгалт: шинэ бүтэц хуучинтайгаа таарч байна уу? ── */
-async function verifyParts(){
-  if(!fbDb||!_sectionCode)return {ok:false,why:'Үүлтэй холбогдоогүй'};
-  const col=fbDb.collection('sections').doc(_sectionCode).collection(PARTS_COL);
-  const snap=await col.get();
-  if(snap.empty)return {ok:false,why:'Шинэ бүтэц хоосон — нэг удаа хадгалаад дахин шалгана уу'};
-  const parts={}; let bytes=0;
-  snap.forEach(d=>{parts[d.id]=d.data();bytes+=_fsSize(d.data())});
-  const rebuilt=_joinParts(parts), local=_packDB(DB);
-  const ok=_cmpKey(rebuilt)===_cmpKey(local);
-  return {ok,count:snap.size,bytes,
-    biggest:Object.keys(parts).reduce((m,k)=>Math.max(m,_fsSize(parts[k])),0),
-    why:ok?'':'Зөрүүтэй байна — өгөгдөл хараахан бүрэн бичигдээгүй байж болно'}
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -8797,21 +8628,19 @@ function renderSyncSheet(){
         <div class="sy-t">Илгээхэд алдаа гарлаа</div>
         <div class="sy-s">${esc(_lastSaveErr)}</div>
       </div></div>`:''}
-    ${(()=>{docBytes();const only=_partsOnly();
-      const n=only?_lastPartMax:_lastDocBytes,pc=Math.min(100,n/DOC_LIMIT*100);
+    ${(()=>{docBytes();
+      const n=_lastPartMax,pc=Math.min(100,n/DOC_LIMIT*100);
       const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g500)';
       return `<div class="sy-meter">
         <div class="sy-meter-top">
-          <span>${only?'Хамгийн том хэсэг':'Үүлэн дэх хэмжээ'}</span>
+          <span>Хамгийн том хэсэг</span>
           <span class="num" style="color:${col}">${fmtBytes(n)} / ${fmtBytes(DOC_LIMIT)}</span>
         </div>
         <div class="sy-bar"><i style="width:${Math.max(1.5,pc).toFixed(1)}%;background:${col}"></i></div>
-        <div class="sy-meter-s">${only
-          ?'Паспорт бүр өөрийн бичлэгтэй болсон тул хязгаар бүрд нь тусад нь хамаарна. Дүүрэхгүй.'
-          :pc<60
-          ?'Хэсгийн бүх өгөгдөл үүлэн дээрх нэг бичлэгт багтдаг. Одоогоор чөлөөтэй.'
-          :pc<85?'Хагасаас дээш дүүрсэн. Хуучин паспортуудыг Excel болгож татаад устгавал зай гарна.'
-          :'Хязгаарт ойрхон. Хуучин паспортуудыг татаж аваад устгана уу — 1 МБ давбал үүлэнд илгээгдэхээ болино.'}</div>
+        <div class="sy-meter-s">${pc<60
+          ?'Паспорт бүр үүлэн дээр өөрийн бичлэгтэй тул 1 МБ хязгаар тус бүрд нь тусад нь хамаарна.'
+          :pc<85?'Нэг паспорт хагасаас дээш дүүрсэн. Түүнийг хоёр паспорт болгож хуваавал зай гарна.'
+          :'Нэг паспорт хязгаарт ойрхон. Түүнийг хуваах эсвэл Excel болгож татаад устгана уу.'}</div>
       </div>`})()}
     ${dt?`<button class="pf-row" onclick="hap();syncNow()">
       <span class="pf-ic" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
@@ -8821,35 +8650,6 @@ function renderSyncSheet(){
       <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
       <span class="pf-t">Үүлнээс дахин татах<span class="pf-s">Утсан дээрхийг үүлийнхээр солино</span></span>
       <span class="pf-ar">›</span></button>
-    <div class="micro-hd">Паспорт бүрийг тусдаа хадгалах (туршилт)</div>
-    <button class="pf-row" onclick="hap();runProbe()">
-      <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg></span>
-      <span class="pf-t">1. Эрхийг туршиж үзэх<span class="pf-s" id="vpMsg">${
-        _partsErr?'⚠ '+esc(_partsErr)
-        :'Ганц жижиг бичлэг бичиж үзнэ — өгөгдөлд хүрэхгүй'}</span></span>
-      <span class="pf-ar">›</span></button>
-    <button class="pf-row" onclick="hap();setPartsOn(!_partsOn())">
-      <span class="pf-ic" style="color:${_partsOn()?'var(--g600)':'var(--ink4)'}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/></svg></span>
-      <span class="pf-t">2. ${_partsOn()?'Асаалттай':'Унтраалттай'}<span class="pf-s">${
-        _partsOn()?(_partsAt?'Сүүлд бичсэн: '+_agoText(_partsAt):'Дараагийн хадгалалтад бичигдэнэ')
-        :'Туршилт амжилттай болсны дараа асаана уу'}</span></span>
-      <span class="pf-ar">${_partsOn()?'унтраах':'асаах'}</span></button>
-    ${_partsOn()?`<button class="pf-row" onclick="hap();runPartsRead()">
-      <span class="pf-ic" style="color:${_partsRead()?'var(--g600)':'var(--ink4)'}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
-      <span class="pf-t">4. Уншилт: ${_partsRead()?'шинэ бүтцээс':'хуучин бүтцээс'}<span class="pf-s" id="prMsg">${
-        _partsRead()?'Шилжсэн — буцаахдаа дарна уу'
-        :'Дарвал хуучинтай харьцуулж, таарвал шилжинэ'}</span></span>
-      <span class="pf-ar">›</span></button>`:''}
-    ${_partsRead()?`<button class="pf-row" onclick="hap();runPartsOnly()">
-      <span class="pf-ic" style="color:${_partsOnly()?'var(--g600)':'var(--ink4)'}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-      <span class="pf-t">5. Бичилт: ${_partsOnly()?'зөвхөн шинэ бүтэц':'хоёуланд нь'}<span class="pf-s" id="poMsg">${
-        _partsOnly()?'Хуучин баримт архивлагдсан · дата хэмнэгдэж байна'
-        :'Дарвал хуучин баримтад бичихээ болино'}</span></span>
-      <span class="pf-ar">›</span></button>`:''}
-    ${_partsOn()?`<button class="pf-row" onclick="hap();runVerifyParts()">
-      <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
-      <span class="pf-t">3. Хуучинтай таарч байгаа эсэх<span class="pf-s" id="vfMsg">Дарж шалгана уу</span></span>
-      <span class="pf-ar">›</span></button>`:''}
     <div style="font-size:11.5px;color:var(--ink3);font-weight:600;line-height:1.6;
       padding:10px 4px 0">Бүртгэл хийх бүрд өөрчлөлт эхлээд утсанд хадгалагдана.
       Интернэт байвал үүл рүү өөрөө илгээгдэнэ. Улаан цэг байвал илгээгдээгүй
@@ -8900,13 +8700,17 @@ function renderProfSheet(){
         ?'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>'
         :'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
       'var(--gold-deep)','Дэлгэцийн загвар',dark?'Харанхуй':'Гэрэлтэй',"toggleTheme();renderProfSheet()")}
-    ${(()=>{docBytes();const n=_partsOnly()?_lastPartMax:_lastDocBytes,pc=n/DOC_LIMIT*100;
+    ${(()=>{docBytes();const n=_lastPartMax,pc=n/DOC_LIMIT*100;
       const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g600)';
       return row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h1a3 3 0 010 6H6a4 4 0 01-.7-7.9A5.5 5.5 0 0118 10z"/></svg>',
-        col,'Үүлэн дэх хэмжээ',
+        col,'Хамгийн том паспорт',
         fmtBytes(n)+' · '+(pc>100?'хязгаар хэтэрсэн'
           :(pc<0.1?'<0.1':pc.toFixed(pc<10?1:0))+'% дүүрсэн'),
         "closeModal('profSheet');openSyncSheet()")})()}
+    <button class="pf-row" onclick="hap();runVerifyParts()">
+      <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <span class="pf-t">Үүлэн дэх бичлэгийг шалгах<span class="pf-s" id="vfMsg">Утсан дахьтай таарч байгаа эсэх</span></span>
+      <span class="pf-ar">›</span></button>
     ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
       'var(--red)','Гарах','',"closeModal('profSheet');doLogout()")}
     <div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
@@ -8954,7 +8758,7 @@ function flushSave(force){
   clearTimeout(_saveTimer);_saveTimer=null;
   try{
     const _p=_packForSave();
-    const _lim=_partsOnly()?_lastPartMax:_lastDocBytes;
+    const _lim=_lastPartMax;   // хязгаар хэсэг тус бүрд хамаарна
     if(_lim>DOC_LIMIT){_tooBig(_lim);return false}
     _localWriting=true;
     _pushCloud(_p)
@@ -9054,7 +8858,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.29·101';
+const APP_BUILD='2026.08.29·102';
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
