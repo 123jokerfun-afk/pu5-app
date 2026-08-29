@@ -1,0 +1,6 @@
+{
+  "name": "pu5-tests",
+  "private": true,
+  "description": "ПУ-5 аппын регресс шалгалт",
+  "dependencies": { "exceljs": "^4.3.0" }
+}
