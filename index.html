@@ -6905,10 +6905,8 @@ async function loadAdminView(){
   if(!body)return;
   body.innerHTML='<div class="skel" style="height:92px;margin-bottom:10px"></div><div class="skel" style="height:120px;margin-bottom:8px"></div><div class="skel" style="height:120px"></div>';
   try{
-    const snap=await fbDb.collection('sections').get();
-    const sections=[];
-    snap.forEach(doc=>{if(doc.data().db)sections.push({code:doc.id,db:_unpackDB(doc.data().db)})});
-    renderAdminSections(sections)
+    // Хуучин баримтын `db` талбар шинэчлэгдэхээ больсон тул хэсгүүдээс уншина
+    renderAdminSections(await _adminLoadAll())
   }catch(e){body.innerHTML='<div style="padding:20px;color:var(--red)">Алдаа: '+e.message+'</div>'}
 }
 
@@ -7020,12 +7018,36 @@ function openSheets(){
   }catch(e){showToast('Алдаа: '+e.message)}
 }
 
+/* Бүх хэсгийн өгөгдлийг үүлнээс цуглуулна.
+
+   v94-өөс хойш бичилт ЗӨВХӨН parts дэд цуглуулгад ордог тул хуучин
+   `sections/<код>` баримтын `db` талбар шинэчлэгдэхээ больсон. Тэндээс
+   уншсаар байвал админы нэгтгэл хоосон юм уу хуучин тоо гаргана —
+   тиймээс эхлээд хэсгүүдээс, байхгүй бол л архивлагдаагүй хуучин
+   баримтаас уншина. */
+async function _adminLoadAll(){
+  const snap=await fbDb.collection('sections').get();
+  const codes=[];snap.forEach(d=>codes.push({code:d.id,raw:d.data()||{}}));
+  const out=[];
+  for(const it of codes){
+    let db=null;
+    try{
+      const ps=await fbDb.collection('sections').doc(it.code)
+        .collection(PARTS_COL).get();
+      const p=_partsFromSnap(ps);
+      if(p)db=_unpackDB(p.db);
+    }catch(e){}
+    if(!db&&!it.raw.archivedAt&&it.raw.db){
+      try{db=_unpackDB(it.raw.db)}catch(e){}
+    }
+    if(db)out.push({code:it.code,db});
+  }
+  return out;
+}
 async function adminExportExcel(){
   showToast('Excel бэлтгэж байна...',3000);
   try{
-    const snap=await fbDb.collection('sections').get();
-    const allSections=[];
-    snap.forEach(doc=>{if(doc.data().db)allSections.push({code:doc.id,db:_unpackDB(doc.data().db)})});
+    const allSections=await _adminLoadAll();
     if(!allSections.length){showToast('Өгөгдөл байхгүй');return}
     if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');return}
 
@@ -8054,7 +8076,9 @@ async function exportSwForms(){
   })();
 
   // 2) Хавсралт-1.1 — Тэнцэхгүй / Сольсон
-  attach('тэнцэхгүй дүнз маягт 2-1 ','Маягт-2  Хавсралт-1.1',
+  // Хуудасны нэр өмнө нь зөвхөн ард нь зайгаараа ялгардаг байсан тул
+  // Excel дээр хоёр таб яг адилхан харагдаж, алийг нь ч ялгах аргагүй байв
+  attach('тэнцэхгүй дүнз маягт 2-1.1','Маягт-2  Хавсралт-1.1',
     ['Тэнцэхгүй','сумын дүнзний жагсаалт'],
     'Солигдсон сумын дүнзнүүд  /м/','Нийт',
     'Тэнцэхгүй ','Сольсон',
@@ -8422,7 +8446,14 @@ function _tooBig(n){
 const PARTS_COL='parts';
 let _partsErr='',_partsAt=0,_partsWrote=0,_partsBytes=0;
 
-function _partId(pfx,id){return pfx+'_'+String(id||'').replace(/[^A-Za-z0-9_-]/g,'')}
+/* Firestore-ын баримтын нэр. Өмнө нь буруу тэмдэгтийг ЧИМЭЭГҮЙ хасдаг
+   байсан тул "ф-1" ба "х-1" хоёр ижил нэр рүү буурч, нэг нь нөгөөгөө
+   дарж устгах эрсдэлтэй байв. Одоо аюулгүй биш бол бүтнээр нь хэшлэнэ. */
+function _partId(pfx,id){
+  const s=String(id||'');
+  if(s&&/^[A-Za-z0-9_-]+$/.test(s))return pfx+'_'+s;
+  return pfx+'_h'+_hash(s).replace(/[^A-Za-z0-9]/g,'')
+}
 function _partsKey(){return 'sg_parts_'+(_sectionCode||'')}
 function _loadPartHashes(){
   try{return JSON.parse(localStorage.getItem(_partsKey())||'{}')||{}}catch(e){return {}}}
@@ -8716,7 +8747,7 @@ function renderProfSheet(){
     <div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
       font-weight:600;color:var(--ink5)"></div>`;
   const bt=b.querySelector('.build-tag');
-  if(bt)bt.textContent='Хувилбар '+APP_BUILD;
+  if(bt)bt.textContent='Хувилбар '+appVer();
 }
 
 function _dirtyKey(){return 'sg_der_dirty_'+(_sectionCode||'')}
@@ -8858,7 +8889,13 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.29·102';
+const APP_BUILD='2026.08.30·103';
+/* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
+   APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
+function appVer(){
+  const m=String(APP_BUILD).split('·');
+  return 'v'+(m.length>1?m[m.length-1]:APP_BUILD);
+}
 let _hst=[],          // бидний нэмсэн бүртгэлүүдийн гүн
     _skipPop=0,       // өөрсдөө буцаасан popstate-ийг тоохгүй
     _pendGo=0,        // хүлээгдэж буй history.go
@@ -8974,7 +9011,7 @@ try{
 }
 (function(){
   // Хувилбарыг нэвтрэх дэлгэц болон нүүр хуудасны хамгийн доор харуулна
-  document.querySelectorAll('.build-tag').forEach(function(e){e.textContent='v '+APP_BUILD});
+  document.querySelectorAll('.build-tag').forEach(function(e){e.textContent=appVer()});
 })();
 initScreenSwipe();initKmSwipe();initSwSwipe();
 initRipple();initSheetGestures();
