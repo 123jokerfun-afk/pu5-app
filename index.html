@@ -7729,10 +7729,39 @@ function renderSwRec(focus){
 function swWrite(t,i,ch){
   const a=(t.it||'').padEnd(i,'n').split('');a[i]=ch;t.it=a.join('')
 }
-function swPut(ch){
+/* Дүнз бүртгэх — ДЭРИЙН бүртгэлтэй ЯГ ижил зарчим (record-ыг үз).
+
+   Өмнө нь бөмбөрөгийг хаана тааруулсныг үл тоон ҮРГЭЛЖ төгсгөлд нэмдэг
+   байв: бүртгэсэн дүнз дээр тааруулаад дарахад шууд доош гүйж шинийг
+   бүртгэдэг байлаа. Одоо тааруулсан мөр дээрээ бүртгэнэ. */
+async function swPut(ch){
   const t=swTurnout();if(!t)return;
   hap(ch==='b'?18:8);
-  swWrite(t,(t.it||'').length,ch);
+  const n=(t.it||'').length, cur=drumCursor();
+  const head=t.head||0;
+  const no=i=>(i<head?i+1:i-head+1);
+  const kindOf=i=>(swSlot(t,i).kind==='дэр'?'дэрийг':'дүнзийг');
+  const stOf=c=>(c==='b'?'Тэнцэхгүй':'Хэвийн');
+
+  // ── Аль хэдийн бүртгэсэн мөр дээр таарсан бол түүнийг дарж бичнэ ──
+  if(cur<n){
+    if(t.it[cur]===ch){
+      // Ижил байвал юу ч өөрчлөхгүй, зүгээр дараагийн мөр рүү шилжинэ
+      renderSwRec(cur+1);return
+    }
+    if(!await appConfirm(
+      `#${no(cur)} ${kindOf(cur)} "${stOf(t.it[cur])}" гэж бүртгэсэн байна. Өөрчлөх үү?`,
+      'Өөрчлөх')){
+      renderSwRec(cur);return       // өмнө бүртгэснээр үлдээнэ
+    }
+    swWrite(t,cur,ch);saveDB();
+    renderSwRec(cur+1);
+    showToast(`#${no(cur)} → ${stOf(ch)}`);
+    return
+  }
+
+  // ── Шинэ мөр нэмнэ ──
+  swWrite(t,n,ch);
   saveDB();renderSwRec()
 }
 let _swTapIdx=-1;
@@ -8990,7 +9019,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.30·107';
+const APP_BUILD='2026.08.30·108';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
