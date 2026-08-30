@@ -74,10 +74,16 @@ ok('Оношилгоо Профайл дээр',sheets.diag);
 // Бүртгэлийн дэлгэц дээр таб нуугдана (хуруунд зай хэрэгтэй)
 const hid=await page.evaluate(async()=>{
   openFolder('f-test1');openTrack('t1');openSection(DB.tracks[0].sections[0].id);
-  await new Promise(r=>setTimeout(r,400));
-  const d=getComputedStyle(document.getElementById('tabbar')).display;
-  goHome(); return d});
-ok('Бүртгэлийн дэлгэц дээр таб нуугдав',hid==='none',hid);
+  await new Promise(r=>setTimeout(r,600));
+  const b=document.getElementById('tabbar');
+  const r=b.getBoundingClientRect();
+  const o={top:Math.round(r.top),vh:innerHeight,pe:getComputedStyle(b).pointerEvents};
+  goHome(); return o});
+/* v105-аас хойш таб нь display:none биш, ДООШ ГУЛСАЖ далдардаг
+   (шилжилтийг харуулахын тулд). Тиймээс "яаж" нуугдсаныг биш,
+   үнэхээр дэлгэцнээс гарсан бөгөөд дарагдахгүй болсныг шалгана. */
+ok('Бүртгэлийн дэлгэц дээр таб дэлгэцнээс гарав',hid.top>=hid.vh,'дээд='+hid.top+' vh='+hid.vh);
+ok('Гулссан таб дарагдахгүй',hid.pe==='none',hid.pe);
 
 console.log('\nERRORS:',JSON.stringify(errs.filter(e=>!/ERR_REQUEST_RANGE|boom/.test(e)).slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
