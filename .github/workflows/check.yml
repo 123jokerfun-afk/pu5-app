@@ -43,6 +43,10 @@ jobs:
         run: |
           B=$(grep -o "APP_BUILD='[^']*'" index.html | head -1 | sed "s/APP_BUILD='//;s/'//;s/·/-/")
           V=$(tr -d ' \n\r' < version.txt)
-          echo "index.html=$B  version.txt=$V"
+          S=$(grep -o "^const VER='[^']*'" sw.js | head -1 | sed "s/const VER='//;s/'//")
+          echo "index.html=$B  version.txt=$V  sw.js=$S"
           [ "$B" = "$V" ] || { echo "::error::APP_BUILD ба version.txt зөрж байна"; exit 1; }
+          # sw.js-ийн VER нь кэшийн нэр. Зөрвөл хуучин кэш устахгүй үлдэж,
+          # хэрэглэгч хуучин хувилбарт хоригдоно.
+          [ "$S" = "$V" ] || { echo "::error::sw.js дэх VER ба version.txt зөрж байна"; exit 1; }
           echo "OK"
