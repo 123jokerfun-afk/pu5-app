@@ -5020,7 +5020,7 @@ function initScreenSwipe(){
     if(!screenSwipeStart)return;
     const t=e.touches[0];
     const dx=t.clientX-screenSwipeStart.x,dy=t.clientY-screenSwipeStart.y;
-    if(Math.abs(dx)>28&&Math.abs(dx)>Math.abs(dy)*1.1)showSwipeFlash(dx>0?'right':'left');else hideSwipeFlash()
+    if(_swipeOn(dx,dy,28,1.1))showSwipeFlash(dx>0?'right':'left');else hideSwipeFlash()
   },{passive:true})
 }
 // ── Гол замын км хооронд шудрах (үеийн жагсаалт дээр) ──
@@ -5038,7 +5038,7 @@ function initKmSwipe(){
   tv.addEventListener('touchmove',e=>{
     if(!st)return;
     const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
-    if(Math.abs(dx)>28&&Math.abs(dx)>Math.abs(dy)*1.1)showSwipeFlash(dx>0?'right':'left','км');
+    if(_swipeOn(dx,dy,28,1.1))showSwipeFlash(dx>0?'right':'left','км');
     else hideSwipeFlash()
   },{passive:true});
   tv.addEventListener('touchend',e=>{
@@ -5072,14 +5072,37 @@ function navKm(dir){
   }
   showToast(`${mn[j].num}-р км · ${j+1}/${mn.length}`)
 }
-function showSwipeFlash(dir,unit='үе'){
-  const el=document.getElementById('swipeFlash');
-  el.className='swipe-flash '+(dir==='right'?'rf':'lf');
-  document.getElementById('swipeFlashLabel').textContent=
-    dir==='right'?`Дараагийн ${unit} →`:`← Өмнөх ${unit}`;
+/* Шудрах заалт.
+
+   Өмнө нь touchmove бүрт (секундэд ~60 удаа) className, textContent,
+   opacity гурвыг дахин бичдэг байв. Хуруу босгын ойролцоо жаахан
+   найгахад л асаа/унтраа сольж, дэлгэц АНИВЧИЖ харагдана.
+
+   Одоо: төлөв ҮНЭХЭЭР өөрчлөгдсөн үед л DOM хөндөнө. */
+let _flashState=null;                    // null = унтарсан, эс бөгөөс 'rf|нэр'
+function showSwipeFlash(dir,unit='үе',label){
+  const cls=dir==='right'?'rf':'lf';
+  const txt=label||(dir==='right'?`Дараагийн ${unit} →`:`← Өмнөх ${unit}`);
+  const key=cls+'|'+txt;
+  if(_flashState===key)return;           // өөрчлөлт алга — бичихгүй
+  _flashState=key;
+  const el=document.getElementById('swipeFlash');if(!el)return;
+  el.className='swipe-flash '+cls;
+  const lb=document.getElementById('swipeFlashLabel');if(lb)lb.textContent=txt;
   el.style.opacity='1'
 }
-function hideSwipeFlash(){const el=document.getElementById('swipeFlash');if(el)el.style.opacity='0'}
+function hideSwipeFlash(){
+  if(_flashState===null)return;
+  _flashState=null;
+  const el=document.getElementById('swipeFlash');if(el)el.style.opacity='0'
+}
+/* Заалтыг асаах уу гэдгийг шийднэ. ГИСТЕРЕЗИС: аль хэдийн асаастай
+   бол унтраах босгыг доогуур авна. Ингэснээр хуруу босгын ойролцоо
+   найгахад төлөв тогтвортой хэвээр үлдэнэ. */
+function _swipeOn(dx,dy,minX,ratio){
+  const ax=Math.abs(dx),ay=Math.abs(dy),on=_flashState!==null;
+  return ax>(on?minX*0.55:minX)&&ax>ay*(on?ratio*0.7:ratio)
+}
 function navNextSection(){
   hap(8);hideSwipeFlash();const t=activeTrack();if(!t)return;
   const secs=dataSections(t);   // сум дээр бүртгэл байхгүй тул алгасна
@@ -7296,12 +7319,12 @@ function swTurnout(){const f=swFolder();return f?(f.turnouts||[]).find(t=>t.id==
 
 // ── Шилжилт ──
 function goSwHome(){hap(6);showView('swHomeView');renderSwHome();
-  loadSwSpecs().then(renderSwHome)}
+  loadSwSpecs().then(chg=>{if(chg)renderSwHome()})}
 function goDerHome(){showView('homeView',true);renderHome()}
 // Нүүр ↔ СШ ПУ-5: зүүн шудрахад СШ рүү, баруун шудрахад Дэр рүү буцна.
 // Дэлгэц босоо гүйдэг тул зөвхөн тодорхой ХӨНДЛӨН шудралтад ажиллана.
 function initSwSwipe(){
-  const bind=(id,dir,go)=>{
+  const bind=(id,dir,go,lbl)=>{
     const v=document.getElementById(id);if(!v)return;
     let st=null;
     const ready=()=>!document.querySelector('.overlay.open');
@@ -7312,8 +7335,8 @@ function initSwSwipe(){
     v.addEventListener('touchmove',e=>{
       if(!st)return;
       const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
-      if(Math.abs(dx)>34&&Math.abs(dx)>Math.abs(dy)*1.6&&Math.sign(dx)===dir)
-        showSwipeFlash(dir>0?'right':'left');
+      if(_swipeOn(dx,dy,34,1.6)&&Math.sign(dx)===dir)
+        showSwipeFlash(dir>0?'right':'left',null,lbl);
       else hideSwipeFlash()
     },{passive:true});
     v.addEventListener('touchend',e=>{
@@ -7324,8 +7347,8 @@ function initSwSwipe(){
       if(Math.sign(dx)===dir&&Math.abs(dx)>62&&Math.abs(dx)>Math.abs(dy)*1.6&&dt<600)go()
     },{passive:true})
   };
-  bind('homeView',-1,()=>goSwHome());     // зүүн тийш → СШ ПУ-5
-  bind('swHomeView',1,()=>goDerHome())    // баруун тийш → Дэр ПУ-5
+  bind('homeView',-1,()=>goSwHome(),'← СШ ПУ-5');   // зүүн тийш → СШ ПУ-5
+  bind('swHomeView',1,()=>goDerHome(),'Дэр ПУ-5 →')  // баруун тийш → Дэр ПУ-5
 }
 
 // ── Нүүр: паспортын жагсаалт ──
@@ -8269,9 +8292,14 @@ function swSpecsAll(){
   });
   return out
 }
+/* Сумын дүнзний загварын каталог. ӨӨРЧЛӨГДСӨН эсэхийг буцаана —
+   өөрчлөгдөөгүй байхад дэлгэцийг дахин дүрслэх нь шилжилтийн
+   анимацын дунд агуулгыг сэлгэж, анивчиж харагдуулдаг байв. */
 async function loadSwSpecs(){
+  const _b4=JSON.stringify(SW_CUSTOM||[]);
+  const _chg=()=>JSON.stringify(SW_CUSTOM||[])!==_b4;
   try{const s=localStorage.getItem(SW_SPECS_LS);if(s)SW_CUSTOM=JSON.parse(s)||[]}catch(e){}
-  if(!fbDb)return;
+  if(!fbDb)return _chg();
   try{
     const d=await fbDb.collection('sections').doc(SW_SPECS_DOC).get();
     const sp=d.exists&&d.data()?d.data().specs:null;
@@ -8280,6 +8308,7 @@ async function loadSwSpecs(){
       try{localStorage.setItem(SW_SPECS_LS,JSON.stringify(SW_CUSTOM))}catch(e){}
     }
   }catch(e){console.warn('Сумын загвар татахад:',e&&e.message)}
+  return _chg()
 }
 async function saveSwSpecs(){
   try{localStorage.setItem(SW_SPECS_LS,JSON.stringify(SW_CUSTOM))}catch(e){}
@@ -8906,7 +8935,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.30·105';
+const APP_BUILD='2026.08.30·106';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
