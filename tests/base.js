@@ -92,6 +92,15 @@ async function newPage(browser,dev){
   const page=await ctx.newPage();
   await page.route('**/exceljs*.js',r=>r.fulfill({status:200,
     contentType:'application/javascript',body:EXCELJS}));
+  /* ExcelJS одоо шаардлагатай үед л динамикаар татагдана. Энэ орчинд
+     Chromium нь тийм хөндлөн гарлын хүсэлтийг Playwright-д харуулалгүй
+     тасалдаг тул route ажиллахгүй. Иймд аппын ЖИНХЭНЭ ачаалагчийг
+     (ensureExcel) нэг гарлын хуулбар руу чиглүүлнэ. */
+  await page.addInitScript(()=>{
+    addEventListener('DOMContentLoaded',()=>{
+      try{EXCELJS_URL='/tests/node_modules/exceljs/dist/exceljs.min.js'}catch(e){}
+    })
+  });
   await page.route('**/*.gstatic.com/**',r=>r.fulfill({status:200,contentType:'application/javascript',body:'/*stub*/'}));
   await page.route('**/intro.mp4',r=>r.fulfill({status:200,contentType:'video/mp4',body:''}));
   const errs=[];

@@ -23,7 +23,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto multi
-node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe edge exp xls  (удаан)
+node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack edge exp xls  (удаан)
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
 ```
@@ -53,6 +53,8 @@ node sweepB.js   # үлдсэн 3 утас
 | `raw.js` | Түүхий код дэлгэцэнд гарах — эх код + хоосон төлөв бүр |
 | `tap.js` | Товч үнэхээр дарагдах уу — тогтмол давхарга товч дарж байгаа эсэх |
 | `swipe.js` | Шудралт — заалт анивчих, дэлгэц хооронд шилжих |
+| `perf.js` | Service worker, офлайн, ExcelJS-ийн хойшлуулсан ачаалалт, гарах товч |
+| `pack.js` | `_packDB` гаралт хуучинтай ижил эсэх (хуулийн бичиг баримтын эх өгөгдөл) |
 | `edge.js` | Захын тохиолдол — шахалтын эргэлт, HTML тарилга, 0/1 дэр, том өгөгдөл |
 | `exp.js` | Экспорт ажиллаж, файл гарч байгаа эсэх (баталгаажуулах цонх орно) |
 | `xls.js` | Гарсан Excel-ийг **буцааж уншиж** тоо нь зөв эсэхийг шалгана |

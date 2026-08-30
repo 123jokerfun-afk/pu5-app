@@ -49,7 +49,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" defer></script>
 <style>
 :root{
   /* Brightpunk daylight palette — vivid neon sunshine */
@@ -1418,7 +1417,6 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <button class="hero-edit" onclick="showSummaryAll()" aria-label="Дүн"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         <button class="hero-edit" onclick="openReportSettings()" aria-label="Тохиргоо"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
         <button class="hero-edit" onclick="editLocation()" aria-label="Засах"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button class="hero-edit" onclick="doLogout()" aria-label="Гарах" style="opacity:.8"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
     <div style="position:relative;margin-top:8px;margin-bottom:4px">
@@ -2352,13 +2350,66 @@ let _cloudLoaded=false,_cloudHadData=false;
 // ── Өгөгдөл шахах: дэр бүрийг 1 үсэг болгоно (n/b/t/x) → 10 дахин бага ──
 const _SLMAP={normal:'n',bad:'b',tbd:'t',bad_tbd:'x'};
 const _SLREV={n:'normal',b:'bad',t:'tbd',x:'bad_tbd'};
-function _packDB(db){
-  const d=JSON.parse(JSON.stringify(db));
-  const walk=t=>(t.sections||[]).forEach(s=>{
-    if(Array.isArray(s.sleepers))s.sleepers=s.sleepers.map(sl=>_SLMAP[sl.type]||'n').join('')
+/* ExcelJS 260 КиБ (gzip) бөгөөд ЗӨВХӨН экспорт хийхэд хэрэгтэй. Өмнө нь
+   нээх бүрд татагддаг байсныг зөвхөн товч дарахад татдаг болгов. */
+/* let — шалгалтад нэг гарлын хуулбар руу заахын тулд. Апп өөрөө солихгүй. */
+let EXCELJS_URL='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
+let _xlsLoad=null;
+function ensureExcel(){
+  if(window.ExcelJS)return Promise.resolve(true);
+  if(_xlsLoad)return _xlsLoad;
+  _xlsLoad=new Promise(function(res){
+    let done=false;
+    // Дуусмагц кэшийг цэвэрлэнэ — цаашид window.ExcelJS өөрөө кэш болно.
+    // Ингэснээр ямар нэг шалтгаанаар ExcelJS алга болвол дахин татна.
+    const fin=v=>{if(done)return;done=true;_xlsLoad=null;res(v)};
+    const sc=document.createElement('script');
+    sc.src=EXCELJS_URL;
+    sc.onload=function(){fin(!!window.ExcelJS)};
+    sc.onerror=function(){fin(false)};
+    document.head.appendChild(sc);
+    // Сүлжээ маш удаан бол мөнхөд хүлээхгүй
+    setTimeout(function(){fin(!!window.ExcelJS)},25000);
   });
-  (d.folders||[]).forEach(f=>(f.tracks||[]).forEach(walk));
-  (d.main||[]).forEach(walk);
+  return _xlsLoad
+}
+/* Дэр товших БҮРД дуудагддаг халуун зам.
+
+   Өмнө нь эхлээд БҮХ санг JSON-оор гүн хуулж (13 хэсгийн хэмжээнд
+   688 КиБ), дараа нь дэрүүдийг шахдаг байв. Хэмжсэнээр гүн хуулалт
+   нь нийт зардлын 88% (3.7 / 4.2 мс) — хямд утсан дээр товшилт бүрт
+   мэдэгдэхээр удаашрал.
+
+   Одоо хуулахгүй, шууд угсарна: зөвхөн өөрийн үүсгэж буй давхаргыг
+   (сан, паспорт, зам, үе) шинээр бүтээж, дэрийн жагсаалтыг мөр болгож
+   хувиргана. Гаралт нь өмнөхтэй ЯГ адилхан (pack.js тулгаж шалгана).
+
+   Анхаар: `repl`, `manual`, `btw` мэт гүн талбарууд нь хуулбар биш,
+   DB-тэйгээ ХУВААЛЦСАН лавлагаа. Хэрэглэгчид нь зөвхөн уншаад шууд
+   JSON болгодог тул аюулгүй — гаралтыг ЗАСАЖ БОЛОХГҮЙ. */
+function _packDB(db){
+  const cp=(o,skip)=>{const r={};for(const k in o)
+    if(Object.prototype.hasOwnProperty.call(o,k)&&k!==skip)r[k]=o[k];return r};
+  const packSec=sec=>{
+    if(!Array.isArray(sec.sleepers))return sec;
+    const o=cp(sec);
+    let str='';
+    for(let i=0;i<sec.sleepers.length;i++){
+      const sl=sec.sleepers[i];
+      str+=(sl&&_SLMAP[sl.type])||'n'
+    }
+    o.sleepers=str;return o
+  };
+  const packTrack=t=>{
+    if(!t||!Array.isArray(t.sections))return t;
+    const o=cp(t);o.sections=t.sections.map(packSec);return o
+  };
+  const d=cp(db);
+  d.folders=(db.folders||[]).map(f=>{
+    if(!f||!Array.isArray(f.tracks))return f;
+    const o=cp(f);o.tracks=f.tracks.map(packTrack);return o
+  });
+  d.main=(db.main||[]).map(packTrack);
   d.tracks=[]; // давхардал арилгана — active folder-с дахин холбогдоно
   return d
 }
@@ -3660,8 +3711,8 @@ function _formHdrDate(d){
   const t=mnToday();return`${t.d}/${t.m}/${t.y}`
 }
 async function exportCarveForm(){
-  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй — сүлжээгээ шалгана уу',3200);return}
   if(!collectCarveForm().length){showToast('Сийрэгжилт бүртгэгдээгүй байна',2600);return}
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
   const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
   const n=buildCarveSheet(wb);
   const r=DB.rpt||{};
@@ -5705,7 +5756,9 @@ function _formHdr(){
   }
 }
 async function exportColoredExcel(){
-  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');exportAllCSV();return}
+  // Excel сан ирэхгүй бол CSV-гээр гаргана — хоосон гараас дээр
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — CSV-гээр гаргалаа',3200);
+    exportAllCSV();return}
   const H=_formHdr();
   const seasonGen=SEASON_GEN[H.season]||(H.season+'ын');
   const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
@@ -5935,8 +5988,8 @@ async function exportColoredExcel(){
 // scope: 'main' = гол замын км, эсвэл паспортын id = тухайн паспортын өртөө зам
 // ══════════════════════════════════════════════
 async function exportPu5Book(scope){
-  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');return}
   if(!await appConfirm('ПУ-5 дэвтэр загварыг татах уу?','Татах'))return;
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
   const isMain=scope==='main';
   // Паспортыг id-гаар нь шууд авна — нээлттэй биш паспортоос ч татаж болно
   const fold=isMain?null:(DB.folders.find(f=>f.id===scope)
@@ -6885,7 +6938,9 @@ function _importLocalData(localDB){
   }catch(e){showToast('Алдаа: '+e.message)}
 }
 
-function doLogout(){
+async function doLogout(){
+  // Санамсаргүй дарахад ажил тасалддаг байсан тул баталгаажуулна
+  if(!await appConfirm('Аппаас гарах уу?','Тийм','Үгүй'))return;
   _autoTry=99;clearTimeout(_autoTimer);
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
   if(fbAuth)fbAuth.signOut().catch(()=>{});
@@ -7089,7 +7144,7 @@ async function adminExportExcel(){
   try{
     const allSections=await _adminLoadAll();
     if(!allSections.length){showToast('Өгөгдөл байхгүй');return}
-    if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй');return}
+    if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
 
     const wb=new ExcelJS.Workbook();
     wb.creator='Дэр бүртгэл — Админ';wb.created=new Date();
@@ -7959,10 +8014,10 @@ function swRunBuckets(to){
 }
 
 async function exportSwForms(){
-  if(!window.ExcelJS){showToast('ExcelJS ачаалагдаагүй — сүлжээгээ шалгана уу',3200);return}
   const ts=swAllTurnouts().filter(t=>(t.it||'').length);
   if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
   if(!await appConfirm('Дүнзний маягт татах уу?','Татах'))return;
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
 
   const f=swFolder()||{};
   const r=DB.rpt||{},td=mnToday();
@@ -8935,7 +8990,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.30·106';
+const APP_BUILD='2026.08.30·107';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
@@ -9063,6 +9118,28 @@ initScreenSwipe();initKmSwipe();initSwSwipe();
 initRipple();initSheetGestures();
 
 // ══════════════════════════════════════════════
+// SERVICE WORKER — офлайн ба хурдан нээлт
+// ══════════════════════════════════════════════
+// Талбарын 4G дээр нээх бүрд 548 КиБ-ыг хүлээх нь хамгийн том саад
+// байв. sw.js түүнийг кэшилнэ. Хуучин хувилбарт хоригдохоос
+// сэргийлэх дүрмүүд sw.js дотор тайлбартай.
+function _swClear(){
+  try{
+    if(navigator.serviceWorker&&navigator.serviceWorker.controller)
+      navigator.serviceWorker.controller.postMessage({type:'PU5_CLEAR'})
+  }catch(e){}
+}
+(function(){
+  if(!('serviceWorker' in navigator))return;
+  if(location.protocol!=='http:'&&location.protocol!=='https:')return;
+  // Ачаалалт дуусмагц бүртгэнэ — эхний зурагтай өрсөлдөхгүй
+  addEventListener('load',function(){
+    try{navigator.serviceWorker.register('sw.js').catch(function(e){
+      console.warn('SW бүртгэгдсэнгүй:',e&&e.message)})}catch(e){}
+  })
+})();
+
+// ══════════════════════════════════════════════
 // АВТОМАТ ШИНЭЧЛЭЛТ ШАЛГАГЧ
 // ══════════════════════════════════════════════
 (function(){
@@ -9122,6 +9199,14 @@ initRipple();initSheetGestures();
       // Сэргээсний дараа ч хуучин файл ирвэл (CDN хоцролт г.м) дахин
       // давтахгүйн тулд оролдлогыг тэмдэглэж, зөвхөн мэдэгдэнэ.
       if(sGet(TRY_KEY)===remote){
+        // Нэг удаа сэргээгээд ч хуучин файл ирсэн бол service worker-ийн
+        // кэш хоцорсон байж болзошгүй — түүнийг хаяад дахин оролдоно
+        if(sGet(TRY_KEY+'_sw')!==remote){
+          sSet(TRY_KEY+'_sw',remote);_swClear();
+          showToast('Кэш цэвэрлээд дахин оролдож байна...',2500);
+          setTimeout(()=>hardReload(remote),700);
+          return
+        }
         showToast('Шинэчлэлт татагдсангүй — түр хүлээгээд дахин нээнэ үү',4000);
         return
       }
