@@ -410,7 +410,13 @@ button{font-family:inherit}
   font-size:11.5px;font-weight:800;cursor:pointer;box-shadow:0 5px 18px rgba(138,80,9,.4)}
 /* Бүртгэлийн дэлгэц дээр доод зүүн булан нь "Өмнөх/Дараагийн" товчных.
    Тэмдгийг тэдгээрийн дээр гаргана — товч халхлагдахгүй. */
+/* Доод таб харагдаж байхад хадгалалтын тэмдэг "Нүүр", "Паспорт"
+   табыг дарж, тэр хоёр таб дарагдахгүй байв. */
+body.has-tabbar:not(.deep-view) .save-badge{bottom:calc(var(--sab) + 74px)}
 body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
+/* Замын дэлгэц дээр "Үе нэмэх" тавцан (71px) доор сууна. Хадгалалтын
+   тэмдэг түүний зүүн товчийг дарж, товч дарагдахгүй байв. */
+body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .save-badge .sb-dot{width:8px;height:8px;border-radius:50%;background:#FFD23F;
   animation:sbPulse 1.5s ease-in-out infinite;flex-shrink:0}
 .save-badge .sb-go{background:rgba(255,255,255,.9);color:#8A5009;border-radius:99px;
@@ -1174,9 +1180,12 @@ body.rec-mode .save-badge{bottom:calc(var(--sab) + 178px)}
   border-top:1px solid rgba(255,255,255,.12);
   backdrop-filter:blur(24px) saturate(160%);
   -webkit-backdrop-filter:blur(24px) saturate(160%);
-  box-shadow:0 -10px 34px rgba(0,0,0,.42)}
+  box-shadow:0 -10px 34px rgba(0,0,0,.42);
+  transition:transform .26s cubic-bezier(.4,0,.2,1)}
 body.has-tabbar #tabbar{display:flex}
-body.rec-mode #tabbar{display:none}
+/* Гүн дэлгэц дээр таб доош гулсаж алга болно. Өмнө нь таб (z-index 300)
+   "Үе нэмэх" тавцанг (z-index 10) бүрэн дарж, товч дарагдахгүй байв. */
+body.deep-view #tabbar{transform:translateY(100%);pointer-events:none}
 .tab-b{flex:1;background:none;border:0;cursor:pointer;padding:7px 2px 5px;
   border-radius:15px;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:rgba(220,228,255,.55);transition:color .28s ease,background .28s ease;
@@ -2923,6 +2932,11 @@ function showView(id,back){
   document.querySelectorAll('.overlay.open').forEach(function(o){
     if(o.id!=='appConfirmModal')o.classList.remove('open')});
   document.body.classList.toggle('rec-mode',id==='recordView'||id==='swRecView');
+  // Зам, бүртгэл, дүн — өөрийн доод тавцантай дэлгэцүүд. Эдгээр дээр
+  // доод таб доош гулсаж алга болно (буцах товчоор гарна).
+  document.body.classList.toggle('deep-view',
+    id==='trackView'||id==='recordView'||id==='swRecView'||id==='summaryView');
+  document.body.classList.toggle('track-mode',id==='trackView');
   const d=_VDEPTH[id]!==undefined?_VDEPTH[id]:1;
   const isBack=back!==undefined?back:(d<_curDepth);
   _curDepth=d;
@@ -8892,7 +8906,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.30·104';
+const APP_BUILD='2026.08.30·105';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
