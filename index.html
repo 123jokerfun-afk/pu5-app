@@ -4008,7 +4008,10 @@ function renderTrackView(){
     <div class="ov-cell" style="background:var(--orange-bg);border-color:#F5C272"><div class="ov-n" style="color:var(--orange)">${a.bad}</div><div class="ov-l">Тэнцэхгүй</div></div>
     <div class="ov-cell" style="background:var(--red-bg);border-color:#F5A0A0"><div class="ov-n" style="color:var(--red)">${a.tbd+a.bad_tbd}</div><div class="ov-l">ТБД нийт</div></div>`;
   const body=document.getElementById('trackBody');
-  if(!t.sections.length){body.innerHTML='<div class="log-empty"><span class="log-empty-icon">${ic("clipboard",34)}</span>Үе нэмэх товч дарна уу</div>';return}
+  // Энгийн хашилтад ${} ажиллахгүй тул дүрс нь түүхий кодоороо
+  // хэвлэгдэж байв. 4496-р мөр шиг залгалтаар бичив.
+  if(!t.sections.length){body.innerHTML='<div class="log-empty"><span class="log-empty-icon">'+ic('clipboard',34)+
+    '</span>Үе нэмэх товч дарна уу</div>';return}
   let html='';
   if(isMainTrack(t)){
     // Гол замд холбох хэсэг заасан үеийнхээ дунд орж, нэг жагсаалтаар харагдана
@@ -8889,7 +8892,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.30·103';
+const APP_BUILD='2026.08.30·104';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
