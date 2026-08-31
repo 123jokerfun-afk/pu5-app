@@ -725,6 +725,48 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .tc-r{color:var(--red);font-weight:800}
 .tc-w{color:var(--orange);font-weight:700}
 .tc-g{color:var(--g600);font-weight:700}
+/* ── Админ: он ба улирал сонгох мөр ── */
+.adm-pick{display:flex;gap:10px;align-items:flex-end;padding:10px 14px 12px;
+  border-bottom:1px solid var(--border)}
+.adm-year{width:104px;flex-shrink:0}
+.adm-year .wheel{height:150px}
+.adm-season{flex:1;min-height:64px;border-radius:16px;border:2px solid var(--border);
+  background:var(--bg);font-family:inherit;font-size:15px;font-weight:800;color:var(--ink3);
+  cursor:pointer;transition:all .16s;-webkit-tap-highlight-color:transparent}
+.adm-season:active{transform:scale(.96)}
+/* Сонгогдвол ногоон болж идэвхжинэ */
+.adm-season.on{background:var(--g100);border-color:var(--g500);color:var(--g700);
+  box-shadow:0 4px 16px rgba(15,138,76,.18)}
+[data-theme="dark"] .adm-season.on{background:rgba(24,190,120,.18);border-color:#22C55E;color:#4ADE80}
+/* ── Админ: хэсгийн хавтас ── */
+.adm-sec{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:13px 14px;box-shadow:var(--sh-sm);margin-bottom:9px}
+.adm-sec-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px}
+.adm-code{font-size:15px;font-weight:900;letter-spacing:-.2px}
+.adm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px;
+  font-size:11px;text-align:center}
+.adm-cell{background:var(--bg);border-radius:8px;padding:7px 4px}
+.adm-cell b{display:block;font-size:16px;font-weight:900;line-height:1.1}
+.adm-cell span{color:var(--ink3);font-weight:700;font-size:9.5px}
+/* Дотоод хавтаснууд */
+.adm-sub{margin-top:10px;display:flex;flex-direction:column;gap:7px}
+.adm-fold{display:flex;align-items:center;gap:11px;padding:11px 13px;cursor:pointer;
+  border:1.5px solid var(--border);border-radius:14px;background:var(--bg);
+  transition:transform .14s,border-color .14s}
+.adm-fold:active{transform:scale(.985)}
+.adm-fold-n{flex:1;min-width:0}
+.adm-fold-t{font-size:13px;font-weight:800}
+.adm-fold-m{font-size:10.5px;color:var(--ink3);font-weight:600;margin-top:1px}
+.adm-list{margin:2px 0 4px;padding:0 2px}
+/* 25%+ хүснэгт — утга тус бүр өөрийн баганад */
+.adm-tbl{width:100%;border-collapse:collapse;font-size:10.5px}
+.adm-tbl th{background:var(--bg);color:var(--ink3);font-weight:800;font-size:9px;
+  padding:6px 4px;border:1px solid var(--border);text-align:center;line-height:1.25}
+.adm-tbl td{padding:6px 4px;border:1px solid var(--border);text-align:center;
+  font-weight:700;font-variant-numeric:tabular-nums}
+.adm-tbl td.l{text-align:left;font-weight:800}
+.adm-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.adm-empty{text-align:center;padding:14px;color:var(--ink4);font-size:11.5px;font-weight:600}
 .consec-block{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--sh-sm)}
 .consec-title{font-size:10px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 .consec-empty{font-size:13px;color:var(--g600);font-weight:700;text-align:center;padding:10px 0}
@@ -1387,7 +1429,15 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button class="icon-btn" onclick="doLogout()" style="color:var(--red)">Гарах</button>
     </div>
   </div>
-  <div style="padding:14px 14px 40px;overflow-y:auto;flex:1" id="adminBody">
+  <div class="adm-pick">
+    <button type="button" class="adm-season" id="admSpring" onclick="admSetSeason('хавар')">Хавар</button>
+    <div class="adm-year">
+      <div class="wheel-lbl">Он</div>
+      <div style="position:relative"><div class="wheel" id="admYearWheel"></div><div class="wheel-band"></div></div>
+    </div>
+    <button type="button" class="adm-season" id="admAutumn" onclick="admSetSeason('намар')">Намар</button>
+  </div>
+  <div class="home-body" style="padding:14px 14px 40px" id="adminBody">
     <div style="text-align:center;padding:40px;color:var(--ink4);font-size:13px">Уншиж байна...</div>
   </div>
 </div>
@@ -7006,91 +7056,331 @@ async function loadAdminView(){
 }
 
 let _adminData=[];
-function renderAdminSections(sections){
-  _adminData=sections;
-  const body=document.getElementById('adminBody');if(!body)return;
-  if(!sections.length){body.innerHTML='<div style="text-align:center;padding:40px;color:var(--ink4)">Өгөгдөл байхгүй</div>';return}
-  let gTotal=0,gBad=0;
-  let html='';
-  sections.forEach(({code,db},si)=>{
-    const allTracks=db.folders?db.folders.flatMap(f=>f.tracks||[]):(db.tracks||[]);
-    let sTotal=0,sBad=0,sTbd=0;
-    allTracks.forEach(t=>t.sections&&t.sections.forEach(s=>{
-      const a=analyzeSection(s);sTotal+=a.total;sBad+=a.totalBad;sTbd+=a.tbd+a.bad_tbd
-    }));
-    const pct=sTotal>0?(sBad/sTotal*100):0;
-    const pCol=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
-    gTotal+=sTotal;gBad+=sBad;
-    const folderCount=db.folders?db.folders.length:0;
-    html+=`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--sh-sm);margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer" onclick="adminToggleDetail(${si})">
-        <span style="font-size:15px;font-weight:800">${code.toUpperCase()} <span id="admArrow-${si}" style="font-size:11px;color:var(--ink4)">▼ дэлгэрэнгүй</span></span>
-        <span style="font-size:13px;font-weight:800;color:${pCol}">${pct.toFixed(1)}%</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:11px;text-align:center">
-        <div style="background:var(--bg);border-radius:6px;padding:6px"><div style="font-size:16px;font-weight:800">${sTotal}</div><div style="color:var(--ink3);font-weight:600">Нийт дэр</div></div>
-        <div style="background:var(--orange-bg);border-radius:6px;padding:6px"><div style="font-size:16px;font-weight:800;color:var(--orange)">${sBad}</div><div style="color:var(--ink3);font-weight:600">Тэнцэхгүй</div></div>
-        <div style="background:var(--red-bg);border-radius:6px;padding:6px"><div style="font-size:16px;font-weight:800;color:var(--red)">${sTbd}</div><div style="color:var(--ink3);font-weight:600">ТБД</div></div>
-        <div style="background:var(--blue-bg);border-radius:6px;padding:6px"><div style="font-size:16px;font-weight:800;color:var(--blue)">${folderCount}</div><div style="color:var(--ink3);font-weight:600">Паспорт</div></div>
-      </div>
-      <div id="admDetail-${si}" style="display:none;margin-top:10px"></div>
-    </div>`;
-  });
-  const gPct=gTotal>0?(gBad/gTotal*100):0;
-  html=`<div style="background:linear-gradient(135deg,#0E6478,#12A4C4);border-radius:var(--r);padding:16px;margin-bottom:10px;color:#fff">
-    <div style="font-size:12px;font-weight:700;opacity:.7;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Нийт нэгтгэл — ${sections.length} хэсэг</div>
-    <div style="display:flex;gap:16px">
-      <div><div style="font-size:24px;font-weight:900">${gTotal}</div><div style="font-size:10px;opacity:.7;font-weight:600">НИЙТ ДЭР</div></div>
-      <div><div style="font-size:24px;font-weight:900">${gBad}</div><div style="font-size:10px;opacity:.7;font-weight:600">ТЭНЦЭХГҮЙ</div></div>
-      <div><div style="font-size:24px;font-weight:900">${gPct.toFixed(1)}%</div><div style="font-size:10px;opacity:.7;font-weight:600">ХУВЬ</div></div>
-    </div>
-  </div>`+html;
-  html+=`<button onclick="loadAdminView()" style="display:block;width:100%;margin-top:6px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--rm);font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg> Шинэчлэх</button>`;
-  body.innerHTML=html
-}
+/* ══════════════════════════════════════════════════════════════
+   АДМИН — ОН / УЛИРЛААР ХЭСГҮҮДИЙН ПАСПОРТ
 
-function adminToggleDetail(si){
-  const det=document.getElementById('admDetail-'+si);
-  const arrow=document.getElementById('admArrow-'+si);
-  if(!det)return;
-  if(det.style.display==='none'){
-    det.style.display='block';
-    if(arrow)arrow.textContent='▲ хаах';
-    if(!det.innerHTML)det.innerHTML=_adminDetailHtml(_adminData[si])
-  } else {
-    det.style.display='none';
-    if(arrow)arrow.textContent='▼ дэлгэрэнгүй'
+   Энд бүх тооцоо ӨГӨГДСӨН паспортоос хийгдэнэ, глобал DB-ээс биш —
+   админ 13 хэсгийн өгөгдлийг зэрэг үздэг тул allTracks() мэт глобал
+   уншдаг туслахуудыг ашиглаж БОЛОХГҮЙ.
+   Зөвхөн ДЭРИЙН паспорт хамаарна (сумынх тусдаа).
+   ══════════════════════════════════════════════════════════════ */
+let _admYear=null,_admSeason=null,_admOpen={};
+
+/* Тухайн хэсгийн бүх паспортыг огноогоор нь эрэмбэлнэ (resolveReplMap-ийн
+   глобал хувилбартай ижил дараалал) */
+function _admFolders(db){
+  return (db.folders||[]).slice().sort((a,b)=>
+    String(a.date||a.year||'').localeCompare(String(b.date||b.year||'')))
+}
+/* Солигдсон дэрийн тэмдэглэгээ — өөрийн паспортынх, байхгүй бол өмнөх
+   паспортуудаас ухарч хайна (үндсэн аппын resolveReplMap-тай ижил дүрэм) */
+function _admReplMap(db,folder,track,sec){
+  const out={};
+  Object.keys(sec.repl||{}).forEach(k=>{out[k]={rec:sec.repl[k],own:true}});
+  const all=_admFolders(db);
+  const cur=all.findIndex(f=>f.id===folder.id);
+  for(let i=cur-1;i>=0;i--){
+    const pt=(all[i].tracks||[]).find(t=>t.num===track.num);
+    if(!pt)continue;
+    const ps=(pt.sections||[]).find(x=>x.label===sec.label);
+    if(!ps||!ps.repl)continue;
+    Object.keys(ps.repl).forEach(k=>{if(!(k in out))out[k]={rec:ps.repl[k],own:false}})
   }
+  return out
 }
-
-function _adminDetailHtml({code,db}){
-  const folders=db.folders&&db.folders.length?db.folders:[{name:'(паспортгүй)',tracks:db.tracks||[]}];
-  let html='';
-  folders.forEach(f=>{
-    html+=`<div style="font-size:12px;font-weight:800;color:var(--blue);margin:10px 0 6px;padding-top:8px;border-top:1px dashed var(--border)">${ic("folder",14)} ${esc(f.name||'')} <span style="color:var(--ink4);font-weight:600">· ${f.year||''} ${f.season||''}</span></div>`;
-    (f.tracks||[]).forEach(t=>{
-      const ta={total:0,totalBad:0,tbd:0,bad_tbd:0};
-      (t.sections||[]).forEach(s=>{const a=analyzeSection(s);ta.total+=a.total;ta.totalBad+=a.totalBad;ta.tbd+=a.tbd;ta.bad_tbd+=a.bad_tbd});
-      const tPct=ta.total>0?(ta.totalBad/ta.total*100):0;
-      const tCol=tPct>=25?'var(--red)':tPct>=15?'var(--orange)':'var(--g600)';
-      html+=`<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:4px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800">
-          <span>${t.num}-р зам <span style="color:var(--ink4);font-weight:600">· ${(t.sections||[]).length} үе · ${ta.total} дэр · ТБД ${ta.tbd+ta.bad_tbd}</span></span>
-          <span style="color:${tCol}">${tPct.toFixed(1)}%</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">`;
-      (t.sections||[]).forEach(s=>{
-        const a=analyzeSection(s);
-        const p=a.total>0?(a.totalBad/a.total*100):0;
-        const bg=p>=25?'var(--red-bg)':p>=15?'var(--orange-bg)':'var(--g50)';
-        const fg=p>=25?'var(--red)':p>=15?'var(--orange)':'var(--g700)';
-        const shortLbl=s.label.replace('-р үе','').replace('р үе','');
-        html+=`<span style="background:${bg};color:${fg};border-radius:5px;padding:2px 6px;font-size:10px;font-weight:700" title="${esc(s.label)}: ${a.total} дэр, ${a.totalBad} тэнцэхгүй">${shortLbl}: ${p.toFixed(0)}%</span>`;
-      });
-      html+=`</div></div>`;
+/* Паспортын нэгдсэн дүн */
+function _admTally(folder){
+  const r={total:0,bad:0,wood:0,conc:0,tracks:0,secs:0};
+  (folder.tracks||[]).forEach(t=>{
+    r.tracks++;
+    (t.sections||[]).forEach(sec=>{
+      if(isTurnout(sec))return;
+      r.secs++;
+      const a=_secTally(sec,t);
+      r.total+=a.total;r.bad+=a.bad;r.wood+=a.wood;r.conc+=a.conc
     })
   });
-  return html||'<div style="color:var(--ink4);font-size:12px">Өгөгдөл байхгүй</div>'
+  r.pct=r.total?r.bad/r.total*100:0;
+  return r
+}
+/* Дараалсан цэгүүд — солигдсон бол огноог нь ард нь харуулна */
+function _admConsec(db,folder){
+  const out=[];
+  (folder.tracks||[]).forEach(t=>{
+    const secs=(t.sections||[]).filter(x=>!isTurnout(x));
+    const byId={};secs.forEach(x=>{byId[x.id]=x});
+    const gs=findConsecutiveBadForTrack(secs).map(g=>{
+      // Бүлгийн дэрүүдээс СОЛИГДСОН нь аль нь вэ
+      const reps=[];
+      g.items.forEach(it=>{
+        const sec=byId[it.secId];if(!sec)return;
+        const m=_admReplMap(db,folder,t,sec)[it.posInSec-1];
+        if(m&&m.rec&&m.rec.d)reps.push({pos:it.posInSec,d:m.rec.d,own:m.own})
+      });
+      return {len:g.len,cross:g.crossSection,items:g.items,reps,
+        secs:[...new Set(g.items.map(i=>i.secLabel))]}
+    });
+    if(gs.length)out.push({name:trackLabel(t),groups:gs})
+  });
+  return out
+}
+/* Солигдсон дэрийн жагсаалт — ЭНЭ паспорт дээр тэмдэглэсэн нь */
+function _admRepl(folder){
+  const out=[];
+  (folder.tracks||[]).forEach(t=>{
+    const rows=[];
+    (t.sections||[]).forEach(sec=>{
+      if(isTurnout(sec)||!sec.repl)return;
+      Object.keys(sec.repl).forEach(k=>{
+        const r=sec.repl[k];if(!r||!r.d)return;
+        rows.push({sec:sec.label||'—',idx:+k+1,date:r.d,
+          mat:replMatOf(r),carve:!!r.s})
+      })
+    });
+    rows.sort((a,b)=>a.sec===b.sec?a.idx-b.idx
+      :String(a.sec).localeCompare(String(b.sec),'mn'));
+    if(rows.length)out.push({name:trackLabel(t),rows})
+  });
+  return out
+}
+/* 25%-аас дээш тэнцэхгүйтэй үе.
+
+   Хувийг ЭХ байдлаар нь (солихоос өмнөх) бодно — маягт1-2-той ижил.
+   · need   — 25%-даа орохын тулд НИЙТ хэдэн дэр солих ёстой
+   · reps   — аль дэр солигдсон (дугаараар)
+   · after  — сольсны дараах хувь
+   · left   — цаашид хэдэн дэр солих үлдсэн                           */
+function _adm25(folder){
+  const out=[];
+  (folder.tracks||[]).forEach(t=>{
+    const rows=[];
+    origSections(t).filter(x=>!isTurnout(x)).forEach(os=>{
+      const a=_secTally(os,t);
+      if(!a.total||a.bad/a.total*100<25)return;
+      const cur=(t.sections||[]).find(x=>x.id===os.id)||{};
+      const rp=cur.repl||{};
+      const reps=Object.keys(rp).filter(k=>replWasBad(rp[k]))
+        .map(k=>({pos:+k+1,d:rp[k]&&rp[k].d})).filter(x=>x.d)
+        .sort((x,y)=>x.pos-y.pos);
+      const need=Math.max(0,Math.ceil(a.bad-a.total*0.25));
+      const after=a.total?Math.max(0,a.bad-reps.length)/a.total*100:0;
+      rows.push({label:os.label,total:a.total,wood:a.wood,bad:a.bad,
+        pct:a.bad/a.total*100,need,reps,after,
+        left:Math.max(0,need-reps.length)})
+    });
+    if(rows.length)out.push({name:trackLabel(t),rows})
+  });
+  return out
+}
+
+/* ── Дүрслэл ────────────────────────────────────────────────── */
+function admSetSeason(sn){
+  hap(8);_admSeason=sn;_admOpen={};
+  ['admSpring','admAutumn'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b)b.classList.toggle('on',
+      (id==='admSpring'?'хавар':'намар')===_admSeason)
+  });
+  renderAdminSections(_adminData)
+}
+/* Өгөгдөлд байгаа бүх он + энэ он */
+function _admYears(sections){
+  const set=new Set([String(new Date().getFullYear())]);
+  (sections||[]).forEach(({db})=>(db.folders||[]).forEach(f=>{
+    if(f&&f.year)set.add(String(f.year))}));
+  return [...set].sort()
+}
+function _admBuildYearWheel(sections){
+  const el=document.getElementById('admYearWheel');if(!el)return;
+  const years=_admYears(sections);
+  if(_admYear===null||years.indexOf(String(_admYear))<0)
+    _admYear=String(new Date().getFullYear());
+  let i=years.indexOf(String(_admYear));
+  if(i<0)i=years.length-1,_admYear=years[i];
+  _wheelFill(el,years,i);
+  el.scrollTop=i*_WH_IH;
+  if(!el._bound){
+    el._bound=true;
+    _wheelBind(el,()=>_admYears(_adminData).length,j=>{
+      const ys=_admYears(_adminData);
+      if(ys[j]===undefined||ys[j]===_admYear)return;
+      _admYear=ys[j];_admOpen={};renderAdminSections(_adminData)
+    })
+  }
+}
+function admToggle(key){
+  hap(6);_admOpen[key]=!_admOpen[key];renderAdminSections(_adminData)
+}
+function renderAdminSections(sections){
+  _adminData=sections||[];
+  const body=document.getElementById('adminBody');if(!body)return;
+  // Улирал эхний удаад: 8-р сар хүртэл хавар, дараа нь намар
+  if(_admSeason===null)_admSeason=(new Date().getMonth()+1)<=8?'хавар':'намар';
+  ['admSpring','admAutumn'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b)b.classList.toggle('on',(id==='admSpring'?'хавар':'намар')===_admSeason)
+  });
+  _admBuildYearWheel(_adminData);
+
+  if(!_adminData.length){
+    body.innerHTML='<div class="adm-empty" style="padding:40px">Өгөгдөл байхгүй</div>';return
+  }
+  // Тухайн он + улирлын паспорттой хэсгүүд
+  const hit=[];
+  _adminData.forEach(({code,db})=>{
+    (db.folders||[]).forEach(f=>{
+      if(String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
+        hit.push({code,db,folder:f})
+    })
+  });
+
+  let g={total:0,bad:0,wood:0,conc:0};
+  let cards='';
+  hit.forEach(({code,db,folder},hi)=>{
+    const a=_admTally(folder);
+    g.total+=a.total;g.bad+=a.bad;g.wood+=a.wood;g.conc+=a.conc;
+    const col=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
+    const key='s'+hi;
+    const open=!!_admOpen[key];
+    cards+=`<div class="adm-sec">
+      <div class="adm-sec-hd" onclick="admToggle('${key}')">
+        <span class="adm-code">${esc(code.toUpperCase())}
+          <span style="font-size:10.5px;color:var(--ink4);font-weight:600">${esc(folder.name||'')}</span></span>
+        <span style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:13px;font-weight:900;color:${col}">${a.pct.toFixed(1)}%</span>
+          <span style="font-size:11px;color:var(--ink4);font-weight:700">${open?'▲':'▼'}</span>
+        </span>
+      </div>
+      <div class="adm-grid">
+        <div class="adm-cell"><b>${a.total}</b><span>НИЙТ ДЭР</span></div>
+        <div class="adm-cell" style="background:var(--orange-bg)"><b style="color:var(--orange)">${a.bad}</b><span>ТЭНЦЭХГҮЙ</span></div>
+        <div class="adm-cell" style="background:var(--gold-bg)"><b style="color:var(--gold-deep)">${a.wood}</b><span>МОДОН</span></div>
+        <div class="adm-cell" style="background:var(--red-bg)"><b style="color:var(--red)">${a.conc}</b><span>ТБД</span></div>
+      </div>
+      ${open?_admSubHtml(db,folder,key):''}
+    </div>`
+  });
+
+  const gPct=g.total?g.bad/g.total*100:0;
+  const head=`<div style="background:linear-gradient(135deg,#0E6478,#12A4C4);border-radius:var(--r);
+      padding:16px;margin-bottom:10px;color:#fff">
+    <div style="font-size:12px;font-weight:700;opacity:.75;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">
+      ${esc(String(_admYear))} · ${esc(_admSeason)} — ${hit.length} хэсэг</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div><div style="font-size:24px;font-weight:900">${g.total}</div><div style="font-size:10px;opacity:.75;font-weight:600">НИЙТ ДЭР</div></div>
+      <div><div style="font-size:24px;font-weight:900">${g.bad}</div><div style="font-size:10px;opacity:.75;font-weight:600">ТЭНЦЭХГҮЙ</div></div>
+      <div><div style="font-size:24px;font-weight:900">${g.wood}</div><div style="font-size:10px;opacity:.75;font-weight:600">МОДОН</div></div>
+      <div><div style="font-size:24px;font-weight:900">${g.conc}</div><div style="font-size:10px;opacity:.75;font-weight:600">ТБД</div></div>
+      <div><div style="font-size:24px;font-weight:900">${gPct.toFixed(1)}%</div><div style="font-size:10px;opacity:.75;font-weight:600">ХУВЬ</div></div>
+    </div>
+  </div>`;
+
+  body.innerHTML=head+(cards||
+    `<div class="adm-empty" style="padding:34px">${esc(String(_admYear))} оны ${esc(_admSeason)}ын паспорт олдсонгүй</div>`)+
+    `<button onclick="loadAdminView()" style="display:block;width:100%;margin-top:8px;padding:12px;
+      background:var(--card);border:1px solid var(--border);border-radius:var(--rm);
+      font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer">${ic('refresh',15)} Шинэчлэх</button>`
+}
+
+/* Хэсгийн доторх гурван хавтас */
+function _admSubHtml(db,folder,key){
+  const cs=_admConsec(db,folder), rp=_admRepl(folder), t25=_adm25(folder);
+  const nC=cs.reduce((n,t)=>n+t.groups.length,0);
+  const nR=rp.reduce((n,t)=>n+t.rows.length,0);
+  const n25=t25.reduce((n,t)=>n+t.rows.length,0);
+  const fold=(id,color,bg,title,meta,inner)=>{
+    const o=!!_admOpen[key+id];
+    return `<div class="adm-fold" style="${o?`border-color:${color};background:${bg}`:''}"
+        onclick="admToggle('${key+id}')">
+      <span style="color:${color};font-size:19px;line-height:1">${ic('folder',19)}</span>
+      <span class="adm-fold-n">
+        <span class="adm-fold-t" style="color:${color}">${title}</span>
+        <span class="adm-fold-m">${meta}</span></span>
+      <span style="color:var(--ink4);font-weight:800">${o?'▲':'▼'}</span>
+    </div>${o?`<div class="adm-list">${inner()}</div>`:''}`
+  };
+  return `<div class="adm-sub">
+    ${fold('c','var(--purple)','var(--purple-bg)','Дараалсан цэг',
+      nC?`${nC} цэг · 3 ба түүнээс дээш`:'Олдсонгүй',()=>_admConsecHtml(cs))}
+    ${fold('r','var(--red)','var(--red-bg)','Солигдсон дэр',
+      nR?`Нийт ${nR} дэр`:'Бүртгэл алга',()=>_admReplHtml(rp))}
+    ${fold('p','var(--orange)','var(--orange-bg)','25%-аас дээш үе',
+      n25?`${n25} үе`:'Олдсонгүй',()=>_adm25Html(t25))}
+  </div>`
+}
+
+function _admConsecHtml(data){
+  if(!data.length)return '<div class="adm-empty">✓ Дараалсан тэнцэхгүй дэр олдсонгүй</div>';
+  let h='';
+  data.forEach(t=>{
+    h+=`<div class="rp-track"><div class="rp-track-hd">${esc(t.name)}</div>`;
+    t.groups.forEach(g=>{
+      const col=g.len>=5?'var(--dred)':g.len===4?'var(--red)':'var(--orange)';
+      const bg=g.len>=5?'var(--dred-bg)':g.len===4?'var(--red-bg)':'var(--orange-bg)';
+      const f=g.items[0],l=g.items[g.items.length-1];
+      // Солигдсон бол огноог АРД нь — бүртгэлийн мөртэй ижил тэмдэглэгээ
+      const rd=g.reps.length
+        ?g.reps.map(r=>`<span class="repl-date${r.own?'':' rd-prev'}">#${r.pos} ${fmtReplDate(r.d)}</span>`).join(' ')
+        :'';
+      h+=`<div class="rp-row" style="align-items:flex-start;flex-wrap:wrap">
+        <span style="flex:1;min-width:120px">
+          <span style="font-weight:800;color:var(--ink2)">${esc(g.secs.join(' → '))}</span>
+          <span style="display:block;font-size:10px;color:var(--ink3);font-weight:700;margin-top:2px">
+            #${f.posInSec} → #${l.posInSec}${g.cross?' · үе дамнасан':''}</span></span>
+        <span class="repl-date" style="background:${bg};color:${col};border-color:${col}">${g.len} дараалсан</span>
+        ${rd?`<span style="flex-basis:100%;display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${rd}</span>`:''}
+      </div>`
+    });
+    h+=`<div class="rp-sub"><span>${esc(t.name)}</span><span>${t.groups.length} цэг</span></div></div>`
+  });
+  return h
+}
+
+function _admReplHtml(data){
+  if(!data.length)return '<div class="adm-empty">Солигдсон дэр бүртгэгдээгүй</div>';
+  let h='';
+  data.forEach(t=>{
+    h+=`<div class="rp-track"><div class="rp-track-hd">${esc(t.name)}</div>`;
+    t.rows.forEach(r=>{
+      h+=`<div class="rp-row">
+        <span style="flex:1;min-width:0;font-weight:800;color:var(--ink2)">${esc(r.sec)}</span>
+        <span class="mat-tag">${matLabel(r.mat)}</span>
+        ${r.carve?'<span class="mat-tag rp-carve" style="color:var(--blue)">Сийрэгжилт</span>':''}
+        <span style="font-weight:800;color:var(--ink3);font-size:11px">#${r.idx}</span>
+        <span class="repl-date">${fmtReplDate(r.date)}</span>
+      </div>`
+    });
+    h+=`<div class="rp-sub"><span>${esc(t.name)}</span><span>${t.rows.length} дэр</span></div></div>`
+  });
+  return h
+}
+
+function _adm25Html(data){
+  if(!data.length)return '<div class="adm-empty">✓ 25%-аас дээш үе алга</div>';
+  let h='';
+  data.forEach(t=>{
+    h+=`<div class="rp-track"><div class="rp-track-hd">${esc(t.name)}</div><div class="adm-wrap">
+      <table class="adm-tbl"><thead><tr>
+        <th style="text-align:left">Үе</th><th>Нийт<br>дэр</th><th>Модон<br>эпюр</th>
+        <th>Тэнцэх&shy;гүй</th><th>Хувь<br>%</th>
+        <th>25%-д орох<br>солих тоо</th><th>Сольсон<br>дэрийн №</th>
+        <th>Сольсны<br>дараах %</th><th>Үлдсэн<br>солих</th>
+      </tr></thead><tbody>`;
+    t.rows.forEach(r=>{
+      h+=`<tr>
+        <td class="l">${esc(r.label)}</td>
+        <td>${r.total}</td><td>${r.wood}</td>
+        <td style="color:var(--orange)">${r.bad}</td>
+        <td style="color:var(--red);font-weight:900">${r.pct.toFixed(1)}</td>
+        <td>${r.need}</td>
+        <td style="font-weight:700">${r.reps.length?r.reps.map(x=>x.pos).join(', '):'—'}</td>
+        <td style="color:${r.after>=25?'var(--red)':'var(--g600)'};font-weight:900">${r.after.toFixed(1)}</td>
+        <td style="color:${r.left?'var(--orange)':'var(--g600)'}">${r.left}</td>
+      </tr>`
+    });
+    h+=`</tbody></table></div></div>`
+  });
+  return h
 }
 
 const SHEETS_URL='https://docs.google.com/spreadsheets/d/1z1yTCbq17v8c4GDyx3izjnRi947WbdJjBZzrLsWQ9Fo/edit';
@@ -8745,6 +9035,12 @@ function goTab(t){
   if(t==='sync'){openSyncSheet();return}
   if(t==='prof'){openProfSheet();return}
   if(t==='sw'){goSwHome();_syncTabs();return}
+  // Админд нүүр гэдэг нь удирдлагын дэлгэц — дэрийн паспорт байдаггүй
+  if(_isAdmin){
+    showView('adminView',true);
+    if(!_adminData.length)loadAdminView();else renderAdminSections(_adminData);
+    _syncTabs('home');return
+  }
   goDerHome();
   if(t==='pass'){
     const sec=document.getElementById('foldersGrid');
@@ -8761,6 +9057,9 @@ function _syncTabs(force){
   if(!on)return;
   const sw=document.getElementById('swHomeView').classList.contains('active');
   const cur=force||(sw?'sw':'home');
+  // Админд Паспорт / Сумууд гэсэн таб утгагүй тул нуугдана
+  ['tabPass','tabSw'].forEach(id=>{
+    const b=document.getElementById(id);if(b)b.style.display=_isAdmin?'none':''});
   [['home','tabHome'],['pass','tabPass'],['sw','tabSw'],
    ['sync','tabSync'],['prof','tabProf']].forEach(([k,id])=>{
     const b=document.getElementById(id);
@@ -9019,7 +9318,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.30·108';
+const APP_BUILD='2026.08.31·109';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
