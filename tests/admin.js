@@ -67,6 +67,26 @@ ok('Админд Паспорт / Сумууд таб нуугдана',tab.pass
 ok('Мэдэгдэл / Профайл хэвээр',tab.sync!=='none'&&tab.prof!=='none');
 ok('Хоёр хэсгийн өгөгдөл ачаалагдав',tab.n===2,tab.n+' хэсэг');
 
+/* ── 1b. Толгойн товчнууд гарчигтай зөрөлдөхгүй ──
+   Өмнө нь гурван товч + хоёр мөрт гарчиг нэг эгнээнд шахагдаж байв. */
+const hdr=await page.evaluate(()=>{
+  const acts=[...document.querySelectorAll('#adminView .adm-acts .icon-btn')];
+  const tr=document.querySelector('#adminView .pg-title').getBoundingClientRect();
+  return {n:acts.length,
+    labels:acts.map(b=>b.textContent.trim()),
+    w:acts.map(b=>Math.round(b.getBoundingClientRect().width)),
+    // Товч бүр үнэхээр дарагдах уу
+    hit:acts.map(b=>{const q=b.getBoundingClientRect();
+      const e=document.elementFromPoint(q.left+q.width/2,q.top+q.height/2);
+      return e===b||b.contains(e)}),
+    // Гарчигтай давхцаж байна уу
+    overlap:acts.some(b=>{const q=b.getBoundingClientRect();
+      return !(q.top>=tr.bottom||q.bottom<=tr.top||q.left>=tr.right||q.right<=tr.left)})}});
+ok('Толгойн гурван товч тусдаа эгнээнд',hdr.n===3,JSON.stringify(hdr.labels));
+ok('Товчнууд тэнцүү өргөнтэй',new Set(hdr.w).size===1,JSON.stringify(hdr.w));
+ok('Товч бүр дарагдана',hdr.n===3&&hdr.hit.every(Boolean),JSON.stringify(hdr.hit));
+ok('Гарчигтай давхцахгүй',hdr.n===3&&!hdr.overlap,hdr.n+' товч');
+
 /* ── 2. Он сонгогч ── */
 const yr=await page.evaluate(()=>({
   sel:_admYear,
