@@ -725,6 +725,16 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .tc-r{color:var(--red);font-weight:800}
 .tc-w{color:var(--orange);font-weight:700}
 .tc-g{color:var(--g600);font-weight:700}
+/* ── Админ: толгойн товчнууд — тэнцүү өргөн, гарчигтай зөрөлдөхгүй ── */
+.adm-acts{display:flex;gap:6px;margin-top:9px}
+.adm-acts .icon-btn{flex:1;min-width:0;display:inline-flex;align-items:center;
+  justify-content:center;gap:5px;padding:9px 6px;font-size:12px;white-space:nowrap}
+.adm-acts .icon-btn .ic{flex-shrink:0}
+/* Хамгийн нарийн дэлгэцэнд бичгээ нуугаад зөвхөн дүрсээр үлдэнэ */
+@media (max-width:319px){
+  .adm-acts .icon-btn{font-size:0;gap:0;padding:9px 4px}
+  .adm-acts .icon-btn .ic{width:18px;height:18px}
+}
 /* ── Админ: он ба улирал сонгох мөр ── */
 .adm-pick{display:flex;gap:10px;align-items:flex-end;padding:10px 14px 12px;
   border-bottom:1px solid var(--border)}
@@ -1423,10 +1433,14 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <div class="view" id="adminView">
   <div class="pg-hdr">
     <div class="pg-hdr-row">
-      <div style="flex:1"><div class="pg-title"><svg class="ic" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Ерөнхий удирдлага</div><div class="pg-sub">Бүх хэсгийн мэдээлэл</div></div>
+      <div style="flex:1;min-width:0"><div class="pg-title"><svg class="ic" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Ерөнхий удирдлага</div><div class="pg-sub">Бүх хэсгийн мэдээлэл</div></div>
+    </div>
+    <!-- Товчнууд гарчигтай нэг эгнээнд багтахгүй шахагддаг байсан тул
+         доор нь тэнцүү өргөнтэйгөөр буулгав -->
+    <div class="adm-acts">
       <button class="icon-btn" onclick="openSheets()" style="color:#0F8A4C;border-color:#7BD3A0;background:#EDFBF3"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M3 15h18M9 3v18" stroke="currentColor" stroke-width="1.6"/></svg> Sheets</button>
       <button class="icon-btn" onclick="adminExportExcel()" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel</button>
-      <button class="icon-btn" onclick="doLogout()" style="color:var(--red)">Гарах</button>
+      <button class="icon-btn" onclick="doLogout()" style="color:var(--red);border-color:rgba(220,60,60,.35)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg> Гарах</button>
     </div>
   </div>
   <div class="adm-pick">
@@ -9318,7 +9332,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.31·109';
+const APP_BUILD='2026.08.31·110';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
