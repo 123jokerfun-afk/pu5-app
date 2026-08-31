@@ -44,7 +44,8 @@ function launch(opts){
 /* ── Аппыг өгөх статик сервер ───────────────────────────────── */
 const ROOT=path.join(__dirname,'..');
 const MIME={'.html':'text/html; charset=utf-8','.js':'application/javascript',
-  '.css':'text/css','.png':'image/png','.mp4':'video/mp4','.txt':'text/plain; charset=utf-8'};
+  '.css':'text/css','.png':'image/png','.mp4':'video/mp4','.txt':'text/plain; charset=utf-8',
+  '.webmanifest':'application/manifest+json','.json':'application/json'};
 let _srv=null,_base=null;
 function ensureServer(){
   if(_base)return Promise.resolve(_base);

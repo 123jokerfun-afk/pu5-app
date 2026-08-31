@@ -1,0 +1,19 @@
+{
+  "name": "Замын 3-р анги ПУ-5",
+  "short_name": "ПУ-5",
+  "description": "Төмөр замын дэр, сумын дүнзний үзлэг бүртгэх систем",
+  "lang": "mn",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFF9EC",
+  "theme_color": "#FF9932",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

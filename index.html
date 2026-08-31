@@ -10,6 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#FF9932">
 <meta name="description" content="Төмөр замын дэр шалгалт бүртгэх систем">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23FF9932'/%3E%3Crect x='60' y='220' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='60' y='256' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='100' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='172' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='244' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='316' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='388' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='244' y='180' width='28' height='152' rx='8' fill='%23FF6B6B' opacity='.9'/%3E%3C/svg%3E">
 <!-- ══ АЛДААНЫ ХАРУУЛАГЧ ══
      Бүх скриптээс ӨМНӨ. Хэрэв аппын JS унавал өмнө нь ХАР ДЭЛГЭЦ гарч,
@@ -725,6 +726,24 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .tc-r{color:var(--red);font-weight:800}
 .tc-w{color:var(--orange);font-weight:700}
 .tc-g{color:var(--g600);font-weight:700}
+/* ── Утсанд суулгах ── */
+.pwa-box{margin-top:18px;text-align:center}
+.pwa-btn{width:100%;padding:14px;border-radius:16px;border:2px solid rgba(255,255,255,.55);
+  background:rgba(255,252,246,.9);color:#B5741A;font-family:inherit;
+  font-size:15px;font-weight:800;cursor:pointer;display:inline-flex;
+  align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 16px rgba(160,105,25,.2);transition:transform .16s}
+.pwa-btn:active{transform:scale(.97)}
+.pwa-hint{margin-top:7px;font-size:11.5px;font-weight:700;color:#B5741A;
+  text-shadow:0 1px 6px rgba(255,255,255,.7)}
+.pwa-step{display:flex;gap:11px;align-items:flex-start;margin-bottom:11px;
+  font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.45}
+.pwa-step>b{flex-shrink:0;width:23px;height:23px;border-radius:50%;
+  background:var(--gold-bg);color:var(--gold-deep);font-size:12px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pwa-ico{display:inline-flex;vertical-align:-3px;color:var(--blue);margin-left:2px}
+.pwa-note{font-size:11.5px;color:var(--ink3);font-weight:600;line-height:1.5;
+  background:var(--bg);border-radius:11px;padding:9px 11px;margin-top:4px}
 /* ── Админ: толгойн товчнууд — тэнцүү өргөн, гарчигтай зөрөлдөхгүй ── */
 .adm-acts{display:flex;gap:6px;margin-top:9px}
 .adm-acts .icon-btn{flex:1;min-width:0;display:inline-flex;align-items:center;
@@ -1424,6 +1443,9 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
         color:#B33A22;font-size:13px;font-weight:700;text-align:center;
         box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
+
+      <!-- Утсанд суулгах — зөвхөн суулгаагүй үед харагдана -->
+      <div id="pwaBox" class="pwa-box" style="display:none"></div>
       <div id="buildTag" class="build-tag" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)"></div>
     </div>
   </div>
@@ -2376,6 +2398,24 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   </div></div>
 </div>
 
+<!-- Утсанд суулгах заавар -->
+<div class="overlay" id="pwaModal" style="align-items:center;justify-content:center">
+  <div class="sheet" style="border-radius:26px;width:calc(100% - 40px);max-width:400px">
+    <div class="sheet-inner" style="padding:24px 22px 20px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <img src="icon-192.png" alt="" width="46" height="46" style="border-radius:13px;flex-shrink:0">
+        <div style="min-width:0">
+          <div style="font-size:16px;font-weight:900;color:var(--ink)">Утсандаа суулгах</div>
+          <div style="font-size:11.5px;color:var(--ink3);font-weight:600;margin-top:1px">ПУ-5 · Дэр бүртгэл</div>
+        </div>
+      </div>
+      <div id="pwaSteps"></div>
+      <div class="modal-btns" style="grid-template-columns:1fr">
+        <button class="btn-ok" onclick="closeModal('pwaModal')">Ойлголоо</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="appConfirmModal" style="z-index:600;align-items:center;justify-content:center">
   <div class="sheet" style="border-radius:26px;width:calc(100% - 48px);max-width:380px">
     <div class="sheet-inner" style="padding:26px 22px 22px">
@@ -2926,6 +2966,7 @@ const ICONS={
   check:'<path d="M20 6L9 17l-5-5"/>',
   checkCircle:'<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
   download:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  share:'<path d="M12 16V3M8 7l4-4 4 4M6 12H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6a2 2 0 00-2-2h-1"/>',
   clipboard:'<path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>',
   link:'<path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/>',
   warn:'<path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
@@ -6468,24 +6509,74 @@ async function exportPu5Book(scope){
 }
 
 // ══════════════════════════════════════════════
-// PWA
+// PWA — УТСАНД СУУЛГАХ
 // ══════════════════════════════════════════════
-(function(){
-  const manifest={name:'Замын 3-р анги ПУ-5',short_name:'ПУ-5',
-    // manifest нь blob: хаягаар өгөгддөг тул харьцангуй ('.') start_url задардаггүй —
-    // хөтөч "URL is invalid" гэж алгасдаг байв. Тиймээс бүтэн хаягийг өгнө.
-    description:'Төмөр замын дэр шалгалт бүртгэх систем',
-    start_url:location.href.split(/[?#]/)[0],display:'standalone',
-    background_color:'#FFF9EC',theme_color:'#FF9932',orientation:'portrait-primary',
-    icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23FF9932'/%3E%3Crect x='60' y='220' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='100' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3C/svg%3E",sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
-  const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(blob);document.head.appendChild(link);
-  // Тайлбар: өмнө нь энд Service Worker бүртгэдэг код байсан. Тэр нь SW-г blob:
-  // хаягаас бүртгэхийг оролддог байсан бөгөөд хөтөч үүнийг зөвшөөрдөггүй тул
-  // хэзээ ч ажиллаж байгаагүй (алдаа нь catch дотор чимээгүй унтардаг байв).
-  // Түүнчлэн тухайн SW нь кэшийг шинэчилдэггүй бичигдсэн тул хэрэв ажилласан
-  // бол аппыг хуучин хувилбар дээр бүрмөсөн гацаах эрсдэлтэй байсан.
-})();
+/* Өмнө нь manifest-ийг blob: хаягаар үүсгэдэг байв. Хөтөч суулгах
+   шалгуурт manifest-ийг НЭГ ГАРЛЫН жинхэнэ файл байхыг шаарддаг тул
+   тэр нь хэзээ ч суулгах боломж өгдөггүй байсан. Одоо
+   manifest.webmanifest файлыг head-д шууд холбосон.
+
+   Дүрс мөн PNG болов — Android нь SVG дүрсээр суулгах зөвшөөрдөггүй. */
+
+// Аль хэдийн суулгачихсан эсэх
+function _pwaInstalled(){
+  try{
+    if(navigator.standalone)return true;                    // iOS
+    return matchMedia('(display-mode: standalone)').matches
+        ||matchMedia('(display-mode: fullscreen)').matches
+        ||matchMedia('(display-mode: minimal-ui)').matches
+  }catch(e){return false}
+}
+let _pwaEvt=null;
+addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();_pwaEvt=e;_pwaRender()
+});
+addEventListener('appinstalled',function(){
+  _pwaEvt=null;_pwaRender();
+  try{showToast('✓ Апп утсанд суулаа',3000)}catch(e){}
+});
+
+/* Нэвтрэх дэлгэц дээрх суулгах хэсэг.
+   · Android — хөтчийн жинхэнэ суулгах цонхыг дуудна
+   · iOS — API байхгүй тул гараар нэмэх зааврыг харуулна
+   · суулгачихсан бол юу ч харуулахгүй                       */
+function _pwaRender(){
+  const box=document.getElementById('pwaBox');if(!box)return;
+  if(_pwaInstalled()){box.style.display='none';return}
+  const ios=isIOS();
+  if(!_pwaEvt&&!ios){box.style.display='none';return}   // шалгуур хангаагүй хөтөч
+  box.style.display='';
+  box.innerHTML=_pwaEvt
+    ? `<button type="button" class="pwa-btn" onclick="pwaInstall()">
+         ${ic('download',17)} Утсандаа суулгах</button>
+       <div class="pwa-hint">Сүлжээгүй үед ч ажиллана</div>`
+    : `<button type="button" class="pwa-btn pwa-ios" onclick="pwaHowTo()">
+         ${ic('download',17)} Утсандаа суулгах</button>
+       <div class="pwa-hint">Safari → Хуваалцах → Нүүр дэлгэцэд нэмэх</div>`
+}
+async function pwaInstall(){
+  if(!_pwaEvt){pwaHowTo();return}
+  const e=_pwaEvt;_pwaEvt=null;
+  try{e.prompt();await e.userChoice}catch(err){}
+  _pwaRender()
+}
+/* iOS дээр суулгах API байхгүй тул алхмуудыг зурагтай нь харуулна */
+function pwaHowTo(){
+  hap(6);
+  const m=document.getElementById('pwaModal');if(!m)return;
+  const ios=isIOS();
+  document.getElementById('pwaSteps').innerHTML=ios
+    ? `<div class="pwa-step"><b>1</b><span>Доод талын <b>Хуваалцах</b> товчийг дарна
+         <span class="pwa-ico">${ic('share',16)}</span></span></div>
+       <div class="pwa-step"><b>2</b><span>Жагсаалтаас <b>«Нүүр дэлгэцэд нэмэх»</b> сонгоно</span></div>
+       <div class="pwa-step"><b>3</b><span>Баруун дээд буланд <b>«Нэмэх»</b> дарна</span></div>
+       <div class="pwa-note">Ингэснээр апп утасны дэлгэцэнд байрлаж, сүлжээгүй үед ч нээгдэнэ.</div>`
+    : `<div class="pwa-step"><b>1</b><span>Хөтчийн <b>цэс</b> (⋮) дарна</span></div>
+       <div class="pwa-step"><b>2</b><span><b>«Апп суулгах»</b> эсвэл
+         <b>«Нүүр дэлгэцэд нэмэх»</b> сонгоно</span></div>
+       <div class="pwa-note">Chrome дээр нээвэл суулгах товч шууд гарч ирдэг.</div>`;
+  openModal('pwaModal')
+}
 
 // ══════════════════════════════════════════════
 // FOLDER SYSTEM
@@ -9332,7 +9423,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.31·110';
+const APP_BUILD='2026.08.31·111';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
@@ -9455,6 +9546,9 @@ try{
 (function(){
   // Хувилбарыг нэвтрэх дэлгэц болон нүүр хуудасны хамгийн доор харуулна
   document.querySelectorAll('.build-tag').forEach(function(e){e.textContent=appVer()});
+  // Суулгах хэсгийг шийднэ. iOS дээр beforeinstallprompt хэзээ ч ирдэггүй
+  // тул үйл явдал хүлээхгүй, шууд дуудна.
+  try{_pwaRender()}catch(e){}
 })();
 initScreenSwipe();initKmSwipe();initSwSwipe();
 initRipple();initSheetGestures();
