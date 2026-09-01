@@ -50,11 +50,14 @@ ok('Баруун шудрах → дараагийн үе',await page.evaluate((
 
 // ── 5. Нүүр ↔ СШ шудрах ──
 await page.evaluate(()=>goHome());await page.waitForTimeout(600);
-await T.swipe(page,340,300,-280,0,10);
+// 10 алхам үед харнесс өөрөө 604мс зарцуулж, аппын 600мс хязгаараас
+// хэтэрдэг байв — тест аппыг биш, CDP-ийн хоцролтыг хэмжиж байсан.
+// 4 алхам = 356мс, жинхэнэ хүний шудралттай (150–400мс) ойрхон.
+await T.swipe(page,340,300,-280,0,4);
 await page.waitForTimeout(800);
 ok('Нүүрээс зүүн шудрах → СШ ПУ-5',await page.evaluate(()=>document.getElementById('swHomeView').classList.contains('active')),
    await page.evaluate(()=>[...document.querySelectorAll('.view.active')].map(v=>v.id).join(',')));
-await T.swipe(page,50,300,280,0,10);
+await T.swipe(page,50,300,280,0,4);
 await page.waitForTimeout(800);
 ok('СШ-ээс баруун шудрах → Нүүр',await page.evaluate(()=>document.getElementById('homeView').classList.contains('active')),
    await page.evaluate(()=>[...document.querySelectorAll('.view.active')].map(v=>v.id).join(',')));

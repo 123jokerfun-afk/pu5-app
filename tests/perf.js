@@ -154,6 +154,47 @@ ok('index.html кэшлэгдсэн',swr.hasIdx);
 ok('version.txt кэшлэгдээгүй',!swr.hasVer);
 ok('Сүлжээгүй үед апп кэшнээс нээгдэнэ',swr.offline,swr.offErr);
 
+/* ── 9. Интро видео солигдоход хуучин кэш үлдэх ёсгүй ──
+   Видеог сольчихоод CACHE-ийн дугаарыг ахиулахаа мартвал хэрэглэгчид
+   утсандаа хадгалагдсан ХУУЧИН видеог үзсээр байна. */
+{
+  const m=H.match(/const SRC='intro\.mp4',CACHE='([^']+)',OLD_CACHES=\[([^\]]*)\]/);
+  ok('Интрогийн кэшийн тохиргоо олдов',!!m,m&&m[0]);
+  if(m){
+    const cur=m[1], olds=m[2].split(',').map(x=>x.trim().replace(/'/g,'')).filter(Boolean);
+    ok('Одоогийн кэш хуучны жагсаалтад ОРООГҮЙ',olds.indexOf(cur)<0,cur+' ← '+olds.join(', '));
+    const n=+String(cur).replace(/\D/g,'');
+    const missing=[];for(let i=1;i<n;i++)if(olds.indexOf('intro-v'+i)<0)missing.push('intro-v'+i);
+    ok('Өмнөх бүх хувилбар устгах жагсаалтад бий',missing.length===0,missing.join(', '));
+  }
+  const vsize=fs.statSync(path.join(__dirname,'..','intro.mp4')).size;
+  const purge=await (async()=>{
+    const base=await B.ensureServer();
+    const c3=await br.newContext({viewport:{width:390,height:844},isMobile:true,
+      userAgent:B.DEVICES[1].ua});
+    await c3.addInitScript(B.STUB);
+    const p3=await c3.newPage();
+    await p3.goto(base+'/index.html',{waitUntil:'load'});
+    // Хуучин хэрэглэгчийг дуурайна — өмнөх кэшүүдэд хуучин видео байна
+    await p3.evaluate(async(olds)=>{
+      for(const k of olds){const c=await caches.open(k);
+        await c.put('intro.mp4',new Response(new Blob(['ХУУЧИН'],{type:'video/mp4'})))}
+    },(m?m[2].split(',').map(x=>x.trim().replace(/'/g,'')).filter(Boolean):[]));
+    await p3.reload({waitUntil:'load'});
+    await p3.waitForTimeout(2500);
+    const r=await p3.evaluate(async()=>{
+      const ks=(await caches.keys()).filter(k=>/^intro-/.test(k));
+      const out={keys:ks};
+      for(const k of ks){const c=await caches.open(k);const q=await c.match('intro.mp4');
+        out[k]=q?(await q.blob()).size:0}
+      return out});
+    await c3.close();return r})();
+  ok('Хуучин интро кэш устсан',purge.keys.length===1&&purge.keys[0]===(m?m[1]:''),
+     JSON.stringify(purge.keys));
+  ok('Шинэ видео бүтнээрээ кэшлэгдсэн',purge[m?m[1]:'']===vsize,
+     purge[m?m[1]:'']+' / файл '+vsize+' байт');
+}
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
