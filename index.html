@@ -7648,7 +7648,7 @@ async function adminExportExcel(){
   if(!ov||!vid)return;
   // Видео солигдох бүрт CACHE-ийн дугаарыг ахиулна — эс тэгвэл утсанд
   // хадгалагдсан хуучин видео гарсаар байна
-  const SRC='intro.mp4',CACHE='intro-v2',OLD_CACHES=['intro-v1'];
+  const SRC='intro.mp4',CACHE='intro-v3',OLD_CACHES=['intro-v1','intro-v2'];
   let dismissed=false,blobUrl='',fillCache=null;
   function dismiss(){
     if(dismissed)return;dismissed=true;
@@ -7666,7 +7666,7 @@ async function adminExportExcel(){
   vid.addEventListener('error',dismiss);
   // Удаан (3G/4G) сүлжээнд видео бэлдэхэд хэдэн секунд шаардлагатай тул
   // хэтэрхий эрт алгасаж, видеог харуулалгүй үлдээдэг байсныг засав.
-  // Видео ~4МБ болсон тул хүлээх хугацааг уртасгав.
+  // Видео 1.2МБ болсон ч удаан сүлжээнд зай үлдээж 12 секунд хэвээр.
   setTimeout(()=>{if(vid.readyState<2&&!dismissed)dismiss()},12000);
   // Аюулгүйн дээд хязгаар — 20 секунд
   setTimeout(dismiss,20000);
@@ -9423,7 +9423,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.08.31·111';
+const APP_BUILD='2026.09.01·112';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

@@ -13,6 +13,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # интро видеоны өөрчлөлтийг base-тэй тулгахад хэрэгтэй
+
+      # Интро видеог сольчихоод CACHE-ийн дугаарыг ахиулахаа мартвал
+      # хэрэглэгчид утсандаа хадгалагдсан ХУУЧИН видеог үзсээр байна.
+      # Энэ нь ажиллагааны биш, ӨӨРЧЛӨЛТИЙН УЯЛДААНЫ дүрэм тул тестээр
+      # биш эндээс шалгагдана.
+      - name: Интро видео солигдвол кэшийн дугаар ахисан эсэх
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch --no-tags origin "${{ github.base_ref }}"
+          if git diff --quiet "$BASE"...HEAD -- intro.mp4; then
+            echo "OK — интро видео өөрчлөгдөөгүй"; exit 0
+          fi
+          OLD=$(git show "$BASE:index.html" | grep -o "CACHE='intro-v[0-9]*'" | head -1)
+          NEW=$(grep -o "CACHE='intro-v[0-9]*'" index.html | head -1)
+          echo "base=$OLD  head=$NEW"
+          if [ "$OLD" = "$NEW" ]; then
+            echo "::error::intro.mp4 солигдсон ч CACHE ахиагүй — хэрэглэгчид хуучин видео үзсээр байна"
+            exit 1
+          fi
+          echo "OK — кэшийн дугаар ахисан"
 
       - name: Git-ийн зөрчлийн тэмдэглэгээ үлдсэн эсэх
         run: |
