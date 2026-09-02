@@ -69,8 +69,9 @@ service worker бүртгэдэггүй).
 cd tests
 node allA.js && node allB.js      # 206 шалгалт
 node allC.js                      # үүлний бүтэц (49 шалгалт)
-node allD.js                      # экспорт ба интерфэйс (239 шалгалт, удаан)
-node sweepA.js && node sweepB.js  # 7 утасны байрлал
+node allD.js                      # экспорт ба интерфэйс (248 шалгалт, удаан)
+node sweepA.js && node sweepB.js  # 7 утасны байрлал (босоо)
+node sweepC.js                    # 7 утас хэвтээ + 3 гэрэлтэй загвар
 ```
 
 `allD.js` дотор `xls.js` нь гарсан Excel-ийг ExcelJS-ээр **буцааж

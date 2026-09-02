@@ -770,7 +770,10 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 /* ── Админ: хэсгийн хавтас ── */
 .adm-sec{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
   padding:13px 14px;box-shadow:var(--sh-sm);margin-bottom:9px}
-.adm-sec-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px}
+/* Дэлгэх/хаах товч нь энэ мөр өөрөө. Ганц мөр бичигтэй үед 17px
+   өндөртэй болж хуруунд хэт жижиг байсан тул доод хязгаар тавив. */
+.adm-sec-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  gap:8px;min-height:34px;padding:3px 0;-webkit-tap-highlight-color:transparent}
 .adm-code{font-size:15px;font-weight:900;letter-spacing:-.2px}
 .adm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px;
   font-size:11px;text-align:center}
@@ -4413,6 +4416,7 @@ function openEditTurnout(secId){
   updateTurnHint()
 }
 function addSection(){
+  if(!_modalOpen('addSecModal'))return;
   const t=activeTrack();if(!t)return;
   let label,note='';
   let btw=null,adj=null;
@@ -6592,7 +6596,21 @@ function updateFolderName(){
   const yr=document.getElementById('afYear').value||new Date().getFullYear();
   document.getElementById('afName').value=`${sea.charAt(0).toUpperCase()+sea.slice(1)} ${yr} паспорт`
 }
+/* Хурдан хоёр дарахад ДАВХАР үүсэхээс сэргийлнэ.
+
+   Амжилттай хадгалахад цонх хаагддаг. Утас удаашрахад хэрэглэгч
+   "Хадгалах"-ыг хоёр удаа дардаг бөгөөд хоёр дахь нь хаагдсан цонхны
+   товчийг ажиллуулж, ижил паспорт/үе ХОЁР удаа үүсдэг байв. Цонх
+   хаагдсан бол үйлдэл аль хэдийн хийгдсэн гэсэн үг.
+
+   Дугаараар давхардлыг шалгадаг үйлдлүүд (зам, км, сум) энэ
+   хамгаалалтгүй ч аюулгүй — тэдгээр өөрсдөө татгалздаг. */
+function _modalOpen(id){
+  const m=document.getElementById(id);
+  return !!(m&&m.classList.contains('open'))
+}
 function addFolder(){
+  if(!_modalOpen('addFolderModal'))return;
   const name=(document.getElementById('afName').value||'').trim();
   if(!name){showToast('Нэр оруулна уу');return}
   const sea=document.getElementById('afSeason').value;
@@ -7876,6 +7894,7 @@ function openSwFolder(){
   updateSwFolderName();openModal('swFolderModal')
 }
 function addSwFolder(){
+  if(!_modalOpen('swFolderModal'))return;
   const name=(document.getElementById('swfName').value||'').trim();
   if(!name){showToast('Нэр оруулна уу');return}
   const f={id:'sf-'+uid(),name,
@@ -9423,7 +9442,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.01·112';
+const APP_BUILD='2026.09.02·113';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
