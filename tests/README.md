@@ -23,9 +23,10 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto multi
-node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec admin pwa edge exp xls  (удаан)
+node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec admin pwa dbl edge exp xls  (удаан)
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
+node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ загвар
 ```
 
 Тусад нь: `node boot.js`, `node theme.js` гэх мэт.
@@ -35,6 +36,7 @@ node sweepB.js   # үлдсэн 3 утас
 | Файл | Юуг шалгадаг |
 |---|---|
 | `base.js` | Суурь — сервер, Chromium, төхөөрөмжийн жагсаалт |
+| `sweeplib.js` | Sweep-ийн хуваалцсан бие — дэлгэцийн жагсаалт нэг газар |
 | `stub.js` | Firebase-ийн хуурамч хувилбар (дэд бүлэг, batch дэмжинэ) |
 | `seed.js` | Туршилтын өгөгдөл |
 | `boot.js` | **Стубгүй** ачаалалт — "апп огт нээгдэхгүй"-г барина |
@@ -58,6 +60,7 @@ node sweepB.js   # үлдсэн 3 утас
 | `swrec.js` | Дүнз бүртгэх нь дэртэй ижил зарчимтай эсэх |
 | `admin.js` | Админ — он/улирлаар шүүх, хэсгийн хавтас, 25%+ хүснэгт |
 | `pwa.js` | Утсанд суулгах — manifest, PNG дүрс, Android/iOS зам |
+| `dbl.js` | Хурдан хоёр дарахад давхар үүсэх эсэх |
 | `edge.js` | Захын тохиолдол — шахалтын эргэлт, HTML тарилга, 0/1 дэр, том өгөгдөл |
 | `exp.js` | Экспорт ажиллаж, файл гарч байгаа эсэх (баталгаажуулах цонх орно) |
 | `xls.js` | Гарсан Excel-ийг **буцааж уншиж** тоо нь зөв эсэхийг шалгана |
