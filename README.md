@@ -9,5 +9,10 @@
 ```
 APK / PWA → GitHub Pages (index.html) → Firebase (Firestore + Auth)
                                              ↓
-                                   Google Sheets (5 мин тутам)
+                                   Google Sheets (Apps Script)
 ```
+
+## Google Sheets
+
+Админ сонгосон он/улирлаар хэсэг бүрийн 7 албан маягтыг нэг шийтэд
+бичүүлнэ. Тохиргоо, суулгах заавар: [apps-script/README.md](apps-script/README.md)

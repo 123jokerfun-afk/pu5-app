@@ -1463,7 +1463,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <!-- Товчнууд гарчигтай нэг эгнээнд багтахгүй шахагддаг байсан тул
          доор нь тэнцүү өргөнтэйгөөр буулгав -->
     <div class="adm-acts">
-      <button class="icon-btn" onclick="openSheets()" style="color:#0F8A4C;border-color:#7BD3A0;background:#EDFBF3"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M3 15h18M9 3v18" stroke="currentColor" stroke-width="1.6"/></svg> Sheets</button>
+      <button class="icon-btn" onclick="openSheetCfg()" style="color:#0F8A4C;border-color:#7BD3A0;background:#EDFBF3"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M3 15h18M9 3v18" stroke="currentColor" stroke-width="1.6"/></svg> Sheets</button>
       <button class="icon-btn" onclick="adminExportExcel()" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel</button>
       <button class="icon-btn" onclick="doLogout()" style="color:var(--red);border-color:rgba(220,60,60,.35)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg> Гарах</button>
     </div>
@@ -2167,6 +2167,20 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('reportSettingsModal')">Болих</button>
       <button class="btn-ok" onclick="saveReportSettings()">Хадгалах</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="overlay" id="sheetCfgModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div class="sheet-title">Google Sheets</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:500">Сонгосон он/улирлын паспортоор хэсэг бүрд нэг шийт үүсч, дотор нь 7 маягт 4 хоосон мөрөөр тусгаарлагдан бичигдэнэ</div>
+    <button class="btn-ok" id="shPushBtn" onclick="closeModal('sheetCfgModal');pushToSheets()" style="width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0F8A4C,#12A46A)">Маягт илгээх</button>
+    <button class="btn-cancel" onclick="closeModal('sheetCfgModal');openSheets()" style="width:100%;margin-bottom:14px">Sheets нээх →</button>
+    <div class="ff"><label>Apps Script вэб аппын холбоос</label><input type="url" id="shUrl" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('sheetCfgModal')">Хаах</button>
+      <button class="btn-ok" onclick="saveSheetCfg()">Хадгалах</button>
     </div>
   </div></div>
 </div>
@@ -7658,6 +7672,292 @@ async function adminExportExcel(){
 }
 
 // ══════════════════════════════════════════════
+// GOOGLE SHEETS — АЛБАН МАЯГТУУД, ХЭСЭГ БҮР НЭГ ШИЙТЭД
+//
+// Дүрмийг ЭНД тодорхойлно, Sheet дээр биш. Firestore-д дэр нь 'nnbn…'
+// болж шахагдсан, солилтын огноо нь өмнөх паспортад үлддэг тул Sheet-ийн
+// томъёо эдгээрийг тайлж чадахгүй. Тайлах код бичсэн ч аппын тооцооны
+// хоёр дахь хувилбар болж, ПУ-5 дээр өөр тоо гаргах эрсдэлтэй. Тиймээс
+// маягтын мөрийг апп бүтээж, Apps Script нь ЗӨВХӨН хуулж тавина
+// (apps-script/Code.gs).
+//
+// Шийт бүр = нэг хэсэг (ПД-6). Дотор нь 7 маягт дараалж, хооронд нь
+// 4 хоосон мөр. Тоо нь Excel-ийн маягттай ижил функцээр гардаг —
+// _withSection нь глобалуудыг түр сэлгэдэг тул тооцоо давхардахгүй.
+// ══════════════════════════════════════════════
+const SH_GAP=4;            // маягт хоорондын хоосон мөрийн тоо
+const SH_KEY='sg_sheet_url';
+
+/* Өөр хэсгийн өгөгдлийг түр глобал болгоно. fn нь ЗААВАЛ синхрон байх
+   ёстой — await орвол сэлгээ гадагшаа алдагдаж, идэвхтэй хэсэг солигдоно. */
+function _withSection(db,folder,swf,fn){
+  const oD=DB,oF=activeFolderId,oS=swFolderId;
+  try{
+    DB=db||{};
+    if(!Array.isArray(DB.folders))DB.folders=[];
+    if(!Array.isArray(DB.main))DB.main=[];
+    if(!Array.isArray(DB.sw))DB.sw=[];
+    activeFolderId=folder?folder.id:null;
+    DB.tracks=folder?(folder.tracks||[]):[];
+    swFolderId=swf?swf.id:null;
+    return fn()
+  }finally{DB=oD;activeFolderId=oF;swFolderId=oS}
+}
+/* Excel дээр хувь нь томъёо + хувийн формат. Sheet рүү бэлэн тоо явуулах
+   тул 0-100 хооронд, нэг оронтой. Хуваарь нь 0 бол хоосон (#DIV/0! биш). */
+function _shPct(a,b){return b?+(a/b*100).toFixed(1):''}
+function _shEmpty(n){const r=[];for(let i=0;i<n;i++)r.push([]);return r}
+
+/* ── 1) Маягт-1 — гол зам (км тус бүр) ── */
+function _shForm1(H){
+  const rows=[['Хэсэг','Км','Эпюр нийт','Эпюр модон','Эпюр бетон',
+    'Тэнцэхгүй нийт','Тэнцэхгүй модон','Тэнцэхгүй бетон',
+    'Модон дэрэнд %','Нийт дэрэнд %','Дараалан 3','Дараалан 4','Дараалан 5 ба<',
+    '25-30','31-40','41-50','50-иас их','Солигдсон мод','Солигдсон бетон']];
+  const T={total:0,wood:0,conc:0,bad:0,badWood:0,badConc:0};
+  const rbT=[0,0,0],pbT=[0,0,0,0],rpT={wood:0,conc:0};
+  mainTracks().slice().sort((a,b)=>a.num-b.num).forEach(t=>{
+    const a=_trackTally(t),rb=_runBuckets(t),pb=_pctBuckets(t),rp=_replTally(t);
+    Object.keys(T).forEach(k=>T[k]+=a[k]);
+    rb.forEach((v,i)=>rbT[i]+=v);pb.forEach((v,i)=>pbT[i]+=v);
+    rpT.wood+=rp.wood;rpT.conc+=rp.conc;
+    rows.push([H.secName,t.num,a.total,a.wood,a.conc,a.bad,a.badWood,a.badConc,
+      _shPct(a.badWood,a.wood),_shPct(a.bad,a.total),
+      rb[0],rb[1],rb[2],pb[0],pb[1],pb[2],pb[3],rp.wood,rp.conc])
+  });
+  rows.push(['Нийт дүн','',T.total,T.wood,T.conc,T.bad,T.badWood,T.badConc,
+    _shPct(T.badWood,T.wood),_shPct(T.bad,T.total),
+    rbT[0],rbT[1],rbT[2],pbT[0],pbT[1],pbT[2],pbT[3],rpT.wood,rpT.conc]);
+  return{title:'Маягт-1 — үзлэгээр илэрсэн тэнцэхгүй дэрийн тоо /гол зам/',rows}
+}
+
+/* ── 2) Маягт-1 Хавсралт-3 — өртөөний зам ── */
+function _shForm13(H){
+  const rows=[['Хэсэг','Өртөө зөрлөг','Замын дугаар','Эпюр нийт','Эпюр модон','Эпюр бетон',
+    'Тэнцэхгүй нийт','Тэнцэхгүй модон','Тэнцэхгүй бетон','Эзлэх %',
+    'Дараалан 3','Дараалан 4','Дараалан 5 ба<','25-30','31-40','41-50','50-иас их',
+    'Солигдсон мод','Солигдсон бетон']];
+  let sw=0,sc=0,sb=0,sbw=0,sbc=0;
+  const rbT=[0,0,0],pbT=[0,0,0,0],rpT={wood:0,conc:0};
+  (DB.tracks||[]).filter(t=>!isMainTrack(t)).slice().sort((a,b)=>a.num-b.num).forEach(t=>{
+    const a=_trackTally(t),rb=_runBuckets(t),pb=_pctBuckets(t),rp=_replTally(t);
+    // Эх маягтад "нийт" нь модон+бетоны НИЙЛБЭР (D=E+F) — тэрхүү дүрмийг барина
+    const tot=a.wood+a.conc;
+    sw+=a.wood;sc+=a.conc;sb+=a.bad;sbw+=a.badWood;sbc+=a.badConc;
+    rb.forEach((v,i)=>rbT[i]+=v);pb.forEach((v,i)=>pbT[i]+=v);
+    rpT.wood+=rp.wood;rpT.conc+=rp.conc;
+    rows.push([H.sec,DB.location||'',t.num,tot,a.wood,a.conc,a.bad,a.badWood,a.badConc,
+      _shPct(a.bad,tot),rb[0],rb[1],rb[2],pb[0],pb[1],pb[2],pb[3],rp.wood,rp.conc])
+  });
+  rows.push([H.sec,'Нийт','',sw+sc,sw,sc,sb,sbw,sbc,_shPct(sb,sw+sc),
+    rbT[0],rbT[1],rbT[2],pbT[0],pbT[1],pbT[2],pbT[3],rpT.wood,rpT.conc]);
+  return{title:'Маягт-1 Хавсралт-3 — тэнцэхгүй дэрийн тоо /өртөө замд/',rows}
+}
+
+/* ── 3) Маягт-1 Хавсралт-2 — 25%-аас дээш тэнцэхгүйтэй үе ── */
+function _shForm12(H){
+  const rows=[['Д/д','Хэсэг','Замын дугаар','Үе','Үен дэх модон дэрийн эпюр',
+    'Тэнцэхгүй дэрийн тоо','Эзлэх %','Сольсон дэрийн тоо','Солих дэрийн тоо',
+    'Сольсон дэрийн дугаар','Огноо','Нийт дэр']];
+  let dd=0,gW=0,gB=0,gR=0,gN=0,gT=0,nT=0;
+  allTracks().forEach(t=>{
+    const list=[];
+    _origSecs(t).forEach(os=>{
+      const a=_secTally(os,t);
+      if(!a.total||a.bad/a.total*100<25)return;
+      const cur=(t.sections||[]).find(x=>x.id===os.id)||{};
+      const rp=cur.repl||{};
+      const reps=Object.keys(rp).filter(k=>replWasBad(rp[k]))
+        .map(k=>({pos:+k+1,d:rp[k]&&rp[k].d})).filter(x=>x.d)
+        .sort((x,y)=>x.pos-y.pos);
+      list.push({label:os.label,wood:a.wood,bad:a.bad,total:a.total,reps})
+    });
+    if(!list.length)return;
+    let tW=0,tB=0,tR=0,tN=0,tT=0;
+    list.forEach(d=>{
+      // Цаашид хэдэн дэр солих вэ — эх маягтын томъёотой ижил
+      const need=Math.max(0,Math.ceil(d.bad-d.total*0.25)-d.reps.length);
+      const ds=[...new Set(d.reps.map(x=>x.d))];
+      rows.push([++dd,H.secName,trackLabel(t),d.label,d.wood,d.bad,
+        _shPct(d.bad,d.total),d.reps.length,need,
+        d.reps.map(x=>x.pos).join(','),ds.map(fmtReplDate).join(', '),d.total]);
+      tW+=d.wood;tB+=d.bad;tR+=d.reps.length;tN+=need;tT+=d.total
+    });
+    rows.push(['','',trackLabel(t),'Нийт',tW,tB,_shPct(tB,tT),tR,tN,'','',tT]);
+    nT++;gW+=tW;gB+=tB;gR+=tR;gN+=tN;gT+=tT
+  });
+  if(nT>1)rows.push(['','','','Бүгд',gW,gB,_shPct(gB,gT),gR,gN,'','',gT]);
+  return{title:'Маягт-1 Хавсралт-2 — 25 ба түүнээс дээш %-тай тэнцэхгүй дэртэй үеийн жагсаалт',rows}
+}
+
+/* ── 4) Маягт-1 Хавсралт-4 — сийрэгжилт ── */
+function _shForm14(H){
+  const rows=[['Д/д','Хэсэг','Км','Үе','Үен дэх модон дэрийн эпюр',
+    'Дараалан 3','Дараалан 4','Дараалан 5 ба<','Дараалан муудсан дэрийн дугаар',
+    'Сийрэгжилт огноо','Сольсон дэрийн тоо','Сольсон дэрийн дугаар']];
+  collectCarveForm().forEach((d,i)=>{
+    rows.push([i+1,H.secName,d.track,d.ue,d.epur,
+      d.len===3?1:'',d.len===4?1:'',d.len>=5?1:'',d.nums,
+      d.dates.map(fmtReplDate).join(', '),d.cnt,d.repNums])
+  });
+  return{title:'Маягт-1 Хавсралт-4 — 3 ба түүнээс дээш дараалан муудсан дэрийн жагсаалт /Сийрэгжилт/',rows}
+}
+
+/* ── 5) Маягт-2 — сум бүрийн дүнзний нэгтгэл ── */
+function _shForm2(H,ts){
+  const rows=[['Хэсэг','Сум №','Нийт дүнзний тоо','Тэнцэхгүй ш','Тэнцэхгүй пог/м',
+    'Тэнцэхгүй %','Зэрэгцсэн 3','Зэрэгцсэн 4','Зэрэгцсэн 5','Солигдсон ш','Солигдсон пог/м',
+    'Сольсны дараах %','Нийт пог/м']];
+  let n=0,bn=0,bm=0,rn=0,rm=0,pm=0;const rbT=[0,0,0];
+  ts.forEach(t=>{
+    const d=swLenTally(t),rb=swRunBuckets(t);
+    const have=_swN(d.have),bN=_swN(d.bad),bM=_swPm(d.bad),
+          rN=_swN(d.repl),rM=_swPm(d.repl),hM=_swPm(d.have);
+    n+=have;bn+=bN;bm+=bM;rn+=rN;rm+=rM;pm+=hM;
+    rb.forEach((v,i)=>rbT[i]+=v);
+    rows.push([H.secName,t.num,have,bN,+bM.toFixed(2),_shPct(bM,hM),
+      rb[0],rb[1],rb[2],rN,+rM.toFixed(2),_shPct(bM-rM,hM),+hM.toFixed(2)])
+  });
+  rows.push(['Нийт','',n,bn,+bm.toFixed(2),_shPct(bm,pm),
+    rbT[0],rbT[1],rbT[2],rn,+rm.toFixed(2),_shPct(bm-rm,pm),+pm.toFixed(2)]);
+  return{title:'Маягт-2 — үзлэгээр илэрсэн тэнцэхгүй дүнзний тоо /өртөө замд/',rows}
+}
+
+/* ── 6-7) Маягт-2 Хавсралт-1 ба 1.1 — урт тус бүрээр, сум бүр 2 мөр ──
+   Бүтэц ижил, зөвхөн хоёр мөрийн утга өөр (Байгаа/Тэнцэхгүй эсвэл
+   Тэнцэхгүй/Сольсон). Excel-ийнхтэй ижил дараалалтай тул хажуу хажууд
+   нь тавиад тулгаж болно. */
+function _shAttach(title,rowA,rowB,footLbl,pick,footFn,f,ts){
+  const rows=[['Д/д','Өртөө зөрлөг','Сум №','Дүнз']
+    .concat(SW_LENS.map(L=>L)).concat(['Нийт тоо','Нийт пог.м'])];
+  const A=SW_LENS.map(()=>0),B=SW_LENS.map(()=>0);
+  const line=(dd,st,num,lbl,arr)=>rows.push([dd,st,num,lbl].concat(arr.map(x=>x||0))
+    .concat([arr.reduce((s,x)=>s+x,0),
+             +arr.reduce((s,x,i)=>s+x*SW_LENS[i],0).toFixed(2)]));
+  ts.forEach((t,i)=>{
+    const d=pick(t);
+    d[0].forEach((v,k)=>A[k]+=v);d[1].forEach((v,k)=>B[k]+=v);
+    line(i+1,t.station||f.name||'',t.num,rowA,d[0]);
+    line('','','',rowB,d[1])
+  });
+  line(ts.length+1,'Нийт','',rowA,A);
+  line('','','',rowB,B);
+  const ft=SW_LENS.map((L,i)=>footFn(A[i],B[i],L));
+  rows.push(['','','',footLbl].concat(ft.map(x=>+x.toFixed(2)))
+    .concat(['',+ft.reduce((s,x)=>s+x,0).toFixed(2)]));
+  return{title,rows}
+}
+
+/* Сонгосон он/улирлын ДҮНЗНИЙ паспорт. Дэрийнхтэй яг ижил шүүлт —
+   он ба улирал таарвал авна, эс бөгөөс дүнзний маягтууд хоосон гарна.
+   Өөр улирлын тоог маягтад чимээгүй оруулахгүй байх нь чухал. */
+function _shSwFolder(db,folder){
+  const y=String((folder&&folder.year)||''),se=String((folder&&folder.season)||'');
+  return ((db&&db.sw)||[]).find(f=>
+    String(f.year||'')===y&&String(f.season||'')===se)||null
+}
+/* Нэг хэсгийн 7 маягт → шийтийн мөрүүд. Маягт хооронд 4 хоосон мөр. */
+function _sheetRowsFor(code,db,folder,swf){
+  return _withSection(db,folder,swf,()=>{
+    const H=_formHdr();
+    const ts=swAllTurnouts().filter(t=>(t.it||'').length);
+    const f=swf||{};
+    const blocks=[
+      _shForm1(H),
+      _shForm13(H),
+      _shForm12(H),
+      _shForm14(H),
+      _shForm2(H,ts),
+      // Хавсралт-1.1 — Тэнцэхгүй / Сольсон
+      _shAttach('Маягт-2 Хавсралт-1.1 — солигдсон сумын дүнзнүүд /м/',
+        'Тэнцэхгүй','Сольсон','Тэнцэхгүй',
+        t=>{const d=swLenTally(t);return[d.bad,d.repl]},
+        (a,b)=>a-b,f,ts),
+      // Хавсралт-1 — Байгаа / Тэнцэхгүй
+      _shAttach('Маягт-2 Хавсралт-1 — тэнцэхгүй гарсан сумын дүнзнүүд /м/',
+        'Байгаа','Тэнцэхгүй','Тэнцэхгүй',
+        t=>{const d=swLenTally(t);return[d.have,d.bad]},
+        (a,b,L)=>b*L,f,ts)
+    ];
+    const td=H.today;
+    let rows=[[`${code.toUpperCase()} · ${H.year} оны ${H.season} · ${DB.location||''}`],
+      [`${td.y}-${td.m}-${td.d}-нд аппаас илгээв · дүнзний паспорт: ${swf?(swf.name||swf.year+' '+swf.season):'олдсонгүй'}`],[]];
+    blocks.forEach((b,i)=>{
+      if(i)rows=rows.concat(_shEmpty(SH_GAP));
+      rows.push([b.title]);
+      rows=rows.concat(b.rows)
+    });
+    return rows
+  })
+}
+
+/* ── Илгээх ────────────────────────────────────────────────────
+   Apps Script вэб апп руу НЭГ ХЭСЭГ = НЭГ хүсэлт. Ингэснээр аль хэсэг
+   дээр унасныг шууд хэлж, 4G дээр нэг том хүсэлт гацахаас сэргийлнэ.
+   Content-Type нь text/plain — Apps Script нь preflight (OPTIONS)
+   хүсэлтэд хариу өгдөггүй тул application/json явуулбал CORS-д
+   хоригдоно.                                                     */
+function _sheetPost(url,body){
+  return _withTimeout(fetch(url,{method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(body),redirect:'follow'}),45000,'Sheets руу илгээх')
+    .then(r=>r.text())
+    .then(txt=>{
+      let j=null;try{j=JSON.parse(txt)}catch(e){}
+      if(!j)throw new Error('Скрипт JSON биш хариу өглөө — холбоос эсвэл эрхийг шалгана уу');
+      if(!j.ok)throw new Error(j.error||'Скрипт алдаа буцаалаа');
+      return j
+    })
+}
+/* Админ дэлгэц дээр СОНГОГДСОН он/улирлын паспортуудыг л илгээнэ —
+   хэрэглэгчийн харж байгаа зүйл, Sheet дээр очих зүйл хоёр ижил байна. */
+async function pushToSheets(){
+  const url=(localStorage.getItem(SH_KEY)||'').trim();
+  if(!url){showToast('Эхлээд Apps Script вэб аппын холбоосыг оруулна уу',3600);openSheetCfg();return}
+  const hit=[];
+  (_adminData||[]).forEach(({code,db})=>{
+    (db.folders||[]).forEach(f=>{
+      if(String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
+        hit.push({code,db,folder:f})
+    })
+  });
+  if(!hit.length){showToast(`${_admYear} оны ${_admSeason}ын паспорт олдсонгүй`,3000);return}
+  if(!await appConfirm(
+    `${hit.length} хэсгийн 7 маягтыг Google Sheets руу илгээх үү?\n${_admYear} оны ${_admSeason}`,
+    'Илгээх'))return;
+  let ok=0;const fail=[];
+  for(let i=0;i<hit.length;i++){
+    const {code,db,folder}=hit[i];
+    showToast(`${code.toUpperCase()} · ${i+1}/${hit.length}`,4000);
+    // Дүнзний паспорт нь дэрийнхээс ТУСДАА жагсаалт — мөн он/улирлаар олно
+    const swf=_shSwFolder(db,folder);
+    try{
+      const rows=_sheetRowsFor(code,db,folder,swf);
+      await _sheetPost(url,{schema:1,tab:code.toUpperCase(),
+        year:String(_admYear),season:String(_admSeason),rows});
+      ok++
+    }catch(e){fail.push(code.toUpperCase()+' — '+((e&&e.message)||e));console.error(code,e)}
+  }
+  if(!fail.length)showToast(`✓ ${ok} хэсэг Sheets руу илгээгдлээ`,3200);
+  else showToast(`${ok} илгээгдэж, ${fail.length} унав: ${fail[0]}`,6000)
+}
+/* ── Вэб аппын холбоос ── */
+function openSheetCfg(){
+  const el=document.getElementById('shUrl');
+  if(el)el.value=localStorage.getItem(SH_KEY)||'';
+  openModal('sheetCfgModal')
+}
+function saveSheetCfg(){
+  const el=document.getElementById('shUrl');
+  const v=(el?el.value:'').trim();
+  if(v&&!/^https:\/\/script\.google(usercontent)?\.com\//.test(v)){
+    showToast('Apps Script вэб аппын холбоос биш байна',3200);return}
+  if(v)localStorage.setItem(SH_KEY,v);else localStorage.removeItem(SH_KEY);
+  closeModal('sheetCfgModal');
+  showToast(v?'✓ Хадгаллаа':'Холбоосыг устгав')
+}
+
+// ══════════════════════════════════════════════
 // INTRO
 // ══════════════════════════════════════════════
 (function(){
@@ -9442,7 +9742,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.02·113';
+const APP_BUILD='2026.09.03·114';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
