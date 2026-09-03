@@ -3,3 +3,4 @@ node_modules
 tests/shot-*.png
 tests/*.png
 tests/sweep*.json
+tests/package-lock.json
