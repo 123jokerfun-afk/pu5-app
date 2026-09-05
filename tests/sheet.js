@@ -246,24 +246,101 @@ const ui=await page.evaluate(async()=>{
   closeModal('sheetCfgModal');
   return {open,inp:!!inp,hit,w:r?Math.round(r.width):0}});
 ok('Sheets цонх нээгдэнэ',ui.open&&ui.inp,JSON.stringify(ui));
+/* Холбоос нэг удаа тавигддаг тул талбар нь нуугдсан байх ёстой —
+   өдөр тутам харагдах нь илгээх ба нээх хоёр л */
+const lnk=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/AAA/exec');
+  openSheetCfg();
+  // Цонх доороос дээш гүйж нээгддэг тул шилжилт дуустал хүлээнэ
+  await new Promise(r=>setTimeout(r,450));
+  const box=document.getElementById('shUrlBox');
+  const hid=box.hidden;
+  const btn=document.getElementById('shLinkBtn');
+  const open=document.querySelector('#sheetCfgModal button[onclick*=openSheets]');
+  const rb=btn.getBoundingClientRect(),ro=open.getBoundingClientRect();
+  const hit=(()=>{const e=document.elementFromPoint(rb.left+rb.width/2,rb.top+rb.height/2);
+    return e===btn||btn.contains(e)})();
+  toggleSheetUrl();
+  await new Promise(r=>setTimeout(r,80));
+  const shown=!box.hidden, filled=document.getElementById('shUrl').value;
+  toggleSheetUrl();
+  const hid2=box.hidden;
+  closeModal('sheetCfgModal');localStorage.removeItem(SH_KEY);
+  return {hid,shown,hid2,filled,hit,wBtn:Math.round(rb.width),wOpen:Math.round(ro.width),
+    sameRow:Math.abs(rb.top-ro.top)<2}});
+ok('Холбоос тавигдсан үед талбар нуугдана',lnk.hid,String(lnk.hid));
+ok('Холбоосны товч дарахад талбар нээгдэж, одоогийнх нь бөглөгдөнө',
+   lnk.shown&&/AAA/.test(lnk.filled),lnk.filled);
+ok('Дахин дарахад хаагдана',lnk.hid2,String(lnk.hid2));
+ok('Товч дарагдана',lnk.hit,String(lnk.hit));
+ok('Нээх : холбоос = 2 : 1 өргөнтэй, нэг эгнээнд',
+   lnk.sameRow&&Math.abs(lnk.wOpen/lnk.wBtn-2)<0.25,
+   lnk.wOpen+'px : '+lnk.wBtn+'px');
 ok('"Маягт илгээх" товч дарагдана',ui.hit&&ui.w>0,`${ui.w}px`);
 const nourl=await page.evaluate(async()=>{
   localStorage.removeItem(SH_KEY);
+  document.getElementById('shUrl').value='';
   await pushToSheets();
   const o=document.getElementById('sheetCfgModal').classList.contains('open');
   closeModal('sheetCfgModal');return o});
 ok('Холбоосгүй бол тохиргоог нээнэ (чимээгүй унахгүй)',nourl,String(nourl));
-const saved=await page.evaluate(()=>{
+const saved=await page.evaluate(async()=>{
+  // Код цонх гарвал зөв кодыг нь бөглөж батална
+  const pin=v=>{const i=document.getElementById('shPin');if(i)i.value=v;
+    document.getElementById('shPinOk').click()};
   document.getElementById('shUrl').value='https://example.com/x';
-  saveSheetCfg();
+  const okA=await saveSheetCfg(true);          // буруу холбоос — код хүртэл асуухгүй
   const a=localStorage.getItem(SH_KEY);
   document.getElementById('shUrl').value='https://script.google.com/macros/s/AAA/exec';
-  saveSheetCfg();
+  const p=saveSheetCfg(true);
+  await new Promise(r=>setTimeout(r,60));
+  const asked=document.getElementById('sheetPinModal').classList.contains('open');
+  pin('000000');                                // буруу код
+  await new Promise(r=>setTimeout(r,60));
+  const stillOpen=document.getElementById('sheetPinModal').classList.contains('open');
+  const beforePin=localStorage.getItem(SH_KEY);
+  pin('861145');                                // зөв код
+  await p;
   const b=localStorage.getItem(SH_KEY);
   localStorage.removeItem(SH_KEY);
-  return {a,b}});
-ok('Буруу холбоос хадгалагдахгүй',!saved.a,String(saved.a));
-ok('Apps Script холбоос хадгалагдана',/script\.google\.com/.test(saved.b||''),String(saved.b));
+  return {a,b,okA,asked,stillOpen,beforePin}});
+ok('Буруу холбоос хадгалагдахгүй',!saved.a&&saved.okA===false,String(saved.a));
+ok('Холбоос солиход код асууна',saved.asked,String(saved.asked));
+ok('Буруу код — цонх хаагдахгүй, хадгалахгүй',
+   saved.stillOpen&&!saved.beforePin,
+   'цонх '+saved.stillOpen+' · '+String(saved.beforePin));
+ok('Зөв код өгөхөд хадгалагдана',/script\.google\.com/.test(saved.b||''),String(saved.b));
+
+/* Хадгалахаа мартсан ч илгээх нь ажиллах ёстой — v114-д бичсэн
+   холбоос чимээгүй хаягдаж, цонх дахин нээгдэж, хэрэглэгч гацдаг байв. */
+const unsaved=await page.evaluate(async()=>{
+  localStorage.removeItem(SH_KEY);
+  // Админы өгөгдөл — сонгосон он/улирал нь паспорттойгоо таарна
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  document.getElementById('shUrl').value='https://script.google.com/macros/s/BBB/exec?t=861145';
+  window.__posted=null;
+  const of=window.fetch;
+  window.fetch=(u,o)=>{window.__posted=u;window.__body=o&&o.body;return Promise.resolve(
+    {text:()=>Promise.resolve(JSON.stringify({ok:true,tab:'X',rows:1}))})};
+  window.appConfirm=()=>Promise.resolve(true);
+  const pr=pushToSheets();
+  await new Promise(r=>setTimeout(r,60));
+  const i=document.getElementById('shPin');if(i)i.value='861145';
+  document.getElementById('shPinOk').click();
+  await pr;
+  window.fetch=of;
+  let tab='';try{tab=JSON.parse(window.__body).tab}catch(e){}
+  return {saved:localStorage.getItem(SH_KEY),posted:window.__posted,tab:tab,
+    open:document.getElementById('sheetCfgModal').classList.contains('open')}});
+ok('Хадгалахгүйгээр илгээхэд холбоос өөрөө хадгалагдана',
+   /BBB/.test(String(unsaved.saved)),String(unsaved.saved));
+ok('Илгээлт үнэхээр явав (цонх дахин нээгдээгүй)',
+   /BBB/.test(String(unsaved.posted))&&!unsaved.open,
+   String(unsaved.posted)+' · цонх '+unsaved.open);
+/* Хүснэгтэн дээр өөр скрипт "ПД-6" нэртэй шийт эзэмшиж байвал бид түүнийг
+   цэвэрлээд дарж бичих байлаа — тусдаа нэр авснаар өгөгдөл үрэгдэхгүй */
+ok('Шийтийн нэр "<КОД> маягт" — байгаа шийтийг дарж бичихгүй',
+   / маягт$/.test(String(unsaved.tab)),String(unsaved.tab));
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));

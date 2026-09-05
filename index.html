@@ -2175,12 +2175,31 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div class="sheet-title">Google Sheets</div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:500">Сонгосон он/улирлын паспортоор хэсэг бүрд нэг шийт үүсч, дотор нь 7 маягт 4 хоосон мөрөөр тусгаарлагдан бичигдэнэ</div>
-    <button class="btn-ok" id="shPushBtn" onclick="closeModal('sheetCfgModal');pushToSheets()" style="width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0F8A4C,#12A46A)">Маягт илгээх</button>
-    <button class="btn-cancel" onclick="closeModal('sheetCfgModal');openSheets()" style="width:100%;margin-bottom:14px">Sheets нээх →</button>
-    <div class="ff"><label>Apps Script вэб аппын холбоос</label><input type="url" id="shUrl" placeholder="https://script.google.com/macros/s/…/exec"></div>
+    <button class="btn-ok" id="shPushBtn" onclick="pushToSheets()" style="width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0F8A4C,#12A46A)">Маягт илгээх</button>
+    <!-- Хүснэгт нээх нь өдөр тутмын үйлдэл, холбоос солих нь нэг удаагийнх —
+         тиймээс өргөнийг 2:1-ээр хуваасан -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn-cancel" onclick="closeModal('sheetCfgModal');openSheets()" style="flex:2;min-width:0">Sheets нээх →</button>
+      <button class="btn-cancel" id="shLinkBtn" onclick="toggleSheetUrl()" aria-label="Холбоос солих" title="Холбоос солих" style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center"><svg class="ic" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button>
+    </div>
+    <div id="shUrlBox" hidden>
+      <div class="ff"><label>Apps Script вэб аппын холбоос</label><input type="url" id="shUrl" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <button class="btn-ok" onclick="saveSheetCfg()" style="width:100%;margin-bottom:14px">Холбоос хадгалах</button>
+    </div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('sheetCfgModal')">Хаах</button>
-      <button class="btn-ok" onclick="saveSheetCfg()">Хадгалах</button>
+      <button class="btn-cancel" onclick="closeModal('sheetCfgModal')" style="width:100%">Хаах</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="overlay" id="sheetPinModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div class="sheet-title">Холбоос солих</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:500">Холбоос солих нь бүх хэсгийн тайлан хаашаа явахыг өөрчилнө. Баталгаажуулах кодоо оруулна уу.</div>
+    <div class="ff"><label>Код</label><input type="tel" inputmode="numeric" autocomplete="off" maxlength="12" id="shPin" placeholder="••••••" style="letter-spacing:.32em;text-align:center;font-size:19px;font-weight:800"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="shPinCancel">Болих</button>
+      <button class="btn-ok" id="shPinOk">Батлах</button>
     </div>
   </div></div>
 </div>
@@ -7912,8 +7931,14 @@ function _sheetPost(url,body){
 /* Админ дэлгэц дээр СОНГОГДСОН он/улирлын паспортуудыг л илгээнэ —
    хэрэглэгчийн харж байгаа зүйл, Sheet дээр очих зүйл хоёр ижил байна. */
 async function pushToSheets(){
+  // Холбоосоо бичээд "Хадгалах" дарахаа мартвал бичсэн нь чимээгүй хаягдаж,
+  // "холбоос алга" гээд цонх дахин нээгддэг байв — хэрэглэгчийн хувьд
+  // төгсгөлгүй эргэлт. Одоо талбарт байгааг нь эхлээд хадгална.
+  const _el=document.getElementById('shUrl');
+  if(_el&&_el.value.trim()&&!await saveSheetCfg(true))return;
   const url=(localStorage.getItem(SH_KEY)||'').trim();
   if(!url){showToast('Эхлээд Apps Script вэб аппын холбоосыг оруулна уу',3600);openSheetCfg();return}
+  closeModal('sheetCfgModal');
   const hit=[];
   (_adminData||[]).forEach(({code,db})=>{
     (db.folders||[]).forEach(f=>{
@@ -7933,7 +7958,7 @@ async function pushToSheets(){
     const swf=_shSwFolder(db,folder);
     try{
       const rows=_sheetRowsFor(code,db,folder,swf);
-      await _sheetPost(url,{schema:1,tab:code.toUpperCase(),
+      await _sheetPost(url,{schema:1,tab:code.toUpperCase()+' маягт',
         year:String(_admYear),season:String(_admSeason),rows});
       ok++
     }catch(e){fail.push(code.toUpperCase()+' — '+((e&&e.message)||e));console.error(code,e)}
@@ -7945,16 +7970,60 @@ async function pushToSheets(){
 function openSheetCfg(){
   const el=document.getElementById('shUrl');
   if(el)el.value=localStorage.getItem(SH_KEY)||'';
+  // Холбоос нэг л удаа тавигддаг тул нуугдсанаар нээгдэнэ — өдөр тутмын
+  // хоёр үйлдэл (илгээх, нээх) л харагдана
+  const box=document.getElementById('shUrlBox');
+  if(box)box.hidden=!!(localStorage.getItem(SH_KEY)||'').trim();
   openModal('sheetCfgModal')
 }
-function saveSheetCfg(){
+/* Холбоосны дүрст товч — талбарыг нээж/хаана */
+function toggleSheetUrl(){
+  const box=document.getElementById('shUrlBox');if(!box)return;
+  hap(6);
+  box.hidden=!box.hidden;
+  if(!box.hidden){
+    const el=document.getElementById('shUrl');
+    if(el){el.value=localStorage.getItem(SH_KEY)||'';setTimeout(()=>{try{el.focus()}catch(e){}},60)}
+  }
+}
+const SH_PIN='861145';
+/* Холбоос солих нь бүх хэсгийн тайлан хаашаа явахыг өөрчилдөг тул код
+   асууна. Энэ нь САНАМСАРГҮЙ солихоос сэргийлэх баталгаажуулалт төдий —
+   код нь аппын эх кодод байгаа тул нууцлал биш. */
+function askSheetPin(){
+  return new Promise(resolve=>{
+    hap(6);
+    const inp=document.getElementById('shPin');
+    const okBtn=document.getElementById('shPinOk');
+    const noBtn=document.getElementById('shPinCancel');
+    const modal=document.getElementById('sheetPinModal');
+    if(inp)inp.value='';
+    const done=r=>{modal.classList.remove('open');
+      okBtn.onclick=null;noBtn.onclick=null;if(inp)inp.onkeydown=null;resolve(r)};
+    const tryOk=()=>{
+      if(((inp&&inp.value)||'').trim()!==SH_PIN){
+        showToast('Код буруу байна',2600);if(inp){inp.value='';inp.focus()}return}
+      done(true)
+    };
+    okBtn.onclick=tryOk;
+    noBtn.onclick=()=>done(false);
+    if(inp)inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();tryOk()}};
+    modal.classList.add('open');
+    if(inp)setTimeout(()=>{try{inp.focus()}catch(e){}},280)
+  })
+}
+async function saveSheetCfg(quiet){
   const el=document.getElementById('shUrl');
   const v=(el?el.value:'').trim();
+  const cur=(localStorage.getItem(SH_KEY)||'').trim();
+  // Өөрчлөгдөөгүй бол код асуухгүй — дахин дахин илгээхэд саад болохгүй
+  if(v===cur){if(!quiet){closeModal('sheetCfgModal');showToast('Өөрчлөлт алга',1800)}return true}
   if(v&&!/^https:\/\/script\.google(usercontent)?\.com\//.test(v)){
-    showToast('Apps Script вэб аппын холбоос биш байна',3200);return}
+    showToast('Apps Script вэб аппын холбоос биш байна',3200);return false}
+  if(!await askSheetPin()){showToast('Болилоо',1600);return false}
   if(v)localStorage.setItem(SH_KEY,v);else localStorage.removeItem(SH_KEY);
-  closeModal('sheetCfgModal');
-  showToast(v?'✓ Хадгаллаа':'Холбоосыг устгав')
+  if(!quiet){closeModal('sheetCfgModal');showToast(v?'✓ Хадгаллаа':'Холбоосыг устгав')}
+  return true
 }
 
 // ══════════════════════════════════════════════
@@ -9742,7 +9811,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.03·114';
+const APP_BUILD='2026.09.05·115';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
