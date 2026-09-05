@@ -83,8 +83,9 @@ async function grab(call){
 const sh=await page.evaluate(()=>{
   const db=DB,folder=DB.folders[0];
   const before={dbLoc:DB.location,fid:activeFolderId,sw:swFolderId};
-  const rows=_sheetRowsFor('ПД-6',db,folder,_shSwFolder(db,folder));
-  return {rows,before,after:{dbLoc:DB.location,fid:activeFolderId,sw:swFolderId},gap:SH_GAP}
+  const out=_sheetRowsFor('ПД-6',db,folder,_shSwFolder(db,folder));
+  const rows=out.rows;
+  return {rows,fmt:out.fmt,before,after:{dbLoc:DB.location,fid:activeFolderId,sw:swFolderId},gap:SH_GAP}
 });
 
 /* ══ 1. Бүтэц ══════════════════════════════════════════════ */
@@ -112,17 +113,43 @@ ok('Сонгосон улирлын дүнзний паспортыг л авн�
 ok('Мөр бүр массив, 40 баганаас хэтрэхгүй',
    sh.rows.every(r=>Array.isArray(r)&&r.length<=40),
    'хамгийн урт '+Math.max(...sh.rows.map(r=>r.length)));
+/* Эх маягтын хоёр мөрт толгой, хүрээ, нэгтгэлийн заавар */
+ok('Маягт бүрд хэлбэрийн заавар дагалдана',
+   sh.fmt&&sh.fmt.length===7,String(sh.fmt&&sh.fmt.length));
+ok('Толгой бүр 2 мөр',
+   sh.fmt.every(f=>f.head===2),JSON.stringify(sh.fmt.map(f=>f.head)));
+ok('Нэгтгэлүүд хүснэгтийн баганаас халихгүй',
+   sh.fmt.every(f=>(f.merges||[]).every(m=>m[1]>=1&&m[1]+m[3]-1<=f.cols)),
+   'багана: '+JSON.stringify(sh.fmt.map(f=>f.cols)));
+ok('Нэгтгэл толгойн хоёр мөрийн дотор л байна',
+   sh.fmt.every(f=>(f.merges||[]).every(m=>m[0]>=f.row&&m[0]+m[2]-1<=f.row+1)),
+   'зөв');
 ok('_withSection глобалыг сэргээв',
    JSON.stringify(sh.before)===JSON.stringify(sh.after),JSON.stringify(sh.after));
 
-// Блок бүрийн мөрүүд (гарчгийн дараагаас дараагийн хоосон мөр хүртэл)
+// Блок бүрийн мөрүүд. Толгой одоо ХОЁР мөр (эх маягтын нэгтгэсэн
+// бүтэц) тул хоёр дахийг нь алгасаж, [0]=толгой, [1..]=өгөгдөл болгоно —
+// доорх шалгалтуудын индекс хэвээр үлдэнэ.
 const block=k=>{
-  const st=titles[k].i+1;const out=[];
-  for(let i=st;i<sh.rows.length;i++){
+  const st=titles[k].i+1;const out=[sh.rows[st]];
+  for(let i=st+2;i<sh.rows.length;i++){
     if(!sh.rows[i]||!sh.rows[i].length)break;
     out.push(sh.rows[i])}
   return out};
+// Толгой 2 мөр болсон тул өгөгдөл 3 дахь мөрөөс эхэлнэ (0,1 = толгой)
 const F1=block(0),F13=block(1),F12=block(2),F14=block(3),F2=block(4),A11=block(5),A1=block(6);
+// Хүрээ нь толгойн 2 мөр + өгөгдлийн бүх мөрийг хамрах ёстой
+ok('Хүрээний муж толгой+өгөгдлийг бүрэн хамарна',
+   sh.fmt.every((f,i)=>f.n===2+[F1,F13,F12,F14,F2,A11,A1][i].length-1),
+   JSON.stringify(sh.fmt.map(f=>f.n)));
+ok('Маягт-1-ийн толгой эх загварынхтай ижил',
+   String(F1[0][2])==='Дэрийн эпюр'&&String(F1[0][5])==='Тэнцэхгүй дэрийн тоо'
+   &&String(F1[0][17])==='Тухайн онд солигдсон дэрийн тоо',
+   JSON.stringify([F1[0][2],F1[0][5],F1[0][17]]));
+ok('Дүнгийн мөрүүд бүдүүн болно',
+   sh.fmt[0].bold.length===1&&sh.fmt[6].bold.length===3,
+   JSON.stringify(sh.fmt.map(f=>f.bold.length)));
+
 
 /* ══ 2. Дэрийн маягтууд — Excel-тэй тулгах ══════════════════ */
 console.log('\nДэрийн маягт (Excel-тэй тулгав)');
