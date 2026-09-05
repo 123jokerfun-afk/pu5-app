@@ -67,7 +67,11 @@ function doPost(e) {
     }
     sh.setFrozenRows(2);
 
-    return _json({ ok: true, tab: name, rows: grid.length, cols: w });
+    // Бичсэн шийт рүү ШУУД ороход хэрэгтэй холбоос. Үүнгүй бол апп
+    // хүснэгтийг нээхдээ хамгийн сүүлд идэвхтэй байсан таб дээр буудаг.
+    var url = ss.getUrl().replace(/[?#].*$/, '').replace(/\/edit$/, '')
+            + '/edit#gid=' + sh.getSheetId();
+    return _json({ ok: true, tab: name, rows: grid.length, cols: w, url: url });
   } catch (err) {
     return _json({ ok: false, error: String(err && err.message || err) });
   }

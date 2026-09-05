@@ -342,6 +342,82 @@ ok('Илгээлт үнэхээр явав (цонх дахин нээгдээг
 ok('Шийтийн нэр "<КОД> маягт" — байгаа шийтийг дарж бичихгүй',
    / маягт$/.test(String(unsaved.tab)),String(unsaved.tab));
 
+/* CORS хаагдвал (Failed to fetch) no-cors-оор ДАХИН илгээнэ — өгөгдөл
+   хүрнэ, гэхдээ хариу уншигдахгүй тул амжилт гэж мэдэгдэж БОЛОХГҮЙ. */
+const cors=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/CCC/exec');
+  document.getElementById('shUrl').value='';   // код асуухаас сэргийлнэ
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  const of=window.fetch,calls=[];
+  window.fetch=(u,o)=>{
+    calls.push((o&&o.mode)||'cors');
+    if(calls.length===1)return Promise.reject(new TypeError('Failed to fetch'));
+    return Promise.resolve({type:'opaque',text:()=>Promise.resolve('')})
+  };
+  window.appConfirm=()=>Promise.resolve(true);
+  let msg='';const ot=window.showToast;
+  window.showToast=(m,d)=>{msg=m;return ot(m,d)};
+  await pushToSheets();
+  window.fetch=of;window.showToast=ot;localStorage.removeItem(SH_KEY);
+  return {calls,msg}});
+ok('CORS унавал no-cors-оор дахин илгээнэ',
+   cors.calls.length===2&&cors.calls[1]==='no-cors',JSON.stringify(cors.calls));
+ok('Сохор илгээлтийг амжилт гэж хэлэхгүй, шалгуулна',
+   !/^✓/.test(cors.msg)&&/шалгана уу/.test(cors.msg),cors.msg);
+
+/* Хоёулаа унавал юу шалгахыг нь заана */
+const dead=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/DDD/exec');
+  document.getElementById('shUrl').value='';
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  const of=window.fetch;
+  window.fetch=()=>Promise.reject(new TypeError('Failed to fetch'));
+  window.appConfirm=()=>Promise.resolve(true);
+  // Апп унасан илгээлтийг console.error-т бичдэг — энэ нь ЗӨВ зан төлөв,
+  // зориуд үүсгэсэн алдаа тул тестийн консолын шалгалтад орох ёсгүй
+  const oe=console.error;console.error=()=>{};
+  let msg='';const ot=window.showToast;
+  window.showToast=(m,d)=>{msg=m;return ot(m,d)};
+  await pushToSheets();
+  window.fetch=of;window.showToast=ot;console.error=oe;localStorage.removeItem(SH_KEY);
+  return msg});
+ok('Бүрэн унавал шалтгааныг нь заана (Failed to fetch биш)',
+   /Who has access/.test(dead),dead);
+
+/* Скрипт бичсэн шийтийнхээ #gid-тэй холбоосыг буцаадаг. Түүнийг
+   хадгалж, "Sheets нээх" тэр таб дээр буудаг байх ёстой — эс тэгвэл
+   хамгийн сүүлд идэвхтэй байсан хуучин шийт нээгдэнэ. */
+const gid=await page.evaluate(async()=>{
+  localStorage.removeItem(SH_OPEN);
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/EEE/exec');
+  document.getElementById('shUrl').value='';
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  const of=window.fetch;
+  window.fetch=()=>Promise.resolve({text:()=>Promise.resolve(JSON.stringify(
+    {ok:true,tab:'ПД-6 маягт',rows:9,url:'https://docs.google.com/spreadsheets/d/ZZZ/edit#gid=777'}))});
+  window.appConfirm=()=>Promise.resolve(true);
+  await pushToSheets();
+  window.fetch=of;
+  const stored=localStorage.getItem(SH_OPEN);
+  // Нээхийг нь барьж, ямар хаяг руу орохыг харна
+  let opened='';const ow=window.open;window.open=u=>{opened=u;return {}};
+  openSheets();window.open=ow;
+  // Холбоос солиход хуучин шийтийн хаяг үлдэж болохгүй (өөр хүснэгт байж болно)
+  document.getElementById('shUrl').value='https://script.google.com/macros/s/FFF/exec';
+  const p=saveSheetCfg(true);
+  await new Promise(r=>setTimeout(r,60));
+  const i=document.getElementById('shPin');if(i)i.value='861145';
+  document.getElementById('shPinOk').click();await p;
+  const afterSwap=localStorage.getItem(SH_OPEN);
+  localStorage.removeItem(SH_KEY);localStorage.removeItem(SH_OPEN);
+  return {stored,opened,afterSwap}});
+ok('Скриптийн буцаасан шийтийн холбоос хадгалагдана',
+   /gid=777/.test(String(gid.stored)),String(gid.stored));
+ok('"Sheets нээх" тэр шийт рүү шууд ордог',
+   /gid=777/.test(String(gid.opened)),String(gid.opened));
+ok('Холбоос солиход хуучин шийтийн хаяг хаягдана',
+   !gid.afterSwap,String(gid.afterSwap));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
