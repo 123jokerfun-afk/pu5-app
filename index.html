@@ -7542,14 +7542,18 @@ function _adm25Html(data){
 const SHEETS_URL='https://docs.google.com/spreadsheets/d/1z1yTCbq17v8c4GDyx3izjnRi947WbdJjBZzrLsWQ9Fo/edit';
 function openSheets(){
   try{
-    const w=window.open(SHEETS_URL,'_blank');
+    // Скрипт бичсэн шийтийнхээ шууд холбоосыг (#gid-тэй) буцаадаг. Тэр
+    // байвал түүнийг нээнэ — эс тэгвэл хамгийн сүүлд идэвхтэй байсан
+    // таб дээр буудаг тул хэрэглэгч хуучин шийтээ хараад эргэлздэг.
+    const SU=(localStorage.getItem(SH_OPEN)||'').trim()||SHEETS_URL;
+    const w=window.open(SU,'_blank');
     if(!w){
       // Popup блоклогдвол — линк харуулна
       const ex=document.getElementById('sheetsLinkBanner');if(ex)ex.remove();
       const div=document.createElement('div');div.id='sheetsLinkBanner';
       div.style.cssText='position:fixed;bottom:24px;left:16px;right:16px;background:#1A2332;color:#fff;padding:14px 16px;border-radius:16px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4)';
       div.innerHTML='<div style="margin-bottom:8px">'+ic("sheet",15)+' Google Sheets нэгтгэл:</div>'+
-        '<a href="'+SHEETS_URL+'" target="_blank" style="display:block;background:#0F8A4C;color:#fff;text-align:center;padding:11px;border-radius:10px;font-weight:800;text-decoration:none">Нээх →</a>'+
+        '<a href="'+SU+'" target="_blank" style="display:block;background:#0F8A4C;color:#fff;text-align:center;padding:11px;border-radius:10px;font-weight:800;text-decoration:none">Нээх →</a>'+
         '<button onclick="this.parentElement.remove()" aria-label="Хаах" style="position:absolute;top:2px;right:6px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer">×</button>';
       document.body.appendChild(div);
       setTimeout(()=>{const b=document.getElementById('sheetsLinkBanner');if(b)b.remove()},20000)
@@ -7706,6 +7710,7 @@ async function adminExportExcel(){
 // ══════════════════════════════════════════════
 const SH_GAP=4;            // маягт хоорондын хоосон мөрийн тоо
 const SH_KEY='sg_sheet_url';
+const SH_OPEN='sg_sheet_open';   // хамгийн сүүлд бичсэн шийтийн шууд холбоос
 
 /* Өөр хэсгийн өгөгдлийг түр глобал болгоно. fn нь ЗААВАЛ синхрон байх
    ёстой — await орвол сэлгээ гадагшаа алдагдаж, идэвхтэй хэсэг солигдоно. */
@@ -7916,17 +7921,35 @@ function _sheetRowsFor(code,db,folder,swf){
    Content-Type нь text/plain — Apps Script нь preflight (OPTIONS)
    хүсэлтэд хариу өгдөггүй тул application/json явуулбал CORS-д
    хоригдоно.                                                     */
-function _sheetPost(url,body){
-  return _withTimeout(fetch(url,{method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body:JSON.stringify(body),redirect:'follow'}),45000,'Sheets руу илгээх')
-    .then(r=>r.text())
-    .then(txt=>{
-      let j=null;try{j=JSON.parse(txt)}catch(e){}
-      if(!j)throw new Error('Скрипт JSON биш хариу өглөө — холбоос эсвэл эрхийг шалгана уу');
-      if(!j.ok)throw new Error(j.error||'Скрипт алдаа буцаалаа');
-      return j
-    })
+async function _sheetPost(url,body){
+  const opt={method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(body),redirect:'follow'};
+  let r=null;
+  try{
+    r=await _withTimeout(fetch(url,opt),45000,'Sheets руу илгээх')
+  }catch(e){
+    // Apps Script-ийн /exec нь googleusercontent.com руу 302 үсэргэдэг.
+    // Тэр үсрэлт дээр CORS хаагдвал хөтөч "Failed to fetch" гэж шидэж,
+    // огт илгээгдэхгүй өнгөрдөг. Сүүлчийн оролдлого болгож no-cors-оор
+    // дахин илгээнэ — хүсэлт хүрч скрипт ажиллана, харин ХАРИУГ НЬ УНШИХ
+    // БОЛОМЖГҮЙ. Тиймээс амжилт гэж мэдэгдэхгүй, шалгуулна.
+    try{
+      await _withTimeout(fetch(url,Object.assign({},opt,{mode:'no-cors'})),
+        45000,'Sheets руу илгээх');
+      return {ok:true,blind:true}
+    }catch(e2){
+      const m=String((e&&e.message)||e);
+      throw new Error(/fetch|network/i.test(m)
+        ? 'Холбогдож чадсангүй — deploy дээр "Who has access: Anyone" эсэхийг шалгана уу'
+        : m)
+    }
+  }
+  if(r&&r.type==='opaque')return {ok:true,blind:true};
+  const txt=await r.text();
+  let j=null;try{j=JSON.parse(txt)}catch(e){}
+  if(!j)throw new Error('Скрипт JSON биш хариу өглөө — deploy дээр "Who has access: Anyone" эсэхийг шалгана уу');
+  if(!j.ok)throw new Error(j.error||'Скрипт алдаа буцаалаа');
+  return j
 }
 /* Админ дэлгэц дээр СОНГОГДСОН он/улирлын паспортуудыг л илгээнэ —
    хэрэглэгчийн харж байгаа зүйл, Sheet дээр очих зүйл хоёр ижил байна. */
@@ -7950,7 +7973,7 @@ async function pushToSheets(){
   if(!await appConfirm(
     `${hit.length} хэсгийн 7 маягтыг Google Sheets руу илгээх үү?\n${_admYear} оны ${_admSeason}`,
     'Илгээх'))return;
-  let ok=0;const fail=[];
+  let ok=0,blind=0;const fail=[];
   for(let i=0;i<hit.length;i++){
     const {code,db,folder}=hit[i];
     showToast(`${code.toUpperCase()} · ${i+1}/${hit.length}`,4000);
@@ -7958,12 +7981,16 @@ async function pushToSheets(){
     const swf=_shSwFolder(db,folder);
     try{
       const rows=_sheetRowsFor(code,db,folder,swf);
-      await _sheetPost(url,{schema:1,tab:code.toUpperCase()+' маягт',
+      const _r=await _sheetPost(url,{schema:1,tab:code.toUpperCase()+' маягт',
         year:String(_admYear),season:String(_admSeason),rows});
-      ok++
+      ok++;if(_r&&_r.blind)blind++;
+      // Эхний амжилттай хэсгийн шийт рүү "Sheets нээх" буудаг болно
+      if(_r&&_r.url&&ok===1){try{localStorage.setItem(SH_OPEN,_r.url)}catch(_e){}}
     }catch(e){fail.push(code.toUpperCase()+' — '+((e&&e.message)||e));console.error(code,e)}
   }
-  if(!fail.length)showToast(`✓ ${ok} хэсэг Sheets руу илгээгдлээ`,3200);
+  if(!fail.length)showToast(blind
+    ? `${ok} хэсэг илгээв — хариу уншигдсангүй, хүснэгтээ шалгана уу`
+    : `✓ ${ok} хэсэг Sheets руу илгээгдлээ`,blind?5600:3200);
   else showToast(`${ok} илгээгдэж, ${fail.length} унав: ${fail[0]}`,6000)
 }
 /* ── Вэб аппын холбоос ── */
@@ -8022,6 +8049,8 @@ async function saveSheetCfg(quiet){
     showToast('Apps Script вэб аппын холбоос биш байна',3200);return false}
   if(!await askSheetPin()){showToast('Болилоо',1600);return false}
   if(v)localStorage.setItem(SH_KEY,v);else localStorage.removeItem(SH_KEY);
+  // Өөр хүснэгт рүү заасан байж болзошгүй тул хуучин шийтийн холбоосыг хаяна
+  try{localStorage.removeItem(SH_OPEN)}catch(_e){}
   if(!quiet){closeModal('sheetCfgModal');showToast(v?'✓ Хадгаллаа':'Холбоосыг устгав')}
   return true
 }
@@ -9811,7 +9840,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.05·115';
+const APP_BUILD='2026.09.05·116';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
