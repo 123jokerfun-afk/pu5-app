@@ -87,6 +87,56 @@ ok('Товчнууд тэнцүү өргөнтэй',new Set(hdr.w).size===1,JSON
 ok('Товч бүр дарагдана',hdr.n===3&&hdr.hit.every(Boolean),JSON.stringify(hdr.hit));
 ok('Гарчигтай давхцахгүй',hdr.n===3&&!hdr.overlap,hdr.n+' товч');
 
+/* ── 1c. Хувилбар админ дэлгэц дээр харагдана ──
+   Өмнө нь adminView-д build-tag элемент огт байхгүй байсан тул админ
+   хэрэглэгч аппаа шинэчилсэн эсэхээ шалгах аргагүй байв. */
+const ver=await page.evaluate(()=>{
+  const el=document.querySelector('#adminView .build-tag');
+  if(!el)return{found:false};
+  const r=el.getBoundingClientRect();
+  return{found:true,txt:el.textContent.trim(),
+    vis:r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden',
+    sub:(document.querySelector('#adminView .pg-sub')||{}).textContent||''}});
+ok('Админ дэлгэцэнд хувилбар байрлав',ver.found,String(ver.found));
+ok('Хувилбар нь vNNN хэлбэртэй',/^v\d+$/.test(ver.txt||''),String(ver.txt));
+ok('Нүдэнд харагдана',!!ver.vis,String(ver.vis));
+ok('Дэд гарчиг хэвээр үлдэв',/Бүх хэсгийн мэдээлэл/.test(ver.sub),ver.sub.trim());
+
+/* ── 1d. Админы профайл цэс ──
+   Админ дэр, дүнз бүртгэдэггүй тул хэсгийн хэрэглэгчийн зүйлс (хэсгийн
+   нэр засах, тайлангийн тохиргоо, паспортын хэмжээ, үүл шалгах) энд
+   утгагүй — дарвал хоосон DB дээр ажиллана. */
+const prof=await page.evaluate(async()=>{
+  openProfSheet();
+  await new Promise(r=>setTimeout(r,420));
+  const b=document.getElementById('profBody');
+  const btns=[...b.querySelectorAll('.pf-row')];
+  const rows=btns.map(e=>{
+    const t=e.querySelector('.pf-t');
+    return (t&&t.childNodes[0]?t.childNodes[0].textContent:'').trim()});
+  const hit=btns.every(e=>{
+    const r=e.getBoundingClientRect();
+    if(!r.width||!r.height)return false;
+    const x=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+    return x===e||e.contains(x)});
+  const o={rows,hit,
+    nm:(b.querySelector('.pf-nm')||{}).textContent||'',
+    ver:(b.querySelector('.build-tag')||{}).textContent||''};
+  closeModal('profSheet');return o});
+ok('Админд бүртгэлийн зүйлс байхгүй',
+   !prof.rows.some(r=>/Хэсгийн нэр|Тайлангийн тохиргоо|Хамгийн том паспорт|Үүлэн дэх|Нэгдсэн дүн/.test(r)),
+   JSON.stringify(prof.rows));
+ok('Админд Sheets, Excel, шинэчлэх байна',
+   prof.rows.some(r=>/Google Sheets/.test(r))&&prof.rows.some(r=>/Excel/.test(r))
+   &&prof.rows.some(r=>/шинэчлэх/i.test(r)),JSON.stringify(prof.rows));
+ok('Загвар, Гарах хэвээр',
+   prof.rows.some(r=>/Дэлгэцийн загвар/.test(r))&&prof.rows.some(r=>/Гарах/.test(r)),
+   JSON.stringify(prof.rows));
+ok('Толгойд "Ерөнхий удирдлага" гэж бичигдэнэ',
+   /Ерөнхий удирдлага/.test(prof.nm),prof.nm);
+ok('Профайлд ч хувилбар харагдана',/Хувилбар v\d+/.test(prof.ver),prof.ver);
+ok('Мөр бүр дарагдана',prof.hit,String(prof.hit));
+
 /* ── 2. Он сонгогч ── */
 const yr=await page.evaluate(()=>({
   sel:_admYear,

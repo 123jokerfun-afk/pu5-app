@@ -1458,7 +1458,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <div class="view" id="adminView">
   <div class="pg-hdr">
     <div class="pg-hdr-row">
-      <div style="flex:1;min-width:0"><div class="pg-title"><svg class="ic" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Ерөнхий удирдлага</div><div class="pg-sub">Бүх хэсгийн мэдээлэл</div></div>
+      <div style="flex:1;min-width:0"><div class="pg-title"><svg class="ic" viewBox="0 0 24 24" style="color:var(--blue)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Ерөнхий удирдлага</div><div class="pg-sub">Бүх хэсгийн мэдээлэл · <span class="build-tag"></span></div></div>
     </div>
     <!-- Товчнууд гарчигтай нэг эгнээнд багтахгүй шахагддаг байсан тул
          доор нь тэнцүү өргөнтэйгөөр буулгав -->
@@ -7946,22 +7946,22 @@ const SH_FORMS=[
   {tab:'Маягт-1',
    w:[6.89,7,5.66,7,8.33,5.11,9.44,8,7,11.66,5,8.43,8.43,9.44,11.55,8.44,7.89,5.11,8.43],
    h:[88.5,33.75]},
-  {tab:'Маягт-1 Хавсралт-3',
-   w:[5.44,11.55,6.55,5.55,8.43,8.43,4.89,5.55,8.43,6.44,5.44,8.43,8.43,8.43,8.43,8.43,8.43,5.33,5.44],
-   h:[42,36]},
   {tab:'Маягт-1 Хавсралт-2',
    w:[4.88,7.55,9.11,11.33,9.11,9.11,9.55,9.11,9.11,17.55,10.11],
    h:[17.25,39.6]},
+  {tab:'Маягт-1 Хавсралт-3',
+   w:[5.44,11.55,6.55,5.55,8.43,8.43,4.89,5.55,8.43,6.44,5.44,8.43,8.43,8.43,8.43,8.43,8.43,5.33,5.44],
+   h:[42,36]},
   {tab:'Маягт-1 Хавсралт-4',
    w:[4.33,5.66,9.44,8.44,7.11,7.33,8.43,8.43,13.44,9.11,8.89,8.43],
    h:[19.5,52.2]},
   {tab:'Маягт-2',
    w:[6.66,6.11,13.89,7.44,11,10.55,6.11,6.11,6.11,6.33,9.55,16,9.11],
    h:[76.5,15]},
-  {tab:'Маягт-2 Хавсралт-1.1',
+  {tab:'Маягт-2 Хавсралт-1',
    w:[6.33,13.89,9.33,13,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,9.55,12.55],
    h:[28.95,16.2]},
-  {tab:'Маягт-2 Хавсралт-1',
+  {tab:'Маягт-2 Хавсралт-1.1',
    w:[6.33,13.89,9.33,13,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,9.55,12.55],
    h:[28.95,16.2]}
 ];
@@ -7983,21 +7983,21 @@ function _sectionBlocks(code,db,folder,swf){
       swName:swf?(swf.name||swf.year+' '+swf.season):'',
       blocks:[
         _shForm1(H),
-        _shForm13(H),
         _shForm12(H),
+        _shForm13(H),
         _shForm14(H),
         _shForm2(H,ts),
-        // Хавсралт-1.1 — Тэнцэхгүй / Сольсон
-        _shAttach('Маягт-2 Хавсралт-1.1 — солигдсон сумын дүнзнүүд /м/',
-          'Солигдсон сумын дүнзнүүд  /м/','Нийт','Тэнцэхгүй','Сольсон','Тэнцэхгүй',
-          t=>{const d=swLenTally(t);return[d.bad,d.repl]},
-          (a,b)=>a-b,f,ts),
         // Хавсралт-1 — Байгаа / Тэнцэхгүй
         _shAttach('Маягт-2 Хавсралт-1 — тэнцэхгүй гарсан сумын дүнзнүүд /м/',
           'Тэнцэхгүй гарсан сумын дүнзнүүд  /м/','Тэнцэхгүй гарсан дүнзний ',
           'Байгаа','Тэнцэхгүй','Тэнцэхгүй',
           t=>{const d=swLenTally(t);return[d.have,d.bad]},
-          (a,b,L)=>b*L,f,ts)
+          (a,b,L)=>b*L,f,ts),
+        // Хавсралт-1.1 — Тэнцэхгүй / Сольсон
+        _shAttach('Маягт-2 Хавсралт-1.1 — солигдсон сумын дүнзнүүд /м/',
+          'Солигдсон сумын дүнзнүүд  /м/','Нийт','Тэнцэхгүй','Сольсон','Тэнцэхгүй',
+          t=>{const d=swLenTally(t);return[d.bad,d.repl]},
+          (a,b)=>a-b,f,ts)
       ]}
   })
 }
@@ -8106,7 +8106,9 @@ async function pushToSheets(){
         widths:F.w.map(_shPx),heights:F.h.map(_shPt),
         // Хэсэг бүрээр үүсгэсэн хуучин "… маягт" шийтүүдийг эхний
         // хүсэлтээр цэвэрлэнэ — эс тэгвэл хоёр бүтэц зэрэгцэн үлдэнэ
-        purge:fi===0});
+        purge:fi===0,
+        // Табын байрлал: маягтууд хүснэгтийн ЭХЭНД энэ дарааллаар зэрэгцэнэ
+        pos:fi+1});
       ok++;if(_r&&_r.blind)blind++;
       if(_r&&_r.url&&ok===1){try{localStorage.setItem(SH_OPEN,_r.url)}catch(_e){}}
     }catch(e){fail.push(F.tab+' — '+((e&&e.message)||e));console.error(F.tab,e)}
@@ -9780,46 +9782,70 @@ function syncNow(){
 function openProfSheet(){renderProfSheet();openModal('profSheet');_syncTabs('prof')}
 function renderProfSheet(){
   const b=document.getElementById('profBody');if(!b)return;
-  const nm=DB.location||'ПУ-5';
   const em=(_currentUser&&_currentUser.email)||'';
   const dark=_themeIs()==='dark';
   const row=(ic,col,t,s,fn)=>`<button class="pf-row" onclick="hap();${fn}">
     <span class="pf-ic" style="color:${col}">${ic}</span>
     <span class="pf-t">${t}${s?`<span class="pf-s">${s}</span>`:''}</span>
     <span class="pf-ar">›</span></button>`;
-  b.innerHTML=`
-    <div class="pf-hd">
+  const I={
+    sheet:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>',
+    down:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+    refresh:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5"/></svg>',
+    theme:dark
+      ?'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>'
+      :'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+    out:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>'
+  };
+  const theme=row(I.theme,'var(--gold-deep)','Дэлгэцийн загвар',
+    dark?'Харанхуй':'Гэрэлтэй',"toggleTheme();renderProfSheet()");
+  const out=row(I.out,'var(--red)','Гарах','',"closeModal('profSheet');doLogout()");
+  const tag=`<div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
+      font-weight:600;color:var(--ink5)"></div>`;
+  const hd=(nm,sub)=>`<div class="pf-hd">
       <span class="pf-av">${esc((nm[0]||'П').toUpperCase())}</span>
       <div style="min-width:0">
         <div class="pf-nm">${esc(nm)}</div>
-        <div class="pf-em">${esc(em||('Хэсэг: '+(_sectionCode||'—')))}</div>
+        <div class="pf-em">${esc(sub)}</div>
       </div>
-    </div>
-    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
-      'var(--purple)','Нэгдсэн дүн','Бүх замын нийлбэр тайлан',"closeModal('profSheet');showSummaryAll()")}
-    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>',
-      'var(--blue)','Хэсгийн нэр засах',esc(nm),"closeModal('profSheet');editLocation()")}
-    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg>',
-      'var(--g600)','Тайлангийн тохиргоо','Гарчиг, албан тушаалтан',"closeModal('profSheet');openReportSettings()")}
-    ${row(dark
-        ?'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>'
-        :'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
-      'var(--gold-deep)','Дэлгэцийн загвар',dark?'Харанхуй':'Гэрэлтэй',"toggleTheme();renderProfSheet()")}
-    ${(()=>{docBytes();const n=_lastPartMax,pc=n/DOC_LIMIT*100;
-      const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g600)';
-      return row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h1a3 3 0 010 6H6a4 4 0 01-.7-7.9A5.5 5.5 0 0118 10z"/></svg>',
-        col,'Хамгийн том паспорт',
-        fmtBytes(n)+' · '+(pc>100?'хязгаар хэтэрсэн'
-          :(pc<0.1?'<0.1':pc.toFixed(pc<10?1:0))+'% дүүрсэн'),
-        "closeModal('profSheet');openSyncSheet()")})()}
-    <button class="pf-row" onclick="hap();runVerifyParts()">
+    </div>`;
+
+  /* Админ дэр, дүнз бүртгэдэггүй — хэсгүүдийн үзлэгийг хянаж, нэгтгэж,
+     маягт гаргаж цааш явуулах үүрэгтэй. Тиймээс паспортын хэмжээ, хэсгийн
+     нэр, тайлангийн тохиргоо зэрэг хэсгийн хэрэглэгчийн зүйлс энд утгагүй
+     бөгөөд дарвал хоосон DB дээр ажиллана. */
+  if(_isAdmin){
+    b.innerHTML=hd('Ерөнхий удирдлага',em||'Бүх хэсгийн хяналт')+
+      row(I.sheet,'#0F8A4C','Google Sheets','Маягт илгээх, хүснэгт нээх',
+        "closeModal('profSheet');openSheetCfg()")+
+      row(I.down,'var(--g600)','Excel татах','Бүх хэсгийн нэгтгэл',
+        "closeModal('profSheet');adminExportExcel()")+
+      row(I.refresh,'var(--blue)','Өгөгдөл шинэчлэх','Үүлнээс дахин уншина',
+        "closeModal('profSheet');loadAdminView()")+
+      theme+out+tag;
+  } else {
+    const nm=DB.location||'ПУ-5';
+    b.innerHTML=hd(nm,em||('Хэсэг: '+(_sectionCode||'—')))+
+      row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+        'var(--purple)','Нэгдсэн дүн','Бүх замын нийлбэр тайлан',"closeModal('profSheet');showSummaryAll()")+
+      row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>',
+        'var(--blue)','Хэсгийн нэр засах',esc(nm),"closeModal('profSheet');editLocation()")+
+      row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg>',
+        'var(--g600)','Тайлангийн тохиргоо','Гарчиг, албан тушаалтан',"closeModal('profSheet');openReportSettings()")+
+      theme+
+      (()=>{docBytes();const n=_lastPartMax,pc=n/DOC_LIMIT*100;
+        const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g600)';
+        return row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h1a3 3 0 010 6H6a4 4 0 01-.7-7.9A5.5 5.5 0 0118 10z"/></svg>',
+          col,'Хамгийн том паспорт',
+          fmtBytes(n)+' · '+(pc>100?'хязгаар хэтэрсэн'
+            :(pc<0.1?'<0.1':pc.toFixed(pc<10?1:0))+'% дүүрсэн'),
+          "closeModal('profSheet');openSyncSheet()")})()+
+      `<button class="pf-row" onclick="hap();runVerifyParts()">
       <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
       <span class="pf-t">Үүлэн дэх бичлэгийг шалгах<span class="pf-s" id="vfMsg">Утсан дахьтай таарч байгаа эсэх</span></span>
-      <span class="pf-ar">›</span></button>
-    ${row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>',
-      'var(--red)','Гарах','',"closeModal('profSheet');doLogout()")}
-    <div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
-      font-weight:600;color:var(--ink5)"></div>`;
+      <span class="pf-ar">›</span></button>`+
+      out+tag;
+  }
   const bt=b.querySelector('.build-tag');
   if(bt)bt.textContent='Хувилбар '+appVer();
 }
@@ -9963,7 +9989,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.06·119';
+const APP_BUILD='2026.09.06·120';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
