@@ -7708,7 +7708,7 @@ async function adminExportExcel(){
 // 4 хоосон мөр. Тоо нь Excel-ийн маягттай ижил функцээр гардаг —
 // _withSection нь глобалуудыг түр сэлгэдэг тул тооцоо давхардахгүй.
 // ══════════════════════════════════════════════
-const SH_GAP=4;            // маягт хоорондын хоосон мөрийн тоо
+const SH_GAP=2;            // ХЭСЭГ хоорондын хоосон мөрийн тоо
 const SH_KEY='sg_sheet_url';
 const SH_OPEN='sg_sheet_open';   // хамгийн сүүлд бичсэн шийтийн шууд холбоос
 
@@ -7937,59 +7937,95 @@ function _shSwFolder(db,folder){
     String(f.year||'')===y&&String(f.season||'')===se)||null
 }
 
-/* Багана өргөн (пиксел). Excel дээр маягт бүр өөрийн хуудастай тул өргөн нь
-   өөр өөр байдаг; Sheet дээр 7 маягт НЭГ таб дунд байгаа тул өргөн нэг л
-   байх боломжтой. 19 баганат хоёр маягтын (Маягт-1, Хавсралт-3) өргөнөөр
-   тааруулав — бусад нь баганын тоо цөөнтэй тул багтана. */
-const SH_W=[62,78,58,58,62,58,62,62,74,78,44,52,58,58,58,58,58,52,58];
+/* Маягт бүрийн эх загварын хэмжээ. Маягт бүр ӨӨРИЙН шийттэй болсон тул
+   Excel-ийн хуудсан дээрх өргөн, өндрийг яг тэр хэвээр нь авч чадна.
+     w — багана өргөн (Excel-ийн тэмдэгтийн нэгж)
+     h — толгойн хоёр мөрийн өндөр (пункт)
+   Хавсралт-2-оос "Нийт дэр" хасагдсан тул 12 биш 11 өргөнтэй. */
+const SH_FORMS=[
+  {tab:'Маягт-1',
+   w:[6.89,7,5.66,7,8.33,5.11,9.44,8,7,11.66,5,8.43,8.43,9.44,11.55,8.44,7.89,5.11,8.43],
+   h:[88.5,33.75]},
+  {tab:'Маягт-1 Хавсралт-3',
+   w:[5.44,11.55,6.55,5.55,8.43,8.43,4.89,5.55,8.43,6.44,5.44,8.43,8.43,8.43,8.43,8.43,8.43,5.33,5.44],
+   h:[42,36]},
+  {tab:'Маягт-1 Хавсралт-2',
+   w:[4.88,7.55,9.11,11.33,9.11,9.11,9.55,9.11,9.11,17.55,10.11],
+   h:[17.25,39.6]},
+  {tab:'Маягт-1 Хавсралт-4',
+   w:[4.33,5.66,9.44,8.44,7.11,7.33,8.43,8.43,13.44,9.11,8.89,8.43],
+   h:[19.5,52.2]},
+  {tab:'Маягт-2',
+   w:[6.66,6.11,13.89,7.44,11,10.55,6.11,6.11,6.11,6.33,9.55,16,9.11],
+   h:[76.5,15]},
+  {tab:'Маягт-2 Хавсралт-1.1',
+   w:[6.33,13.89,9.33,13,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,9.55,12.55],
+   h:[28.95,16.2]},
+  {tab:'Маягт-2 Хавсралт-1',
+   w:[6.33,13.89,9.33,13,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,7.2,9.55,12.55],
+   h:[28.95,16.2]}
+];
+// Excel-ийн тэмдэгтийн өргөн → пиксел; пункт → пиксел
+const _shPx=w=>Math.round(w*7+5);
+const _shPt=h=>Math.round(h*4/3);
 
-/* Нэг хэсгийн 7 маягт → шийтийн мөрүүд + хэлбэрийн заавар.
-   Маягт хооронд 4 хоосон мөр. Мөрийн дугаар нь Sheet-ийнх (1-ээс). */
-function _sheetRowsFor(code,db,folder,swf){
+/* Нэг ХЭСГИЙН 7 маягтын блок. Хэлбэрийг угсрахгүй — зөвхөн тоо. */
+function _sectionBlocks(code,db,folder,swf){
   return _withSection(db,folder,swf,()=>{
     const H=_formHdr();
     const ts=swAllTurnouts().filter(t=>(t.it||'').length);
     const f=swf||{};
-    const blocks=[
-      _shForm1(H),
-      _shForm13(H),
-      _shForm12(H),
-      _shForm14(H),
-      _shForm2(H,ts),
-      // Хавсралт-1.1 — Тэнцэхгүй / Сольсон
-      _shAttach('Маягт-2 Хавсралт-1.1 — солигдсон сумын дүнзнүүд /м/',
-        'Солигдсон сумын дүнзнүүд  /м/','Нийт','Тэнцэхгүй','Сольсон','Тэнцэхгүй',
-        t=>{const d=swLenTally(t);return[d.bad,d.repl]},
-        (a,b)=>a-b,f,ts),
-      // Хавсралт-1 — Байгаа / Тэнцэхгүй
-      _shAttach('Маягт-2 Хавсралт-1 — тэнцэхгүй гарсан сумын дүнзнүүд /м/',
-        'Тэнцэхгүй гарсан сумын дүнзнүүд  /м/','Тэнцэхгүй гарсан дүнзний ',
-        'Байгаа','Тэнцэхгүй','Тэнцэхгүй',
-        t=>{const d=swLenTally(t);return[d.have,d.bad]},
-        (a,b,L)=>b*L,f,ts)
-    ];
-    const td=H.today;
-    let rows=[[`${code.toUpperCase()} · ${H.year} оны ${H.season} · ${DB.location||''}`],
-      [`${td.y}-${td.m}-${td.d}-нд аппаас илгээв · дүнзний паспорт: ${swf?(swf.name||swf.year+' '+swf.season):'олдсонгүй'}`],[]];
-    const fmt=[];
-    blocks.forEach((b,i)=>{
-      if(i)rows=rows.concat(_shEmpty(SH_GAP));
-      rows.push([b.title]);
-      const hdrRow=rows.length+1;          // толгойн 1-р мөр (1-ээс тоолсон)
-      rows.push(b.head[0]);rows.push(b.head[1]);
-      rows=rows.concat(b.rows);
-      fmt.push({
-        title:hdrRow-1,                    // гарчгийн мөр
-        row:hdrRow,                        // хүснэгт эхлэх мөр
-        head:2,
-        n:2+b.rows.length,                 // хүрээ татах нийт мөр
-        cols:b.head[0].length,
-        merges:b.merges.map(m=>[hdrRow+m[0],m[1]+1,m[2],m[3]]),
-        bold:b.bold.map(j=>hdrRow+2+j)
-      })
-    });
-    return{rows,fmt}
+    return{
+      code:String(code).toUpperCase(),
+      // Шийт дотор хэсгүүд ТООН дарааллаар цувна (ПД-1, ПД-2, … ПД-13)
+      num:parseInt(String(code).replace(/\D+/g,''),10)||0,
+      year:H.year,season:H.season,loc:DB.location||'',today:H.today,
+      swName:swf?(swf.name||swf.year+' '+swf.season):'',
+      blocks:[
+        _shForm1(H),
+        _shForm13(H),
+        _shForm12(H),
+        _shForm14(H),
+        _shForm2(H,ts),
+        // Хавсралт-1.1 — Тэнцэхгүй / Сольсон
+        _shAttach('Маягт-2 Хавсралт-1.1 — солигдсон сумын дүнзнүүд /м/',
+          'Солигдсон сумын дүнзнүүд  /м/','Нийт','Тэнцэхгүй','Сольсон','Тэнцэхгүй',
+          t=>{const d=swLenTally(t);return[d.bad,d.repl]},
+          (a,b)=>a-b,f,ts),
+        // Хавсралт-1 — Байгаа / Тэнцэхгүй
+        _shAttach('Маягт-2 Хавсралт-1 — тэнцэхгүй гарсан сумын дүнзнүүд /м/',
+          'Тэнцэхгүй гарсан сумын дүнзнүүд  /м/','Тэнцэхгүй гарсан дүнзний ',
+          'Байгаа','Тэнцэхгүй','Тэнцэхгүй',
+          t=>{const d=swLenTally(t);return[d.have,d.bad]},
+          (a,b,L)=>b*L,f,ts)
+      ]}
   })
+}
+
+/* НЭГ МАЯГТЫН шийт: хэсгүүд дугаараар доош цувна, хооронд нь 2 хоосон мөр.
+   Хэсэг бүр бүтэн маягт хэлбэртэй — гарчиг, 2 мөрт толгой, өгөгдөл, дүн.
+   Өгөгдөлгүй хэсгийг алгасана (жишээ сийрэгжилт хийгээгүй хэсэг). */
+function _formSheet(fi,secs){
+  const F=SH_FORMS[fi],td=(secs[0]||{}).today||mnToday();
+  let rows=[[`${F.tab} · ${(secs[0]||{}).year||''} оны ${(secs[0]||{}).season||''}`],
+    [`${td.y}-${td.m}-${td.d}-нд аппаас илгээв`],[]];
+  const fmt=[];let n=0;
+  secs.forEach(s=>{
+    const b=s.blocks[fi];
+    if(!b.rows.length)return;
+    if(n++)rows=rows.concat(_shEmpty(SH_GAP));
+    rows.push([s.code+' — '+b.title]);
+    const hdr=rows.length+1;                 // толгойн 1-р мөр (1-ээс)
+    rows.push(b.head[0]);rows.push(b.head[1]);
+    rows=rows.concat(b.rows);
+    fmt.push({
+      title:hdr-1,row:hdr,head:2,
+      n:2+b.rows.length,cols:b.head[0].length,
+      merges:b.merges.map(m=>[hdr+m[0],m[1]+1,m[2],m[3]]),
+      bold:b.bold.map(j=>hdr+2+j)
+    })
+  });
+  return{rows,fmt}
 }
 
 /* ── Илгээх ────────────────────────────────────────────────────
@@ -8047,28 +8083,37 @@ async function pushToSheets(){
     })
   });
   if(!hit.length){showToast(`${_admYear} оны ${_admSeason}ын паспорт олдсонгүй`,3000);return}
+  // Хэсгүүдийг ТООН дарааллаар — шийт дотор ПД-1, ПД-2 … гэж цувна
+  hit.sort((a,b)=>(parseInt(String(a.code).replace(/\D+/g,''),10)||0)
+                 -(parseInt(String(b.code).replace(/\D+/g,''),10)||0));
   if(!await appConfirm(
-    `${hit.length} хэсгийн 7 маягтыг Google Sheets руу илгээх үү?\n${_admYear} оны ${_admSeason}`,
+    `${hit.length} хэсгийн өгөгдлөөр 7 маягтын шийт үүсгэх үү?\n${_admYear} оны ${_admSeason}`,
     'Илгээх'))return;
+  // Бүх хэсгийн блокийг НЭГ удаа бодоод, маягт тус бүрээр нь угсарна
+  let secs;
+  try{
+    secs=hit.map(({code,db,folder})=>_sectionBlocks(code,db,folder,_shSwFolder(db,folder)))
+  }catch(e){showToast('Тооцоолол унав: '+((e&&e.message)||e),5200);console.error(e);return}
   let ok=0,blind=0;const fail=[];
-  for(let i=0;i<hit.length;i++){
-    const {code,db,folder}=hit[i];
-    showToast(`${code.toUpperCase()} · ${i+1}/${hit.length}`,4000);
-    // Дүнзний паспорт нь дэрийнхээс ТУСДАА жагсаалт — мөн он/улирлаар олно
-    const swf=_shSwFolder(db,folder);
+  for(let fi=0;fi<SH_FORMS.length;fi++){
+    const F=SH_FORMS[fi];
+    showToast(`${F.tab} · ${fi+1}/${SH_FORMS.length}`,4000);
     try{
-      const out=_sheetRowsFor(code,db,folder,swf);
-      const _r=await _sheetPost(url,{schema:2,tab:code.toUpperCase()+' маягт',
+      const out=_formSheet(fi,secs);
+      const _r=await _sheetPost(url,{schema:3,tab:F.tab,
         year:String(_admYear),season:String(_admSeason),
-        rows:out.rows,fmt:out.fmt,widths:SH_W});
+        rows:out.rows,fmt:out.fmt,
+        widths:F.w.map(_shPx),heights:F.h.map(_shPt),
+        // Хэсэг бүрээр үүсгэсэн хуучин "… маягт" шийтүүдийг эхний
+        // хүсэлтээр цэвэрлэнэ — эс тэгвэл хоёр бүтэц зэрэгцэн үлдэнэ
+        purge:fi===0});
       ok++;if(_r&&_r.blind)blind++;
-      // Эхний амжилттай хэсгийн шийт рүү "Sheets нээх" буудаг болно
       if(_r&&_r.url&&ok===1){try{localStorage.setItem(SH_OPEN,_r.url)}catch(_e){}}
-    }catch(e){fail.push(code.toUpperCase()+' — '+((e&&e.message)||e));console.error(code,e)}
+    }catch(e){fail.push(F.tab+' — '+((e&&e.message)||e));console.error(F.tab,e)}
   }
   if(!fail.length)showToast(blind
-    ? `${ok} хэсэг илгээв — хариу уншигдсангүй, хүснэгтээ шалгана уу`
-    : `✓ ${ok} хэсэг Sheets руу илгээгдлээ`,blind?5600:3200);
+    ? `${ok} маягт илгээв — хариу уншигдсангүй, хүснэгтээ шалгана уу`
+    : `✓ ${ok} маягт · ${hit.length} хэсэг Sheets руу орлоо`,blind?5600:3600);
   else showToast(`${ok} илгээгдэж, ${fail.length} унав: ${fail[0]}`,6000)
 }
 /* ── Вэб аппын холбоос ── */
@@ -9918,7 +9963,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.05·118';
+const APP_BUILD='2026.09.06·119';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

@@ -36,7 +36,7 @@ function doPost(e) {
       return _json({ ok: false, error: 'Нууц үг таарахгүй' });
 
     var body = JSON.parse(e.postData.contents);
-    if (body.schema !== 1 && body.schema !== 2)
+    if ([1, 2, 3].indexOf(body.schema) < 0)
       return _json({ ok: false, error: 'schema ' + body.schema + ' — скриптээ шинэчилнэ үү' });
 
     var name = String(body.tab || '').trim();
@@ -46,6 +46,21 @@ function doPost(e) {
     if (!rows.length) return _json({ ok: false, error: 'мөр ирсэнгүй' });
 
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Өмнөх бүтэц: хэсэг бүр нэг шийт ('ПД-6 маягт'). Одоо маягт бүр нэг
+    // шийттэй тул тэдгээр нь хуучирсан — эхний хүсэлтээр цэвэрлэнэ.
+    if (body.purge) {
+      var all = ss.getSheets(), kill = [];
+      for (var p = 0; p < all.length; p++) {
+        if (/ маягт$/.test(all[p].getName())) kill.push(all[p]);
+      }
+      // Хүснэгт хоосон үлдэж болохгүй тул дор хаяж нэг шийт үлдээнэ
+      for (var q = 0; q < kill.length; q++) {
+        if (ss.getSheets().length <= 1) break;
+        try { ss.deleteSheet(kill[q]); } catch (er) {}
+      }
+    }
+
     var sh = ss.getSheetByName(name) || ss.insertSheet(name);
     // Нэгтгэсэн нүд үлдвэл дараагийн бичилт мөр хазайлгадаг тул эхлээд салгана
     sh.clear();
@@ -122,7 +137,10 @@ function _shape(sh, grid, w, body) {
     // Толгой — бүдүүн, мөр таслаж багтаана
     var hr = sh.getRange(f.row, 1, f.head || 2, cols);
     hr.setFontWeight('bold').setWrap(true).setHorizontalAlignment('center');
-    for (var k = 0; k < (f.head || 2); k++) sh.setRowHeight(f.row + k, 42);
+    var hh = body.heights || [];
+    for (var k = 0; k < (f.head || 2); k++) {
+      try { sh.setRowHeight(f.row + k, hh[k] || 42); } catch (e) {}
+    }
 
     // Нэгтгэлүүд — эх маягтын толгойн бүтэц
     var mg = f.merges || [];
