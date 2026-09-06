@@ -101,9 +101,10 @@ const sh=await page.evaluate(()=>{
 console.log('\nБүтэц');
 const SHT=sh.sheets;
 ok('Маягт бүр өөрийн шийттэй',SHT.length===7,SHT.map(x=>x.tab).join(' | '));
-const want=['Маягт-1','Маягт-1 Хавсралт-3','Маягт-1 Хавсралт-2','Маягт-1 Хавсралт-4',
-  'Маягт-2','Маягт-2 Хавсралт-1.1','Маягт-2 Хавсралт-1'];
-ok('Шийтийн нэр Excel-ийн хуудсуудтай тохирно',
+// Хавсралтын дугаараар өсөх дараалал — Sheet дээр ч ингэж байрлана
+const want=['Маягт-1','Маягт-1 Хавсралт-2','Маягт-1 Хавсралт-3','Маягт-1 Хавсралт-4',
+  'Маягт-2','Маягт-2 Хавсралт-1','Маягт-2 Хавсралт-1.1'];
+ok('Шийтүүд хавсралтын дугаараар эрэмбэлэгдэнэ',
    SHT.every((x,i)=>x.tab===want[i]),SHT.map(x=>x.tab).join(' | '));
 ok('Хэсгийн дугаар кодоос уншигдана',
    sh.nums[0]===6&&sh.nums[1]===2,JSON.stringify(sh.nums));
@@ -135,7 +136,7 @@ ok('Толгойн хоёр мөрийн өндөр өгөгдсөн',
    SHT.every(s=>s.h.length===2&&s.h.every(v=>v>10)),
    JSON.stringify(SHT.map(s=>s.h)));
 ok('Хавсралт-2-ын "Огноо" багана нарийсахгүй (≥70px)',
-   SHT[2].w[10]>=70,SHT[2].w[10]+'px');
+   SHT[1].w[10]>=70,SHT[1].w[10]+'px');
 
 /* Хэлбэрийн заавар */
 ok('Блок бүрд хэлбэрийн заавар',
@@ -159,11 +160,11 @@ const blockOf=(s,idx)=>{
     if(!s.rows[i]||!s.rows[i].length)break;
     out.push(s.rows[i])}
   return out};
-const F1=blockOf(SHT[0],0),F13=blockOf(SHT[1],0),F12=blockOf(SHT[2],0),
-      F14=blockOf(SHT[3],0),F2=blockOf(SHT[4],0),A11=blockOf(SHT[5],0),A1=blockOf(SHT[6],0);
+const F1=blockOf(SHT[0],0),F12=blockOf(SHT[1],0),F13=blockOf(SHT[2],0),
+      F14=blockOf(SHT[3],0),F2=blockOf(SHT[4],0),A1=blockOf(SHT[5],0),A11=blockOf(SHT[6],0);
 // Хүрээ нь толгойн 2 мөр + өгөгдлийн бүх мөрийг хамрах ёстой
 ok('Хүрээний муж толгой+өгөгдлийг бүрэн хамарна',
-   SHT.every((s,i)=>s.fmt[0].n===2+[F1,F13,F12,F14,F2,A11,A1][i].length-1),
+   SHT.every((s,i)=>s.fmt[0].n===2+[F1,F12,F13,F14,F2,A1,A11][i].length-1),
    JSON.stringify(SHT.map(s=>s.fmt[0].n)));
 ok('Маягт-1-ийн толгой эх загварынхтай ижил',
    String(F1[0][2])==='Дэрийн эпюр'&&String(F1[0][5])==='Тэнцэхгүй дэрийн тоо'
@@ -389,7 +390,7 @@ const unsaved=await page.evaluate(async()=>{
   window.fetch=of;
   const B=window.__bodies||[];
   return {saved:localStorage.getItem(SH_KEY),posted:window.__posted,
-    tabs:B.map(x=>x.tab),purge:B.map(x=>!!x.purge),
+    tabs:B.map(x=>x.tab),purge:B.map(x=>!!x.purge),pos:B.map(x=>x.pos),
     // Эхний маягтын мөрүүдээс хэсгийн гарчгуудыг сугалж дарааллыг шалгана
     order:(B[0]?B[0].rows:[]).filter(r=>r&&r.length===1&&/^ПД-\d+ — /.test(String(r[0])))
       .map(r=>String(r[0]).split(' — ')[0]),
@@ -402,7 +403,11 @@ ok('Илгээлт үнэхээр явав (цонх дахин нээгдээг
 /* Маягт бүр өөрийн шийттэй — 7 хүсэлт, нэр нь Excel-ийн хуудсуудтай ижил */
 ok('7 маягтын шийт рүү илгээнэ',
    unsaved.tabs.length===7&&unsaved.tabs[0]==='Маягт-1'
-   &&unsaved.tabs[6]==='Маягт-2 Хавсралт-1',JSON.stringify(unsaved.tabs));
+   &&unsaved.tabs[1]==='Маягт-1 Хавсралт-2'
+   &&unsaved.tabs[6]==='Маягт-2 Хавсралт-1.1',JSON.stringify(unsaved.tabs));
+ok('Табын байрлал 1…7 гэж илгээгдэнэ',
+   JSON.stringify(unsaved.pos)===JSON.stringify([1,2,3,4,5,6,7]),
+   JSON.stringify(unsaved.pos));
 ok('Хэсгүүд ТООН дарааллаар цувна (үсгийн эрэмбэ биш)',
    JSON.stringify(unsaved.order)===JSON.stringify(['ПД-2','ПД-10']),
    JSON.stringify(unsaved.order));

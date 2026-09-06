@@ -62,6 +62,14 @@ function doPost(e) {
     }
 
     var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+
+    // Табын байрлал. Шинэ шийт төгсгөлд нэмэгддэг, байгаа нь байрандаа
+    // үлддэг тул аппын зааж өгсөн дараалалд зөөнө (Маягт-1, Хавсралт-2,
+    // -3, -4, Маягт-2, Хавсралт-1, -1.1).
+    if (body.pos > 0) {
+      try { ss.setActiveSheet(sh); ss.moveActiveSheet(body.pos); } catch (er) {}
+    }
+
     // Нэгтгэсэн нүд үлдвэл дараагийн бичилт мөр хазайлгадаг тул эхлээд салгана
     sh.clear();
     try { sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).breakApart(); } catch (err) {}
