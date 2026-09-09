@@ -17,6 +17,8 @@ const R=[];const ok=(n,c,d)=>{R.push(!!c);console.log((c?'  ✓ ':'  ✗ ')+n+(d
 const z=v=>(v===''||v===null||v===undefined)?0:v;
 const V=r=>(r.values||[]).map(x=>x&&x.richText?x.richText.map(t=>t.text).join(''):x);
 const eq=(a,b)=>Math.abs((+a||0)-(+b||0))<1e-9;
+const _r1=v=>+(+v).toFixed(1);
+let SHEET_N=18;
 
 if(!ExcelJS){console.log('  ⚠ exceljs алга — алгасав');console.log('SUMMARY 0/0');process.exit(0)}
 
@@ -79,101 +81,136 @@ async function grab(call){
   return wb
 }
 
-/* ── Маягтын шийтүүд ──────────────────────────────────────────
-   Маягт бүр өөрийн шийттэй, дотор нь хэсгүүд дугаараар цувна.
-   Хоёр хэсэг (ПД-6, ПД-2) үүсгэж дарааллыг нь ч шалгана. */
+/* ── 18 албан маягтын шийт ────────────────────────────────────
+   Шийт бүр = НЭГ МАЯГТ. Эх загвар нь ПЧ-3 ангийн нэгдсэн хүснэгт тул
+   хэсгүүд НЭГ толгойн дор доош цувна. Хоёр хэсэг (ПД-6, ПД-11)
+   үүсгэж, салаалсан гол замын салангид маягтуудыг ч шалгана. */
+await page.evaluate(()=>{
+  // Салбар замын дэр ба дүнзний паспорт — ижил он/улирлаар
+  const mk=(id,n,bad)=>({id,type:'normal',label:id+' үе',note:'',date:'2026-05-01',
+    sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
+  DB.folders.push({id:'fbr',br:1,name:'Хавар 2026 салбар',season:'хавар',year:'2026',
+    date:'2026-04-02',sc:'ПД-6',
+    tracks:[{id:'b1',num:1,kind:'station',name:'Говь урал',
+      sections:[mk('bs1',40,[0,1,2,3,4,5,6,7,8,9,10,11])]}]});
+  const sw0=DB.sw[0];
+  DB.sw.push({id:'sbr',br:1,name:'Хавар 2026 салбар сум',season:'хавар',year:'2026',
+    date:'2026-04-11',sc:'ПД-6',
+    turnouts:[Object.assign({},sw0.turnouts[0],{id:'wb1',num:1})]});
+  saveDB()
+});
 const sh=await page.evaluate(()=>{
   const db=DB,folder=DB.folders[0];
-  const before={dbLoc:DB.location,fid:activeFolderId,sw:swFolderId};
+  const before={dbLoc:DB.location,fid:activeFolderId,sw:swFolderId,sc:_sectionCode,
+    tr:(DB.tracks||[]).map(t=>t.id).join()};
   const swf=_shSwFolder(db,folder);
+  // ПД-11 нь САЛААЛСАН гол замтай хэсэг — ижил өгөгдлөөр өөр маягт руу орно
   const s6=_sectionBlocks('ПД-6',db,folder,swf);
-  const s2=_sectionBlocks('ПД-2',db,folder,swf);   // ижил өгөгдөл, өөр дугаар
+  const s11=_sectionBlocks('ПД-11',db,folder,swf);
+  const s2=_sectionBlocks('ПД-2',db,folder,swf);
   const sheets=SH_FORMS.map((F,fi)=>{
-    const o=_formSheet(fi,[s6,s2]);
-    return{tab:F.tab,rows:o.rows,fmt:o.fmt,
-      w:F.w.map(_shPx),h:F.h.map(_shPt)}
+    const o=_formSheet(fi,[s2,s6,s11]);        // тоон дараалал: 2, 6, 11
+    return{tab:F.tab,rows:o.rows,fmt:o.fmt,cols:F.h0.length,
+      w:F.w.map(_shPx),h:F.h.map(_shPt),dd:!!F.dd}
   });
-  return{sheets,gap:SH_GAP,nums:[s6.num,s2.num],
-    before,after:{dbLoc:DB.location,fid:activeFolderId,sw:swFolderId}}
+  const two=SH_FORMS.map((F,fi)=>_formSheet(fi,[s6]).rows.length);
+  return{sheets,two,drop:SH_DROP,
+    before,after:{dbLoc:DB.location,fid:activeFolderId,sw:swFolderId,sc:_sectionCode,
+      tr:(DB.tracks||[]).map(t=>t.id).join()}}
 });
 
 /* ══ 1. Бүтэц ══════════════════════════════════════════════ */
 console.log('\nБүтэц');
 const SHT=sh.sheets;
-ok('Маягт бүр өөрийн шийттэй',SHT.length===7,SHT.map(x=>x.tab).join(' | '));
-// Хавсралтын дугаараар өсөх дараалал — Sheet дээр ч ингэж байрлана
-const want=['Маягт-1','Маягт-1 Хавсралт-2','Маягт-1 Хавсралт-3','Маягт-1 Хавсралт-4',
-  'Маягт-2','Маягт-2 Хавсралт-1','Маягт-2 Хавсралт-1.1'];
-ok('Шийтүүд хавсралтын дугаараар эрэмбэлэгдэнэ',
+const want=['Маягт-1','Маягт-1 Товъёог','Маягт-1 Хавсралт-2','Маягт-1 Хавсралт-3',
+  'Маягт-1 Хавсралт-3 Товъёог','Маягт-1 Хавсралт-3 ХАЯ','Маягт-1 Хавсралт-2 өртөө',
+  'Маягт-1 Хавсралт-4','Маягт-1 Хавсралт-4 Товъёог','Маягт-1 Хавсралт-5',
+  'Маягт-1 Хавсралт-5 25%','Салаалсан гол зам','Салаалсан гол зам Товъёог',
+  'Салаалсан гол зам 25%','Маягт-2','Маягт-2 Товъёог','Маягт-2 Хавсралт-1',
+  'Маягт-2 Хавсралт-2'];
+SHEET_N=SHT.length;
+ok('18 албан маягт',SHT.length===18,SHT.length+' ширхэг');
+ok('Маягт бүр өөрийн шийттэй, дугаарын дарааллаар',
    SHT.every((x,i)=>x.tab===want[i]),SHT.map(x=>x.tab).join(' | '));
-ok('Хэсгийн дугаар кодоос уншигдана',
-   sh.nums[0]===6&&sh.nums[1]===2,JSON.stringify(sh.nums));
-
-// Хэсгийн гарчгийн мөрүүд — "ПД-6 — Маягт-1 …"
-const heads=s=>s.rows.map((r,i)=>({i,t:(r&&r.length===1)?String(r[0]):''}))
-  .filter(x=>/^ПД-\d+ — /.test(x.t));
-ok('Шийт бүрд хоёр хэсгийн блок',
-   SHT.every(s=>heads(s).length===2),JSON.stringify(SHT.map(s=>heads(s).length)));
-// Хоёр дахь блокийн ӨМНӨ яг 2 хоосон мөр
-const gaps=SHT.map(s=>{
-  const h=heads(s);if(h.length<2)return -1;
-  let n=0;for(let i=h[1].i-1;i>=0&&(!s.rows[i]||!s.rows[i].length);i--)n++;
-  return n});
-ok(`Хэсэг хооронд яг ${sh.gap} хоосон мөр`,
-   sh.gap===2&&gaps.every(n=>n===2),JSON.stringify(gaps));
-ok('Шийтийн толгойд маягтын нэр, он, улирал',
-   /Маягт-1/.test(SHT[0].rows[0][0])&&/2026/.test(SHT[0].rows[0][0])
-   &&/хавар/.test(SHT[0].rows[0][0]),String(SHT[0].rows[0][0]));
-ok('Мөр бүр массив, 40 баганаас хэтрэхгүй',
-   SHT.every(s=>s.rows.every(r=>Array.isArray(r)&&r.length<=40)),
-   'хамгийн урт '+Math.max(...SHT.map(s=>Math.max(...s.rows.map(r=>r.length)))));
-
-/* Эх загварын хэмжээ — маягт бүр өөрийн шийттэй тул яг таарна */
-ok('Багана өргөн толгойн баганын тоотой тэнцүү',
-   SHT.every(s=>s.fmt.every(f=>f.cols===s.w.length)),
-   JSON.stringify(SHT.map(s=>s.w.length)));
-ok('Толгойн хоёр мөрийн өндөр өгөгдсөн',
-   SHT.every(s=>s.h.length===2&&s.h.every(v=>v>10)),
-   JSON.stringify(SHT.map(s=>s.h)));
-ok('Хавсралт-2-ын "Огноо" багана нарийсахгүй (≥70px)',
-   SHT[1].w[10]>=70,SHT[1].w[10]+'px');
-
-/* Хэлбэрийн заавар */
-ok('Блок бүрд хэлбэрийн заавар',
-   SHT.every(s=>s.fmt.length===heads(s).length),
-   JSON.stringify(SHT.map(s=>s.fmt.length)));
-ok('Толгой бүр 2 мөр',
-   SHT.every(s=>s.fmt.every(f=>f.head===2)),'зөв');
-ok('Нэгтгэлүүд хүснэгтийн баганаас халихгүй',
-   SHT.every(s=>s.fmt.every(f=>(f.merges||[]).every(m=>m[1]>=1&&m[1]+m[3]-1<=f.cols))),
-   'багана: '+JSON.stringify(SHT.map(s=>s.fmt[0].cols)));
-ok('Нэгтгэл толгойн хоёр мөрийн дотор л байна',
-   SHT.every(s=>s.fmt.every(f=>(f.merges||[]).every(m=>m[0]>=f.row&&m[0]+m[2]-1<=f.row+1))),
-   'зөв');
-ok('_withSection глобалыг сэргээв',
+ok('Табын нэр давхардахгүй',
+   new Set(SHT.map(x=>x.tab)).size===18,'зөв');
+ok('Хуучин бүтцийн шийтүүд устгагдана',
+   sh.drop.indexOf('Маягт-2 Хавсралт-1.1')>=0,JSON.stringify(sh.drop));
+ok('_withSection глобалыг сэргээв (_sectionCode ба DB.tracks-ыг ч)',
    JSON.stringify(sh.before)===JSON.stringify(sh.after),JSON.stringify(sh.after));
 
-// Шийт доторх i дэх хэсгийн блок: [0]=толгойн 1-р мөр, [1..]=өгөгдөл
-const blockOf=(s,idx)=>{
-  const h=heads(s);const st=h[idx].i+1;const out=[s.rows[st]];
-  for(let i=st+2;i<s.rows.length;i++){
-    if(!s.rows[i]||!s.rows[i].length)break;
-    out.push(s.rows[i])}
-  return out};
-const F1=blockOf(SHT[0],0),F12=blockOf(SHT[1],0),F13=blockOf(SHT[2],0),
-      F14=blockOf(SHT[3],0),F2=blockOf(SHT[4],0),A1=blockOf(SHT[5],0),A11=blockOf(SHT[6],0);
-// Хүрээ нь толгойн 2 мөр + өгөгдлийн бүх мөрийг хамрах ёстой
-ok('Хүрээний муж толгой+өгөгдлийг бүрэн хамарна',
-   SHT.every((s,i)=>s.fmt[0].n===2+[F1,F12,F13,F14,F2,A1,A11][i].length-1),
-   JSON.stringify(SHT.map(s=>s.fmt[0].n)));
-ok('Маягт-1-ийн толгой эх загварынхтай ижил',
-   String(F1[0][2])==='Дэрийн эпюр'&&String(F1[0][5])==='Тэнцэхгүй дэрийн тоо'
-   &&String(F1[0][17])==='Тухайн онд солигдсон дэрийн тоо',
-   JSON.stringify([F1[0][2],F1[0][5],F1[0][17]]));
-ok('Дүнгийн мөрүүд бүдүүн болно',
-   SHT[0].fmt[0].bold.length===1&&SHT[6].fmt[0].bold.length===3,
-   JSON.stringify(SHT.map(s=>s.fmt[0].bold.length)));
+// Толгой = 4, 5-р мөр; өгөгдөл 6-оос
+const D=s=>s.rows.slice(5);
+const live=SHT.filter(s=>s.rows.length);
+ok('Ихэнх маягт бөглөгдөв',live.length>=14,live.length+'/18');
+ok('Өгөгдөлгүй маягт ОГТ үүсэхгүй',
+   SHT.every(s=>!s.rows.length||D(s).length>0),
+   SHT.filter(s=>!s.rows.length).map(s=>s.tab).join(', ')||'бүгд бөглөгдөв');
+ok('Толгойн хоёр мөр эх загварын баганын тоотой тэнцүү',
+   live.every(s=>s.rows[3].length===s.cols&&s.rows[4].length===s.cols
+              &&s.w.length===s.cols),
+   JSON.stringify(live.map(s=>[s.rows[3].length,s.cols,s.w.length]).slice(0,4)));
+ok('Шийтийн толгойд маягтын нэр, он, улирал',
+   /^Маягт-1 —/.test(String(SHT[0].rows[0][0]))
+   &&/2026/.test(String(SHT[0].rows[1][0]))
+   &&/хавр/.test(String(SHT[0].rows[1][0])),
+   String(SHT[0].rows[0][0])+' · '+String(SHT[0].rows[1][0]));
+ok('Огноо тэгээр гүйцээгдэнэ (2026-09-09)',
+   /\d{4}-\d{2}-\d{2}/.test(String(SHT[0].rows[1][0])),String(SHT[0].rows[1][0]));
+ok('Мөр бүр массив, 40 баганаас хэтрэхгүй',
+   live.every(s=>s.rows.every(r=>Array.isArray(r)&&r.length<=40)),
+   'хамгийн урт '+Math.max(...live.map(s=>Math.max(...s.rows.map(r=>r.length)))));
 
+/* Хэлбэрийн заавар */
+ok('Шийт бүрд НЭГ хүснэгтийн заавар',
+   live.every(s=>s.fmt.length===1),JSON.stringify(live.map(s=>s.fmt.length)));
+ok('Толгой 2 мөр, хүрээ бүх мөрийг хамарна',
+   live.every(s=>s.fmt[0].head===2&&s.fmt[0].row===4
+              &&s.fmt[0].n===s.rows.length-3),
+   JSON.stringify(live.map(s=>[s.fmt[0].n,s.rows.length]).slice(0,4)));
+ok('Нэгтгэлүүд хүснэгтийн баганаас халихгүй',
+   live.every(s=>s.fmt[0].merges.every(m=>m[1]>=1&&m[1]+m[3]-1<=s.cols)),'зөв');
+ok('Нэгтгэл толгойн хоёр мөрийн дотор л байна',
+   live.every(s=>s.fmt[0].merges.every(m=>m[0]>=4&&m[0]+m[2]-1<=5)),'зөв');
+ok('Бүдүүн мөр өгөгдлийн мужид байна',
+   live.every(s=>s.fmt[0].bold.every(b=>b>5&&b<=s.rows.length)),
+   JSON.stringify(live.map(s=>s.fmt[0].bold.length)));
+
+/* Хэсгүүдийн дараалал ба хамрах хүрээ */
+const codesOf=s=>D(s).map(r=>String(r[0])+'|'+String(r[1]))
+  .map(x=>(x.match(/ПД-\d+/)||[''])[0]).filter(Boolean);
+const m1=codesOf(SHT[0]);
+ok('Гол замын маягтад САЛААЛСАН хэсэг орохгүй (ПД-11)',
+   m1.indexOf('ПД-11')<0&&m1.indexOf('ПД-6')>=0,m1.join(','));
+const brc=codesOf(SHT[11]);
+ok('Салаалсан гол замын маягтад ЗӨВХӨН ПД-11/12',
+   brc.length>0&&brc.every(c=>c==="ПД-11"),brc.join(","));
+const st=codesOf(SHT[3]);
+ok('Хэсгүүд ТООН дарааллаар цувна (үсгийн эрэмбэ биш)',
+   st.indexOf('ПД-2')===0&&st.indexOf('ПД-2')<st.indexOf('ПД-11'),st.join(','));
+ok('Хоёроос дээш хэсэгтэй үед "Замын анги" дүн гарна',
+   D(SHT[3]).slice(-1)[0][0]==='Замын анги',String(D(SHT[3]).slice(-1)[0][0]));
+ok('Ганц хэсэгтэй үед ангийн дүн ДАВХАРДАХГҮЙ',
+   sh.two[3]<SHT[3].rows.length
+   &&!/Замын анги/.test(JSON.stringify(sh.two)),String(sh.two[3]));
+
+/* Д/д — өмнө нь хэсэг бүрд 1-ээс эхэлдэг байв */
+const ddSheets=SHT.filter(s=>s.dd&&s.rows.length);
+const ddBad=ddSheets.filter(s=>{
+  const n=D(s).map(r=>r[0]).filter(v=>v!==''&&v!==undefined);
+  return !n.every((v,i)=>v===i+1)});
+ok('Жагсаалтын Д/д шийт даяар цуваа',!ddBad.length,
+   ddBad.map(s=>s.tab+': '+JSON.stringify(D(s).map(r=>r[0]))).join(' | ')||'зөв');
+
+/* Хоёр мөрт хос (Ширхэг / Пог.м) — Хавсралт-1 */
+{
+  const A=SHT[16],d=D(A);
+  ok('Хавсралт-1 хэсэг бүр Ширхэг/Пог.м хосоор',
+     d.length%2===0&&d.every((r,i)=>String(r[2])===(i%2?'Пог.м':'Ширхэг')),
+     JSON.stringify(d.map(r=>r[2])));
+  ok('Хавсралт-1-д эх загварын 2.75 м багана байна (хоосон)',
+     A.rows[4][3]===2.75&&d[0][3]==='',JSON.stringify([A.rows[4][3],d[0][3]]));
+}
 
 /* ══ 2. Дэрийн маягтууд — Excel-тэй тулгах ══════════════════ */
 console.log('\nДэрийн маягт (Excel-тэй тулгав)');
@@ -184,61 +221,77 @@ const xM12=wb.getWorksheet('маягт1-2');
 const xM14=wb.getWorksheet('Маягт 1-4 өртөө-сийрэгжилт');
 ok('Excel-ийн 4 маягт олдов',!!(xM1&&xM13&&xM12&&xM14));
 
-// Маягт-1 — гол зам, км 12 (Excel 9-р мөр). C..H, K..S шууд бичигдсэн
+// Маягт-1 — гол зам, км 12 (Excel 9-р мөр)
 {
-  const x=V(xM1.getRow(9)),s=F1[1];        // F1[0] = толгой мөр
-  const map=[[3,2],[4,3],[5,4],[6,5],[7,6],[8,7],   // C-H → нийт..тэнц бетон
+  const s=D(SHT[0]).find(r=>String(r[0])==='ПД-6');
+  const x=V(xM1.getRow(9));
+  const map=[[3,2],[4,3],[5,4],[6,5],[7,6],[8,7],
              [11,10],[12,11],[13,12],[14,13],[15,14],[16,15],[17,16],[18,17],[19,18]];
   const bad=map.filter(([c,j])=>!eq(z(x[c]),z(s[j])));
   ok('Маягт-1: км 12-ийн бүх тоо Excel-тэй ижил',!bad.length,
      bad.map(([c,j])=>`багана ${c}: ${x[c]} ≠ ${s[j]}`).join('; '));
   ok('Маягт-1: км дугаар',eq(x[2],s[1]),`${x[2]} / ${s[1]}`);
-  ok('Маягт-1: сүүлийн мөр нийт дүн',String(F1[F1.length-1][0])==='Нийт дүн',
-     String(F1[F1.length-1][0]));
+  ok('Маягт-1: хэсэг бүрийн дараа "ПД-N дүн" мөр',
+     D(SHT[0]).some(r=>String(r[0])==='ПД-6 дүн'),'зөв');
 }
 // Хавсралт-3 — өртөөний 2 зам (Excel 8, 9-р мөр)
 {
+  const d=D(SHT[3]).filter(r=>String(r[0])==='ПД-6');
   const map=[[5,4],[6,5],[7,6],[8,7],[9,8],
              [11,10],[12,11],[13,12],[14,13],[15,14],[16,15],[17,16],[18,17],[19,18]];
   let bad=[];
   [0,1].forEach(k=>{
-    const x=V(xM13.getRow(8+k)),s=F13[1+k];
-    map.forEach(([c,j])=>{if(!eq(z(x[c]),z(s[j])))bad.push(`зам${k+1} багана${c}: ${x[c]}≠${s[j]}`)});
-    if(!eq(x[3],s[2]))bad.push(`зам${k+1} дугаар ${x[3]}≠${s[2]}`)
+    const x=V(xM13.getRow(8+k)),s=d[k];
+    map.forEach(([c,j])=>{if(!eq(z(x[c]),z(s[j])))bad.push(`зам${k+1} багана${c}: ${x[c]}≠${s[j]}`)})
   });
-  ok('Хавсралт-3: 2 замын бүх тоо Excel-тэй ижил',!bad.length,bad.join('; '));
-  const tot=F13[F13.length-1];
-  ok('Хавсралт-3: Нийт мөр модон+бетоны нийлбэр',
+  ok('Хавсралт-3: 2 замын бүх тоо Excel-тэй ижил',!bad.length,bad.slice(0,3).join('; '));
+  const tot=D(SHT[3]).find(r=>String(r[0])==='ПД-6 дүн');
+  ok('Хавсралт-3: дүн мөр модон+бетоны нийлбэр',
      eq(tot[3],(+tot[4]||0)+(+tot[5]||0)),`${tot[3]} vs ${tot[4]}+${tot[5]}`);
 }
-// Хавсралт-2 — 25%+ үе (Excel 7-р мөрөөс)
+// Хавсралт-2 өртөө — 25%+ үе (Excel 'маягт1-2' 7-р мөр)
 {
-  const x=V(xM12.getRow(7)),s=F12[1];
-  ok('Хавсралт-2: ганц үе олдов (s4)',F12.length===3,
-     `${F12.length-1} мөр: ${F12.slice(1).map(r=>r[3]).join(', ')}`);
-  ok('Хавсралт-2: үеийн нэр Excel-тэй ижил',String(x[4])===String(s[3]),`${x[4]} / ${s[3]}`);
-  ok('Хавсралт-2: эпюр ба тэнцэхгүй Excel-тэй ижил',
+  const d=D(SHT[6]),s=d.find(r=>String(r[1])==='ПД-6');
+  const x=V(xM12.getRow(7));
+  ok('Хавсралт-2 өртөө: ганц үе олдов (s4)',
+     d.filter(r=>String(r[1])==='ПД-6').length===1,
+     d.map(r=>r[1]+'/'+r[3]).join(', '));
+  ok('Хавсралт-2 өртөө: үеийн нэр Excel-тэй ижил',String(x[4])===String(s[3]),`${x[4]} / ${s[3]}`);
+  ok('Хавсралт-2 өртөө: эпюр ба тэнцэхгүй Excel-тэй ижил',
      eq(x[5],s[4])&&eq(x[6],s[5]),`${x[5]}/${s[4]} · ${x[6]}/${s[5]}`);
-  // 'Нийт дэр' нь Excel-ийн томъёоны туслах багана — эх загварт байхгүй
-  ok('Хавсралт-2: "Нийт дэр" багана байхгүй',
-     F12[0].length===11&&F12[0].indexOf('Нийт дэр')<0,
-     F12[0].length+' багана');
-  ok('Хавсралт-2: сольсон 2 дэр, дугаар нь 3,6',
-     eq(x[8],s[7])&&String(s[9])==='3,6',`${s[7]} · ${s[9]}`);
-  ok('Хавсралт-2: эзлэх хувь 35.0 (эх байдлаар)',eq(s[6],35),String(s[6]));
-  ok('Хавсралт-2: ганц зам бол "Бүгд" мөр давхардахгүй',
-     String(F12[2][3])==='Нийт'&&F12.length===3,JSON.stringify(F12.map(r=>r[3])));
+  ok('Хавсралт-2 өртөө: эзлэх хувь 35 (эх байдлаар)',eq(s[6],35),String(s[6]));
+  ok('Хавсралт-2 өртөө: 31-40% нүдэнд тэмдэглэгдэнэ',
+     s[8]===''&&s[9]===1&&s[10]===''&&s[11]==='',JSON.stringify(s.slice(8,12)));
+  ok('Хавсралт-2 өртөө: сольсон 2 дэр',eq(s[13],2),String(s[13]));
+  // Гол замд 25%-тай үе алга — тэр маягт хоосон үлдэх ёстой
+  ok('25%-гүй бол гол замын Хавсралт-2 үүсэхгүй',
+     SHT[2].rows.length===0,SHT[2].rows.length+' мөр');
 }
-// Хавсралт-4 — сийрэгжилт (Excel 7-р мөрөөс)
+// Хавсралт-4 — сийрэгжилт (Excel 7-р мөр)
 {
-  const x=V(xM14.getRow(7)),s=F14[1];
-  ok('Хавсралт-4: сийрэгжилтийн ганц цэг',F14.length===2,`${F14.length-1} мөр`);
+  const s=D(SHT[7]).find(r=>String(r[1])==='ПД-6');
+  const x=V(xM14.getRow(7));
   ok('Хавсралт-4: үе, эпюр Excel-тэй ижил',
      String(x[4])===String(s[3])&&eq(x[5],s[4]),`${x[4]}/${s[3]} · ${x[5]}/${s[4]}`);
   ok('Хавсралт-4: 5 ба дээш дараалсан гэж тэмдэглэв',
      s[5]===''&&s[6]===''&&s[7]===1,JSON.stringify(s.slice(5,8)));
   ok('Хавсралт-4: сольсон 1 дэр, дугаар 3',eq(s[10],1)&&String(s[11])==='3',
      `${s[10]} · ${s[11]}`);
+  const t=D(SHT[8]).find(r=>String(r[1])==='ПД-6');
+  ok('Хавсралт-4 Товъёог: "Нийт илэрсэн" = 3+4+5-ын нийлбэр',
+     eq(t[7],(+t[4]||0)+(+t[5]||0)+(+t[6]||0)),JSON.stringify(t.slice(4,8)));
+}
+// Салбар зам — өөрийн паспортоор
+{
+  const d=D(SHT[9]).filter(r=>String(r[0])==='ПД-6');
+  ok('Хавсралт-5: салбар замын нэр маягтаас гарна',
+     d.length&&String(d[0][1])==='Говь урал',JSON.stringify(d.map(r=>r[1])));
+  ok('Хавсралт-5: 40 дэр, 12 тэнцэхгүй, 30%',
+     eq(d[0][2],40)&&eq(d[0][5],12)&&eq(d[0][8],30),
+     `${d[0][2]} · ${d[0][5]} · ${d[0][8]}`);
+  const q=D(SHT[10]).filter(r=>String(r[1])==='ПД-6');
+  ok('Хавсралт-5 25%: 30%-тай үе жагсаалтад орно',
+     q.length===1&&eq(q[0][7],30)&&q[0][8]===1,JSON.stringify(q[0]&&q[0].slice(5,12)));
 }
 
 /* ══ 3. Дүнзний маягтууд — Excel-тэй тулгах ════════════════ */
@@ -246,42 +299,48 @@ console.log('\nДүнзний маягт (Excel-тэй тулгав)');
 const wb2=await grab('exportSwForms()');
 const xS2=wb2.getWorksheet('дүнз ПО-6-маягт-2');
 const xA1=wb2.getWorksheet('тэнцэхгүй дүнз маягт 2-1');
-const xA11=wb2.getWorksheet('тэнцэхгүй дүнз маягт 2-1.1');
-ok('Excel-ийн 3 дүнзний маягт олдов',!!(xS2&&xA1&&xA11));
+ok('Excel-ийн дүнзний маягт олдов',!!(xS2&&xA1));
 {
-  // Маягт-2: C, D, E, G..K, M шууд бичигдсэн (F, L томъёо)
-  const map=[[3,2],[4,3],[5,4],[7,6],[8,7],[9,8],[10,9],[11,10],[13,12]];
+  // Маягт-2: Excel C,D,E,G..K шууд бичигдсэн (F, L томъёо)
+  const d=D(SHT[14]).filter(r=>String(r[0])!=='ПД-6 дүн'&&/Шивээговь/.test(String(r[0])));
+  const map=[[3,2],[4,3],[5,4],[7,6],[8,7],[9,8],[10,9],[11,10]];
   let bad=[];
   [0,1].forEach(k=>{
-    const x=V(xS2.getRow(9+k)),s=F2[1+k];
+    const x=V(xS2.getRow(9+k)),s=d[k];
     map.forEach(([c,j])=>{if(!eq(z(x[c]),z(s[j])))bad.push(`сум${k+1} багана${c}: ${x[c]}≠${s[j]}`)})
   });
-  ok('Маягт-2: 2 сумын бүх тоо Excel-тэй ижил',!bad.length,bad.join('; '));
-  const s=F2[1];
-  ok('Маягт-2: нийт 68 дүнз, 255.75 пог/м',eq(s[2],68)&&eq(s[12],255.75),`${s[2]} · ${s[12]}`);
-  ok('Маягт-2: тэнцэхгүй 4 ш / 12.25 пог/м',eq(s[3],4)&&eq(s[4],12.25),`${s[3]} · ${s[4]}`);
-  ok('Маягт-2: 3 зэрэгцсэн цэг 1',eq(s[6],1),String(s[6]));
-  ok('Маягт-2: солигдсон 1 ш / 3 пог/м',eq(s[9],1)&&eq(s[10],3),`${s[9]} · ${s[10]}`);
-  ok('Маягт-2: сольсны дараах хувь = (12.25-3)/255.75',eq(s[11],3.6),String(s[11]));
+  ok('Маягт-2: 2 сумын бүх тоо Excel-тэй ижил',!bad.length,bad.slice(0,3).join('; '));
+  const s=d[0];
+  ok('Маягт-2: нийт 68 дүнз, тэнцэхгүй 4 ш / 12.25 пог/м',
+     eq(s[2],68)&&eq(s[3],4)&&eq(s[4],12.25),`${s[2]} · ${s[3]} · ${s[4]}`);
+  ok('Маягт-2: 3 зэрэгцсэн цэг 1, солигдсон 1 ш / 3 пог/м',
+     eq(s[6],1)&&eq(s[9],1)&&eq(s[10],3),`${s[6]} · ${s[9]} · ${s[10]}`);
+  const t=D(SHT[15]).find(r=>/ПД-6/.test(String(r[0])));
+  ok('Маягт-2 Товъёог: сольсны дараах хувь = (тэнц−сольсон)/нийт',
+     eq(t[10],_r1((t[2]-t[8])*100/t[1])),`${t[10]} · ${t[1]}/${t[2]}/${t[8]}`);
 }
-// Хавсралт-1 / 1.1 — E..O (урт тус бүрийн 11 багана) шууд бичигдсэн
+// Хавсралт-1 — урт тус бүрийн ТЭНЦЭХГҮЙ дүнз. Excel-д сум бүр 2 мөр
+// (Байгаа / Тэнцэхгүй) тул тэнцэхгүй мөрүүдийг нэмж тулгана.
 {
-  const chk=(xws,rows,nm)=>{
-    let bad=[];
-    for(let k=0;k<4;k++){                       // 2 сум × 2 мөр
-      const x=V(xws.getRow(8+k)),s=rows[1+k];
-      for(let c=5;c<=15;c++)if(!eq(z(x[c]),z(s[c-1])))
-        bad.push(`${nm} мөр${k+1} багана${c}: ${x[c]}≠${s[c-1]}`)
-    }
-    return bad};
-  const bad=chk(xA1,A1,'Х-1').concat(chk(xA11,A11,'Х-1.1'));
-  ok('Хавсралт-1 ба 1.1: урт тус бүрийн тоо Excel-тэй ижил',!bad.length,bad.slice(0,3).join('; '));
-  const f1=A1[A1.length-1],f11=A11[A11.length-1];
-  ok('Хавсралт-1: доод мөр = тэнцэхгүй × урт, нийлбэр нь 24.5 пог/м',
-     eq(f1[4],3*3*2)&&eq(f1[16],24.5),`${f1[4]} · ${f1[16]}`);
-  ok('Хавсралт-1.1: доод мөр = тэнцэхгүй − сольсон',
-     eq(f1[16]/2,12.25)&&eq(f11[4],6-2)&&eq(f11[5],2),`${f11[4]} · ${f11[5]}`);
-  ok('Хавсралт-1: "Байгаа" мөр 68 ширхэг',eq(A1[1][15],68),String(A1[1][15]));
+  const all=D(SHT[16]),i0=all.findIndex(r=>/Шивээговь/.test(String(r[1])));
+  const shx=all[i0],shp=all[i0+1];
+  let bad=[];
+  for(let c=5;c<=15;c++){
+    const xs=z(V(xA1.getRow(9))[c])+z(V(xA1.getRow(11))[c]);
+    const j=c-1;                          // 2.75 багана нэмэгдсэн тул +1
+    if(!eq(xs,z(shx[j])))bad.push(`урт${c}: ${xs}≠${shx[j]}`)
+  }
+  ok('Хавсралт-1: урт тус бүрийн тэнцэхгүй тоо Excel-тэй ижил',!bad.length,
+     bad.slice(0,3).join('; '));
+  ok('Хавсралт-1: Пог.м мөр = ширхэг × урт',
+     eq(shp[4],(+shx[4]||0)*3)&&eq(shp[5],(+shx[5]||0)*3.25),
+     `${shp[4]} · ${shp[5]}`);
+  ok('Хавсралт-1: баруун талын Тоо/пог.м зөв мөрөндөө',
+     eq(shx[15],8)&&shx[16]===''&&shp[15]===''&&eq(shp[16],24.5),
+     `${shx[15]} · ${shp[16]}`);
+  const b2=D(SHT[17]).find(r=>String(r[1])==='ПД-6');
+  ok('Хавсралт-2 (салбар дүнз): салбарын сумаар бөглөгдөнө',
+     !!b2&&eq(b2[2],68)&&eq(b2[4],4),b2?`${b2[2]} · ${b2[4]}`:'алга');
 }
 
 /* ══ 4. Дэлгэцийн холбоо ═══════════════════════════════════ */
@@ -391,23 +450,29 @@ const unsaved=await page.evaluate(async()=>{
   const B=window.__bodies||[];
   return {saved:localStorage.getItem(SH_KEY),posted:window.__posted,
     tabs:B.map(x=>x.tab),purge:B.map(x=>!!x.purge),pos:B.map(x=>x.pos),
-    // Эхний маягтын мөрүүдээс хэсгийн гарчгуудыг сугалж дарааллыг шалгана
-    order:(B[0]?B[0].rows:[]).filter(r=>r&&r.length===1&&/^ПД-\d+ — /.test(String(r[0])))
-      .map(r=>String(r[0]).split(' — ')[0]),
+    // Хэсгүүд НЭГ хүснэгтэд цувдаг тул эхний баганаас дарааллыг шалгана
+    order:[...new Set((B[0]?B[0].rows:[]).slice(5)
+      .map(r=>(String((r&&r[0])||'').match(/^ПД-\d+$/)||[''])[0]).filter(Boolean))],
+    drop:B.map(x=>x.drop||null),
     open:document.getElementById('sheetCfgModal').classList.contains('open')}});
 ok('Хадгалахгүйгээр илгээхэд холбоос өөрөө хадгалагдана',
    /BBB/.test(String(unsaved.saved)),String(unsaved.saved));
 ok('Илгээлт үнэхээр явав (цонх дахин нээгдээгүй)',
    /BBB/.test(String(unsaved.posted))&&!unsaved.open,
    String(unsaved.posted)+' · цонх '+unsaved.open);
-/* Маягт бүр өөрийн шийттэй — 7 хүсэлт, нэр нь Excel-ийн хуудсуудтай ижил */
-ok('7 маягтын шийт рүү илгээнэ',
-   unsaved.tabs.length===7&&unsaved.tabs[0]==='Маягт-1'
-   &&unsaved.tabs[1]==='Маягт-1 Хавсралт-2'
-   &&unsaved.tabs[6]==='Маягт-2 Хавсралт-1.1',JSON.stringify(unsaved.tabs));
-ok('Табын байрлал 1…7 гэж илгээгдэнэ',
-   JSON.stringify(unsaved.pos)===JSON.stringify([1,2,3,4,5,6,7]),
+/* Маягт бүр өөрийн шийттэй. ӨГӨГДӨЛГҮЙ маягт огт илгээгдэхгүй —
+   Sheet дээр хоосон хүснэгт үүсэх ёсгүй. */
+ok('Зөвхөн бөглөгдсөн маягт илгээгдэнэ',
+   unsaved.tabs.length>0&&unsaved.tabs.length<SHEET_N
+   &&unsaved.tabs[0]==='Маягт-1'
+   &&unsaved.tabs.indexOf('Салаалсан гол зам 25%')<0,
+   unsaved.tabs.length+'/'+SHEET_N+': '+JSON.stringify(unsaved.tabs));
+ok('Табын байрлал завсаргүй 1-ээс цувна',
+   JSON.stringify(unsaved.pos)===JSON.stringify(unsaved.tabs.map((_,i)=>i+1)),
    JSON.stringify(unsaved.pos));
+ok('Хуучин бүтцийн шийтүүдийн жагсаалт эхний хүсэлтэд явна',
+   (unsaved.drop[0]||[]).indexOf('Маягт-2 Хавсралт-1.1')>=0
+   &&unsaved.drop.slice(1).every(d=>!d),JSON.stringify(unsaved.drop[0]));
 ok('Хэсгүүд ТООН дарааллаар цувна (үсгийн эрэмбэ биш)',
    JSON.stringify(unsaved.order)===JSON.stringify(['ПД-2','ПД-10']),
    JSON.stringify(unsaved.order));
@@ -550,7 +615,10 @@ const tick=await page.evaluate(async()=>{
   window.fetch=of;window.showToast=ot;window._adminLoadAll=oL;
   localStorage.removeItem(SH_KEY);localStorage.removeItem(SH_AUTO_KEY);
   shAutoStop();
-  return {first,second,third,offView,nForms:SH_FORMS.length}});
+  const secs=_shHit().map(({code,db,folder})=>
+    _sectionBlocks(code,db,folder,_shSwFolder(db,folder)));
+  const nForms=SH_FORMS.filter((F,fi)=>_formSheet(fi,secs).rows.length).length;
+  return {first,second,third,offView,nForms}});
 ok('Эхний удаад бүх маягтыг илгээнэ',tick.first===tick.nForms,tick.first+'/'+tick.nForms);
 ok('Өгөгдөл өөрчлөгдөөгүй бол сүлжээ рүү хандахгүй',tick.second===0,tick.second+' хүсэлт');
 ok('Өөрчлөгдвөл дахин илгээнэ',tick.third===tick.nForms,tick.third+' хүсэлт');
@@ -593,7 +661,10 @@ const sel=await page.evaluate(async()=>{
   localStorage.removeItem(SH_KEY);_shHash='';
   await shPushForSelection();const noUrl=n-sent;
   window.fetch=of;window.showToast=ot;
-  return {sent,noUrl,nForms:SH_FORMS.length}});
+  const secs=_shHit().map(({code,db,folder})=>
+    _sectionBlocks(code,db,folder,_shSwFolder(db,folder)));
+  const nForms=SH_FORMS.filter((F,fi)=>_formSheet(fi,secs).rows.length).length;
+  return {sent,noUrl,nForms}});
 ok('Он/улирал сонгоход бүх маягт илгээгдэнэ',sel.sent===sel.nForms,sel.sent+'/'+sel.nForms);
 ok('Холбоосгүй бол чимээгүй өнгөрнө',sel.noUrl===0,sel.noUrl+' хүсэлт');
 

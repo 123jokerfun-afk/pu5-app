@@ -50,9 +50,13 @@ function doPost(e) {
     // Өмнөх бүтэц: хэсэг бүр нэг шийт ('ПД-6 маягт'). Одоо маягт бүр нэг
     // шийттэй тул тэдгээр нь хуучирсан — эхний хүсэлтээр цэвэрлэнэ.
     if (body.purge) {
+      var drop = body.drop || [];
       var all = ss.getSheets(), kill = [];
       for (var p = 0; p < all.length; p++) {
-        if (/ маягт$/.test(all[p].getName())) kill.push(all[p]);
+        var nm = all[p].getName();
+        // ' маягт' — хамгийн анхны бүтэц (хэсэг бүр нэг шийт).
+        // drop — аппын хассан буюу нэрээ сольсон маягтууд.
+        if (/ маягт$/.test(nm) || drop.indexOf(nm) >= 0) kill.push(all[p]);
       }
       // Хүснэгт хоосон үлдэж болохгүй тул дор хаяж нэг шийт үлдээнэ
       for (var q = 0; q < kill.length; q++) {
