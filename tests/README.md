@@ -23,7 +23,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto multi
-node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec admin pwa dbl edge exp xls sheet branch  (удаан)
+node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec admin pwa dbl edge exp xls sheet branch branchtr  (удаан)
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
 node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ загвар
@@ -65,6 +65,7 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `exp.js` | Экспорт ажиллаж, файл гарч байгаа эсэх (баталгаажуулах цонх орно) |
 | `xls.js` | Гарсан Excel-ийг **буцааж уншиж** тоо нь зөв эсэхийг шалгана |
 | `branch.js` | Салаалсан гол зам (ПД-11, ПД-12) — материал дэрийн төрлөөс |
+| `branchtr.js` | Салбар зам — паспортын салгалт, замын нэрийн хүрд |
 | `sheet.js` | Google Sheets руу явах 7 маягтын мөр — Excel-тэй тоо тулгана |
 
 ## Дүрэм
