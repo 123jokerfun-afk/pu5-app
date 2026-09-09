@@ -1521,7 +1521,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <!-- Гол зам — паспортаас хараат бус, паспортуудын дээр -->
     <div class="home-section" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div class="sec-lbl" style="margin-top:0">Гол зам</div>
+        <div class="sec-lbl" style="margin-top:0" id="mainSecLbl">Гол зам</div>
         <button class="sw-link" onclick="hap();goSwHome()">СШ ПУ-5
           <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
         </button>
@@ -1583,7 +1583,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="pg-hdr-row">
       <button class="back-btn" onclick="goHome()">Буцах</button>
       <div style="flex:1">
-        <div class="pg-title">Гол зам</div>
+        <div class="pg-title" id="mkTitle">Гол зам</div>
         <div class="pg-sub" id="mkSub">—</div>
       </div>
     </div>
@@ -2701,6 +2701,18 @@ function shiftFmapAfterDelete(sec,removed){
   }
 }
 function isTbdType(tp){return tp==='tbd'||tp==='bad_tbd'}
+/* ── САЛААЛСАН ГОЛ ЗАМ ──────────────────────────────────────
+   ПД-11, ПД-12-ийн "гол зам" нь үнэндээ САЛААЛСАН гол зам — манай гол
+   зам шиг мөртлөө өөр тийш салсан мухар зам. Тэнд дэр нь ӨРТӨӨНИЙ
+   замынхтай адил бүртгэгдэнэ: материал нь ДЭРИЙН ТӨРЛӨӨС (ТБД /
+   тэнцэхгүй ТБД) тодорхойлогдоно, замын `mat` талбараас биш. Мөн
+   "Нийт дэр оруулах" бөөнөөр бүртгэх боломж энд байхгүй. */
+const BRANCH_MAIN=['ПД-11','ПД-12'];
+function isBranchSection(code){
+  const c=String(code===undefined?_sectionCode:code||'').trim().toUpperCase();
+  return BRANCH_MAIN.indexOf(c)>=0
+}
+function mainLabel(code){return isBranchSection(code)?'Салаалсан гол зам':'Гол зам'}
 // Гол замын ТБД үед БҮХ дэр төмөр бетон тул төрөл бүр дээр бэхэлгээ харагдана
 // ("Хэвийн APC", "Тэнцэхгүй APC"). Өртөөний замд зөвхөн ТБД гэж тэмдэглэсэн дэр дээр.
 function showFastFor(sec,t,type,idx){
@@ -3296,15 +3308,25 @@ function renderHome(){
   if(lh)lh.style.display=_st.length?'block':'none'
 }
 
+/* Статик HTML дэх хоёр гарчиг. Хэсэг нэвтэрсний дараа л мэдэгддэг тул
+   дүрслэл бүрд шинэчилнэ. */
+function _setMainLbls(){
+  const L=mainLabel();
+  ['mainSecLbl','mkTitle'].forEach(function(id){
+    const e=document.getElementById(id);if(e&&e.textContent!==L)e.textContent=L
+  })
+}
 // Нүүр хуудасны "Гол зам" карт — паспортаас хамаарахгүй, үргэлж харагдана
 function renderMainLineCard(){
   const box=document.getElementById('mainLineCard');if(!box)return;
+  // Статик гарчгуудыг хэсгийн төрлөөр нь тавина (ПД-11/12 → салаалсан)
+  _setMainLbls();
   const mn=mainTracks();
   if(!mn.length){
     box.innerHTML=`<div class="track-card" style="border-color:var(--blue-mid);background:var(--blue-bg);border-style:dashed" onclick="hap();openMainKmList()">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div>
-          <div style="font-size:16px;font-weight:900;color:var(--blue)">Гол зам</div>
+          <div style="font-size:16px;font-weight:900;color:var(--blue)">${mainLabel()}</div>
           <div style="font-size:11px;color:var(--ink3);font-weight:700;margin-top:2px">Км нэмээгүй байна</div>
         </div>
         <span class="rb-btn" style="pointer-events:none">Км нэмэх →</span>
@@ -3318,7 +3340,7 @@ function renderMainLineCard(){
   box.innerHTML=`<div class="track-card" style="border-color:var(--blue-mid);background:var(--blue-bg)" onclick="hap();openMainKmList()">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div>
-        <div style="font-size:17px;font-weight:900;color:var(--blue)">Гол зам</div>
+        <div style="font-size:17px;font-weight:900;color:var(--blue)">${mainLabel()}</div>
         <div style="font-size:11px;color:var(--ink3);font-weight:700;margin-top:2px">${mn[0].num}—${mn[mn.length-1].num} км · ${mn.length} км</div>
       </div>
       <span class="rb-btn" style="pointer-events:none">Км сонгох →</span>
@@ -3337,6 +3359,7 @@ function openMainKmList(){showView('mainKmView');renderMainKmView()}
 function renderMainKmView(){
   const mn=mainTracks();
   const body=document.getElementById('mainKmBody');
+  _setMainLbls();
   const stats=document.getElementById('mkStats');
   const sub=document.getElementById('mkSub');
   if(!mn.length){
@@ -3348,7 +3371,9 @@ function renderMainKmView(){
     return
   }
   const h1=document.getElementById('kmLpHint');if(h1)h1.style.display='block';
-  const b1=document.getElementById('kmBulkBtn');if(b1)b1.style.display='';
+  // Салаалсан замд бөөнөөр оруулах боломж байхгүй — дэр бүрийг тэмдэглэнэ
+  const b1=document.getElementById('kmBulkBtn');
+  if(b1)b1.style.display=isBranchSection()?'none':'';
   // Гол замын нийт дүн
   let gT=0,gB=0;
   mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad});
@@ -5427,9 +5452,11 @@ function analyzeMainSection(sec,t){
   if(!sec)return(r.pct=0,r);
   if(typeof sec.sleepers==='string')
     sec.sleepers=[...sec.sleepers].map(ch=>({type:_SLREV[ch]||'normal',ts:0}));
+  const br=isBranchSection();
   (sec.sleepers||[]).forEach((sl,i)=>{
     r.total++;
-    const isWood=matOf(sec,i,t)==='wood';
+    // Салаалсан замд ТБД эсэхийг дэрийн төрөл өөрөө хэлнэ
+    const isWood=br?!isTbdType(sl.type):matOf(sec,i,t)==='wood';
     const isBad=sl.type==='bad'||sl.type==='bad_tbd';
     if(isWood)r.wood++;else r.tbd++;
     if(isBad)r.bad++;else r.normal++;
@@ -5842,7 +5869,7 @@ const SEASON_GEN={хавар:'Хаврын',намар:'Намрын',зун:'З
 function _origSecs(t){return origSections(t).filter(s=>!isTurnout(s))}
 // Нэг үеийн задаргаа — гол зам, өртөөний замд ижил хэлбэрээр
 function _secTally(s,t){
-  if(isMainTrack(t)){
+  if(isMainTrack(t)&&!isBranchSection()){
     const a=analyzeMainSection(s,t);
     return{total:a.total,wood:a.wood,conc:a.tbd,bad:a.bad,badWood:a.bWood,badConc:a.bTbd}
   }
@@ -9989,7 +10016,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.06·120';
+const APP_BUILD='2026.09.09·121';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
