@@ -37,6 +37,20 @@ const opened=await page.evaluate(async()=>{
 ok('Дүнз бүртгэлийн дэлгэц нээгдэв',opened.view==='swRecView'&&opened.n===12,
    JSON.stringify(opened));
 
+/* Сумын эхний дэрүүд 2,75 м-тэй. Албан маягтад тусдаа баганад ордог тул
+   бүртгэл дээр ч уртаа харуулах ёстой — эс тэгвэл хаанаас гарсан тоо
+   болох нь ойлгомжгүй. */
+const kinds=await page.evaluate(()=>{
+  const k=[...document.querySelectorAll('#swLog .sw-kind')].map(e=>e.textContent.trim());
+  return {k,head:swTurnout().head,len:SW_HEAD_LEN,
+    lbl:swSlotLabel(swTurnout(),0),dz:swSlotLabel(swTurnout(),4)}});
+ok('Рам замын дэр 2,75 м-тэй',kinds.len===2.75,String(kinds.len));
+ok('Бүртгэлийн жагсаалтад дэрийн урт харагдана',
+   kinds.k.slice(0,4).every(t=>/^Дэр 2,75 м$/.test(t)),
+   JSON.stringify(kinds.k.slice(0,5)));
+ok('Дүнзний мөр пог/м-ээрээ хэвээр',/пог\/м$/.test(kinds.dz)&&kinds.lbl==='Дэр 2,75 м',
+   kinds.lbl+' · '+kinds.dz);
+
 // Бөмбөрөгийг тодорхой мөр дээр тааруулна
 const aim=async i=>await page.evaluate(async(i)=>{
   DRM.target=DRM.pos=i;DRM.vel=0;

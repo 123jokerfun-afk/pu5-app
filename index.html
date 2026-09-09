@@ -7932,9 +7932,22 @@ function _shSwSum(list){const A=_shSwZero();list.forEach(c=>{if(c)_shSwAcc(A,c)}
    (SW_LENS 3-аас эхэлдэг). Баганыг нь маягтын дагуу үлдээж, тоог
    хоосон орхино — эс тэгвэл хүснэгт эх загвартай зөрнө. */
 const SH_SW_LENS=[2.75,3,3.25,3.5,3.75,4,4.25,4.5,4.75,5,5.25,5.5];
-function _shLenRow(arr){
-  // SW_LENS-ийн массивыг маягтын 12 баганад буулгана
-  return SH_SW_LENS.map(L=>{const i=SW_LENS.indexOf(L);return i<0?'':(arr[i]||0)})
+/* Хавсралт-1-ийн хос мөр (Ширхэг / Пог.м). Баруун талын "Тоо" ба "пог.м"
+   дүн нь ЗӨВХӨН ДҮНЗийнх — эх загварын Q баганын томъёо ч 2,75-г
+   алгасдаг. Рам замын дэрийг дүнзэнд нэмбэл Маягт-2-ын тэнцэхгүй
+   тоотой зөрөх байсан. */
+function _sh21rows(dd,name,bad,hb){
+  const L=_shLenRow(bad,hb);
+  return [[dd,name,'Ширхэг'].concat(L).concat([_swN(bad),'']),
+          ['','','Пог.м'].concat(L.map((v,i)=>v===''?'':_sh2(v*SH_SW_LENS[i])))
+            .concat(['',_sh2(_swPm(bad))])]
+}
+function _shLenRow(arr,head){
+  // SW_LENS-ийн массивыг маягтын 12 баганад буулгана. 2,75 нь дүнз биш —
+  // сумын эхэнд бүртгэгддэг рам замын ДЭР (SW_HEAD_LEN).
+  return SH_SW_LENS.map(L=>{
+    if(L===SW_HEAD_LEN)return head===undefined?'':head;
+    const i=SW_LENS.indexOf(L);return i<0?'':(arr[i]||0)})
 }
 /* ── 18 МАЯГТ ──────────────────────────────────────────────────
    Эх Excel загварын өргөн (w, тэмдэгтийн нэгж), толгойн хоёр мөрийн
@@ -8275,24 +8288,15 @@ const SH_FORMS=[
   build:S=>{
     const ts=_shTurnouts();
     if(!ts.length)return null;
-    const bad=SW_LENS.map(()=>0);
-    ts.forEach(t=>swLenTally(t).bad.forEach((v,i)=>bad[i]+=v));
-    if(!bad.some(v=>v))return null;
-    const n=_swN(bad),pm=_swPm(bad);
-    return{rows:[
-      [S.num||'',S.loc||S.code,'Ширхэг'].concat(_shLenRow(bad)).concat([n,'']),
-      ['','','Пог.м'].concat(_shLenRow(bad).map((v,i)=>
-        v===''?'':_sh2(v*SH_SW_LENS[i]))).concat(['',_sh2(pm)])],
-      bold:[],acc:{bad,n,pm}}},
-  tot:A=>{
-    const bad=A.bad,L=_shLenRow(bad);
-    return [['','Замын анги','Ширхэг'].concat(L).concat([_swN(bad),'']),
-            ['','','Пог.м'].concat(L.map((v,i)=>v===''?'':_sh2(v*SH_SW_LENS[i])))
-              .concat(['',_sh2(_swPm(bad))])]},
+    const bad=SW_LENS.map(()=>0);let hb=0;
+    ts.forEach(t=>{swLenTally(t).bad.forEach((v,i)=>bad[i]+=v);hb+=swHeadBad(t)});
+    if(!bad.some(v=>v)&&!hb)return null;
+    return{rows:_sh21rows(S.num||'',S.loc||S.code,bad,hb),bold:[],acc:{bad,hb}}},
+  tot:A=>_sh21rows('','Замын анги',A.bad,A.hb),
   sum:list=>{
-    const bad=SW_LENS.map(()=>0);
-    list.forEach(a=>{if(a&&a.bad)a.bad.forEach((v,i)=>bad[i]+=v)});
-    return{bad}}},
+    const bad=SW_LENS.map(()=>0);let hb=0;
+    list.forEach(a=>{if(!a)return;(a.bad||[]).forEach((v,i)=>bad[i]+=v);hb+=a.hb||0});
+    return{bad,hb}}},
 
 /* 18 */ {tab:'Маягт-2 Хавсралт-2',sub:'салбар замын тэнцэхгүй дүнз',
   w:[19.44,10,9.66,7.44,9.66,8.66,9.44,9,7.33,6.89,8.89,7.55,9.11],
@@ -8735,6 +8739,9 @@ async function saveSheetCfg(quiet){
 // Маяг × марк бүрийн дүнзний хуваарь: [урт пог/м, ширхэг]
 // Дүнзний боломжит урт (пог/м)
 const SW_LENS=[3,3.25,3.5,3.75,4,4.25,4.5,4.75,5,5.25,5.5];
+/* Сумын ЭХЭНД (рам замын төмрийн доор) бүртгэгддэг дэр нь 2,75 м-тэй.
+   Тэднийг дүнз гэж тоолдоггүй — албан маягтад ч тусдаа баганад ордог. */
+const SW_HEAD_LEN=2.75;
 const SW_SPECS=[
   {mak:'Р-65',mark:'1/11',proj:['2764','2433'],
    sch:[[3,18],[3.25,10],[3.5,8],[3.75,7],[4,5],[4.25,6],[4.5,5],[4.75,6],[5,5],[5.25,6],[5.5,4]]},
@@ -8760,8 +8767,15 @@ function swSlot(to,i){
   if(sp)for(const [len,n] of sp.sch){if(j<n)return{kind:'дүнз',len};j-=n}
   return{kind:'дүнз',len:5.5,over:true}
 }
-function swSlotLabel(to,i){const s=swSlot(to,i);
-  return s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}
+function swKindLbl(s){
+  return s.kind==='дэр'?('Дэр '+swLen(SW_HEAD_LEN)+' м'):(swLen(s.len)+' пог/м')}
+function swSlotLabel(to,i){return swKindLbl(swSlot(to,i))}
+/* Рам замын ТЭНЦЭХГҮЙ дэрийн тоо — Маягт-2 Хавсралт-1-ийн 2,75 багана */
+function swHeadBad(to){
+  const it=to.it||'',head=to.head||0;let n=0;
+  for(let i=0;i<Math.min(head,it.length);i++)if(it[i]==='b')n++;
+  return n
+}
 // Тухайн сумын бүртгэлийн дүн.
 // Сумын тэнцэх/тэнцэхгүйд ЗӨВХӨН ДҮНЗ ордог — рам замын эхний дэрүүд
 // тусдаа тоологдоно.
@@ -9162,7 +9176,7 @@ function renderSwRec(focus){
   const nno=n<head?n+1:n-head+1;
   if(ni)ni.innerHTML=n>=pl&&pl
     ?`Хуваарь дүүрсэн — цаашид <b>5,5 пог/м</b> дүнз бүртгэнэ  ·  дараах дүнз #${nno}`
-    :`Дараах ${s.kind==='дэр'?'<b>дэр</b>':'<b>дүнз</b>'} #${nno} — <b>${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}</b>`
+    :`Дараах ${s.kind==='дэр'?'<b>дэр</b>':'<b>дүнз</b>'} #${nno} — <b>${swKindLbl(s)}</b>`
       +`  ·  ${n<head?`рам зам ${n}/${head}`:`дүнз ${n-head}/${pl-head}`}`;
   // Мөрүүд
   const wrap=document.getElementById('swLog');
@@ -9179,14 +9193,14 @@ function renderSwRec(focus){
     const prev=!!(dr&&!dr.own);       // өмнөх паспортынх — зөвхөн тэмдэглэгээ
     html+=`<div class="drow dr-rec ${cls}" data-i="${i}" data-rec="1">
       <span class="dr-num">#${no(i)}</span>
-      <span class="sw-kind">${isSl?'Дэр':swLen(sl.len)+' пог/м'}</span>
+      <span class="sw-kind">${swKindLbl(sl)}</span>
       <span class="sw-state">${bad?'Тэнцэхгүй':'Хэвийн'}</span>
       ${rp?`<span class="repl-date${prev?' rd-prev':''}">${fmtReplDate(rp.d)}</span>`:''}
       <span class="dr-edit">${ic('edit',12)}</span></div>`
   }
   html+=`<div class="drow dr-slot" data-i="${n}" data-rec="0" data-slot="1">
     <span class="dr-num">#${no(n)}</span>
-    <span class="sw-kind">${s.kind==='дэр'?'Дэр':swLen(s.len)+' пог/м'}</span>
+    <span class="sw-kind">${swKindLbl(s)}</span>
     <span class="dr-slot-lbl">бүртгэх…</span></div>`;
   wrap.innerHTML='<div class="drum-frame"></div>'+
     '<div class="drum-viewport"><div class="drum-reel">'+html+'</div></div>'+
@@ -9298,7 +9312,8 @@ let _swSlIdx=-1;
 function openSwSl(i){
   const t=swTurnout();if(!t||i>=(t.it||'').length)return;
   _swSlIdx=i;
-  document.getElementById('swSlTitle').textContent=`#${i+1} дэр засах`;
+  document.getElementById('swSlTitle').textContent=
+    `#${i+1} дэр · ${swLen(SW_HEAD_LEN)} м`;
   document.getElementById('swSlBn').classList.toggle('sel',t.it[i]==='n');
   document.getElementById('swSlBb').classList.toggle('sel',t.it[i]==='b');
   const rp=(t.slRepl||{})[i],b=document.getElementById('swSlReplBtn');
@@ -10542,7 +10557,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.09·124';
+const APP_BUILD='2026.09.09·125';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
