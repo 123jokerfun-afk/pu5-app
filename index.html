@@ -1691,6 +1691,32 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 </div>
 
 <!-- ══════════ СШ ПУ-5 — СУМ ШИЛЖҮҮЛГИЙН ДҮНЗ БҮРТГЭЛ ══════════ -->
+<!-- САЛБАР ЗАМ — хувийн болон бусад байгууллагын зам -->
+<div class="view" id="brHomeView">
+  <div class="pg-hdr">
+    <div class="pg-hdr-row">
+      <div style="flex:1;min-width:0">
+        <div class="pg-title"><svg class="ic" viewBox="0 0 24 24" style="color:var(--purple)"><path d="M3 18h6c5 0 6-12 12-12M17 3l4 3-4 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Салбар зам</div>
+        <div class="pg-sub" id="brSub">—</div>
+      </div>
+      <button class="icon-btn" onclick="goDerHome()" style="flex-shrink:0">Дэр ПУ-5 →</button>
+    </div>
+  </div>
+  <div class="home-body" style="padding:14px 14px 40px">
+    <div class="lp-hint" id="brSwipeHint">← Хажуу тийш шудран Дэр ПУ-5 руу буцна</div>
+    <div class="sec-lbl" style="margin-top:4px">Замын дэр</div>
+    <div id="brDerGrid"></div>
+    <button class="add-track-btn" onclick="openAddFolder(1)" style="margin-top:8px">
+      <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--purple)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Дэрийн паспорт нэмэх
+    </button>
+    <div class="sec-lbl" style="margin-top:18px">Сумын дүнз</div>
+    <div id="brSwGrid"></div>
+    <button class="add-track-btn" onclick="openAddSwFolder(1)" style="margin-top:8px">
+      <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Дүнзний паспорт нэмэх
+    </button>
+  </div>
+</div>
+
 <div class="view" id="swHomeView">
   <div class="hero" id="swHero">
     <div class="hero-top">
@@ -2035,6 +2061,8 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div class="sheet-title">Зам нэмэх</div>
     <div style="font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Шинэ зам нэмэх</div>
+    <div class="ff" id="atNameBox" style="display:none"><label>Замын нэр</label>
+      <div style="position:relative"><div class="wheel" id="atNameWheel"></div><div class="wheel-band"></div></div></div>
     <div class="ff" id="atNumBox"><label>Замын дугаар</label><input type="number" id="atNum" placeholder="2, 3, 4, 5..." min="1"></div>
     <div class="info-pill" style="background:var(--blue-bg);color:#0B6BA8">ℹ Гол зам нь паспортаас тусдаа. Км-ийг нүүр хуудасны "Гол зам" хэсгээс нэмнэ.</div>
     <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="atNote" placeholder="..."></div>
@@ -2648,10 +2676,10 @@ function segFastAt(sec,idx,t){const s=segAt(sec,idx);return (s&&s.f)||(sec&&sec.
 
 function isMainTrack(t){return !!t&&t.kind==='main'}
 // Өртөөний зам "2-р зам", гол зам "681-р км" гэж нэрлэгдэнэ
-function trackLabel(t){return t?(isMainTrack(t)?`${t.num}-р км`:`${t.num}-р зам`):''}
+function trackLabel(t){return t?(t.name?t.name:(isMainTrack(t)?`${t.num}-р км`:`${t.num}-р зам`)):''}
 function trackUnit(t){return isMainTrack(t)?'-р км':'-р зам'}
 // Заахын тийн ялгал: "2-р замыг" / "681-р км-ийг"
-function trackLabelAcc(t){return t?(isMainTrack(t)?`${t.num}-р км-ийг`:`${t.num}-р замыг`):''}
+function trackLabelAcc(t){return t?(t.name?t.name+'-ыг':(isMainTrack(t)?`${t.num}-р км-ийг`:`${t.num}-р замыг`)):''}
 // Гол зам самбарт нэг нэгжээр харагддаг тул тоолохдоо ч нэгээр тооцно
 function trackCounts(tracks){
   const list=tracks||[];
@@ -2707,6 +2735,30 @@ function isTbdType(tp){return tp==='tbd'||tp==='bad_tbd'}
    замынхтай адил бүртгэгдэнэ: материал нь ДЭРИЙН ТӨРЛӨӨС (ТБД /
    тэнцэхгүй ТБД) тодорхойлогдоно, замын `mat` талбараас биш. Мөн
    "Нийт дэр оруулах" бөөнөөр бүртгэх боломж энд байхгүй. */
+/* ── САЛБАР ЗАМ ─────────────────────────────────────────────
+   Хувийн болон бусад байгууллагын ашигладаг зам. Зөвхөн доорх
+   хэсгүүдэд байдаг; замын нэрс нь албан маягтад бичигдсэн жагсаалтаас
+   гарна (дугаар биш НЭР тул хүрдээр сонгоно). Дэр нь өртөөний замтай
+   ижилхэн бүртгэгдэнэ. */
+const BRANCH_TR={
+  'ПД-4':['Говь урал','Нефть','Магнай трейд','Батганжир','Аргал ойл','Нэс ойл','Тэс',
+          'Депо-1','Депо-2','Депо-3','Депо-5','Депо-9','123-103 холбох','НГЧ',
+          'Цасны вагон','ПЧ-3 зуух','Эчвод','МЧХ 1-р зам'],
+  'ПД-5':['10-р зам','11-р зам','12-р зам','13-р зам','14-р зам',
+          'сум101-103 хол','сум103-105 хол'],
+  'ПД-7':['1-р зам Мак','2-р зам Мак','7-р зам Мак','11-р зам Пүү','12-р зам Мак',
+          '15-р зам Мак','16-р зам Мак','17-р зам Мак'],
+  'ПД-8':['18-р улсын нөөцийн зам мухар','Мухар зам контлейн'],
+  'ПД-11':['13-р зам Лут чулуу']
+};
+function brNames(code){
+  return BRANCH_TR[String(code===undefined?_sectionCode:code||'').trim().toUpperCase()]||[]
+}
+function hasBranch(code){return brNames(code).length>0}
+/* Салбар замын паспорт нь энгийнхээс `br` тэмдгээр л ялгарна — ингэснээр
+   үүл, шахалт, бүртгэл, маягт бүгд хуучин замаараа ажиллана. */
+function derFolders(){return (DB.folders||[]).filter(f=>!f.br)}
+function brFolders(){return (DB.folders||[]).filter(f=>!!f.br)}
 const BRANCH_MAIN=['ПД-11','ПД-12'];
 function isBranchSection(code){
   const c=String(code===undefined?_sectionCode:code||'').trim().toUpperCase();
@@ -2962,7 +3014,10 @@ function fmtReplDate(s){
 }
 // Паспортуудыг он сар өдрийн дарааллаар (эрт → хожуу)
 function foldersByDate(){
-  return (DB.folders||[]).slice().sort((a,b)=>
+  // Салбар замын паспорт энгийнхтэйгээ холилдвол солигдсон огноо буруу
+  // уламжлагдана — тиймээс ижил төрлийнхийг л харна
+  const _cf=(DB.folders||[]).find(f=>f.id===activeFolderId),_br=!!(_cf&&_cf.br);
+  return (DB.folders||[]).filter(f=>!!f.br===_br).slice().sort((a,b)=>
     String(a.date||a.year||'').localeCompare(String(b.date||b.year||'')))
 }
 // Тухайн үеийн дэр бүрийн ХҮЧИНТЭЙ сольсон тэмдэглэгээг гаргана.
@@ -3126,7 +3181,7 @@ function ring(pct,size,color){
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
 const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
-  swHomeView:1,swRecView:2};
+  swHomeView:1,swRecView:2,brHomeView:1};
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
@@ -4133,11 +4188,29 @@ function saveReportSettings(){
 // ── Зам нэмэх: паспортод зөвхөн ӨРТӨӨНИЙ зам нэмнэ.
 //    Гол замын км-ийг нүүр хуудасны "Гол зам" → "Км нэмэх"-ээс нэмнэ.
 
+let _brPick=0;   // хүрдэнд сонгогдсон замын нэрийн индекс
 function openAddTrack(){
   document.getElementById('atNum').value='';
   document.getElementById('atNote').value='';
+  // Салбар замд дугаар биш НЭР — маягтад бичигдсэн жагсаалтаас хүрдээр
+  const br=isBrFolder(),names=br?brNames():[];
+  const nb=document.getElementById('atNameBox'),qb=document.getElementById('atNumBox');
+  if(nb)nb.style.display=br?'':'none';
+  if(qb)qb.style.display=br?'none':'';
+  if(br&&nb){
+    const el=document.getElementById('atNameWheel');
+    // Аль хэдийн нэмсэн замыг дахин санал болгохгүй
+    const used=(DB.tracks||[]).map(t=>t.name).filter(Boolean);
+    const free=names.filter(n=>used.indexOf(n)<0);
+    _brFree=free.length?free:names;
+    _brPick=0;
+    _wheelFill(el,_brFree,0);
+    el.scrollTop=0;
+    if(!el._bound){el._bound=true;_wheelBind(el,()=>_brFree.length,i=>{_brPick=i})}
+  }
   openModal('addTrackModal')
 }
+let _brFree=[];
 // "12-р үе · нэмэлт" → 12. Дугааргүй бол Infinity (эцэст нь очно)
 function secNum(label){
   const m=String(label||'').match(/^\s*(\d+)\s*-?\s*р\s*үе/i);
@@ -4189,6 +4262,14 @@ function _mkUeSections(n){
 }
 function addTrack(){
   const note=document.getElementById('atNote').value.trim();
+  if(isBrFolder()){
+    const nm=_brFree[_brPick];
+    if(!nm){showToast('Замын нэр сонгоно уу');return}
+    if((DB.tracks||[]).find(t=>t.name===nm)){showToast(nm+' аль хэдийн байна');return}
+    // Дэр нь өртөөний замтай ижилхэн бүртгэгдэнэ
+    DB.tracks.push({id:uid(),num:(DB.tracks||[]).length+1,kind:'station',name:nm,note,sections:[]});
+    saveDB();closeModal('addTrackModal');renderHome();return
+  }
   // Гол зам нь паспортад биш, тусдаа байрладаг тул энд зөвхөн өртөөний зам
   const num=parseInt(document.getElementById('atNum').value);
   if(!num){showToast('Замын дугаар оруулна уу');return}
@@ -6645,7 +6726,9 @@ function pwaHowTo(){
 // ══════════════════════════════════════════════
 // FOLDER SYSTEM
 // ══════════════════════════════════════════════
-function openAddFolder(){
+let _brNew=0;   // шинэ паспорт САЛБАР замынх эсэх
+function openAddFolder(br){
+  _brNew=br?1:0;
   document.getElementById('afSeason').value='хавар';
   document.getElementById('afYear').value=new Date().getFullYear();
   document.getElementById('afDate').value=new Date().toISOString().slice(0,10);
@@ -6677,6 +6760,7 @@ function addFolder(){
   const yr=document.getElementById('afYear').value||new Date().getFullYear()+'';
   const date=document.getElementById('afDate').value||new Date().toISOString().slice(0,10);
   const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[],sc:_sectionCode||''};
+  if(_brNew)folder.br=1;
   DB.folders.push(folder);saveDB();closeModal('addFolderModal');
   openFolder(folder.id)
 }
@@ -6701,14 +6785,17 @@ async function deleteFolder(fid,e){
   if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх замын өгөгдөл устана.`))return;
   DB.folders=DB.folders.filter(x=>x.id!==fid);
   if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
-  saveDB();renderHome()
+  saveDB();
+  if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
+  else renderHome()
 }
 function renderFolders(){
   const grid=document.getElementById('foldersGrid');if(!grid)return;
-  if(!DB.folders.length){
+  const _fl=derFolders();
+  if(!_fl.length){
     grid.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return
   }
-  grid.innerHTML=DB.folders.map(f=>{
+  grid.innerHTML=_fl.map(f=>{
     const isActive=f.id===activeFolderId;
     const tCount=`${trackCounts(f.tracks).st} зам`;
     const totalSecs=(f.tracks||[]).reduce((s,t)=>
@@ -6733,7 +6820,7 @@ function renderFolders(){
     </button>`
   }).join('');
   const lp=document.getElementById('folderLp');
-  if(lp)lp.style.display=DB.folders.length?'block':'none'
+  if(lp)lp.style.display=_fl.length?'block':'none'
 }
 
 // ══════════════════════════════════════════════
@@ -8330,22 +8417,74 @@ function swTally(to){
 // Пог/м-ийг цэвэрхэн бичих: 6 → "6", 6.25 → "6,25"
 function swM(v){return (Math.round(v*100)/100).toString().replace('.',',')}
 function swPlanned(to){const sp=swSpec(to.mak,to.mark);return(to.head||0)+swSchTotal(sp)}
-function swFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw}
+function swFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw.filter(f=>!f.br)}
+function brSwFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw.filter(f=>!!f.br)}
 let swFolderId=null,swTurnoutId=null;
-function swFolder(){return swFolders().find(f=>f.id===swFolderId)||null}
+// Идэвхтэй паспортыг горимоос үл хамааран олно
+function swFolder(){return (DB.sw||[]).find(f=>f.id===swFolderId)||null}
 function swTurnout(){const f=swFolder();return f?(f.turnouts||[]).find(t=>t.id===swTurnoutId)||null:null}
 
 // ── Шилжилт ──
+/* ══════════════════════════════════════════════
+   САЛБАР ЗАМ — хувийн, бусад байгууллагын зам
+   Паспорт нь энгийнхээс `br` тэмдгээр л ялгарна тул нээсний дараа
+   бүртгэл, тайлан бүгд ердийн замаараа ажиллана.
+   ══════════════════════════════════════════════ */
+function goBrHome(){
+  if(!hasBranch()){showToast('Энэ хэсэгт салбар зам байхгүй',2600);return}
+  hap(6);showView('brHomeView');renderBrHome()
+}
+function _brCard(f,onOpen,onDel,col){
+  const act=f.id===activeFolderId||f.id===swFolderId;
+  return `<div class="track-card lp-del${act?' sel':''}" data-del="${f.id}"
+      style="border-color:${act?col:'var(--border)'}" onclick="hap();${onOpen}">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="min-width:0">
+        <div style="font-size:15px;font-weight:900;color:${col}">${esc(f.name||'')}</div>
+        <div style="font-size:11px;color:var(--ink3);font-weight:700;margin-top:2px">${esc(String(f.year||''))} · ${esc(String(f.season||''))}</div>
+      </div>
+      <button class="rb-btn" style="flex-shrink:0;color:var(--red);border-color:rgba(220,60,60,.35)" onclick="event.stopPropagation();${onDel}">Устгах</button>
+    </div></div>`
+}
+function renderBrHome(){
+  const sub=document.getElementById('brSub');
+  if(sub)sub.textContent=(DB.location||'')+' · '+brNames().length+' зам';
+  const dg=document.getElementById('brDerGrid');
+  if(dg){
+    const fl=brFolders();
+    dg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openBrFolder('${f.id}')`,
+      `deleteFolder('${f.id}',event)`,'var(--purple)')).join('')
+      :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>'
+  }
+  const sg=document.getElementById('brSwGrid');
+  if(sg){
+    const fl=brSwFolders();
+    sg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openSwFolderView('${f.id}')`,
+      `delSwFolderById('${f.id}',event)`,'var(--gold-deep)')).join('')
+      :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>'
+  }
+}
+/* Салбар замын паспортыг нээхэд ердийн нүүр рүү орно — тэндээс замууд нь
+   ердийн журмаар бүртгэгдэнэ. Зөвхөн зам НЭМЭХ нь нэрийн хүрдтэй. */
+function openBrFolder(fid){showView('homeView');openFolder(fid)}
+function isBrFolder(){
+  const f=(DB.folders||[]).find(x=>x.id===activeFolderId);return !!(f&&f.br)
+}
 function goSwHome(){hap(6);showView('swHomeView');renderSwHome();
   loadSwSpecs().then(chg=>{if(chg)renderSwHome()})}
 function goDerHome(){showView('homeView',true);renderHome()}
 // Нүүр ↔ СШ ПУ-5: зүүн шудрахад СШ рүү, баруун шудрахад Дэр рүү буцна.
 // Дэлгэц босоо гүйдэг тул зөвхөн тодорхой ХӨНДЛӨН шудралтад ажиллана.
 function initSwSwipe(){
-  const bind=(id,dir,go,lbl)=>{
+  /* Нэг дэлгэц ХОЁР чиглэлд шудрагдаж болно (нүүр → зүүн тийш СШ,
+     баруун тийш Салбар зам). Чиглэл тус бүрд тусдаа сонсогч тавивал
+     нэг нь заалт асаахад нөгөө нь унтрааж, заалт анивчина — тиймээс
+     элемент бүрд ГАНЦ сонсогч, чиглэлээ дотроо шийднэ. */
+  const bind=(id,dirs)=>{
     const v=document.getElementById(id);if(!v)return;
     let st=null;
     const ready=()=>!document.querySelector('.overlay.open');
+    const pick=dx=>dirs[String(Math.sign(dx))]||null;
     v.addEventListener('touchstart',e=>{
       if(!ready()){st=null;return}
       const t=e.touches[0];st={x:t.clientX,y:t.clientY,time:Date.now()}
@@ -8353,8 +8492,8 @@ function initSwSwipe(){
     v.addEventListener('touchmove',e=>{
       if(!st)return;
       const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
-      if(_swipeOn(dx,dy,34,1.6)&&Math.sign(dx)===dir)
-        showSwipeFlash(dir>0?'right':'left',null,lbl);
+      const d=pick(dx);
+      if(d&&_swipeOn(dx,dy,34,1.6))showSwipeFlash(dx>0?'right':'left',null,d.lbl);
       else hideSwipeFlash()
     },{passive:true});
     v.addEventListener('touchend',e=>{
@@ -8362,11 +8501,16 @@ function initSwSwipe(){
       const t=e.changedTouches[0];
       const dx=t.clientX-st.x,dy=t.clientY-st.y,dt=Date.now()-st.time;
       st=null;hideSwipeFlash();
-      if(Math.sign(dx)===dir&&Math.abs(dx)>62&&Math.abs(dx)>Math.abs(dy)*1.6&&dt<600)go()
+      const d=pick(dx);
+      if(d&&Math.abs(dx)>62&&Math.abs(dx)>Math.abs(dy)*1.6&&dt<600)d.go()
     },{passive:true})
   };
-  bind('homeView',-1,()=>goSwHome(),'← СШ ПУ-5');   // зүүн тийш → СШ ПУ-5
-  bind('swHomeView',1,()=>goDerHome(),'Дэр ПУ-5 →')  // баруун тийш → Дэр ПУ-5
+  bind('homeView',{
+    '-1':{go:()=>goSwHome(),lbl:'← СШ ПУ-5'},
+    // Салбар зам нь зөвхөн тэр замтай хэсэгт нээгдэнэ
+    '1':{go:()=>{if(hasBranch())goBrHome()},lbl:'Салбар зам →'}});
+  bind('swHomeView',{'1':{go:()=>goDerHome(),lbl:'Дэр ПУ-5 →'}});
+  bind('brHomeView',{'-1':{go:()=>goDerHome(),lbl:'← Дэр ПУ-5'}})
 }
 
 // ── Нүүр: паспортын жагсаалт ──
@@ -8438,11 +8582,15 @@ function updateSwFolderName(){
   document.getElementById('swfName').value=`${s.charAt(0).toUpperCase()+s.slice(1)} ${y} сумын паспорт`
 }
 function openSwFolder(){
+  // Шууд дуудвал ЭНГИЙН паспорт (салбарынхыг openAddSwFolder(1) үүсгэнэ)
+  if(!_brPend)_brNew=0;_brPend=0;
   document.getElementById('swfSeason').value='хавар';
   document.getElementById('swfYear').value=new Date().getFullYear();
   document.getElementById('swfDate').value=new Date().toISOString().slice(0,10);
   updateSwFolderName();openModal('swFolderModal')
 }
+let _brPend=0;
+function openAddSwFolder(br){_brNew=br?1:0;_brPend=1;openSwFolder()}
 function addSwFolder(){
   if(!_modalOpen('swFolderModal'))return;
   const name=(document.getElementById('swfName').value||'').trim();
@@ -8452,15 +8600,20 @@ function addSwFolder(){
     year:document.getElementById('swfYear').value||new Date().getFullYear()+'',
     date:document.getElementById('swfDate').value||new Date().toISOString().slice(0,10),
     sc:_sectionCode||'',turnouts:[]};
-  swFolders().push(f);saveDB();closeModal('swFolderModal');openSwFolderView(f.id)
+  if(_brNew)f.br=1;
+  // ЗААВАЛ DB.sw дээр — swFolders() нь шүүсэн хуулбар
+  if(!Array.isArray(DB.sw))DB.sw=[];
+  DB.sw.push(f);saveDB();closeModal('swFolderModal');openSwFolderView(f.id)
 }
 async function delSwFolderById(id,e){
   if(e)e.stopPropagation();
-  const f=swFolders().find(x=>x.id===id);if(!f)return;
+  const f=(DB.sw||[]).find(x=>x.id===id);if(!f)return;
   if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх сумын бүртгэл устана.`,'Устгах'))return;
-  DB.sw=swFolders().filter(x=>x.id!==id);
+  DB.sw=(DB.sw||[]).filter(x=>x.id!==id);
   if(swFolderId===id)swFolderId=null;
-  saveDB();renderSwHome()
+  saveDB();
+  if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
+  else renderSwHome()
 }
 // ── Паспорт доторх сумын жагсаалт ──
 // Дэрийн паспорт шиг — дэлгэц солихгүй, нүүрэн дээрээ доор нь задарна
@@ -10016,7 +10169,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.09·121';
+const APP_BUILD='2026.09.09·122';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
