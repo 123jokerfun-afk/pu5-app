@@ -491,6 +491,112 @@ ok('"Sheets нээх" тэр шийт рүү шууд ордог',
 ok('Холбоос солиход хуучин шийтийн хаяг хаягдана',
    !gid.afterSwap,String(gid.afterSwap));
 
+/* ══ АВТОМАТ ШИНЭЧЛЭЛТ ═══════════════════════════════════════
+   "5 сек тутам" боломжгүй (Apps Script өдөрт 90 мин) тул 60 сек
+   тутам шалгаад ӨӨРЧЛӨГДСӨН үед л илгээдэг. Энэ тест нь эрх дэмий
+   зарцуулагдахгүйг, мөн эвдэрсэн үед өөрөө унтрахыг батална. */
+const auto=await page.evaluate(async()=>{
+  const out={};
+  localStorage.removeItem(SH_AUTO_KEY);
+  shAutoStop();
+  out.defOff=!shAutoOn();
+  shAutoStart();out.noTimer=(_shTimer===null);
+
+  // Товч — цонх нээхэд одоогийн төлөвөө харуулах ёстой
+  openSheetCfg();closeModal('sheetCfgModal');
+  out.lblOff=document.getElementById('shAutoBtn').textContent;
+  shAutoToggle();
+  out.on=shAutoOn();out.lblOn=document.getElementById('shAutoBtn').textContent;
+  out.hasTimer=(_shTimer!==null);
+  out.ms=SH_AUTO_MS;
+  shAutoSet(false);out.offAgain=!shAutoOn()&&_shTimer===null;
+  return out});
+ok('Автомат анхнаасаа унтраалттай',auto.defOff&&auto.noTimer);
+ok('Унтраалттай үед товч тэрийг харуулна',/унтраалттай/.test(auto.lblOff),auto.lblOff);
+ok('Асаахад цаг эхэлж, товч өөрчлөгдөнө',
+   auto.on&&auto.hasTimer&&/АСААЛТТАЙ/.test(auto.lblOn),auto.lblOn);
+ok('Давтамж 5 сек биш — Apps Script-ийн эрх хүрэхгүй',auto.ms>=60000,auto.ms+' мс');
+ok('Унтраахад цаг зогсоно',auto.offAgain);
+
+/* Хамгийн чухал нь: өгөгдөл өөрчлөгдөөгүй бол сүлжээ рүү ОГТ хандахгүй */
+const tick=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/GGG/exec');
+  localStorage.setItem(SH_AUTO_KEY,'1');
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  _shHash='';_shFail=0;_shBusy=false;
+  // shAutoTick нь _adminLoadAll-ыг дахин дууддаг — үүлгүйгээр хуурна
+  const oL=window._adminLoadAll;window._adminLoadAll=async()=>_adminData;
+  // Өөр дэлгэц идэвхтэй бол querySelector түүнийг олно — тиймээс бүгдийг
+  // түр унтрааж, зөвхөн админыг идэвхжүүлнэ
+  const av=document.getElementById('adminView');
+  const prev=[...document.querySelectorAll('.view.active')];
+  prev.forEach(v=>v.classList.remove('active'));av.classList.add('active');
+  let n=0;const of=window.fetch;
+  window.fetch=()=>{n++;return Promise.resolve({text:()=>Promise.resolve('{"ok":true}')})};
+  const ot=window.showToast;window.showToast=()=>{};
+
+  await shAutoTick();const first=n;          // өөрчлөлт БАЙГАА (анхны илгээлт)
+  await shAutoTick();const second=n-first;   // өөрчлөлт АЛГА
+  // Нэг дэрийг тэнцэхгүй болгоод дахин — одоо илгээх ёстой
+  DB.folders[0].tracks[0].sections[0].sleepers[30].type='bad';
+  await shAutoTick();const third=n-first;
+
+  // Админ дэлгэц хаагдсан үед ажиллах нь Firestore-ын уншилтыг дэмий үрнэ
+  av.classList.remove('active');
+  DB.folders[0].tracks[0].sections[0].sleepers[31].type='bad';
+  await shAutoTick();const offView=n-first-third;
+  prev.forEach(v=>v.classList.add('active'));
+
+  window.fetch=of;window.showToast=ot;window._adminLoadAll=oL;
+  localStorage.removeItem(SH_KEY);localStorage.removeItem(SH_AUTO_KEY);
+  shAutoStop();
+  return {first,second,third,offView,nForms:SH_FORMS.length}});
+ok('Эхний удаад бүх маягтыг илгээнэ',tick.first===tick.nForms,tick.first+'/'+tick.nForms);
+ok('Өгөгдөл өөрчлөгдөөгүй бол сүлжээ рүү хандахгүй',tick.second===0,tick.second+' хүсэлт');
+ok('Өөрчлөгдвөл дахин илгээнэ',tick.third===tick.nForms,tick.third+' хүсэлт');
+ok('Админ дэлгэц хаалттай бол илгээхгүй',tick.offView===0,tick.offView+' хүсэлт');
+
+/* CLAUDE.md 6-р дүрэм — 3 удаа алдвал өөрөө унтарна */
+const die=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/HHH/exec');
+  localStorage.setItem(SH_AUTO_KEY,'1');
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  _shHash='';_shFail=0;_shBusy=false;
+  const oL=window._adminLoadAll;window._adminLoadAll=async()=>_adminData;
+  const av=document.getElementById('adminView');
+  const prev=[...document.querySelectorAll('.view.active')];
+  prev.forEach(v=>v.classList.remove('active'));av.classList.add('active');
+  const of=window.fetch;window.fetch=()=>Promise.reject(new TypeError('Failed to fetch'));
+  const oe=console.error,ow=console.warn;console.error=()=>{};console.warn=()=>{};
+  const ot=window.showToast;window.showToast=()=>{};
+  const st=[];
+  for(let i=0;i<3;i++){await shAutoTick();st.push(shAutoOn())}
+  window.fetch=of;console.error=oe;console.warn=ow;window.showToast=ot;
+  window._adminLoadAll=oL;
+  av.classList.remove('active');prev.forEach(v=>v.classList.add('active'));
+  localStorage.removeItem(SH_KEY);localStorage.removeItem(SH_AUTO_KEY);
+  shAutoStop();
+  return {st,timer:_shTimer===null}});
+ok('1-2 дахь алдаанд үргэлжилнэ',die.st[0]&&die.st[1],JSON.stringify(die.st));
+ok('3 удаа алдвал өөрөө унтарна',die.st[2]===false&&die.timer,JSON.stringify(die.st));
+
+/* Он/улирал сонгоход шууд илгээнэ — админ юу харж байна, Sheet дээр тэр */
+const sel=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/III/exec');
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  _shHash='';_shBusy=false;
+  let n=0;const of=window.fetch;
+  window.fetch=()=>{n++;return Promise.resolve({text:()=>Promise.resolve('{"ok":true}')})};
+  const ot=window.showToast;window.showToast=()=>{};
+  await shPushForSelection();const sent=n;
+  // Холбоосгүй бол чимээгүй өнгөрнө (алдаа биш)
+  localStorage.removeItem(SH_KEY);_shHash='';
+  await shPushForSelection();const noUrl=n-sent;
+  window.fetch=of;window.showToast=ot;
+  return {sent,noUrl,nForms:SH_FORMS.length}});
+ok('Он/улирал сонгоход бүх маягт илгээгдэнэ',sel.sent===sel.nForms,sel.sent+'/'+sel.nForms);
+ok('Холбоосгүй бол чимээгүй өнгөрнө',sel.noUrl===0,sel.noUrl+' хүсэлт');
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);

@@ -2202,14 +2202,18 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <div class="overlay" id="sheetCfgModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div class="sheet-title">Google Sheets</div>
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:500">Сонгосон он/улирлын паспортоор хэсэг бүрд нэг шийт үүсч, дотор нь 7 маягт 4 хоосон мөрөөр тусгаарлагдан бичигдэнэ</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:500">Сонгосон он/улирлын паспортууд маягт тус бүрийн шийтэд, хэсгийн тоон дарааллаар доош цувран бичигдэнэ</div>
     <button class="btn-ok" id="shPushBtn" onclick="pushToSheets()" style="width:100%;margin-bottom:8px;background:linear-gradient(135deg,#0F8A4C,#12A46A)">Маягт илгээх</button>
     <!-- Хүснэгт нээх нь өдөр тутмын үйлдэл, холбоос солих нь нэг удаагийнх —
          тиймээс өргөнийг 2:1-ээр хуваасан -->
-    <div style="display:flex;gap:8px;margin-bottom:14px">
+    <div style="display:flex;gap:8px;margin-bottom:8px">
       <button class="btn-cancel" onclick="closeModal('sheetCfgModal');openSheets()" style="flex:2;min-width:0">Sheets нээх →</button>
       <button class="btn-cancel" id="shLinkBtn" onclick="toggleSheetUrl()" aria-label="Холбоос солих" title="Холбоос солих" style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center"><svg class="ic" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button>
     </div>
+    <!-- Автомат нь эрсдэлтэй (Apps Script-ийн өдрийн эрх) тул анхнаасаа
+         унтраалттай — CLAUDE.md 6-р дүрэм -->
+    <button class="btn-cancel" id="shAutoBtn" onclick="shAutoToggle()" style="width:100%;margin-bottom:8px;font-size:13px">Автомат шинэчлэлт: унтраалттай</button>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:14px;line-height:1.45">Асаалттай үед админ дэлгэц нээлттэй байхад 60 секунд тутам шалгаж, өгөгдөл ӨӨРЧЛӨГДСӨН үед л илгээнэ</div>
     <div id="shUrlBox" hidden>
       <div class="ff"><label>Apps Script вэб аппын холбоос</label><input type="url" id="shUrl" placeholder="https://script.google.com/macros/s/…/exec"></div>
       <button class="btn-ok" onclick="saveSheetCfg()" style="width:100%;margin-bottom:14px">Холбоос хадгалах</button>
@@ -7316,6 +7320,7 @@ function _renderCurrentView(){
 // ADMIN VIEW
 // ══════════════════════════════════════════════
 async function loadAdminView(){
+  shAutoStart();
   const body=document.getElementById('adminBody');
   if(!body)return;
   body.innerHTML='<div class="skel" style="height:92px;margin-bottom:10px"></div><div class="skel" style="height:120px;margin-bottom:8px"></div><div class="skel" style="height:120px"></div>';
@@ -7451,7 +7456,8 @@ function admSetSeason(sn){
     if(b)b.classList.toggle('on',
       (id==='admSpring'?'хавар':'намар')===_admSeason)
   });
-  renderAdminSections(_adminData)
+  renderAdminSections(_adminData);
+  shPushForSelection()
 }
 /* Өгөгдөлд байгаа бүх он + энэ он */
 function _admYears(sections){
@@ -7474,7 +7480,7 @@ function _admBuildYearWheel(sections){
     _wheelBind(el,()=>_admYears(_adminData).length,j=>{
       const ys=_admYears(_adminData);
       if(ys[j]===undefined||ys[j]===_admYear)return;
-      _admYear=ys[j];_admOpen={};renderAdminSections(_adminData)
+      _admYear=ys[j];_admOpen={};renderAdminSections(_adminData);shPushForSelection()
     })
   }
 }
@@ -8180,6 +8186,118 @@ async function _sheetPost(url,body){
 }
 /* Админ дэлгэц дээр СОНГОГДСОН он/улирлын паспортуудыг л илгээнэ —
    хэрэглэгчийн харж байгаа зүйл, Sheet дээр очих зүйл хоёр ижил байна. */
+/* ── АВТОМАТ ШИНЭЧЛЭЛТ ──────────────────────────────────────
+   Хүсэлт нь "шийт нээлттэй үед 5 секунд тутам" байсан ч тэр нь
+   БОЛОМЖГҮЙ: Apps Script өдөрт 90 минут (Workspace 6 цаг) л ажиллах
+   эрхтэй бөгөөд 5 секундын давтамж 10-40 минутын дотор түүнийг дуусгана.
+   Мөн шинэчлэл бүрд 13 хэсгийн өгөгдлийг Firestore-оос дахин уншина.
+
+   Тиймээс: 60 секунд тутам шалгаад ӨӨРЧЛӨГДСӨН үед л илгээнэ. Хэрэглэгчийн
+   хувьд ижилхэн — хэсэг бүртгэл хийхэд Sheet минутын дотор шинэчлэгдэнэ —
+   харин эрх дуусахгүй.
+
+   CLAUDE.md-ийн 6-р дүрмээр: анхнаасаа УНТРААЛТТАЙ, хэрэглэгч өөрөө
+   асаана, 3 удаа дараалан алдвал өөрөө унтарна. */
+const SH_AUTO_MS=60000, SH_AUTO_KEY='sg_sheet_auto';
+let _shTimer=null,_shHash='',_shFail=0,_shBusy=false;
+
+function shAutoOn(){try{return localStorage.getItem(SH_AUTO_KEY)==='1'}catch(e){return false}}
+/* Товчны бичиглэл — цонх нээхэд бас дуудагдана, тиймээс мэдэгдэл гаргахгүй */
+function _shAutoLbl(){
+  const el=document.getElementById('shAutoBtn');
+  if(!el)return;
+  const on=shAutoOn();
+  el.textContent=on?'Автомат шинэчлэлт: АСААЛТТАЙ':'Автомат шинэчлэлт: унтраалттай';
+  el.style.color=on?'var(--g600)':'';
+  el.style.fontWeight=on?'800':''
+}
+function shAutoSet(on){
+  try{on?localStorage.setItem(SH_AUTO_KEY,'1'):localStorage.removeItem(SH_AUTO_KEY)}catch(e){}
+  _shFail=0;
+  _shAutoLbl();
+  if(on)shAutoStart();else shAutoStop();
+  showToast(on?'Автомат асав — 60 сек тутам шалгана':'Автомат унтарлаа',2600)
+}
+function shAutoToggle(){shAutoSet(!shAutoOn())}
+function shAutoStart(){
+  shAutoStop();
+  if(!shAutoOn())return;
+  _shTimer=setInterval(shAutoTick,SH_AUTO_MS)
+}
+function shAutoStop(){if(_shTimer){clearInterval(_shTimer);_shTimer=null}}
+
+/* Илгээх өгөгдлийн хураангуй — өөрчлөгдсөн эсэхийг мэдэхэд хангалттай */
+function _shFingerprint(secs){
+  try{
+    return _hash(SH_FORMS.map((F,fi)=>JSON.stringify(_formSheet(fi,secs).rows)).join('|'))
+  }catch(e){return ''}
+}
+async function shAutoTick(){
+  if(_shBusy)return;
+  // Зөвхөн админ дэлгэц нээлттэй үед — өөр дэлгэц дээр байхад ажиллуулах
+  // нь Firestore-ын уншилтыг дэмий үрнэ
+  if((document.querySelector('.view.active')||{}).id!=='adminView')return;
+  const url=(localStorage.getItem(SH_KEY)||'').trim();
+  if(!url)return;
+  _shBusy=true;
+  try{
+    _adminData=await _adminLoadAll();
+    const hit=_shHit();
+    if(!hit.length){_shBusy=false;return}
+    const secs=hit.map(({code,db,folder})=>_sectionBlocks(code,db,folder,_shSwFolder(db,folder)));
+    const fp=_shFingerprint(secs);
+    if(fp&&fp===_shHash){_shBusy=false;return}    // өөрчлөлт алга — илгээхгүй
+    await _shSend(url,secs,hit.length,true);
+    _shHash=fp;_shFail=0
+  }catch(e){
+    if(++_shFail>=3){shAutoSet(false);showToast('Автомат 3 удаа алдсан тул унтарлаа',5200)}
+    console.warn('auto push:',e)
+  }
+  _shBusy=false
+}
+
+/* Сонгосон он/улирлын паспортууд — хэсгийн ТООН дарааллаар */
+function _shHit(){
+  const hit=[];
+  (_adminData||[]).forEach(({code,db})=>{
+    (db.folders||[]).forEach(f=>{
+      if(String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
+        hit.push({code,db,folder:f})
+    })
+  });
+  hit.sort((a,b)=>(parseInt(String(a.code).replace(/\D+/g,''),10)||0)
+                 -(parseInt(String(b.code).replace(/\D+/g,''),10)||0));
+  return hit
+}
+
+/* Бүх маягтыг илгээнэ. quiet=true бол зөвхөн алдааг мэдэгдэнэ. */
+async function _shSend(url,secs,nSec,quiet){
+  let ok=0,blind=0;const fail=[];
+  for(let fi=0;fi<SH_FORMS.length;fi++){
+    const F=SH_FORMS[fi];
+    if(!quiet)showToast(`${F.tab} · ${fi+1}/${SH_FORMS.length}`,4000);
+    try{
+      const out=_formSheet(fi,secs);
+      const _r=await _sheetPost(url,{schema:3,tab:F.tab,
+        year:String(_admYear),season:String(_admSeason),
+        rows:out.rows,fmt:out.fmt,
+        widths:F.w.map(_shPx),heights:F.h.map(_shPt),
+        purge:fi===0,pos:fi+1});
+      ok++;if(_r&&_r.blind)blind++;
+      if(_r&&_r.url&&ok===1){try{localStorage.setItem(SH_OPEN,_r.url)}catch(_e){}}
+    }catch(e){fail.push(F.tab+' — '+((e&&e.message)||e));console.error(F.tab,e)}
+  }
+  if(fail.length){
+    if(quiet)showToast(`Автомат шинэчлэлт унав: ${fail[0]}`,5200);
+    else showToast(`${ok} илгээгдэж, ${fail.length} унав: ${fail[0]}`,6000);
+    throw new Error(fail[0])
+  }
+  if(!quiet)showToast(blind
+    ? `${ok} маягт илгээв — хариу уншигдсангүй, хүснэгтээ шалгана уу`
+    : `✓ ${ok} маягт · ${nSec} хэсэг Sheets руу орлоо`,blind?5600:3600);
+  return ok
+}
+
 async function pushToSheets(){
   // Холбоосоо бичээд "Хадгалах" дарахаа мартвал бичсэн нь чимээгүй хаягдаж,
   // "холбоос алга" гээд цонх дахин нээгддэг байв — хэрэглэгчийн хувьд
@@ -8189,48 +8307,39 @@ async function pushToSheets(){
   const url=(localStorage.getItem(SH_KEY)||'').trim();
   if(!url){showToast('Эхлээд Apps Script вэб аппын холбоосыг оруулна уу',3600);openSheetCfg();return}
   closeModal('sheetCfgModal');
-  const hit=[];
-  (_adminData||[]).forEach(({code,db})=>{
-    (db.folders||[]).forEach(f=>{
-      if(String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
-        hit.push({code,db,folder:f})
-    })
-  });
+  const hit=_shHit();
   if(!hit.length){showToast(`${_admYear} оны ${_admSeason}ын паспорт олдсонгүй`,3000);return}
-  // Хэсгүүдийг ТООН дарааллаар — шийт дотор ПД-1, ПД-2 … гэж цувна
-  hit.sort((a,b)=>(parseInt(String(a.code).replace(/\D+/g,''),10)||0)
-                 -(parseInt(String(b.code).replace(/\D+/g,''),10)||0));
   if(!await appConfirm(
-    `${hit.length} хэсгийн өгөгдлөөр 7 маягтын шийт үүсгэх үү?\n${_admYear} оны ${_admSeason}`,
+    `${hit.length} хэсгийн өгөгдлөөр ${SH_FORMS.length} маягтын шийт үүсгэх үү?\n${_admYear} оны ${_admSeason}`,
     'Илгээх'))return;
-  // Бүх хэсгийн блокийг НЭГ удаа бодоод, маягт тус бүрээр нь угсарна
   let secs;
   try{
     secs=hit.map(({code,db,folder})=>_sectionBlocks(code,db,folder,_shSwFolder(db,folder)))
   }catch(e){showToast('Тооцоолол унав: '+((e&&e.message)||e),5200);console.error(e);return}
-  let ok=0,blind=0;const fail=[];
-  for(let fi=0;fi<SH_FORMS.length;fi++){
-    const F=SH_FORMS[fi];
-    showToast(`${F.tab} · ${fi+1}/${SH_FORMS.length}`,4000);
-    try{
-      const out=_formSheet(fi,secs);
-      const _r=await _sheetPost(url,{schema:3,tab:F.tab,
-        year:String(_admYear),season:String(_admSeason),
-        rows:out.rows,fmt:out.fmt,
-        widths:F.w.map(_shPx),heights:F.h.map(_shPt),
-        // Хэсэг бүрээр үүсгэсэн хуучин "… маягт" шийтүүдийг эхний
-        // хүсэлтээр цэвэрлэнэ — эс тэгвэл хоёр бүтэц зэрэгцэн үлдэнэ
-        purge:fi===0,
-        // Табын байрлал: маягтууд хүснэгтийн ЭХЭНД энэ дарааллаар зэрэгцэнэ
-        pos:fi+1});
-      ok++;if(_r&&_r.blind)blind++;
-      if(_r&&_r.url&&ok===1){try{localStorage.setItem(SH_OPEN,_r.url)}catch(_e){}}
-    }catch(e){fail.push(F.tab+' — '+((e&&e.message)||e));console.error(F.tab,e)}
-  }
-  if(!fail.length)showToast(blind
-    ? `${ok} маягт илгээв — хариу уншигдсангүй, хүснэгтээ шалгана уу`
-    : `✓ ${ok} маягт · ${hit.length} хэсэг Sheets руу орлоо`,blind?5600:3600);
-  else showToast(`${ok} илгээгдэж, ${fail.length} унав: ${fail[0]}`,6000)
+  try{
+    await _shSend(url,secs,hit.length,false);
+    _shHash=_shFingerprint(secs)      // автомат дахин илгээхээс сэргийлнэ
+  }catch(e){}
+}
+
+/* Он/улирал сонгоход шууд илгээнэ — админ юу харж байна, Sheet дээр тэр л
+   байх ёстой. Холбоос тавиагүй бол чимээгүй өнгөрнө. */
+async function shPushForSelection(){
+  const url=(localStorage.getItem(SH_KEY)||'').trim();
+  if(!url||_shBusy)return;
+  const hit=_shHit();
+  if(!hit.length)return;
+  _shBusy=true;
+  try{
+    const secs=hit.map(({code,db,folder})=>_sectionBlocks(code,db,folder,_shSwFolder(db,folder)));
+    const fp=_shFingerprint(secs);
+    if(fp&&fp===_shHash){_shBusy=false;return}
+    showToast('Sheets руу илгээж байна…',2600);
+    await _shSend(url,secs,hit.length,true);
+    _shHash=fp;_shFail=0;
+    showToast(`✓ ${_admYear} · ${_admSeason} Sheets-д орлоо`,3000)
+  }catch(e){console.warn('selection push:',e)}
+  _shBusy=false
 }
 /* ── Вэб аппын холбоос ── */
 function openSheetCfg(){
@@ -8240,6 +8349,7 @@ function openSheetCfg(){
   // хоёр үйлдэл (илгээх, нээх) л харагдана
   const box=document.getElementById('shUrlBox');
   if(box)box.hidden=!!(localStorage.getItem(SH_KEY)||'').trim();
+  _shAutoLbl();
   openModal('sheetCfgModal')
 }
 /* Холбоосны дүрст товч — талбарыг нээж/хаана */
@@ -10169,7 +10279,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.09·122';
+const APP_BUILD='2026.09.09·123';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
