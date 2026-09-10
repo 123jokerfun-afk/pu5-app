@@ -7269,6 +7269,7 @@ async function doLogout(){
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
   if(fbAuth)fbAuth.signOut().catch(()=>{});
   if(_dirtyAt())flushSave(true);          // гарахын өмнө амжиж илгээнэ
+  shAutoStop();                           // гарсны дараа цаг үлдэж болохгүй
   _currentUser=null;_sectionCode=null;_isAdmin=false;
   activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
   showView('loginView')
@@ -8505,6 +8506,10 @@ async function shAutoTick(){
     const secs=hit.map(({code,db,folder})=>_sectionBlocks(code,db,folder,_shSwFolder(db,folder)));
     const fp=_shFingerprint(secs);
     if(fp&&fp===_shHash){_shBusy=false;return}    // өөрчлөлт алга — илгээхгүй
+    // Sheet шинэчлэгдэж байхад админы дэлгэц хуучин тоо харуулж болохгүй —
+    // "админ юу харж байна, Sheet дээр тэр" зарчим. Нээлттэй хавтаснууд
+    // (_admOpen) хэвээр үлдэнэ.
+    renderAdminSections(_adminData);
     await _shSend(url,secs,hit.length,true);
     _shHash=fp;_shFail=0
   }catch(e){
@@ -10557,7 +10562,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.09·125';
+const APP_BUILD='2026.09.10·126';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
