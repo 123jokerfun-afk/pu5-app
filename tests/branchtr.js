@@ -76,11 +76,13 @@ const br=await B.launch();
     addTrack();                         // хүрдний эхний нэр
     const t=(DB.tracks||[])[0]||{};
     return{name:nb?getComputedStyle(nb).display:'?',num:qb?getComputedStyle(qb).display:'?',
-      items:items.slice(0,3),n:items.length,
+      items:items.slice(0,3),n:items.length,last:items[items.length-1]||'',
       track:t.name||'',kind:t.kind||'',lbl:trackLabel(t),isBr:isBrFolder()}});
   ok('Салбар паспортод НЭРийн хүрд гарна, дугаар нуугдана',
      wh.name!=='none'&&wh.num==='none',`нэр ${wh.name} · дугаар ${wh.num}`);
-  ok('Хүрдэнд маягтын 18 нэр',wh.n===18,String(wh.n));
+  // Маягтын 18 нэр + төгсгөлд "Өөр нэр…" (маягтад бичигдээгүй зам бүртгэхэд)
+  ok('Хүрдэнд маягтын 18 нэр ба "Өөр нэр…"',
+     wh.n===19&&/Өөр нэр/.test(wh.last),`${wh.n} · ${wh.last}`);
   ok('Эхний нэрс маягтынхтай тохирно',
      wh.items[0]==='Говь урал'&&wh.items[1]==='Нефть',JSON.stringify(wh.items));
   ok('Зам нэрээрээ нэмэгдэнэ',wh.track==='Говь урал',wh.track);
@@ -93,7 +95,8 @@ const br=await B.launch();
     const items=[...document.querySelectorAll('#atNameWheel .wh-item')].map(e=>e.textContent);
     closeModal('addTrackModal');
     return{n:items.length,has:items.indexOf('Говь урал')>=0}});
-  ok('Нэмсэн замыг дахин санал болгохгүй',again.n===17&&!again.has,
+  // 18 нэрээс нэгийг нь нэмсэн тул 17 үлдэнэ, дээр нь "Өөр нэр…"
+  ok('Нэмсэн замыг дахин санал болгохгүй',again.n===18&&!again.has,
      `${again.n} нэр · давхардал ${again.has}`);
 
   // Энгийн паспортод хуучин зан төлөв хэвээр
@@ -110,6 +113,66 @@ const br=await B.launch();
 
   const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
   ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,2)));
+  await page.close();
+}
+
+/* ── ПД-12: салбар зам бий ч албан маягтад хараахан бичигдээгүй ──
+   Хүрдэнд нэр байхгүй ч дэлгэц нээгдэж, нэрийг нь гараар бичиж
+   болох ёстой. Эс тэгвэл маягт шинэчлэгдэх хүртэл бүртгэл хийж
+   чадахгүй. */
+{
+  const {page,errs}=await B.newPage(br,B.DEVICES[1]);
+  await B.login(page,'ПД-12');
+  const r=await page.evaluate(async()=>{
+    const has=hasBranch(),names=brNames().slice();
+    goBrHome();await new Promise(r=>setTimeout(r,320));
+    const view=(document.querySelector('.view.active')||{}).id;
+    openAddFolder(1);addFolder();await new Promise(r=>setTimeout(r,320));
+    openAddTrack();await new Promise(r=>setTimeout(r,280));
+    const wheel=[...document.querySelectorAll('#atNameWheel .wh-item')].map(e=>e.textContent);
+    const oth=document.getElementById('atNameOther');
+    const shown=getComputedStyle(oth).display;
+    // Хоосон нэрээр нэмэхийг зөвшөөрөхгүй
+    oth.value='  ';addTrack();
+    const after0=(DB.tracks||[]).length;
+    oth.value='Лут чулуу 2-р зам';addTrack();
+    await new Promise(r=>setTimeout(r,300));
+    return{has,names,view,wheel,shown,after0,
+      tracks:(DB.tracks||[]).map(t=>t.name),
+      lbl:DB.tracks[0]?trackLabel(DB.tracks[0]):'',
+      kind:DB.tracks[0]?DB.tracks[0].kind:''}});
+  ok('ПД-12-т салбар замын дэлгэц нээгдэнэ',r.has&&r.view==='brHomeView',
+     `hasBranch=${r.has} · ${r.view}`);
+  ok('ПД-12-ийн маягтын жагсаалт хоосон',r.names.length===0,JSON.stringify(r.names));
+  ok('Хүрдэнд "Өөр нэр…" сонголт гарна',
+     r.wheel.length===1&&/Өөр нэр/.test(r.wheel[0]),JSON.stringify(r.wheel));
+  ok('"Өөр нэр…" сонгосон тул бичих талбар нээлттэй',r.shown!=='none',r.shown);
+  ok('Хоосон нэрээр зам нэмэгдэхгүй',r.after0===0,r.after0+' зам');
+  ok('Гараар бичсэн нэрээр зам нэмэгдэнэ',
+     r.tracks.length===1&&r.tracks[0]==='Лут чулуу 2-р зам',JSON.stringify(r.tracks));
+  ok('Салбар зам нь өртөөний замын журмаар бүртгэгдэнэ',
+     r.kind==='station'&&r.lbl==='Лут чулуу 2-р зам',`${r.kind} · ${r.lbl}`);
+
+  // ПД-4-т маягтын нэрс хэвээр, төгсгөлд нь "Өөр нэр…" нэмэгдсэн
+  const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
+  ok('ПД-12 консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,2)));
+  await page.close();
+}
+{
+  const {page}=await B.newPage(br,B.DEVICES[1]);
+  await B.login(page,'ПД-4');
+  const r=await page.evaluate(async()=>{
+    goBrHome();await new Promise(r=>setTimeout(r,300));
+    openAddFolder(1);addFolder();await new Promise(r=>setTimeout(r,320));
+    openAddTrack();await new Promise(r=>setTimeout(r,280));
+    const wheel=[...document.querySelectorAll('#atNameWheel .wh-item')].map(e=>e.textContent);
+    const shown=getComputedStyle(document.getElementById('atNameOther')).display;
+    closeModal('addTrackModal');
+    return{wheel,shown,n:brNames().length}});
+  ok('ПД-4-т маягтын нэрс хэвээр, эцэст нь "Өөр нэр…"',
+     r.wheel.length===r.n+1&&r.wheel[0]==='Говь урал'&&/Өөр нэр/.test(r.wheel[r.wheel.length-1]),
+     `${r.wheel.length} мөр · ${r.wheel[0]} … ${r.wheel[r.wheel.length-1]}`);
+  ok('Жагсаалтын нэр сонгосон үед бичих талбар нуугдана',r.shown==='none',r.shown);
   await page.close();
 }
 

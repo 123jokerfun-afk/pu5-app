@@ -1651,9 +1651,9 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </div>
     </div>
     <!-- Дэрийн төрөл + бөөнөөр оруулах -->
-    <div style="display:flex;gap:8px;margin-top:8px">
+    <div style="display:flex;gap:8px;margin-top:8px" id="recTypeRow">
       <button class="rb-btn" style="flex:1;justify-content:center;background:var(--card);color:var(--blue);border:1.5px solid var(--blue-mid)" onclick="hap();openSecType()" id="secTypeBtn">Төрөл: —</button>
-      <button class="rb-btn" style="flex:1;justify-content:center" onclick="hap();openBulkModal()">Нийт дэр оруулах</button>
+      <button class="rb-btn" style="flex:1;justify-content:center" onclick="hap();openBulkModal()" id="recBulkBtn">Нийт дэр оруулах</button>
     </div>
   </div>
   <div class="log-wrap" id="rvLog"></div>
@@ -1670,7 +1670,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="joy-hint jh-top">↑ Тэнцэхгүй</div>
       <div class="joy-hint jh-right">ТБД →</div>
       <div class="joy-hint jh-left">← Тэнц. ТБД</div>
-      <div class="joy-hint jh-bot">↓ ТБД APC</div>
+      <div class="joy-hint jh-bot" id="joyHintBot">↓ ТБД APC</div>
       <div class="joy-btn" id="joyBtn">
         <div class="joy-icon" id="joyIcon">●</div>
         <div class="joy-lbl" id="joyLbl">Хэвийн</div>
@@ -2062,7 +2062,8 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="sheet-title">Зам нэмэх</div>
     <div style="font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Шинэ зам нэмэх</div>
     <div class="ff" id="atNameBox" style="display:none"><label>Замын нэр</label>
-      <div style="position:relative"><div class="wheel" id="atNameWheel"></div><div class="wheel-band"></div></div></div>
+      <div style="position:relative"><div class="wheel" id="atNameWheel"></div><div class="wheel-band"></div></div>
+      <input type="text" id="atNameOther" placeholder="Замын нэрийг бичнэ үү" style="display:none;margin-top:8px"></div>
     <div class="ff" id="atNumBox"><label>Замын дугаар</label><input type="number" id="atNum" placeholder="2, 3, 4, 5..." min="1"></div>
     <div class="info-pill" style="background:var(--blue-bg);color:#0B6BA8">ℹ Гол зам нь паспортаас тусдаа. Км-ийг нүүр хуудасны "Гол зам" хэсгээс нэмнэ.</div>
     <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="atNote" placeholder="..."></div>
@@ -2676,7 +2677,12 @@ function segAt(sec,idx){
   return r
 }
 function matAt(sec,idx,t){const s=segAt(sec,idx);return (s&&s.m)||(sec&&sec.mat)||(t&&t.mat)||'tbd'}
-function segFastAt(sec,idx,t){const s=segAt(sec,idx);return (s&&s.f)||(sec&&sec.fast)||(t&&t.fast)||STATION_DEFAULT_FAST}
+function segFastAt(sec,idx,t){
+  // Салаалсан гол замын ТБД нь ҮРГЭЛЖ CZ маягийнх — хуучин паспортад APC
+  // бичигдсэн байсан ч тэндээс уншихгүй
+  if(isBranchMain(t))return BRANCH_FAST;
+  const s=segAt(sec,idx);return (s&&s.f)||(sec&&sec.fast)||(t&&t.fast)||STATION_DEFAULT_FAST
+}
 
 function isMainTrack(t){return !!t&&t.kind==='main'}
 // Өртөөний зам "2-р зам", гол зам "681-р км" гэж нэрлэгдэнэ
@@ -2699,7 +2705,10 @@ function _fmAt(sec,idx){
   return typeof v==='string'?{f:v}:(v||null)
 }
 // Тухайн дэрийн бэхэлгээ / материал: ганцаарчилсан зөрүү давуу, үгүй бол сегментээс
-function fastOf(sec,idx,t){const o=_fmAt(sec,idx);return (o&&o.f)||segFastAt(sec,idx,t)}
+function fastOf(sec,idx,t){
+  if(isBranchMain(t))return BRANCH_FAST;
+  const o=_fmAt(sec,idx);return (o&&o.f)||segFastAt(sec,idx,t)
+}
 function matOf(sec,idx,t){const o=_fmAt(sec,idx);return (o&&o.m)||matAt(sec,idx,t)}
 // Дэрийг бүртгэх үед түүний төрлийг тогтооно (сегментийнхээс зөрвөл л бичнэ)
 function setFastAt(sec,idx,f,m,t){
@@ -2753,12 +2762,20 @@ const BRANCH_TR={
   'ПД-7':['1-р зам Мак','2-р зам Мак','7-р зам Мак','11-р зам Пүү','12-р зам Мак',
           '15-р зам Мак','16-р зам Мак','17-р зам Мак'],
   'ПД-8':['18-р улсын нөөцийн зам мухар','Мухар зам контлейн'],
-  'ПД-11':['13-р зам Лут чулуу']
+  'ПД-11':['13-р зам Лут чулуу'],
+  // ПД-12-т салбар зам бий ч албан маягтад хараахан бичигдээгүй тул
+  // жагсаалт хоосон — хэрэглэгч нэрийг нь өөрөө бичнэ
+  'ПД-12':[]
 };
-function brNames(code){
-  return BRANCH_TR[String(code===undefined?_sectionCode:code||'').trim().toUpperCase()]||[]
+/* Жагсаалтад байхгүй замын нэрийг гараар бичих сонголт. Маягт шинэчлэгдэх
+   хүртэл хүлээхгүйн тулд — бичсэн нэр паспортад хэвээр хадгалагдана. */
+const BR_OTHER='Өөр нэр…';
+function _brKey(code){return String(code===undefined?_sectionCode:code||'').trim().toUpperCase()}
+function brNames(code){return BRANCH_TR[_brKey(code)]||[]}
+// Хоосон жагсаалттай ч (ПД-12) салбар замын дэлгэц нээгдэх ёстой
+function hasBranch(code){
+  return Object.prototype.hasOwnProperty.call(BRANCH_TR,_brKey(code))
 }
-function hasBranch(code){return brNames(code).length>0}
 /* Салбар замын паспорт нь энгийнхээс `br` тэмдгээр л ялгарна — ингэснээр
    үүл, шахалт, бүртгэл, маягт бүгд хуучин замаараа ажиллана. */
 function derFolders(){return (DB.folders||[]).filter(f=>!f.br)}
@@ -2769,9 +2786,16 @@ function isBranchSection(code){
   return BRANCH_MAIN.indexOf(c)>=0
 }
 function mainLabel(code){return isBranchSection(code)?'Салаалсан гол зам':'Гол зам'}
+/* Салаалсан гол замын ТБД бүгд CZ маягийнх. Бэхэлгээ сонгох, доош
+   шудран APC бүртгэх зэрэг нь энд утгагүй тул огт харагдахгүй. */
+const BRANCH_FAST='CZ';
+function isBranchMain(t){return isMainTrack(t)&&isBranchSection()}
 // Гол замын ТБД үед БҮХ дэр төмөр бетон тул төрөл бүр дээр бэхэлгээ харагдана
 // ("Хэвийн APC", "Тэнцэхгүй APC"). Өртөөний замд зөвхөн ТБД гэж тэмдэглэсэн дэр дээр.
 function showFastFor(sec,t,type,idx){
+  // Салаалсан гол замд материал нь ДЭРИЙН ТӨРЛӨӨС гардаг тул өртөөний
+  // замтай адилаар зөвхөн ТБД дэр дээр бэхэлгээ харагдана
+  if(isBranchMain(t))return isTbdType(type);
   const m=idx===undefined?secMat(sec,t):matOf(sec,idx,t);
   if(m==='wood')return false;
   return isMainTrack(t)?true:isTbdType(type)
@@ -2792,7 +2816,7 @@ function sleeperLabel(sec,idx,t){
   const base=TYPES[sl.type]?TYPES[sl.type].label:'';
   if(!showFastFor(sec,t,sl.type,idx))return base;
   const f=fastOf(sec,idx,t);
-  return isMainTrack(t)?`${base} ${f}`:`${base} (${f})`
+  return (isMainTrack(t)&&!isBranchMain(t))?`${base} ${f}`:`${base} (${f})`
 }
 
 function uid(){return Date.now()+'-'+Math.random().toString(36).slice(2,7)}
@@ -3640,7 +3664,8 @@ function pickAddKmMat(m){
   _akMat=m;hap(6);
   document.getElementById('akMatTbd').classList.toggle('selected',m==='tbd');
   document.getElementById('akMatWood').classList.toggle('selected',m==='wood');
-  document.getElementById('akFastBox').style.display=m==='tbd'?'block':'none'
+  document.getElementById('akFastBox').style.display=
+    (m==='tbd'&&!isBranchSection())?'block':'none'
 }
 function pickAddKmFast(f){
   _akFast=f;hap(6);
@@ -3671,6 +3696,11 @@ function openAddKm(){
   document.getElementById('akFastGrid').innerHTML=FASTENINGS.map(f=>
     `<button type="button" class="fast-btn${f===_akFast?' selected':''}" data-f="${f}" onclick="pickAddKmFast('${f}')">${f}</button>`).join('');
   pickAddKmMat(_akMat);updateAddKmHint();
+  // Салаалсан гол замын ТБД бүгд CZ тул сонголт хэрэггүй
+  if(isBranchSection()){
+    _akFast=BRANCH_FAST;
+    const fb=document.getElementById('akFastBox');if(fb)fb.style.display='none'
+  }
   openModal('addKmModal')
 }
 function addKm(){
@@ -3684,7 +3714,7 @@ function addKm(){
   for(let km=r.from;km<=r.to;km++){
     if(dup.indexOf(km)>=0)continue;
     const tr={id:uid(),num:km,kind:'main',note:'',sections:_mkUeSections(MAIN_UE_PER_KM),mat:_akMat};
-    if(_akMat==='tbd')tr.fast=_akFast;
+    if(_akMat==='tbd'&&!isBranchSection())tr.fast=_akFast;
     mainTracks().push(tr);added++
   }
   sortMain();saveDB();closeModal('addKmModal');renderMainKmView();
@@ -4206,11 +4236,13 @@ function openAddTrack(){
     // Аль хэдийн нэмсэн замыг дахин санал болгохгүй
     const used=(DB.tracks||[]).map(t=>t.name).filter(Boolean);
     const free=names.filter(n=>used.indexOf(n)<0);
-    _brFree=free.length?free:names;
+    // Маягтад бичигдээгүй зам ч байж болно (ПД-12) — эцэст нь "Өөр нэр…"
+    _brFree=(free.length?free:names).concat([BR_OTHER]);
     _brPick=0;
     _wheelFill(el,_brFree,0);
     el.scrollTop=0;
-    if(!el._bound){el._bound=true;_wheelBind(el,()=>_brFree.length,i=>{_brPick=i})}
+    if(!el._bound){el._bound=true;_wheelBind(el,()=>_brFree.length,i=>{_brPick=i;_brOther()})}
+    _brOther()
   }
   openModal('addTrackModal')
 }
@@ -4264,10 +4296,22 @@ function _mkUeSections(n){
   for(let i=1;i<=n;i++)out.push({id:uid(),type:'normal',label:`${i}-р үе`,note:'',sleepers:[],date:d});
   return out
 }
+/* "Өөр нэр…" сонгосон үед л бичих талбар харагдана */
+function _brOther(){
+  const inp=document.getElementById('atNameOther');
+  if(!inp)return;
+  const on=_brFree[_brPick]===BR_OTHER;
+  inp.style.display=on?'':'none';
+  if(on)setTimeout(()=>inp.focus(),80)
+}
 function addTrack(){
   const note=document.getElementById('atNote').value.trim();
   if(isBrFolder()){
-    const nm=_brFree[_brPick];
+    let nm=_brFree[_brPick];
+    if(nm===BR_OTHER){
+      const inp=document.getElementById('atNameOther');
+      nm=((inp&&inp.value)||'').trim()
+    }
     if(!nm){showToast('Замын нэр сонгоно уу');return}
     if((DB.tracks||[]).find(t=>t.name===nm)){showToast(nm+' аль хэдийн байна');return}
     // Дэр нь өртөөний замтай ижилхэн бүртгэгдэнэ
@@ -4651,7 +4695,9 @@ function updateRecCounters(sec){
 function updateSecTypeBtn(idx){
   const tb=document.getElementById('secTypeBtn');if(!tb)return;
   const sec=activeSec(),t=activeTrack();
-  if(!sec||!isMainTrack(t)){tb.style.display='none';return}
+  // Салаалсан гол замд материал/бэхэлгээ нь дэрийн ТӨРЛӨӨС гардаг тул
+  // "Төрөл" товч байх шаардлагагүй — өртөөний замтай адил
+  if(!sec||!isMainTrack(t)||isBranchMain(t)){tb.style.display='none';return}
   tb.style.display='';
   const i=(idx===undefined||idx<0)?_secEnd(sec):idx;
   tb.textContent=matAt(sec,i,t)==='wood'
@@ -4660,9 +4706,22 @@ function updateSecTypeBtn(idx){
 }
 function renderRecordView(focusIdx){
   const sec=activeSec();if(!sec)return;
+  _applyBranchRec();
   updateRecCounters(sec);
   renderRecordLog(sec,focusIdx);
 
+}
+/* Салаалсан гол зам (ПД-11, ПД-12) нь ӨРТӨӨНИЙ замтай адилаар бүртгэгдэнэ:
+   бэхэлгээ сонгох, "нийт дэр оруулах" бөөнөөр бүртгэх, доош шудран APC
+   бүртгэх — эдгээр нь тэнд утгагүй тул нуугдана. */
+function _applyBranchRec(){
+  const br=isBranchMain(activeTrack());
+  const bulk=document.getElementById('recBulkBtn');
+  if(bulk)bulk.style.display=br?'none':'';
+  const row=document.getElementById('recTypeRow');
+  if(row)row.style.display=br?'none':'';
+  const hint=document.getElementById('joyHintBot');
+  if(hint)hint.style.display=br?'none':'';
 }
 // ── 3D DRUM параметрүүд ──
 const DRUM_VISIBLE=7;   // нийт харагдах дэрийн тоо (хоёр талдаа)
@@ -5456,7 +5515,9 @@ function getJoyType(dx,dy){
   const d=Math.sqrt(dx*dx+dy*dy);
   if(d<16)return'normal';
   if(Math.abs(dx)>Math.abs(dy))return dx>0?'tbd':'bad_tbd';
-  return dy<0?'bad':'tbd_apc'
+  if(dy<0)return'bad';
+  // Салаалсан гол замд APC гэж байхгүй — доош шудрахад юу ч бүртгэгдэхгүй
+  return isBranchMain(activeTrack())?'':'tbd_apc'
 }
 // 'tbd_apc' нь ТБД дэр боловч бэхэлгээг нь APC гэж тусгайлан заана
 function joyTypeInfo(k){
@@ -5505,7 +5566,9 @@ document.addEventListener('keydown',e=>{
   if(!document.getElementById('recordView').classList.contains('active'))return;
   if(_kbBusy(e))return;
   const map={'1':'normal','2':'bad','3':'tbd','4':'bad_tbd',' ':'normal','ArrowRight':'tbd','ArrowUp':'bad','ArrowLeft':'bad_tbd','ArrowDown':'tbd_apc','5':'tbd_apc'};
-  if(map[e.key]){const inf=joyTypeInfo(map[e.key]);record(inf.type,inf.fast);e.preventDefault()}
+  const k=map[e.key];
+  if(k==='tbd_apc'&&isBranchMain(activeTrack())){e.preventDefault();return}
+  if(k){const inf=joyTypeInfo(k);record(inf.type,inf.fast);e.preventDefault()}
   else if(e.key==='Backspace'||e.key==='z'){undoLast();e.preventDefault()}
 });
 
@@ -10562,7 +10625,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.10·126';
+const APP_BUILD='2026.09.10·127';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

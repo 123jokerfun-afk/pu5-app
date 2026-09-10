@@ -97,6 +97,77 @@ const br=await B.launch();
   await page.close();
 }
 
+/* ── Бүртгэлийн дэлгэц: салаалсан нь ӨРТӨӨНИЙ замтай адил ──────────
+   ТБД нь бүгд CZ маягийнх тул бэхэлгээ сонгох, доош шудран APC
+   бүртгэх, "нийт дэр оруулах" бөөнөөр бүртгэх нь энд утгагүй. */
+{
+  const {page}=await B.newPage(br,B.DEVICES[1]);
+  await B.login(page,'ПД-11');
+  const rec=await page.evaluate(async()=>{
+    const ue=n=>({id:'u'+n,type:'normal',label:n+'-р үе',note:'',date:'2026-05-01',sleepers:[]});
+    DB.folders=[{id:'f1',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',
+      sc:'ПД-11',tracks:[{id:'t1',num:1,kind:'station',sections:[ue(9)]}]}];
+    // Хуучин паспортад APC бичигдсэн байсан ч CZ гэж уншигдах ёстой
+    DB.main=[{id:'k1',num:1,kind:'main',mat:'tbd',fast:'APC',sections:[ue(1)]}];
+    activeFolderId='f1';DB.tracks=DB.folders[0].tracks;saveDB();
+    openTrack('k1');openSection('u1');
+    await new Promise(r=>setTimeout(r,420));
+    record('tbd');record('bad_tbd');record('normal');
+    await new Promise(r=>setTimeout(r,260));
+    const d=x=>{const e=document.getElementById(x);return e?getComputedStyle(e).display:'?'};
+    const t=activeTrack(),sec=activeSec();
+    return{bulk:d('recBulkBtn'),row:d('recTypeRow'),type:d('secTypeBtn'),hint:d('joyHintBot'),
+      down:getJoyType(0,40),right:getJoyType(40,0),up:getJoyType(0,-40),
+      fast:fastOf(sec,0,t),
+      l0:sleeperLabel(sec,0,t),l1:sleeperLabel(sec,1,t),l2:sleeperLabel(sec,2,t)}});
+  ok('ПД-11 — "Нийт дэр оруулах" үед харагдахгүй',rec.bulk==='none',rec.bulk);
+  ok('ПД-11 — "Төрөл" (бэхэлгээ) товч харагдахгүй',
+     rec.type==='none'&&rec.row==='none',`төрөл ${rec.type} · мөр ${rec.row}`);
+  ok('ПД-11 — доош шудрахад юу ч бүртгэгдэхгүй',rec.down==='',JSON.stringify(rec.down));
+  ok('ПД-11 — доод заалт (↓ ТБД APC) алга',rec.hint==='none',rec.hint);
+  ok('ПД-11 — бусад чиглэл хэвээр',rec.right==='tbd'&&rec.up==='bad',
+     `${rec.right} · ${rec.up}`);
+  ok('ПД-11 — паспортад APC байсан ч CZ гэж уншина',rec.fast==='CZ',rec.fast);
+  ok('ПД-11 — ТБД ба тэнцэхгүй ТБД хоёулаа CZ',
+     rec.l0==='ТБД (CZ)'&&rec.l1==='Тэнцэхгүй ТБД (CZ)',`${rec.l0} · ${rec.l1}`);
+  ok('ПД-11 — модон дэр дээр бэхэлгээ бичигдэхгүй',rec.l2==='Хэвийн',rec.l2);
+
+  // Тухайн хэсгийн ӨРТӨӨНИЙ зам нь хэвийн хэвээр
+  const st=await page.evaluate(async()=>{
+    openTrack('t1');openSection('u9');
+    await new Promise(r=>setTimeout(r,380));
+    const d=x=>{const e=document.getElementById(x);return e?getComputedStyle(e).display:'?'};
+    return{bulk:d('recBulkBtn'),hint:d('joyHintBot'),down:getJoyType(0,40)}});
+  ok('ПД-11 — ӨРТӨӨНИЙ замд бөөнөөр оруулах хэвээр',
+     st.bulk!=='none'&&st.hint!=='none'&&st.down==='tbd_apc',JSON.stringify(st));
+  await page.close();
+}
+/* ПД-6-д юу ч өөрчлөгдөөгүй байх ёстой */
+{
+  const {page}=await B.newPage(br,B.DEVICES[1]);
+  await B.login(page,'ПД-6');
+  const r6=await page.evaluate(async()=>{
+    const ue=n=>({id:'u'+n,type:'normal',label:n+'-р үе',note:'',date:'2026-05-01',sleepers:[]});
+    DB.folders=[{id:'f1',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',
+      sc:'ПД-6',tracks:[]}];
+    DB.main=[{id:'k1',num:1,kind:'main',mat:'tbd',fast:'APC',sections:[ue(1)]}];
+    activeFolderId='f1';DB.tracks=[];saveDB();
+    openTrack('k1');openSection('u1');
+    await new Promise(r=>setTimeout(r,420));
+    record('normal');
+    await new Promise(r=>setTimeout(r,220));
+    const d=x=>{const e=document.getElementById(x);return e?getComputedStyle(e).display:'?'};
+    const t=activeTrack(),sec=activeSec();
+    return{bulk:d('recBulkBtn'),type:d('secTypeBtn'),hint:d('joyHintBot'),
+      down:getJoyType(0,40),fast:fastOf(sec,0,t),lbl:sleeperLabel(sec,0,t)}});
+  ok('ПД-6 — бүртгэлийн дэлгэц хуучнаараа',
+     r6.bulk!=='none'&&r6.type!=='none'&&r6.hint!=='none'&&r6.down==='tbd_apc',
+     JSON.stringify(r6));
+  ok('ПД-6 — замын бэхэлгээ (APC) хэвээр уншигдана',
+     r6.fast==='APC'&&r6.lbl==='Хэвийн APC',`${r6.fast} · ${r6.lbl}`);
+  await page.close();
+}
+
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
 await br.close();process.exit(R.every(Boolean)?0:1);
 })();
