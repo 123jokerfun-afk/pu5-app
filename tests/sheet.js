@@ -671,6 +671,42 @@ const sel=await page.evaluate(async()=>{
 ok('Он/улирал сонгоход бүх маягт илгээгдэнэ',sel.sent===sel.nForms,sel.sent+'/'+sel.nForms);
 ok('Холбоосгүй бол чимээгүй өнгөрнө',sel.noUrl===0,sel.noUrl+' хүсэлт');
 
+/* Автомат илгээхэд админы дэлгэц ч шинэчлэгдэх ёстой — Sheet дээр шинэ,
+   дэлгэц дээр хуучин тоо байж болохгүй. Өөрчлөлтгүй үед дахин зурахгүй. */
+const rr=await page.evaluate(async()=>{
+  localStorage.setItem(SH_KEY,'https://script.google.com/macros/s/JJJ/exec');
+  localStorage.setItem(SH_AUTO_KEY,'1');
+  _adminData=[{code:'ПД-6',db:DB}];_admYear='2026';_admSeason='хавар';
+  _shHash='';_shFail=0;_shBusy=false;
+  const oL=window._adminLoadAll;window._adminLoadAll=async()=>_adminData;
+  const oR=window.renderAdminSections;let n=0;window.renderAdminSections=d=>{n++;return oR(d)};
+  const av=document.getElementById('adminView');
+  const prev=[...document.querySelectorAll('.view.active')];
+  prev.forEach(v=>v.classList.remove('active'));av.classList.add('active');
+  const of=window.fetch;
+  window.fetch=()=>Promise.resolve({text:()=>Promise.resolve('{"ok":true}')});
+  const ot=window.showToast;window.showToast=()=>{};
+  await shAutoTick();const first=n;
+  await shAutoTick();const same=n-first;
+  window.fetch=of;window.showToast=ot;window._adminLoadAll=oL;window.renderAdminSections=oR;
+  av.classList.remove('active');prev.forEach(v=>v.classList.add('active'));
+  localStorage.removeItem(SH_KEY);localStorage.removeItem(SH_AUTO_KEY);
+  shAutoStop();
+  return {first,same}});
+ok('Автомат илгээхэд админы дэлгэц дахин зурагдана',rr.first===1,rr.first+' удаа');
+ok('Өөрчлөлтгүй бол дэлгэцийг дахин зурахгүй',rr.same===0,rr.same+' удаа');
+
+/* Гарахад цаг зогсох ёстой — эс тэгвэл нэвтрэх дэлгэц дээр минут тутам
+   ажилласаар байна */
+const lo=await page.evaluate(async()=>{
+  localStorage.setItem(SH_AUTO_KEY,'1');shAutoStart();
+  const had=_shTimer!==null;
+  window.appConfirm=()=>Promise.resolve(true);
+  await doLogout();
+  localStorage.removeItem(SH_AUTO_KEY);
+  return {had,after:_shTimer===null,view:(document.querySelector('.view.active')||{}).id}});
+ok('Гарахад автомат цаг зогсоно',lo.had&&lo.after&&lo.view==='loginView',JSON.stringify(lo));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
