@@ -111,8 +111,8 @@ const sh=await page.evaluate(()=>{
   const s2=_sectionBlocks('ПД-2',db,folder,swf);
   const sheets=SH_FORMS.map((F,fi)=>{
     const o=_formSheet(fi,[s2,s6,s11]);        // тоон дараалал: 2, 6, 11
-    return{tab:F.tab,rows:o.rows,fmt:o.fmt,cols:F.h0.length,
-      w:F.w.map(_shPx),h:F.h.map(_shPt),dd:!!F.dd}
+    return{tab:F.tab,rows:o.rows,fmt:o.fmt,cols:F.h0.length,no:F.no,sc:F.sc,sub:F.sub,
+      head:o.head,freeze:o.freeze,w:F.w.map(_shPx),h:F.h.map(_shPt),dd:!!F.dd}
   });
   const two=SH_FORMS.map((F,fi)=>_formSheet(fi,[s6]).rows.length);
   return{sheets,two,drop:SH_DROP,
@@ -140,24 +140,48 @@ ok('Хуучин бүтцийн шийтүүд устгагдана',
 ok('_withSection глобалыг сэргээв (_sectionCode ба DB.tracks-ыг ч)',
    JSON.stringify(sh.before)===JSON.stringify(sh.after),JSON.stringify(sh.after));
 
-// Толгой = 4, 5-р мөр; өгөгдөл 6-оос
-const D=s=>s.rows.slice(5);
+// Толгойн байрлал маягт бүрд өөр (гарчгийн блок 4-5 мөр)
+const HR=s=>s.fmt[0].row;                 // толгойн 1-р мөр (1-ээс)
+const D=s=>s.rows.slice(HR(s)+1);
 const live=SHT.filter(s=>s.rows.length);
 ok('Ихэнх маягт бөглөгдөв',live.length>=14,live.length+'/18');
 ok('Өгөгдөлгүй маягт ОГТ үүсэхгүй',
    SHT.every(s=>!s.rows.length||D(s).length>0),
    SHT.filter(s=>!s.rows.length).map(s=>s.tab).join(', ')||'бүгд бөглөгдөв');
 ok('Толгойн хоёр мөр эх загварын баганын тоотой тэнцүү',
-   live.every(s=>s.rows[3].length===s.cols&&s.rows[4].length===s.cols
+   live.every(s=>s.rows[HR(s)-1].length===s.cols&&s.rows[HR(s)].length===s.cols
               &&s.w.length===s.cols),
-   JSON.stringify(live.map(s=>[s.rows[3].length,s.cols,s.w.length]).slice(0,4)));
-ok('Шийтийн толгойд маягтын нэр, он, улирал',
-   /^Маягт-1 —/.test(String(SHT[0].rows[0][0]))
-   &&/2026/.test(String(SHT[0].rows[1][0]))
-   &&/хавр/.test(String(SHT[0].rows[1][0])),
-   String(SHT[0].rows[0][0])+' · '+String(SHT[0].rows[1][0]));
-ok('Огноо тэгээр гүйцээгдэнэ (2026-09-09)',
-   /\d{4}-\d{2}-\d{2}/.test(String(SHT[0].rows[1][0])),String(SHT[0].rows[1][0]));
+   JSON.stringify(live.map(s=>[s.rows[HR(s)-1].length,s.cols,s.w.length]).slice(0,4)));
+
+/* ── Албан гарчгийн блок ──────────────────────────────────────
+   Эх Excel загварт маягт бүр 4-5 мөрт гарчигтай: маягтын дугаар,
+   замын анги, он/улирал, тодорхойлолт, хамрах хүрээ, огноо. Өмнө нь
+   апп 2 мөрт хураангуй бичдэг байсан тул эх маягттай зөрж байв. */
+const F0=SHT[0];
+ok('1-р мөр: маягтын дугаар зүүнд, замын анги баруунд',
+   F0.rows[0][0]==='Маягт-1'&&F0.rows[0].some(v=>/ЗАМЫН 3-Р АНГИ/.test(String(v))),
+   JSON.stringify(F0.rows[0].filter(Boolean)));
+ok('2-р мөр: анги, он, улирал',
+   /^Замын 3-р ангийн 2026 оны хавр/.test(String(F0.rows[1][0])),String(F0.rows[1][0]));
+ok('3-р мөр: маягтын тодорхойлолт',
+   F0.rows[2][0]==='паспортын үзлэгээр илэрсэн тэнцэхгүй дэрийн тоо',String(F0.rows[2][0]));
+ok('4-р мөр: хамрах хүрээ',F0.rows[3][0]==='Гол зам',String(F0.rows[3][0]));
+ok('Огноо баруун талд, тусдаа мөрөнд',
+   F0.rows[4][0]===''&&/2026 оны \d{2}-р сарын \d{2}-ний өдөр/
+     .test(String(F0.rows[4].filter(Boolean)[0])),
+   JSON.stringify(F0.rows[4].filter(Boolean)));
+ok('Гарчгийн мөр бүр НЭГТГЭГДЭНЭ (head заавар)',
+   live.every(s=>s.head&&s.head.length>=4
+     &&s.head.every(h=>h.r>=1&&h.r<HR(s)&&h.c>=1&&h.c+h.cs-1<=s.cols)),
+   JSON.stringify((F0.head||[]).map(h=>`r${h.r}c${h.c}+${h.cs}${h.a}`)));
+ok('Гарчгийн доорх толгой хүртэл наалдана (freeze)',
+   live.every(s=>s.freeze===HR(s)+1),JSON.stringify(live.map(s=>s.freeze).slice(0,5)));
+ok('Маягт бүр өөрийн албан дугаартай',
+   SHT.every(s=>/^Маягт-[12]( Хавсралт-\d)?$/.test(String(s.no))),
+   JSON.stringify([...new Set(SHT.map(s=>s.no))]));
+ok('Тодорхойлолт нь хамрах хүрээг ДАВХАРДУУЛАХГҮЙ',
+   SHT.every(s=>!s.sc||String(s.sub).indexOf(s.sc)<0),
+   JSON.stringify(SHT.filter(s=>s.sc&&String(s.sub).indexOf(s.sc)>=0).map(s=>s.tab)));
 ok('Мөр бүр массив, 40 баганаас хэтрэхгүй',
    live.every(s=>s.rows.every(r=>Array.isArray(r)&&r.length<=40)),
    'хамгийн урт '+Math.max(...live.map(s=>Math.max(...s.rows.map(r=>r.length)))));
@@ -166,15 +190,15 @@ ok('Мөр бүр массив, 40 баганаас хэтрэхгүй',
 ok('Шийт бүрд НЭГ хүснэгтийн заавар',
    live.every(s=>s.fmt.length===1),JSON.stringify(live.map(s=>s.fmt.length)));
 ok('Толгой 2 мөр, хүрээ бүх мөрийг хамарна',
-   live.every(s=>s.fmt[0].head===2&&s.fmt[0].row===4
-              &&s.fmt[0].n===s.rows.length-3),
-   JSON.stringify(live.map(s=>[s.fmt[0].n,s.rows.length]).slice(0,4)));
+   live.every(s=>s.fmt[0].head===2&&HR(s)>=5&&HR(s)<=6
+              &&s.fmt[0].n===s.rows.length-HR(s)+1),
+   JSON.stringify(live.map(s=>[HR(s),s.fmt[0].n,s.rows.length]).slice(0,4)));
 ok('Нэгтгэлүүд хүснэгтийн баганаас халихгүй',
    live.every(s=>s.fmt[0].merges.every(m=>m[1]>=1&&m[1]+m[3]-1<=s.cols)),'зөв');
 ok('Нэгтгэл толгойн хоёр мөрийн дотор л байна',
-   live.every(s=>s.fmt[0].merges.every(m=>m[0]>=4&&m[0]+m[2]-1<=5)),'зөв');
+   live.every(s=>s.fmt[0].merges.every(m=>m[0]>=HR(s)&&m[0]+m[2]-1<=HR(s)+1)),'зөв');
 ok('Бүдүүн мөр өгөгдлийн мужид байна',
-   live.every(s=>s.fmt[0].bold.every(b=>b>5&&b<=s.rows.length)),
+   live.every(s=>s.fmt[0].bold.every(b=>b>HR(s)+1&&b<=s.rows.length)),
    JSON.stringify(live.map(s=>s.fmt[0].bold.length)));
 
 /* Хэсгүүдийн дараалал ба хамрах хүрээ */
@@ -211,8 +235,8 @@ ok('Жагсаалтын Д/д шийт даяар цуваа',!ddBad.length,
      JSON.stringify(d.map(r=>r[2])));
   // Сумын эхний дэр 2,75 м-тэй — маягтын 2,75 багана нь ТЭД
   ok('Хавсралт-1-ийн 2,75 багана = рам замын тэнцэхгүй дэр',
-     A.rows[4][3]===2.75&&d[0][3]===2&&eq(d[1][3],5.5),
-     JSON.stringify([A.rows[4][3],d[0][3],d[1][3]]));
+     A.rows[HR(A)][3]===2.75&&d[0][3]===2&&eq(d[1][3],5.5),
+     JSON.stringify([A.rows[HR(A)][3],d[0][3],d[1][3]]));
 }
 
 /* ══ 2. Дэрийн маягтууд — Excel-тэй тулгах ══════════════════ */
