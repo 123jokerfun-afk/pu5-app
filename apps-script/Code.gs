@@ -114,12 +114,28 @@ function _shape(sh, grid, w, body) {
   sh.getRange(1, 1, grid.length, w)
     .setFontFamily('Arial').setFontSize(10)
     .setVerticalAlignment('middle').setHorizontalAlignment('center');
-  // Эхний хоёр багана бичвэр — голлуулбал уншихад төвөгтэй
+  // Эхний баганын бичвэр — голлуулбал уншихад төвөгтэй
   sh.getRange(1, 1, grid.length, 1).setHorizontalAlignment('left');
 
-  // Хуудасны толгой (хэсэг, он/улирал, огноо)
-  sh.getRange(1, 1, 2, w).setHorizontalAlignment('left');
-  sh.getRange(1, 1).setFontSize(12).setFontWeight('bold');
+  // Маягтын АЛБАН ГАРЧИГ. Мөр бүрийн нэгтгэл, голлуулалт, үсгийн хэмжээг
+  // апп заана (head) — энд ямар ч шийдвэр гаргахгүй.
+  var head = body.head || [];
+  if (head.length) {
+    for (var q = 0; q < head.length; q++) {
+      var hh = head[q];
+      var hc = Math.min(hh.cs || 1, w - hh.c + 1);
+      if (hc < 1 || hh.r < 1 || hh.r > grid.length) continue;
+      var rg = sh.getRange(hh.r, hh.c, 1, hc);
+      if (hc > 1) { try { rg.merge(); } catch (e) {} }
+      rg.setHorizontalAlignment(hh.a === 'r' ? 'right' : hh.a === 'c' ? 'center' : 'left');
+      if (hh.s) rg.setFontSize(hh.s);
+      rg.setFontWeight(hh.b ? 'bold' : 'normal');
+    }
+  } else {
+    // Хуучин апп (schema 1-2) — хамгийн бага хэлбэр
+    sh.getRange(1, 1, 2, w).setHorizontalAlignment('left');
+    sh.getRange(1, 1).setFontSize(12).setFontWeight('bold');
+  }
 
   var widths = body.widths || [];
   for (var c = 0; c < w; c++) {
@@ -127,6 +143,7 @@ function _shape(sh, grid, w, body) {
     try { sh.setColumnWidth(c + 1, px); } catch (e) {}
   }
 
+  var frz = body.freeze || 2;
   if (!fmt.length) {           // schema 1 — хуучин апп. Хамгийн бага хэлбэр.
     sh.setFrozenRows(2);
     return;
@@ -168,7 +185,7 @@ function _shape(sh, grid, w, body) {
       try { sh.getRange(bd[y], 1, 1, cols).setFontWeight('bold'); } catch (e) {}
     }
   }
-  sh.setFrozenRows(2);
+  try { sh.setFrozenRows(Math.min(frz, sh.getMaxRows() - 1)); } catch (e) {}
 }
 
 function _json(o) {
