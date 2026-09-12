@@ -127,11 +127,21 @@ const no=await page.evaluate(async()=>{
   goHome();await new Promise(r=>setTimeout(r,120));
   openTrack('t9');await new Promise(r=>setTimeout(r,300));
   const one=document.getElementById('walkModal').classList.contains('open');
-  const oneSub=document.getElementById('tvSub').textContent;
-  return{km,kmRev,one,oneSub}});
+  closeModal('walkModal');
+  // Шинэ, ХООСОН зам дээр ч бүртгэл эхлэхийн өмнө асуух ёстой
+  DB.folders[0].tracks.push({id:'t0',num:7,kind:'station',sections:[]});
+  DB.tracks=DB.folders[0].tracks;saveDB();
+  goHome();await new Promise(r=>setTimeout(r,120));
+  openTrack('t0');await new Promise(r=>setTimeout(r,300));
+  const empty=document.getElementById('walkModal').classList.contains('open');
+  const emptySub=document.getElementById('wkSub').textContent;
+  closeModal('walkModal');
+  return{km,kmRev,one,empty,emptySub}});
 ok('Гол замд чиглэл асуухгүй',!no.km&&!no.kmRev,String(no.km));
-ok('Ганц үетэй замд асуухгүй',!no.one,String(no.one));
-ok('Ганц үетэй замд заалт ч гарахгүй',!/ухарч|эхнээс/.test(no.oneSub),no.oneSub);
+ok('ХООСОН зам дээр ч асууна',no.empty===true&&/шинэ бүртгэл/.test(no.emptySub),
+   `${no.empty} · ${no.emptySub}`);
+ok('Ганц үетэй замд ч асууна (дэрийн дугаар чиглэлээс шалтгаална)',
+   no.one===true,String(no.one));
 
 /* ── 6. Тоо, дүн хөндөгдөөгүй ── */
 const same=await page.evaluate(async()=>{
@@ -269,6 +279,79 @@ const back=await page.evaluate(async()=>{
 ok('Үеийн картад таних тэмдэг (data-sid) байна',back.hasAttr);
 ok('Үеэс гарахад тэр үе рүүгээ гүйлгэнэ',back.found&&back.vis,
    `олдов ${back.found} · харагдаж байна ${back.vis}`);
+
+/* ── 9. Шинэ үеийн дугаар ───────────────────────────────────────
+   Өмнө нь үеийн ТООГ ашигладаг байсан тул "1-р үе байхгүй, 2-оос
+   эхэлсэн" замд баруун шудрахад "2-р үе" ДАХИН үүсдэг байв. Одоо
+   байгаа дугааруудаас: эхнээс — хамгийн их + 1, ухарч — хамгийн бага − 1. */
+console.log('\nШинэ үеийн дугаар');
+const num=await page.evaluate(async()=>{
+  DB.folders[0].tracks.push({id:'tn',num:8,kind:'station',sections:[]});
+  DB.tracks=DB.folders[0].tracks;saveDB();
+  goHome();await new Promise(r=>setTimeout(r,120));
+  openTrack('tn',1);await new Promise(r=>setTimeout(r,220));
+  // 1-р үе БАЙХГҮЙ — гараар "2-р үе" нэмнэ
+  openAddSection('normal');await new Promise(r=>setTimeout(r,240));
+  const sug=document.getElementById('asNum').value;
+  document.getElementById('asNum').value=2;addSection();
+  await new Promise(r=>setTimeout(r,300));
+  await record('bad');await new Promise(r=>setTimeout(r,150));
+  const cur=activeSec().label;
+  navNextSection();await new Promise(r=>setTimeout(r,220));
+  const nx=activeSec().label;
+  navNextSection();await new Promise(r=>setTimeout(r,220));
+  return{sug,cur,nx,nx2:activeSec().label,
+    labels:activeTrack().sections.map(s=>s.label)}});
+ok('Хоосон замд эхний санал 1-р үе',num.sug==='1',num.sug);
+ok('"2-р үе"-ээс шудрахад 3-р үе (давхардахгүй)',num.nx==='3-р үе',`${num.cur} → ${num.nx}`);
+ok('Цааш 4-р үе',num.nx2==='4-р үе',num.nx2);
+ok('Үеийн нэр давхардаагүй',
+   new Set(num.labels).size===num.labels.length,JSON.stringify(num.labels));
+
+const dup=await page.evaluate(async()=>{
+  goTrack();await new Promise(r=>setTimeout(r,200));
+  const n0=activeTrack().sections.length;
+  openAddSection('normal');await new Promise(r=>setTimeout(r,240));
+  document.getElementById('asNum').value=2;addSection();   // аль хэдийн байгаа
+  await new Promise(r=>setTimeout(r,240));
+  const o={n0,n1:activeTrack().sections.length,
+    open:document.getElementById('addSecModal').classList.contains('open')};
+  closeModal('addSecModal');return o});
+ok('Ижил нэртэй үе давхардаж нэмэгдэхгүй',
+   dup.n0===dup.n1&&dup.open,`${dup.n0} → ${dup.n1}`);
+
+/* Ухрах горимд шинэ үе нь БУУРНА */
+const down=await page.evaluate(async()=>{
+  DB.folders[0].tracks.push({id:'td',num:9,kind:'station',sections:[]});
+  DB.tracks=DB.folders[0].tracks;saveDB();
+  goHome();await new Promise(r=>setTimeout(r,120));
+  openTrack('td',1);_revTrk['td']=1;renderTrackView();
+  await new Promise(r=>setTimeout(r,220));
+  openAddSection('normal');await new Promise(r=>setTimeout(r,240));
+  document.getElementById('asNum').value=50;addSection();
+  await new Promise(r=>setTimeout(r,300));
+  await record('bad');await new Promise(r=>setTimeout(r,150));
+  const seq=[activeSec().label];
+  for(let i=0;i<3;i++){navNextSection();await new Promise(r=>setTimeout(r,200));seq.push(activeSec().label)}
+  return{seq,labels:activeTrack().sections.map(s=>s.label)}});
+ok('Ухрах горимд шинэ үе БУУРЧ нэмэгдэнэ (50 → 49 → 48)',
+   JSON.stringify(down.seq)===JSON.stringify(['50-р үе','49-р үе','48-р үе','47-р үе']),
+   JSON.stringify(down.seq));
+ok('Үенүүд дугаараараа эрэмбэлэгдэнэ',
+   JSON.stringify(down.labels)===JSON.stringify(['47-р үе','48-р үе','49-р үе','50-р үе']),
+   JSON.stringify(down.labels));
+
+const stop=await page.evaluate(async()=>{
+  const t=activeTrack();
+  t.sections=[1,2].map(n=>({id:'q'+n,type:'normal',label:n+'-р үе',note:'',
+    sleepers:[{type:'normal',ts:0}],date:'x'}));
+  saveDB();openSection('q2');await new Promise(r=>setTimeout(r,250));
+  navNextSection();await new Promise(r=>setTimeout(r,200));
+  const a=activeSec().label;
+  navNextSection();await new Promise(r=>setTimeout(r,200));
+  return{a,b:activeSec().label,n:activeTrack().sections.length}});
+ok('1-р үе хүрвэл цааш ШИНЭ ҮЕ үүсэхгүй',
+   stop.a==='1-р үе'&&stop.b==='1-р үе'&&stop.n===2,`${stop.a} → ${stop.b} · ${stop.n} үе`);
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));

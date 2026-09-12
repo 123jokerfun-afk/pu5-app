@@ -2063,7 +2063,10 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <!-- ЯВАХ ЧИГЛЭЛ: зам руу ороход эхнээс үү, ухрах уу -->
 <div class="overlay" id="walkModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
-    <div class="sheet-title" id="wkTitle">Аль талаас бүртгэх вэ?</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="wkTitle">Аль талаас бүртгэх вэ?</div>
+      <button onclick="closeModal('walkModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:600" id="wkSub">—</div>
     <button class="btn-ok" onclick="pickWalk(0)" style="width:100%;margin-bottom:8px;text-align:left;padding:14px">
       <div style="font-size:15px;font-weight:900">Эхнээс →</div>
@@ -4259,6 +4262,23 @@ function saveReportSettings(){
 //    Гол замын км-ийг нүүр хуудасны "Гол зам" → "Км нэмэх"-ээс нэмнэ.
 
 let _brPick=0;   // хүрдэнд сонгогдсон замын нэрийн индекс
+/* Байгаа үеүүдийн дугаар. Дутуу дугаартай (1-р үе байхгүй, 2-оос
+   эхэлсэн) зам байж болно. */
+function _ueNums(t){
+  return ((t&&t.sections)||[])
+    .filter(x=>x.type!=='connecting'&&!isTurnout(x))
+    .map(x=>secNum(x.label))
+    .filter(n=>isFinite(n))
+}
+/* Дараах үеийн дугаар. Өмнө нь үеийн ТООГ ашигладаг байсан тул
+   1-р үе байхгүй замд "2-р үе" давхардаж үүсдэг байв.
+   Ухрах горимд дугаар БУУРНА (50 → 49 → …). */
+function _nextUeNum(t,rev){
+  const l=_ueNums(t);
+  if(!l.length)return rev?null:1;
+  return rev?(Math.min.apply(null,l)-1)||null
+           :Math.max.apply(null,l)+1
+}
 function openAddTrack(){
   document.getElementById('atNum').value='';
   document.getElementById('atNote').value='';
@@ -4436,16 +4456,21 @@ function openTrack(id,noAsk){
   _fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView();
   // Гол зам нь нэг км дотор нэг чиглэлтэй тул зөвхөн өртөөний замд асууна
   const t=activeTrack();
-  if(noAsk||!t||isMainTrack(t)||dataSections(t).length<2)return;
+  // Шинэ, ХООСОН зам дээр ч асууна — бүртгэл эхлэхийн ӨМНӨ чиглэлээ
+  // сонгох нь чухал (үе дотрын дэрийн дугаар үүнээс шалтгаална)
+  if(noAsk||!t||isMainTrack(t))return;
   askWalk()
 }
 function askWalk(){
-  const t=activeTrack();if(!t)return;
-  const l=dataSections(t);if(l.length<2)return;
+  const t=activeTrack();if(!t||isMainTrack(t))return;
+  const l=dataSections(t);
   document.getElementById('wkSub').textContent=
-    `${trackLabel(t)} · ${l.length} үе`;
-  document.getElementById('wkFwd').textContent=`Эхлэх үе: ${l[0].label}`;
-  document.getElementById('wkRev').textContent=`Эхлэх үе: ${l[l.length-1].label}`;
+    `${trackLabel(t)} · ${l.length?l.length+' үе':'шинэ бүртгэл'}`;
+  document.getElementById('wkFwd').textContent=
+    l.length?`Эхлэх үе: ${l[0].label}`:'Үе 1-ээс өсөж, дэр 1-ээс дугаарлагдана';
+  document.getElementById('wkRev').textContent=
+    l.length?`Эхлэх үе: ${l[l.length-1].label}`
+            :'Үе буурч, үе солиход дэрийн дугаар эргэнэ';
   openModal('walkModal')
 }
 function pickWalk(rev){
@@ -4454,7 +4479,7 @@ function pickWalk(rev){
   if(rev)_revTrk[t.id]=1;else delete _revTrk[t.id];
   closeModal('walkModal');renderTrackView();
   const l=walkSections(t);
-  showToast(`${rev?'← Ухарч':'Эхнээс'} · ${l[0].label}`,2400)
+  showToast(`${rev?'← Ухарч':'Эхнээс'}${l.length?' · '+l[0].label:''}`,2400)
 }
 async function deleteTrack(){
   const t=activeTrack();if(!t)return;
@@ -4476,7 +4501,7 @@ function renderTrackView(){
   // Гол замд хэддэх км дээр байгааг харуулж, шудрах санамж гаргана
   const mn=isMainTrack(t)?mainTracks():[];
   const kmPos=mn.length>1?` · ${mn.findIndex(x=>x.id===t.id)+1}/${mn.length} км`:'';
-  const rev=isRevTrack(t),canWalk=!isMainTrack(t)&&dataSections(t).length>1;
+  const rev=isRevTrack(t),canWalk=!isMainTrack(t);
   document.getElementById('tvSub').textContent=
     `${dataSections(t).length} үе${turns?` · ${turns} сум`:''}${kmPos} · ${DB.location}`+
     (rev?' · ← ухарч':'');
@@ -4694,7 +4719,7 @@ function openAddSection(type){
   const isConn=type==='connecting';
   const isTurn=type===SEC_TURNOUT;
   document.getElementById('addSecTitle').textContent=isTurn?'Сум нэмэх':isConn?'Холбох хэсэг нэмэх':'Үе нэмэх';
-  const nextNum=t.sections.filter(s=>s.type!=='connecting'&&!isTurnout(s)).length+1;
+  const nextNum=_nextUeNum(t,isRevTrack(t))||1;
   const isMain=isMainTrack(t);
   if(isTurn){
     document.getElementById('addSecContent').innerHTML=`
@@ -4798,6 +4823,10 @@ function addSection(){
     const extra=(document.getElementById('asExtra').value||'').trim();
     label=extra?`${num}-р үе · ${extra}`:`${num}-р үе`;
     note=(document.getElementById('asNote').value||'').trim();
+  }
+  // Ижил нэртэй үе давхардвал бүртгэл хоёр газар хуваагдана
+  if(t.sections.some(x=>x.type!=='connecting'&&!isTurnout(x)&&x.label===label)){
+    showToast(`${label} аль хэдийн байна`,2600);return
   }
   const sec={id:uid(),type:pendingSecType,label,note,sleepers:[],date:new Date().toLocaleDateString('mn-MN')};
   if(btw){sec.btw=btw;sec.adj=adj}
@@ -5630,18 +5659,14 @@ function navNextSection(){
   hap(8);hideSwipeFlash();const t=activeTrack();if(!t)return;
   const secs=walkSections(t);   // сум дээр бүртгэл байхгүй тул алгасна
   const idx=secs.findIndex(s=>s.id===activeSectionId);
-  // Ухрах горимд "дараагийн" нь 1-р үе рүү ойртоно — тэнд шинэ үе
-  // нэмэх нь буруу тул зогсоно
-  if(idx>=0&&idx===secs.length-1&&isRevTrack(t)){
-    showToast('Сүүлийн үе байна',1800);updateNavBtns();return
-  }
   if(idx>=0&&idx<secs.length-1){
     const next=secs[idx+1];_revLeave();activeSectionId=next.id;_revEnter(next);
     document.getElementById('rvTitle').textContent=next.label;
     _rvSub(t);
     renderRecordView();showToast(`→ ${next.label}`)
   } else {
-    const nextNum=secs.filter(s=>s.type!=='connecting').length+1;
+    const nextNum=_nextUeNum(t,isRevTrack(t));
+    if(!nextNum||nextNum<1){showToast('Сүүлийн үе байна',1800);updateNavBtns();return}
     const ns={id:uid(),type:'normal',label:`${nextNum}-р үе`,note:'',sleepers:[],date:new Date().toLocaleDateString('mn-MN')};
     _revLeave();
     t.sections.push(ns);sortSections(t);saveDB();activeSectionId=ns.id;_revEnter(ns);
@@ -10827,7 +10852,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.12·130';
+const APP_BUILD='2026.09.12·131';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

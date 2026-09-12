@@ -46,9 +46,13 @@ await pair('Паспорт',
   `addFolder()`);
 
 await setCnt(()=>getTrack('t1').sections.length);
+/* Үеийн нэр давхардвал апп өөрөө татгалздаг болсон (v131) тул хос
+   туршилт бүрд ӨӨР дугаар хэрэглэнэ — эс тэгвэл хоёр дахь удаад
+   давхардлын хамгаалалт ажиллаж, хоёр дарах хамгаалалт шалгагдахгүй. */
 await pair('Үе',
-  `goHome();openFolder('f-test1');openTrack('t1');openAddSection('normal');
-   document.getElementById('asNum').value='99'`,
+  `goHome();openFolder('f-test1');openTrack('t1');closeModal('walkModal');
+   openAddSection('normal');
+   document.getElementById('asNum').value=String(90+getTrack('t1').sections.length)`,
   `addSection()`);
 
 await setCnt(()=>swFolders().length);

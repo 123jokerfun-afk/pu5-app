@@ -85,8 +85,10 @@ async function check(label,setup){
 await check('Нүүр',`goHome();`);
 await check('Паспортын жагсаалт',`goTab('folders');`);
 await check('Сумууд',`goTab('sw');`);
-await check('Хоосон зам',`goHome();openFolder('fz');openTrack('tz');`);
-await check('Үетэй зам',`goHome();openFolder('fr');openTrack('tr');`);
+// Өртөөний зам нээхэд явах чиглэлийн цонх гарна (v131) — товчны
+// шалгалт нь түүний ард байгаа дэлгэцийг үзэх тул хаана
+await check('Хоосон зам',`goHome();openFolder('fz');openTrack('tz');closeModal('walkModal');`);
+await check('Үетэй зам',`goHome();openFolder('fr');openTrack('tr');closeModal('walkModal');`);
 await check('Гол замын км',`goHome();openTrack('mz');`);
 await check('Бүртгэлийн дэлгэц',`goHome();openFolder('fr');openTrack('tr');openSection('sr');`);
 await check('Замын дүн',`goHome();openFolder('fr');openTrack('tr');showTrackSummary();`);
@@ -97,7 +99,8 @@ const slide=await page.evaluate(async()=>{
   goHome();await new Promise(r=>setTimeout(r,400));
   const bar=document.getElementById('tabbar');
   const home=Math.round(bar.getBoundingClientRect().top);
-  openFolder('fr');openTrack('tr');await new Promise(r=>setTimeout(r,500));
+  openFolder('fr');openTrack('tr');closeModal('walkModal');
+  await new Promise(r=>setTimeout(r,500));
   const track=Math.round(bar.getBoundingClientRect().top);
   const pe=getComputedStyle(bar).pointerEvents;
   goHome();await new Promise(r=>setTimeout(r,500));
@@ -110,7 +113,7 @@ ok('Буцахад таб эргэж ирнэ',slide.back<slide.vh-20,'дээд=
 
 // "Үе нэмэх" товч үнэхээр ажиллана
 const works=await page.evaluate(async()=>{
-  goHome();openFolder('fz');openTrack('tz');
+  goHome();openFolder('fz');openTrack('tz');closeModal('walkModal');
   await new Promise(r=>setTimeout(r,450));
   const b=[...document.querySelectorAll('.add-sec-btn')].find(x=>/Үе нэмэх/.test(x.textContent));
   if(!b)return 'товч алга';
