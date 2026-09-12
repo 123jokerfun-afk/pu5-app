@@ -1028,6 +1028,8 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
   background:var(--bg);font-size:13px;font-weight:800;color:var(--ink2);cursor:pointer;transition:all .12s}
 .kind-btn.selected,.mat-btn.selected,.fast-btn.selected,.adj-btn.selected{
   background:var(--blue-bg);border-color:var(--blue-mid);color:var(--blue)}
+/* Сая бүртгэсэн үеийг товчхон тодруулна */
+.sec-card.sec-just{box-shadow:0 0 0 3px var(--blue-mid);transition:box-shadow .3s}
 .fast-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fast-btn{padding:11px 6px;font-size:12px}
 /* Дараагийн бүртгэлийн хоосон хайрцаг (зөвхөн харагдац — өгөгдөлд хадгалагдахгүй) */
@@ -1609,6 +1611,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <div class="pg-title" id="tvTitle">—</div>
         <div class="pg-sub" id="tvSub">—</div>
       </div>
+      <button class="icon-btn" id="walkBtn" onclick="askWalk()" style="display:none" aria-label="Явах чиглэл"><span id="walkBtnLbl">→</span></button>
       <button class="icon-btn" onclick="showTrackSummary()"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Дүн</button>
       <button class="icon-btn" onclick="deleteTrack()" style="color:var(--red)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
@@ -2054,6 +2057,23 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button class="btn-cancel" onclick="closeModal('locModal')">Болих</button>
       <button class="btn-ok" onclick="saveLocation()">Хадгалах</button>
     </div>
+  </div></div>
+</div>
+
+<!-- ЯВАХ ЧИГЛЭЛ: зам руу ороход эхнээс үү, ухрах уу -->
+<div class="overlay" id="walkModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div class="sheet-title" id="wkTitle">Аль талаас бүртгэх вэ?</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;font-weight:600" id="wkSub">—</div>
+    <button class="btn-ok" onclick="pickWalk(0)" style="width:100%;margin-bottom:8px;text-align:left;padding:14px">
+      <div style="font-size:15px;font-weight:900">Эхнээс →</div>
+      <div style="font-size:11px;font-weight:600;opacity:.85" id="wkFwd">1-р үеэс эхэлнэ</div>
+    </button>
+    <button class="btn-ok" onclick="pickWalk(1)" style="width:100%;margin-bottom:14px;text-align:left;padding:14px;background:linear-gradient(135deg,#7A4FBF,#9B6BD8)">
+      <div style="font-size:15px;font-weight:900">← Ухарч</div>
+      <div style="font-size:11px;font-weight:600;opacity:.85" id="wkRev">сүүлийн үеэс эхэлнэ</div>
+    </button>
+    <div class="info-pill" style="background:var(--blue-bg);color:#0B6BA8">ℹ Зөвхөн ЯВАХ дараалал өөрчлөгдөнө. Үеийн дугаар, бүртгэсэн дэр хэвээрээ.</div>
   </div></div>
 </div>
 
@@ -2823,6 +2843,13 @@ function uid(){return Date.now()+'-'+Math.random().toString(36).slice(2,7)}
 function _migrateDB(){
   if(!DB.folders)DB.folders=[];
   if(!Array.isArray(DB.main))DB.main=[];
+  // Ухарч бүртгэж байхад апп унасан бол үе нь ЯВАХ дарааллаараа
+  // үлдсэн байна — буцааж эргүүлнэ (sec.rw тэмдэг)
+  const _fix=t=>(t&&t.sections||[]).forEach(x=>{
+    if(x&&x.rw){_revSwap(x);delete x.rw}});
+  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(_fix));
+  (DB.tracks||[]).forEach(_fix);
+  (DB.main||[]).forEach(_fix);
   if(DB.location==='Шивээ-говь')DB.location='ПУ-5';
   if(DB.tracks&&DB.tracks.length&&!DB.folders.length){
     const yr=DB.rpt&&DB.rpt.year?DB.rpt.year:new Date().getFullYear()+'';
@@ -3058,6 +3085,10 @@ function resolveReplMap(track,sec){
   if(!track||!sec)return out;
   const own=sec.repl||{};
   Object.keys(own).forEach(k=>{out[k]={rec:own[k],own:true}});
+  // Ухарч бүртгэж байх үед энэ үе ЯВАХ дарааллаар байгаа. Өмнөх
+  // паспортууд жинхэнэ дарааллаар тул индекс нь таарахгүй — үеэ
+  // дуусгаж гартал уламжилсан тэмдэглэгээг харуулахгүй.
+  if(sec.rw)return out;
   const all=foldersByDate();
   const cur=all.findIndex(f=>f.id===activeFolderId);
   if(cur<0)return out;
@@ -3235,6 +3266,7 @@ function showView(id,back){
   if(typeof _syncTabs==='function')_syncTabs();
 }
 function goHome(){
+  _revLeave();
   _navBack=true;showView('homeView');
   const ts=document.getElementById('tracksSection');
   if(ts)ts.style.display=activeFolderId?'block':'none';
@@ -3242,11 +3274,15 @@ function goHome(){
 }
 // Замаас буцахад: гол замын км байсан бол км жагсаалт руу, үгүй бол нүүр рүү
 function backFromTrack(){
+  _revLeave();
   isMainTrack(activeTrack())?openMainKmList():goHome()
 }
 function goTrack(){_fromConsec=false;
+  _revLeave();                         // үеэс гарлаа — дугаар эргэнэ
   _navBack=true;
-  showView('trackView');renderTrackView()
+  showView('trackView');renderTrackView();
+  // Сая гарсан үе рүү гүйлгэнэ — 50 үетэй замд дахин хайх нь ажил удаашруулна
+  _scrollToSec(activeSectionId)
 }
 function closeModal(id){const e=document.getElementById(id);if(e)e.classList.remove('open')}
 function openModal(id){hap(6);document.getElementById(id).classList.add('open')}
@@ -4072,7 +4108,7 @@ function jumpToConsec(trackId,secId,pos){
   hap(8);
   closeModal('consecReportModal');
   const t=getTrack(trackId);if(!t)return;
-  openTrack(trackId);
+  openTrack(trackId,1);                 // тодорхой цэг рүү үсэрч байгаа тул чиглэл асуухгүй
   const sec=(t.sections||[]).find(s=>s.id===secId);
   if(!sec){showToast('Тухайн үе олдсонгүй');return}
   openSection(secId,Math.max(0,pos-1));
@@ -4327,7 +4363,99 @@ function addTrack(){
   sortTracks();saveDB();closeModal('addTrackModal');renderHome()
 }
 function sortTracks(){DB.tracks.sort((a,b)=>a.num-b.num)}
-function openTrack(id){_fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView()}
+/* ── ЯВАХ ЧИГЛЭЛ ─────────────────────────────────────────────
+   Өртөөний замуудыг нэг нэгээр нь туулахдаа зэргэлдээ замыг БУЦАХ
+   замдаа бүртгэдэг. Тэгэхээр үе нь эсрэг дарааллаар (50 → 1)
+   тааралдана. Энэ нь зөвхөн ЯВАХ дараалал — үеийн дугаар, бүртгэсэн
+   дэр, паспортын өгөгдөл огт хөндөгдөхгүй. Тиймээс DB-д хадгалахгүй,
+   зөвхөн энэ сууринд санана. */
+let _revTrk={};
+function isRevTrack(t){
+  t=t===undefined?activeTrack():t;
+  return !!(t&&!isMainTrack(t)&&_revTrk[t.id])
+}
+// Үеүүдийг ЯВАХ дарааллаар. Ухрах горимд эсрэгээр.
+function walkSections(t){
+  const l=dataSections(t);
+  return isRevTrack(t)?l.slice().reverse():l
+}
+/* ── ҮЕ ДОТРОО УХРАХ ────────────────────────────────────────
+   Ухрах горимд үеийг ХОЛ талаас нь эхэлж алхна. Хүн 1, 2, 3 … гэж
+   ЯВСАН дарааллаараа бүртгэнэ. Үеэс ГАРАХАД дугаарыг эргүүлнэ:
+   хамгийн сүүлд бүртгэсэн нь #1, хамгийн түрүүнд бүртгэсэн нь
+   сүүлчийнх болно. Паспортад ҮРГЭЛЖ замын жинхэнэ дараалал үлдэнэ.
+
+   sec.rw — "энэ үе одоо ЯВАХ дарааллаар байна" гэсэн тэмдэг. Утас
+   унтарч апп унавал ачаалахдаа (_migrateDB) энэ тэмдгээр нь өөрөө
+   буцааж эргүүлнэ — өгөгдөл хагас эргэсэн хэвээр үлдэхгүй. */
+function _revSwap(sec){
+  if(!sec||!Array.isArray(sec.sleepers))return false;
+  const n=sec.sleepers.length;if(n<2)return false;
+  sec.sleepers.reverse();
+  const m=i=>n-1-i;
+  ['repl','fmap'].forEach(k=>{
+    if(!sec[k])return;
+    const o={};Object.keys(sec[k]).forEach(x=>{o[m(parseInt(x,10))]=sec[k][x]});
+    sec[k]=o
+  });
+  // fseg нь "энэ байрлалаас ХОЙШ" гэсэн утгатай тул мужийг нь эргүүлж
+  // дахин бичнэ. Эхний сегментээс өмнөх хэсэг нь үеийн үндсэн төрлөөр
+  // тул эргэхэд ЭЦЭСТ очно.
+  if(Array.isArray(sec.fseg)&&sec.fseg.length){
+    const sg=sec.fseg.slice().sort((a,b)=>a.i-b.i),out=[];
+    for(let k=0;k<sg.length;k++){
+      const en=(k+1<sg.length?sg[k+1].i:n)-1;
+      out.push(Object.assign({},sg[k],{i:n-1-en}))
+    }
+    if(sg[0].i>0)out.push({i:n-sg[0].i});
+    sec.fseg=out.sort((a,b)=>a.i-b.i)
+  }
+  return true
+}
+let _revOpen=null;                // ЯВАХ дарааллаар нээлттэй байгаа үе
+function _revEnter(sec){
+  if(!sec||!isRevTrack())return;
+  if(sec.rw){_revOpen=sec.id;return}
+  _revSwap(sec);sec.rw=1;_revOpen=sec.id;saveDB()
+}
+function _revLeave(){
+  if(!_revOpen)return;
+  const id=_revOpen;_revOpen=null;
+  const t=activeTrack();
+  const sec=(t&&(t.sections||[]).find(x=>x.id===id))||null;
+  if(!sec||!sec.rw)return;
+  _revSwap(sec);delete sec.rw;saveDB();
+  const n=sec.sleepers.length;
+  if(n>1)showToast(`${sec.label}: дугаар эргэлээ (#1 ↔ #${n})`,2400)
+}
+/* Апп унтрах, арын дэвсгэрт орох үед ч эргүүлж амжина */
+addEventListener('visibilitychange',()=>{if(document.hidden)_revLeave()});
+addEventListener('pagehide',()=>_revLeave());
+
+function openTrack(id,noAsk){
+  _fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView();
+  // Гол зам нь нэг км дотор нэг чиглэлтэй тул зөвхөн өртөөний замд асууна
+  const t=activeTrack();
+  if(noAsk||!t||isMainTrack(t)||dataSections(t).length<2)return;
+  askWalk()
+}
+function askWalk(){
+  const t=activeTrack();if(!t)return;
+  const l=dataSections(t);if(l.length<2)return;
+  document.getElementById('wkSub').textContent=
+    `${trackLabel(t)} · ${l.length} үе`;
+  document.getElementById('wkFwd').textContent=`Эхлэх үе: ${l[0].label}`;
+  document.getElementById('wkRev').textContent=`Эхлэх үе: ${l[l.length-1].label}`;
+  openModal('walkModal')
+}
+function pickWalk(rev){
+  const t=activeTrack();if(!t)return;
+  hap(8);
+  if(rev)_revTrk[t.id]=1;else delete _revTrk[t.id];
+  closeModal('walkModal');renderTrackView();
+  const l=walkSections(t);
+  showToast(`${rev?'← Ухарч':'Эхнээс'} · ${l[0].label}`,2400)
+}
 async function deleteTrack(){
   const t=activeTrack();if(!t)return;
   if(!await appConfirm(`${trackLabelAcc(t)} устгах уу? Бүх өгөгдөл устана.`))return;
@@ -4348,8 +4476,17 @@ function renderTrackView(){
   // Гол замд хэддэх км дээр байгааг харуулж, шудрах санамж гаргана
   const mn=isMainTrack(t)?mainTracks():[];
   const kmPos=mn.length>1?` · ${mn.findIndex(x=>x.id===t.id)+1}/${mn.length} км`:'';
+  const rev=isRevTrack(t),canWalk=!isMainTrack(t)&&dataSections(t).length>1;
   document.getElementById('tvSub').textContent=
-    `${dataSections(t).length} үе${turns?` · ${turns} сум`:''}${kmPos} · ${DB.location}`;
+    `${dataSections(t).length} үе${turns?` · ${turns} сум`:''}${kmPos} · ${DB.location}`+
+    (rev?' · ← ухарч':'');
+  // Явах чиглэлийн товч — толгойд, хурууны хэмжээтэй
+  const wb=document.getElementById('walkBtn'),wl=document.getElementById('walkBtnLbl');
+  if(wb){
+    wb.style.display=canWalk?'':'none';
+    wb.style.color=rev?'var(--purple)':'';
+    if(wl)wl.textContent=rev?'← ухарч':'эхнээс →'
+  }
   const ksh=document.getElementById('kmSwipeHint');
   if(ksh)ksh.style.display=mn.length>1?'block':'none';
   // "Сум" товч зөвхөн гол замд
@@ -4379,17 +4516,33 @@ function renderTrackView(){
     html+=`<div class="sec-lbl" style="margin-top:4px">Үенүүд</div><div class="stagger">`+
       t.sections.map(s=>sectionCard(s,t)).join('')+`</div>`
   } else {
-    const normal=t.sections.filter(s=>s.type!=='connecting');
+    let normal=t.sections.filter(s=>s.type!=='connecting');
     const conn=t.sections.filter(s=>s.type==='connecting');
-    if(normal.length){html+=`<div class="sec-lbl" style="margin-top:4px">Үенүүд</div><div class="stagger">`+normal.map(s=>sectionCard(s,t)).join('')+`</div>`}
+    if(rev)normal=normal.slice().reverse();       // буцах замдаа бүртгэж байна
+    // Холбох хэсэг нь жагсаалтын ДЭЭД талд. Өмнө нь доод талд байсан тул
+    // үе бүртгэж гараад ирэхэд хайх шаардлагатай болдог байв.
     if(conn.length){
-      html+=`<div class="sec-lbl" style="margin-top:16px">Холбох хэсгүүд <span style="font-size:10px;color:var(--ink4);font-weight:600;text-transform:none">(${trackLabel(t)} тооцоонд нэмэгдэнэ)</span></div>`;
+      html+=`<div class="sec-lbl" style="margin-top:4px">Холбох хэсгүүд <span style="font-size:10px;color:var(--ink4);font-weight:600;text-transform:none">(${trackLabel(t)} тооцоонд нэмэгдэнэ)</span></div>`;
       html+=`<div class="stagger">`+conn.map(s=>sectionCard(s,t)).join('')+`</div>`
     }
+    if(normal.length){html+=`<div class="sec-lbl" style="margin-top:${conn.length?16:4}px">Үенүүд</div><div class="stagger">`+normal.map(s=>sectionCard(s,t)).join('')+`</div>`}
   }
   body.innerHTML=html
 }
 
+/* Үеэс гараад ирэхэд ТЭР үе рүүгээ гүйлгэнэ. 50 үетэй замд жагсаалт
+   дээрээсээ эхэлдэг байсан тул дараагийн үеэ хайх нь ажил удаашруулж
+   байв. */
+function _scrollToSec(id){
+  if(!id)return;
+  setTimeout(()=>{
+    const el=document.querySelector('#trackBody .sec-card[data-sid="'+id+'"]');
+    if(!el)return;
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.add('sec-just');
+    setTimeout(()=>el.classList.remove('sec-just'),1600)
+  },90)
+}
 function sectionCard(s,t){
   // ── СУМ: дэргүй тэмдэглэгээ. Тоолуургүй, дарвал засварын цонх нээнэ ──
   if(isTurnout(s)){
@@ -4415,7 +4568,7 @@ function sectionCard(s,t){
   const barCol=pct>=25?'var(--red)':pct>=15?'var(--orange-mid)':'var(--g500)';
   const isConn=s.type==='connecting';
   const hasOverride=!!s.manual;
-  return`<div class="sec-card type-${s.type||'normal'}" onclick="hap();openSection('${s.id}')">
+  return`<div class="sec-card type-${s.type||'normal'}" data-sid="${s.id}" onclick="hap();openSection('${s.id}')">
     
     <div class="sec-card-top">
       <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
@@ -4657,13 +4810,21 @@ function addSection(){
 // ══════════════════════════════════════════════
 // RECORD
 // ══════════════════════════════════════════════
+/* Бүртгэлийн дэлгэцийн дэд гарчиг. Ухрах горимд түүнийг тодоор
+   харуулна — эс тэгвэл аль чиглэлд явж байгаагаа мартаж болно. */
+function _rvSub(t){
+  const e=document.getElementById('rvSub');if(!e)return;
+  e.innerHTML=`${esc(trackLabel(t))} · ${esc(DB.location)}`+
+    (isRevTrack(t)?' · <b style="color:var(--purple)">← ухарч</b>':'')
+}
 function openSection(secId,focusIdx){
   hap(6);DRM.secId=null;const t=activeTrack();if(!t)return;
   const sec=t.sections.find(s=>s.id===secId);if(!sec)return;
   if(isTurnout(sec)){openEditTurnout(secId);return}   // сум дээр дэр бүртгэхгүй
-  activeSectionId=secId;
+  if(activeSectionId!==secId)_revLeave();
+  activeSectionId=secId;_revEnter(sec);
   document.getElementById('rvTitle').textContent=sec.label;
-  document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
+  _rvSub(t);
   showView('recordView');renderRecordView(focusIdx);
   // Өмнөх лавлагаа banner харуулах
   setTimeout(updateNavBtns,50)
@@ -5467,38 +5628,44 @@ function _swipeOn(dx,dy,minX,ratio){
 }
 function navNextSection(){
   hap(8);hideSwipeFlash();const t=activeTrack();if(!t)return;
-  const secs=dataSections(t);   // сум дээр бүртгэл байхгүй тул алгасна
+  const secs=walkSections(t);   // сум дээр бүртгэл байхгүй тул алгасна
   const idx=secs.findIndex(s=>s.id===activeSectionId);
+  // Ухрах горимд "дараагийн" нь 1-р үе рүү ойртоно — тэнд шинэ үе
+  // нэмэх нь буруу тул зогсоно
+  if(idx>=0&&idx===secs.length-1&&isRevTrack(t)){
+    showToast('Сүүлийн үе байна',1800);updateNavBtns();return
+  }
   if(idx>=0&&idx<secs.length-1){
-    const next=secs[idx+1];activeSectionId=next.id;
+    const next=secs[idx+1];_revLeave();activeSectionId=next.id;_revEnter(next);
     document.getElementById('rvTitle').textContent=next.label;
-    document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
+    _rvSub(t);
     renderRecordView();showToast(`→ ${next.label}`)
   } else {
     const nextNum=secs.filter(s=>s.type!=='connecting').length+1;
     const ns={id:uid(),type:'normal',label:`${nextNum}-р үе`,note:'',sleepers:[],date:new Date().toLocaleDateString('mn-MN')};
-    t.sections.push(ns);sortSections(t);saveDB();activeSectionId=ns.id;
+    _revLeave();
+    t.sections.push(ns);sortSections(t);saveDB();activeSectionId=ns.id;_revEnter(ns);
     document.getElementById('rvTitle').textContent=ns.label;
-    document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
+    _rvSub(t);
     renderRecordView();showToast(`✓ ${ns.label} шинээр нэмлээ`)
   }
   updateNavBtns()
 }
 function navPrevSection(){
   hap(8);hideSwipeFlash();const t=activeTrack();if(!t)return;
-  const secs=dataSections(t);
+  const secs=walkSections(t);
   const idx=secs.findIndex(s=>s.id===activeSectionId);
   if(idx>0){
-    const prev=secs[idx-1];activeSectionId=prev.id;
+    const prev=secs[idx-1];_revLeave();activeSectionId=prev.id;_revEnter(prev);
     document.getElementById('rvTitle').textContent=prev.label;
-    document.getElementById('rvSub').textContent=`${trackLabel(t)} · ${DB.location}`;
+    _rvSub(t);
     renderRecordView();showToast(`← ${prev.label}`)
   } else showToast('Эхний үе байна');
   updateNavBtns()
 }
 function updateNavBtns(){
   const t=activeTrack();if(!t)return;
-  const idx=dataSections(t).findIndex(s=>s.id===activeSectionId);
+  const idx=walkSections(t).findIndex(s=>s.id===activeSectionId);
   const hasPrev=idx>0;
   const prev=document.getElementById('navPrevBtn');
   if(prev){prev.style.opacity=hasPrev?'1':'0.3';prev.style.pointerEvents=hasPrev?'all':'none'}
@@ -7333,6 +7500,7 @@ async function doLogout(){
   if(fbAuth)fbAuth.signOut().catch(()=>{});
   if(_dirtyAt())flushSave(true);          // гарахын өмнө амжиж илгээнэ
   shAutoStop();                           // гарсны дараа цаг үлдэж болохгүй
+  _revLeave();_revTrk={};
   _currentUser=null;_sectionCode=null;_isAdmin=false;
   activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
   showView('loginView')
@@ -10659,7 +10827,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.11·128';
+const APP_BUILD='2026.09.12·130';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
