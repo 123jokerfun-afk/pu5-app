@@ -3496,19 +3496,26 @@ function renderMainKmView(){
   // Салаалсан замд бөөнөөр оруулах боломж байхгүй — дэр бүрийг тэмдэглэнэ
   const b1=document.getElementById('kmBulkBtn');
   if(b1)b1.style.display=isBranchSection()?'none':'';
-  // Гол замын нийт дүн
-  let gT=0,gB=0;
-  mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad});
+  // Гол замын нийт дүн. Модон дэр нь солих төлөвлөгөөний гол тоо тул
+  // жагсаалтын дээр шууд харагдана.
+  let gT=0,gB=0,gW=0,gC=0;
+  mn.forEach(t=>{const a=analyzeMainTrack(t);gT+=a.total;gB+=a.bad;gW+=a.wood;gC+=a.tbd});
   const gPct=gT>0?(gB/gT*100):0;
   const gCol=gPct>=25?'var(--red)':gPct>=15?'var(--orange)':'var(--g600)';
   if(sub)sub.textContent=`${mn[0].num}—${mn[mn.length-1].num} км · ${DB.location||''}`;
-  if(stats)stats.innerHTML=`
-    <div class="ov-cell" style="background:var(--blue-bg);border-color:rgba(29,78,216,.25)">
-      <div class="ov-n" style="color:var(--blue)">${mn.length}</div><div class="ov-l">Нийт км</div></div>
-    <div class="ov-cell" style="background:var(--bg);border-color:var(--border)">
-      <div class="ov-n" style="color:var(--ink)">${gT}</div><div class="ov-l">Нийт дэр</div></div>
-    <div class="ov-cell" style="background:var(--orange-bg);border-color:#F5C272">
-      <div class="ov-n" style="color:${gCol}">${gPct.toFixed(1)}%</div><div class="ov-l">Тэнцэхгүй</div></div>`;
+  const _cell=(v,l,bg,bd,col)=>`
+    <div class="ov-cell" style="background:${bg};border-color:${bd}">
+      <div class="ov-n" style="color:${col}">${v}</div><div class="ov-l">${l}</div></div>`;
+  // Салаалсан гол замд км тоо биш, материалын задаргаа хэрэгтэй
+  if(stats)stats.innerHTML=isBranchSection()?
+    _cell(gT,'Нийт дэр','var(--bg)','var(--border)','var(--ink)')+
+    _cell(gC,'Бетон дэр','var(--red-bg)','#F5A0A0','var(--red)')+
+    _cell(gW,'Модон дэр','var(--g100)','var(--g300)','var(--g700)')+
+    _cell(gPct.toFixed(1)+'%','Тэнцэхгүй','var(--orange-bg)','#F5C272',gCol)
+   :_cell(mn.length,'Нийт км','var(--blue-bg)','rgba(29,78,216,.25)','var(--blue)')+
+    _cell(gT,'Нийт дэр','var(--bg)','var(--border)','var(--ink)')+
+    _cell(gW,'Модон дэр','var(--g100)','var(--g300)','var(--g700)')+
+    _cell(gPct.toFixed(1)+'%','Тэнцэхгүй','var(--orange-bg)','#F5C272',gCol);
 
   body.innerHTML=mn.map(t=>{
     const a=analyzeMainTrack(t);
@@ -4389,7 +4396,7 @@ function sortTracks(){DB.tracks.sort((a,b)=>a.num-b.num)}
    тааралдана. Энэ нь зөвхөн ЯВАХ дараалал — үеийн дугаар, бүртгэсэн
    дэр, паспортын өгөгдөл огт хөндөгдөхгүй. Тиймээс DB-д хадгалахгүй,
    зөвхөн энэ сууринд санана. */
-let _revTrk={};
+let _revTrk={},_revAsked={};
 function isRevTrack(t){
   t=t===undefined?activeTrack():t;
   return !!(t&&!isMainTrack(t)&&_revTrk[t.id])
@@ -4476,6 +4483,7 @@ function askWalk(){
 function pickWalk(rev){
   const t=activeTrack();if(!t)return;
   hap(8);
+  _revAsked[t.id]=1;
   if(rev)_revTrk[t.id]=1;else delete _revTrk[t.id];
   closeModal('walkModal');renderTrackView();
   const l=walkSections(t);
@@ -4513,7 +4521,13 @@ function renderTrackView(){
     if(wl)wl.textContent=rev?'← ухарч':'эхнээс →'
   }
   const ksh=document.getElementById('kmSwipeHint');
-  if(ksh)ksh.style.display=mn.length>1?'block':'none';
+  if(ksh){
+    const nl=trkList(t).length;
+    ksh.style.display=nl>1?'block':'none';
+    ksh.textContent=isMainTrack(t)
+      ?'← Хажуу тийш шудран км солино →'
+      :'← Хажуу тийш шудран зам солино →'
+  }
   // "Сум" товч зөвхөн гол замд
   const dock=document.querySelector('.add-sec-dock'),tBtn=document.getElementById('asbTurnout');
   if(tBtn){tBtn.style.display=isMainTrack(t)?'':'none'}
@@ -5575,14 +5589,20 @@ function initScreenSwipe(){
     if(_swipeOn(dx,dy,28,1.1))showSwipeFlash(dx>0?'right':'left');else hideSwipeFlash()
   },{passive:true})
 }
-// ── Гол замын км хооронд шудрах (үеийн жагсаалт дээр) ──
-// Баруун шудрах = дараагийн км, зүүн = өмнөх. Агуулга хурууны дагуу гулсана.
+/* ── Зам хооронд шудрах (үеийн жагсаалт дээр) ──────────────────
+   Баруун шудрах = дараагийн зам, зүүн = өмнөх. Гол замд км, өртөө ба
+   салбар замд паспорт доторх замууд. Агуулга хурууны дагуу гулсана. */
+function trkList(t){
+  t=t===undefined?activeTrack():t;
+  if(!t)return [];
+  // DB.tracks нь sortTracks-аар дугаараар эрэмбэлэгдсэн байдаг
+  return isMainTrack(t)?mainTracks():(DB.tracks||[]).filter(x=>!isMainTrack(x))
+}
 let _kmSwipedAt=0;
 function initKmSwipe(){
   const tv=document.getElementById('trackView');if(!tv)return;
   let st=null;
-  const ready=()=>isMainTrack(activeTrack())&&mainTracks().length>1
-    &&!document.querySelector('.overlay.open');
+  const ready=()=>trkList().length>1&&!document.querySelector('.overlay.open');
   tv.addEventListener('touchstart',e=>{
     if(!ready()){st=null;return}
     const t=e.touches[0];st={x:t.clientX,y:t.clientY,time:Date.now()}
@@ -5590,7 +5610,8 @@ function initKmSwipe(){
   tv.addEventListener('touchmove',e=>{
     if(!st)return;
     const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
-    if(_swipeOn(dx,dy,28,1.1))showSwipeFlash(dx>0?'right':'left','км');
+    if(_swipeOn(dx,dy,28,1.1))
+      showSwipeFlash(dx>0?'right':'left',isMainTrack(activeTrack())?'км':'зам');
     else hideSwipeFlash()
   },{passive:true});
   tv.addEventListener('touchend',e=>{
@@ -5599,7 +5620,7 @@ function initKmSwipe(){
     const dx=t.clientX-st.x,dy=t.clientY-st.y,dt=Date.now()-st.time;
     st=null;hideSwipeFlash();
     if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.3&&dt<600){
-      _kmSwipedAt=Date.now();navKm(dx>0?1:-1)
+      _kmSwipedAt=Date.now();navTrk(dx>0?1:-1)
     }
   },{passive:true});
   // Шудрахад үеийн карт дээр дарагдаж орохоос сэргийлнэ
@@ -5607,14 +5628,16 @@ function initKmSwipe(){
     if(Date.now()-_kmSwipedAt<450){e.stopPropagation();e.preventDefault()}
   },true)
 }
-function navKm(dir){
-  const mn=mainTracks();
-  const i=mn.findIndex(t=>t.id===activeTrackId);
+function navTrk(dir){
+  const cur=activeTrack();if(!cur)return;
+  const l=trkList(cur);
+  const i=l.findIndex(t=>t.id===activeTrackId);
   if(i<0)return;
-  const j=i+dir;
-  if(j<0){hap(6);showToast('Эхний км байна');return}
-  if(j>=mn.length){hap(6);showToast('Сүүлийн км байна');return}
-  hap(8);activeTrackId=mn[j].id;activeSectionId=null;
+  const j=i+dir,unit=isMainTrack(cur)?'км':'зам';
+  if(j<0){hap(6);showToast('Эхний '+unit+' байна');return}
+  if(j>=l.length){hap(6);showToast('Сүүлийн '+unit+' байна');return}
+  _revLeave();                    // үеэс гараагүй бол дугаарыг эргүүлнэ
+  hap(8);activeTrackId=l[j].id;activeSectionId=null;
   renderTrackView();
   const tv=document.getElementById('trackView');
   if(tv){
@@ -5622,8 +5645,13 @@ function navKm(dir){
     tv.classList.add(dir>0?'km-slide-next':'km-slide-prev');
     setTimeout(()=>tv.classList.remove('km-slide-next','km-slide-prev'),340)
   }
-  showToast(`${mn[j].num}-р км · ${j+1}/${mn.length}`)
+  showToast(`${trackLabel(l[j])} · ${j+1}/${l.length}`);
+  // Зэргэлдээ замыг БУЦАХ замдаа бүртгэх нь энэ шудралтын гол хэрэглээ.
+  // Тухайн замд чиглэлээ нэг ч удаа заагаагүй бол асууна.
+  if(!isMainTrack(l[j])&&!_revAsked[l[j].id])askWalk()
 }
+// Хуучин нэр — гол замын км шилжилтэд хэрэглэгдэж байсан
+function navKm(dir){return navTrk(dir)}
 /* Шудрах заалт.
 
    Өмнө нь touchmove бүрт (секундэд ~60 удаа) className, textContent,
@@ -7525,7 +7553,7 @@ async function doLogout(){
   if(fbAuth)fbAuth.signOut().catch(()=>{});
   if(_dirtyAt())flushSave(true);          // гарахын өмнө амжиж илгээнэ
   shAutoStop();                           // гарсны дараа цаг үлдэж болохгүй
-  _revLeave();_revTrk={};
+  _revLeave();_revTrk={};_revAsked={};
   _currentUser=null;_sectionCode=null;_isAdmin=false;
   activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
   showView('loginView')
@@ -10852,7 +10880,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.12·131';
+const APP_BUILD='2026.09.12·132';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
