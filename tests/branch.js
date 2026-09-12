@@ -168,6 +168,30 @@ const br=await B.launch();
   await page.close();
 }
 
+/* Салаалсан гол замын жагсаалтын дээр материалын задаргаа хэрэгтэй —
+   км тоо биш. Материал нь ДЭРИЙН ТӨРЛӨӨС гардаг тул тэндээс тоолно. */
+{
+  const {page}=await B.newPage(br,B.DEVICES[1]);
+  await B.login(page,'ПД-11');
+  const hd=await page.evaluate(async()=>{
+    DB.main=[{id:'k1',num:1,kind:'main',mat:'tbd',sections:[
+      {id:'u1',type:'normal',label:'1-р үе',note:'',date:'x',
+       sleepers:['tbd','tbd','bad_tbd','normal','bad'].map(t=>({type:t,ts:0}))}]}];
+    activeFolderId=null;DB.tracks=[];saveDB();
+    openMainKmList();await new Promise(r=>setTimeout(r,350));
+    return{cells:[...document.querySelectorAll('#mkStats .ov-cell')]
+      .map(e=>e.querySelector('.ov-l').textContent+'='+e.querySelector('.ov-n').textContent),
+      title:document.getElementById('mkTitle').textContent}});
+  ok('Салаалсан гол замын дүн 4 нүдтэй',hd.cells.length===4,JSON.stringify(hd.cells));
+  ok('Нийт дэр, бетон, модон, тэнцэхгүй хувь',
+     /^Нийт дэр=5$/.test(hd.cells[0])&&/^Бетон дэр=3$/.test(hd.cells[1])
+     &&/^Модон дэр=2$/.test(hd.cells[2])&&/Тэнцэхгүй=40\.0%/.test(hd.cells[3]),
+     JSON.stringify(hd.cells));
+  ok('Салаалсан замд "Нийт км" нүд байхгүй',
+     !hd.cells.some(x=>/Нийт км/.test(x))&&hd.title==='Салаалсан гол зам',hd.title);
+  await page.close();
+}
+
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
 await br.close();process.exit(R.every(Boolean)?0:1);
 })();

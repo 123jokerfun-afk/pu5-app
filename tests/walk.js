@@ -353,6 +353,74 @@ const stop=await page.evaluate(async()=>{
 ok('1-р үе хүрвэл цааш ШИНЭ ҮЕ үүсэхгүй',
    stop.a==='1-р үе'&&stop.b==='1-р үе'&&stop.n===2,`${stop.a} → ${stop.b} · ${stop.n} үе`);
 
+/* ── 10. Зам хооронд шудрах ─────────────────────────────────────
+   Зэргэлдээ замыг БУЦАХ замдаа бүртгэдэг тул үеийн жагсаалт дээрээс
+   шууд дараагийн зам руу шилжих нь ажлын гол урсгал. Өмнө нь зөвхөн
+   гол замын км хооронд шилждэг байв. */
+console.log('\nЗам хооронд шудрах');
+const sw=await page.evaluate(async()=>{
+  const ue=n=>({id:'w'+n,type:'normal',label:n+'-р үе',note:'',date:'x',
+    sleepers:[{type:'bad',ts:0},{type:'normal',ts:0}]});
+  DB.folders=[{id:'fs',name:'Х',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    tracks:[{id:'s2',num:2,kind:'station',sections:[ue(1)]},
+            {id:'s3',num:3,kind:'station',sections:[ue(1)]},
+            {id:'s4',num:4,kind:'station',sections:[ue(1)]}]}];
+  DB.main=[{id:'m1',num:681,kind:'main',mat:'tbd',sections:[ue(1)]},
+           {id:'m2',num:682,kind:'main',mat:'wood',sections:[ue(1)]}];
+  activeFolderId='fs';DB.tracks=DB.folders[0].tracks;_revAsked={};saveDB();
+  openTrack('s2',1);await new Promise(r=>setTimeout(r,260));
+  const hint=document.getElementById('kmSwipeHint');
+  const hv=getComputedStyle(hint).display,ht=hint.textContent;
+  const list=trkList().map(t=>t.num);
+  navTrk(1);await new Promise(r=>setTimeout(r,300));
+  const a=trackLabel(activeTrack()),askA=document.getElementById('walkModal').classList.contains('open');
+  closeModal('walkModal');
+  navTrk(1);await new Promise(r=>setTimeout(r,300));
+  const b=trackLabel(activeTrack());closeModal('walkModal');
+  navTrk(1);await new Promise(r=>setTimeout(r,260));
+  const c=trackLabel(activeTrack());
+  navTrk(-1);await new Promise(r=>setTimeout(r,300));
+  const d=trackLabel(activeTrack());closeModal('walkModal');
+  return{hv,ht,list,a,b,c,d,askA}});
+ok('Өртөөний замд шудрах санамж гарна',
+   sw.hv!=='none'&&/зам солино/.test(sw.ht),`${sw.hv} · ${sw.ht}`);
+ok('Замын дараалал дугаараар',JSON.stringify(sw.list)===JSON.stringify([2,3,4]),
+   JSON.stringify(sw.list));
+ok('Баруун шудрахад ДАРААХ зам',sw.a==='3-р зам'&&sw.b==='4-р зам',`${sw.a} → ${sw.b}`);
+ok('Сүүлийн замаас цааш шилжихгүй',sw.c==='4-р зам',sw.c);
+ok('Зүүн шудрахад ӨМНӨХ зам',sw.d==='3-р зам',sw.d);
+ok('Шилжсэн замд чиглэл асууна (буцах замдаа бүртгэх)',sw.askA===true,String(sw.askA));
+
+const swKm=await page.evaluate(async()=>{
+  goHome();await new Promise(r=>setTimeout(r,150));
+  openTrack('m1');await new Promise(r=>setTimeout(r,260));
+  const ht=document.getElementById('kmSwipeHint').textContent;
+  const ask=document.getElementById('walkModal').classList.contains('open');
+  navTrk(1);await new Promise(r=>setTimeout(r,300));
+  return{ht,ask,now:trackLabel(activeTrack()),
+    ask2:document.getElementById('walkModal').classList.contains('open')}});
+ok('Гол замд км шудралт хэвээр',/км солино/.test(swKm.ht)&&swKm.now==='682-р км',
+   `${swKm.ht} · ${swKm.now}`);
+ok('Гол замд чиглэл асуухгүй',!swKm.ask&&!swKm.ask2,`${swKm.ask} · ${swKm.ask2}`);
+
+/* ── 11. Км жагсаалтын дээрх дүн ── */
+console.log('\nКм жагсаалтын дүн');
+const hd=await page.evaluate(async()=>{
+  const mk=(n,types)=>({id:'h'+n,type:'normal',label:n+'-р үе',note:'',date:'x',
+    sleepers:types.map(t=>({type:t,ts:0}))});
+  DB.main=[{id:'k1',num:681,kind:'main',mat:'tbd',sections:[mk(1,['normal','normal','bad'])]},
+           {id:'k2',num:682,kind:'main',mat:'wood',sections:[mk(2,['normal','bad'])]}];
+  activeFolderId=null;DB.tracks=[];saveDB();
+  openMainKmList();await new Promise(r=>setTimeout(r,320));
+  return[...document.querySelectorAll('#mkStats .ov-cell')]
+    .map(e=>e.querySelector('.ov-l').textContent+'='+e.querySelector('.ov-n').textContent)});
+ok('Гол замын дүн 4 нүдтэй',hd.length===4,JSON.stringify(hd));
+ok('Нийт модон дэр харагдана',
+   hd.some(x=>/^Модон дэр=2$/.test(x)),JSON.stringify(hd));
+ok('Нийт км, нийт дэр, тэнцэхгүй хувь хэвээр',
+   /^Нийт км=2$/.test(hd[0])&&/^Нийт дэр=5$/.test(hd[1])&&/Тэнцэхгүй=40\.0%/.test(hd[3]),
+   JSON.stringify(hd));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
