@@ -60,10 +60,15 @@ ok('Паспорт "нээлттэй" гэж тэмдэглэгдэв',await pag
 const items=await page.evaluate(()=>({
   cards:document.querySelectorAll('#swTurnoutsGrid .sw-card').length,
   folders:document.querySelectorAll('#swFolderWrap .folder-card').length,
+  names:[...document.querySelectorAll('#swFolderWrap .folder-name')].map(e=>e.textContent.trim()).join(', '),
   form:!!document.getElementById('swFormBtn'),
   add:[...document.querySelectorAll('#swTurnoutsSection button')].some(b=>/Сум нэмэх/.test(b.textContent))}));
 ok('Сумын карт 2',items.cards===2,JSON.stringify(items));
-ok('Сольсон/Дараалсан/Бодит 3 хавтас',items.folders===3);
+// v133-т Орлого, Зарлага (дүнзний агуулах) хоёр хавтас нэмэгдсэн
+ok('Сольсон/Дараалсан/Бодит + Орлого/Зарлага = 5 хавтас',
+   items.folders===5,String(items.folders));
+ok('Агуулахын хоёр хавтас нэрээрээ байна',
+   /Орлого/.test(items.names)&&/Зарлага/.test(items.names),items.names);
 ok('Дүнзний маягт татах товч',items.form);
 ok('Сум нэмэх товч',items.add);
 
