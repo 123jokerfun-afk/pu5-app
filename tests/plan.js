@@ -9,6 +9,8 @@
    салбар зам бүгд түүнээс дэр авна. Зарлага нь солилтоос гарна.
    ══════════════════════════════════════════════════════════════ */
 const B=require('./base'),S=require('./seed');
+// Цэнхэр эсэхийг нэрээр нь биш, ЦЭНХЭР СУВАГ нь давамгайлж байгаагаар шалгана
+const _isBlue=c=>{const m=String(c).match(/\d+/g);return !!m&&+m[2]>+m[0]+40&&+m[2]>=+m[1]};
 const R=[];const ok=(n,c,d)=>{R.push(!!c);console.log((c?'  ✓ ':'  ✗ ')+n+(d!==undefined?'  — '+d:''))};
 (async()=>{
 const br=await B.launch();
@@ -59,12 +61,24 @@ const mark=await page.evaluate(async()=>{
     keep:/dr-bad/.test(rows[5].className)}});
 ok('Төлөвлөсөн дэр жагсаалт дээр тэмдэглэгдэнэ',
    /dr-plan/.test(mark.on)&&!/dr-plan/.test(mark.off),mark.on);
-// Цэнхэр эсэхийг нэрээр нь биш, ЦЭНХЭР СУВАГ нь давамгайлж байгаагаар шалгана
-const _isBlue=c=>{const m=c.match(/\d+/g);return m&&+m[2]>+m[0]+40&&+m[2]>=+m[1]};
 ok('Хүрээ нь цэнхэр, зузаан',
    _isBlue(mark.col)&&parseFloat(mark.w)>parseFloat(mark.w4),
    `${mark.col} · ${mark.w} vs ${mark.w4}`);
 ok('Төрлийн өнгө (тэнцэхгүй) хэвээр үлдэнэ',mark.keep,mark.on);
+/* Хүрээ нь ганцаараа тод биш байсан тул ТӨРЛИЙН АРД цэнхэр хадаасны
+   тэмдэг тавьсан. Эможи биш SVG — утас бүрт ижил өнгө, ижил хэмжээ. */
+const pin=await page.evaluate(()=>{
+  const rows=[...document.querySelectorAll('#rvLog .drow.dr-rec')];
+  const p=rows[5].querySelector('.pl-pin');
+  const cs=p?getComputedStyle(p):null;
+  return{has:!!p,none:!rows[4].querySelector('.pl-pin'),
+    svg:!!(p&&p.querySelector('svg')),col:cs&&cs.color,
+    order:[...rows[5].children].map(e=>e.className.split(' ')[0])}});
+ok('Төлөвлөсөн дэр дээр цэнхэр хадаасны тэмдэг гарна',
+   pin.has&&pin.none&&pin.svg,JSON.stringify(pin.order));
+ok('Тэмдэг нь ТӨРЛИЙН АРД байрлана',
+   pin.order[1]==='drum-badge'&&pin.order[2]==='pl-pin',JSON.stringify(pin.order));
+ok('Тэмдгийн өнгө цэнхэр',_isBlue(pin.col),pin.col);
 
 /* ── 2. Төлөвлөсөн дэрийн жагсаалт ── */
 const rep=await page.evaluate(async()=>{
@@ -114,8 +128,10 @@ ok('Сольсны дараа төлөвлөгөө нь өөрөө арилна'
    !done.plan&&done.repl&&done.n===1,`төлөвлөгөө ${done.plan} · солилт ${done.repl}`);
 const unmark=await page.evaluate(async()=>{
   renderRecordView(2);await new Promise(r=>setTimeout(r,300));
-  return[...document.querySelectorAll('#rvLog .drow.dr-rec')][2].className});
-ok('Сольсны дараа цэнхэр хүрээ нь арилна',!/dr-plan/.test(unmark),unmark);
+  const r=[...document.querySelectorAll('#rvLog .drow.dr-rec')][2];
+  return{cls:r.className,pin:!!r.querySelector('.pl-pin')}});
+ok('Сольсны дараа цэнхэр хүрээ нь арилна',!/dr-plan/.test(unmark.cls),unmark.cls);
+ok('Сольсны дараа хадаасны тэмдэг ч арилна',!unmark.pin,String(unmark.pin));
 
 /* ── 5. ДЭРИЙН АГУУЛАХ ── */
 console.log('\nДэрийн агуулах');
@@ -197,7 +213,12 @@ const smark=await page.evaluate(async()=>{
   return{on:rows[2].className,off:rows[3].className,
     col:getComputedStyle(rows[2]).borderTopColor,
     w:getComputedStyle(rows[2]).borderTopWidth,
-    w3:getComputedStyle(rows[3]).borderTopWidth}});
+    w3:getComputedStyle(rows[3]).borderTopWidth,
+    pin:!!rows[2].querySelector('.pl-pin')&&!rows[3].querySelector('.pl-pin'),
+    pinOrder:[...rows[2].children].map(e=>e.className.split(' ')[0])}});
+ok('Төлөвлөсөн дүнз дээр ч хадаасны тэмдэг гарна',
+   smark.pin&&smark.pinOrder[2]==='sw-state'&&smark.pinOrder[3]==='pl-pin',
+   JSON.stringify(smark.pinOrder));
 ok('Төлөвлөсөн дүнз жагсаалт дээр цэнхэр хүрээтэй',
    /dr-plan/.test(smark.on)&&!/dr-plan/.test(smark.off)
    &&_isBlue(smark.col)&&parseFloat(smark.w)>parseFloat(smark.w3),

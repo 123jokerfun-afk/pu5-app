@@ -149,11 +149,12 @@ ok('Нийт зарлага гарна',/1 ш/.test(out.tot)&&/3 пог\/м/.tes
 /* ── 4. Паспортын картууд ── */
 const cards=await page.evaluate(async()=>{
   goSwHome();await new Promise(r=>setTimeout(r,320));
-  return[...document.querySelectorAll('#swFolderWrap .folder-card')]
+  // v138: агуулах нь паспортын хавтаснуудаас гарч тусдаа хэсэг болсон
+  return[...document.querySelectorAll('#swIncWrap .folder-card')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim())});
-ok('Сумын паспортад Орлого, Зарлага карт нэмэгдэв',
-   cards.some(x=>/^Орлого\|/.test(x))&&cards.some(x=>/^Зарлага\|/.test(x)),
+ok('Дүнзний агуулахын хэсэгт Орлого, Зарлага карт байна',
+   cards.length===2&&/^Орлого\|/.test(cards[0])&&/^Зарлага\|/.test(cards[1]),
    JSON.stringify(cards));
 ok('Орлогын карт дүнгээ харуулна',
    cards.some(x=>/^Орлого\|14 ш · 43 пог\/м$/.test(x)),
