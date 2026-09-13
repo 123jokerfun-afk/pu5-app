@@ -460,6 +460,9 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
   padding:9px 10px;margin-bottom:7px}
 .inc-row-v .inc-l{font-size:14px;font-weight:900;color:var(--ink)}
 .inc-row-v .inc-q{font-size:14px;font-weight:900;color:var(--ink2);text-align:center}
+/* Төлөвлөсөн мөр — дарж очих боломжтойг мэдэгдэнэ */
+.pl-row{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pl-row:active{background:var(--blue-bg)}
 /* Зарлагын мөр: сум · урт · ш · пог/м · % */
 .out-tr{display:grid;grid-template-columns:54px 60px 46px 1fr 56px;align-items:center;gap:5px;
   padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800}
@@ -467,6 +470,8 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .out-tr-h{background:var(--bg);border-bottom:1.5px solid var(--border2)}
 .out-tr-h span{font-size:9px!important;font-weight:900!important;color:var(--ink4)!important;
   text-transform:uppercase;letter-spacing:.04em}
+/* Дэрийн орлого/зарлагын мөр — огноо/зам · задаргаа · тоо (баганагүй) */
+.out-tr.der-tr{display:flex;align-items:center;gap:8px}
 .sw-tr{display:grid;grid-template-columns:74px 52px 1fr 1fr;align-items:center;gap:6px;
   padding:8px 10px;border-bottom:1px solid var(--border);background:var(--card)}
 .sw-tr:last-of-type{border-bottom:none}
@@ -1554,6 +1559,10 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </button>
     </div>
     <div class="home-section" style="margin-top:16px">
+      <div class="sec-lbl" style="margin-top:0">Дэрийн агуулах</div>
+      <div id="derWrap"></div>
+    </div>
+    <div class="home-section" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
       <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px"></div>
       <div class="lp-hint" id="folderLp" style="display:none">Паспорт дээр удаан дарж устгах товчийг идэвхжүүлнэ</div>
@@ -1854,6 +1863,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('editSleeperModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <button class="etb" id="typeBtn" onclick="openTypeModal()" style="width:100%;margin-top:10px;padding:14px;display:flex;align-items:center;gap:10px;text-align:left"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="flex:1">Төрөл өөрчлөх</span><span id="typeBtnNow" style="font-weight:900;color:var(--ink3);font-size:12px"></span><span style="font-weight:900;color:var(--ink4)">›</span></button>
+    <button class="etb" id="planBtn" onclick="openPlanModal()" style="width:100%;margin-top:6px;padding:14px;background:var(--blue-bg);color:var(--blue);border-color:var(--blue-mid)"><svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Солихоор төлөвлөх</button>
     <button class="etb" id="replBtn" onclick="openReplModal()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
     <button class="etb etb-del" onclick="deleteSleeper()"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг устгах</button>
   </div></div>
@@ -1874,6 +1884,121 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button class="etb etb-bt" id="tmB_bad_tbd" onclick="editSleeper('bad_tbd')"><span class="etb-icon">✕</span>Тэнцэхгүй ТБД</button>
     </div>
     <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('typeModal')">Буцах</button>
+  </div></div>
+</div>
+
+<!-- ДЭР: СОЛИХООР ТӨЛӨВЛӨХ (ямар төрлөөр солихыг л сонгоно) -->
+<div class="overlay" id="planModal" style="z-index:430">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="planTitle">Солихоор төлөвлөх</div>
+      <button onclick="closeModal('planModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Энэ тэнцэхгүй дэрийг ЯМАР төрлийн дэрээр солихоор төлөвлөж байна вэ?</div>
+    <div id="planStock" style="font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:var(--rs);padding:9px 11px;margin-bottom:10px;line-height:1.6"></div>
+    <div class="edit-grid" style="margin:0">
+      <button class="etb etb-n" id="plB_wood" onclick="savePlan('wood')"><span class="etb-icon">✓</span>Модон</button>
+      <button class="etb etb-t" id="plB_tbd" onclick="savePlan('tbd')"><span class="etb-icon">■</span>ТБД</button>
+    </div>
+    <button class="etb etb-del" id="planClear" onclick="clearPlan()" style="display:none"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Төлөвлөгөөг цуцлах</button>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('planModal')">Буцах</button>
+  </div></div>
+</div>
+
+<!-- ДЭР: ТӨЛӨВЛӨСӨН ДЭРИЙН ЖАГСААЛТ -->
+<div class="overlay" id="planRepModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--blue)">📋 Төлөвлөсөн дэр</div>
+      <button onclick="closeModal('planRepModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зам, үе, дэрийн дугаараар. Мөр дээр дарвал тэр үеийн дэрийн жагсаалт руу шууд очно.</div>
+    <div id="planRepBody"></div>
+  </div></div>
+</div>
+
+<!-- ДЭРИЙН АГУУЛАХ: ОРЛОГО -->
+<div class="overlay" id="derIncModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--g700)">📥 Дэрийн орлого</div>
+      <button onclick="closeModal('derIncModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Гол зам, өртөө, салаалсан, салбар замд ижил агуулахаас дэр очно.</div>
+    <div id="derIncBody"></div>
+    <button class="btn-ok" style="width:100%;margin-top:10px" onclick="openDerIncAdd()">Орлого авах</button>
+  </div></div>
+</div>
+
+<!-- ДЭРИЙН АГУУЛАХ: ОРЛОГО АВАХ -->
+<div class="overlay" id="derIncAddModal" style="z-index:440">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Дэр орлогод авах</div>
+      <button onclick="closeModal('derIncAddModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;font-weight:600">Огноогоо гүйлгэж сонгоод, дэрийн тоог оруулна</div>
+    <div class="wheel-year" id="derIncYear">—</div>
+    <div class="wheel-row">
+      <div class="wheel-col"><div class="wheel-lbl">Сар</div>
+        <div style="position:relative"><div class="wheel" id="derWhM"></div><div class="wheel-band"></div></div></div>
+      <div class="wheel-col"><div class="wheel-lbl">Өдөр</div>
+        <div style="position:relative"><div class="wheel" id="derWhD"></div><div class="wheel-band"></div></div></div>
+    </div>
+    <div class="ff" style="margin-top:12px"><label>Дэрийн тоо<span style="color:var(--red)"> *</span></label>
+      <input type="number" id="derIncN" min="1" max="100000" inputmode="numeric" placeholder="жишээ: 200" oninput="_derPrev()">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setDerIncN(50)">50</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setDerIncN(100)">100</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setDerIncN(200)">200</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setDerIncN(500)">500</button>
+      <button type="button" class="rb-chip" style="cursor:pointer" onclick="setDerIncN(1000)">1000</button>
+    </div>
+    <div id="derIncPrev" style="font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:var(--rs);padding:9px 11px;margin-bottom:4px;line-height:1.6"></div>
+    <button class="btn-ok" style="width:100%;margin-top:6px" onclick="saveDerInc()">Орлого авах</button>
+  </div></div>
+</div>
+
+<!-- ДЭРИЙН АГУУЛАХ: ЗАРЛАГА (солилтоос автоматаар) -->
+<div class="overlay" id="derOutModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--orange)">📤 Дэрийн зарлага</div>
+      <button onclick="closeModal('derOutModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зарлага тусад нь бүртгэгддэггүй — дэр солих бүрт агуулахаас нэг ширхэг гарна.</div>
+    <div id="derOutBody"></div>
+  </div></div>
+</div>
+
+<!-- ДҮНЗ: СОЛИХООР ТӨЛӨВЛӨХ -->
+<div class="overlay" id="swPlanModal" style="z-index:440">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0" id="swPlanTitle">Солихоор төлөвлөх</div>
+      <button onclick="closeModal('swPlanModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;font-weight:600">Агуулахад байгаа дүнзнээс сонгоно — ард нь одоогийн үлдэгдэл</div>
+    <div class="wheel-row">
+      <div class="wheel-col" style="flex:1"><div class="wheel-lbl">Төлөвлөсөн м</div>
+        <div style="position:relative"><div class="wheel" id="swPlWhL"></div><div class="wheel-band"></div></div></div>
+    </div>
+    <div id="swPlanHint" style="font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:var(--rs);padding:9px 11px;margin:8px 0 4px;line-height:1.6"></div>
+    <button class="btn-ok" style="width:100%;margin-top:6px" onclick="saveSwDzPlan()">Төлөвлөх</button>
+    <button class="etb etb-del" id="swPlanClear" onclick="clearSwDzPlan()" style="display:none"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Төлөвлөгөөг цуцлах</button>
+  </div></div>
+</div>
+
+<!-- ДҮНЗ: ТӨЛӨВЛӨСӨН ДҮНЗНИЙ ЖАГСААЛТ -->
+<div class="overlay" id="swPlanRepModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--blue)">📋 Төлөвлөсөн дүнз</div>
+      <button onclick="closeModal('swPlanRepModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сум, дүнзний дугаараар. Мөр дээр дарвал тэр сумын дүнзний жагсаалт руу шууд очно.</div>
+    <div id="swPlanRepBody"></div>
   </div></div>
 </div>
 
@@ -2406,6 +2531,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;font-weight:600" id="swDzSub">—</div>
     <button class="etb" id="swDzTypeBtn" onclick="toggleSwDzType()" style="width:100%;padding:14px;display:flex;align-items:center;gap:10px;text-align:left"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="flex:1">Төрөл өөрчлөх</span><span id="swDzTypeNow" style="font-weight:900;font-size:12px;color:var(--ink3)"></span></button>
+    <button class="etb" id="swDzPlanBtn" onclick="openSwDzPlan()" style="width:100%;margin-top:6px;padding:14px;background:var(--blue-bg);color:var(--blue);border-color:var(--blue-mid)"><svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Солихоор төлөвлөх</button>
     <button class="etb" id="swDzReplBtn" onclick="openSwDzRepl()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сольсон мэдээлэл оруулах</button>
     <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('swDzModal')">Буцах</button>
   </div></div>
@@ -3114,14 +3240,17 @@ function clearReplAt(sec,idx){if(sec&&sec.repl)delete sec.repl[idx]}
 // Дэр устгахад дараагийн бүх индекс 1-ээр ухарна — тэмдэглэгээг мөн шилжүүлэхгүй бол
 // огноо өөр дэр дээр буруу харагдана
 function shiftReplAfterDelete(sec,removed){
-  if(!sec||!sec.repl)return;
-  const out={};
-  Object.keys(sec.repl).forEach(k=>{
-    const i=parseInt(k,10);
-    if(i===removed)return;              // устсан дэрийн тэмдэглэгээ хамт арилна
-    out[i>removed?i-1:i]=sec.repl[k]
-  });
-  sec.repl=out
+  if(!sec)return;
+  ['repl','plan'].forEach(k=>{
+    if(!sec[k])return;
+    const out={};
+    Object.keys(sec[k]).forEach(x=>{
+      const i=parseInt(x,10);
+      if(i===removed)return;            // устсан дэрийн тэмдэглэгээ хамт арилна
+      out[i>removed?i-1:i]=sec[k][x]
+    });
+    sec[k]=out
+  })
 }
 // Огноо үргэлж Монголын цагийн бүсээр (Asia/Ulaanbaatar) — сонголт байхгүй,
 // төхөөрөмжийн бүс ямар ч байсан МУ-ын өнөөдрийг өгнө.
@@ -3464,6 +3593,7 @@ function renderHome(){
   renderFolders();
   renderMainLineCard();
   renderReplFolder();
+  renderDerWrap();
   const grid=document.getElementById('tracksGrid');
   if(!activeFolderId){if(grid)grid.innerHTML='';return}
   if(!DB.tracks.length){grid.innerHTML='<div style="grid-column:span 2;text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';return}
@@ -3691,7 +3821,7 @@ async function applyKmBulk(){
   list.forEach(({s})=>{
     const cur=s.sleepers.length;
     if(r.n<cur){
-      for(let i=cur-1;i>=r.n;i--){clearReplAt(s,i);clearFastAt(s,i)}
+      for(let i=cur-1;i>=r.n;i--){clearReplAt(s,i);clearPlanAt(s,i);clearFastAt(s,i)}
       s.sleepers.length=r.n
     } else {
       for(let i=cur;i<r.n;i++)s.sleepers.push({type:'normal',ts:now})
@@ -3883,8 +4013,8 @@ function consecTotalCount(){
 function renderReplFolder(){
   const wrap=document.getElementById('replFolderWrap');if(!wrap)return;
   if(!activeFolderId){wrap.innerHTML='';return}
-  const n=replTotalCount(),c=consecTotalCount();
-  if(!n&&!c){wrap.innerHTML='';return}
+  const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCount();
+  if(!n&&!c&&!pn){wrap.innerHTML='';return}
   const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
     <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
     <div class="folder-info">
@@ -3896,7 +4026,233 @@ function renderReplFolder(){
     card('var(--red)','var(--red-bg)','Солигдсон дэр',
       n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',"openReplReport()")+
     card('var(--purple)','var(--purple-bg)','Дараалсан цэг',
-      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()");
+      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()")+
+    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
+      pn?`${pn} дэр · зам, үеээр`:'Төлөвлөгөө алга',"openPlanReport()");
+}
+
+/* ══════════════════════════════════════════════
+   СОЛИХООР ТӨЛӨВЛӨХ — ДЭР
+
+   `sec.plan = { дэрийн индекс: 'wood' | 'tbd' }`. Огноо ХАДГАЛАХГҮЙ:
+   төлөвлөгөө бол "энэ тэнцэхгүй дэрийг ийм төрлийн дэрээр солино" гэсэн
+   санамж төдий. Үнэхээр солиход "Сольсон мэдээлэл"-д шилжиж, төлөвлөгөө
+   нь өөрөө арилна — нэг дэр хоёр газар тоологдохгүй.
+   ══════════════════════════════════════════════ */
+function secPlan(sec){if(!sec.plan||typeof sec.plan!=='object')sec.plan={};return sec.plan}
+function planAt(sec,idx){return (sec&&sec.plan&&sec.plan[idx])||null}
+function clearPlanAt(sec,idx){if(sec&&sec.plan)delete sec.plan[idx]}
+// Энэ паспортын (+ гол замын) төлөвлөсөн дэр — зам → үе → дугаараар
+function collectPlan(){
+  const out=[];
+  allTracks().forEach(t=>{
+    const rows=[];
+    (t.sections||[]).forEach(sc=>{
+      const pl=sc.plan||{};
+      Object.keys(pl).forEach(k=>{
+        const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
+        rows.push({secId:sc.id,sec:sc.label||'—',pos:i,idx:i+1,m:pl[k],
+          now:((sc.sleepers||[])[i]||{}).type||''})
+      })
+    });
+    rows.sort((a,b)=>a.sec===b.sec?a.idx-b.idx:String(a.sec).localeCompare(String(b.sec),'mn'));
+    if(rows.length)out.push({id:t.id,name:trackLabel(t),rows})
+  });
+  return out
+}
+function planTotalCount(){return collectPlan().reduce((s,t)=>s+t.rows.length,0)}
+/* Төлөвлөх цонх — дээрээ агуулахын үлдэгдлийг харуулна */
+function _planStockHtml(){
+  const have=derIncN();
+  if(!have)return '<span style="color:var(--ink3);font-weight:600">Дэрийн агуулах хөтлөөгүй байна — нүүр хуудасны "Дэрийн агуулах → Орлого"-д бүртгэнэ</span>';
+  const left=derStock(),pl=planTotalCount(),rest=left-pl;
+  return `Агуулахад <b>${left}</b> дэр байна · төлөвлөсөн <b>${pl}</b> · `+
+    `үлдэх <b style="color:${rest<0?'var(--red)':'var(--g700)'}">${rest}</b>`+
+    (rest<0?'<br><span style="color:var(--red);font-weight:800">Төлөвлөсөн нь агуулахынхаас хэтэрсэн байна</span>':'')
+}
+function openPlanModal(){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  const cur=planAt(sec,editIdx);
+  document.getElementById('planTitle').textContent=`#${editIdx+1} дэр — төлөвлөх`;
+  ['wood','tbd'].forEach(k=>{
+    const b=document.getElementById('plB_'+k);if(b)b.classList.toggle('sel',k===cur)});
+  document.getElementById('planClear').style.display=cur?'block':'none';
+  document.getElementById('planStock').innerHTML=_planStockHtml();
+  closeModal('editSleeperModal');openModal('planModal')
+}
+function savePlan(m){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  const idx=editIdx;
+  secPlan(sec)[idx]=m;
+  saveDB();closeModal('planModal');renderRecordView(idx);renderHome();
+  showToast(`#${idx+1} → ${matLabel(m)} дэрээр солихоор төлөвлөв`,2600)
+}
+function clearPlan(){
+  const sec=activeSec();if(!sec||editIdx<0)return;
+  const idx=editIdx;clearPlanAt(sec,idx);
+  saveDB();closeModal('planModal');renderRecordView(idx);renderHome();
+  showToast('Төлөвлөгөө цуцлагдлаа')
+}
+function openPlanReport(){renderPlanReport();openModal('planRepModal')}
+function renderPlanReport(){
+  const data=collectPlan(),body=document.getElementById('planRepBody');if(!body)return;
+  if(!data.length){
+    body.innerHTML=_swEmpty('Төлөвлөсөн дэр алга — дэр дээрээ "Солихоор төлөвлөх" дарна');
+    return}
+  let html='',N=0,W=0,T=0;
+  data.forEach(t=>{
+    html+=`<div class="rp-track"><div class="rp-track-hd">${esc(t.name)}</div>`;
+    t.rows.forEach(r=>{
+      N++;if(r.m==='tbd')T++;else W++;
+      html+=`<div class="rp-row pl-row" onclick="hap();jumpToPlan('${t.id}','${r.secId}',${r.pos})">
+        <span style="flex:1;font-weight:700;color:var(--ink2)">${esc(r.sec)}</span>
+        <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
+        <span class="mat-tag">${matLabel(r.m)}</span>
+        <span style="font-weight:900;color:var(--blue)">›</span>
+      </div>`
+    });
+    html+=`<div class="rp-sub"><span>${esc(t.name)}</span><span>${t.rows.length} дэр</span></div></div>`
+  });
+  html+=`<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N} дэр</span></div>`+
+    `<div class="rp-sub" style="border:0"><span>Модон ${W} дэр</span><span>ТБД ${T} дэр</span></div>`;
+  body.innerHTML=html
+}
+// Төлөвлөсөн мөр дээр дарахад тэр зам → үе рүү, тэр дэр дээрээ очно
+function jumpToPlan(trackId,secId,pos){
+  hap(8);closeModal('planRepModal');
+  const t=getTrack(trackId);if(!t){showToast('Зам олдсонгүй');return}
+  openTrack(trackId,1);
+  const sec=(t.sections||[]).find(x=>x.id===secId);
+  if(!sec){showToast('Тухайн үе олдсонгүй');return}
+  openSection(secId,Math.max(0,pos));
+  showToast(`${trackLabel(t)} · ${sec.label} · #${pos+1}`,2200)
+}
+
+/* ══════════════════════════════════════════════
+   ДЭРИЙН АГУУЛАХ — ОРЛОГО / ЗАРЛАГА
+
+   Дэр нь гол зам, өртөө, салаалсан, салбар замд ялгаагүй очдог тул
+   агуулах нь ХЭСГИЙН түвшинд ганц: `DB.sinc=[{id,d,n}]`.
+   Зарлага тусад нь бүртгэгддэггүй — дүнзтэй ижил зарчмаар дэр солих
+   бүрт нэг ширхэг гарна. Тоо хоёр газраас гарахгүй.
+   ══════════════════════════════════════════════ */
+function derInc(){if(!Array.isArray(DB.sinc))DB.sinc=[];return DB.sinc}
+function derIncN(){return derInc().reduce((s,r)=>s+(+r.n||0),0)}
+/* Зарлага — БҮХ паспортын зам дээрх солилт. Агуулах нь хэсгийн түвшинд
+   ганц тул зарлага нь ч бүх паспортыг хамарна. */
+function derOutRows(){
+  const out=[];
+  const add=(grp,t)=>{
+    const rows=[];
+    (t.sections||[]).forEach(sc=>{
+      const rp=sc.repl||{};
+      Object.keys(rp).forEach(k=>{const r=rp[k];if(r&&r.d)rows.push(r)})
+    });
+    if(rows.length)out.push({grp,name:trackLabel(t),n:rows.length,
+      tbd:rows.filter(r=>replMatOf(r)==='tbd').length,
+      wood:rows.filter(r=>replMatOf(r)!=='tbd').length})
+  };
+  mainTracks().forEach(t=>add('Гол зам',t));
+  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(t=>add(f.name||'Паспорт',t)));
+  return out
+}
+function derOutN(){return derOutRows().reduce((s,r)=>s+r.n,0)}
+function derStock(){return derIncN()-derOutN()}
+function renderDerWrap(){
+  const wrap=document.getElementById('derWrap');if(!wrap)return;
+  const inc=derIncN(),out=derOutN(),st=derStock();
+  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
+    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
+      <div class="folder-meta">${meta}</div></div></div>`;
+  wrap.innerHTML=
+    card('var(--g700)','var(--g100)','Орлого',
+      inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй','openDerInc()')+
+    card('var(--orange)','var(--orange-bg)','Зарлага',
+      out?`${out} дэр · сольсноор`:'Зарлага алга','openDerOut()')
+}
+function openDerInc(){renderDerInc();openModal('derIncModal')}
+function renderDerInc(){
+  const b=document.getElementById('derIncBody');if(!b)return;
+  const list=derInc().slice().sort((a,x)=>String(a.d).localeCompare(String(x.d)));
+  let html='';
+  list.forEach(r=>{
+    html+=`<div class="out-tr der-tr">
+      <span style="flex:1;font-weight:800">${fmtReplDate(r.d)}</span>
+      <span style="font-weight:900">${+r.n||0} дэр</span>
+      <button class="rb-btn" style="color:var(--red);border-color:rgba(220,60,60,.35);padding:4px 9px;font-size:11px"
+        onclick="event.stopPropagation();delDerInc('${r.id}')">Устгах</button></div>`
+  });
+  const st=derStock();
+  b.innerHTML=(html||_swEmpty('Орлого бүртгээгүй байна'))+
+    (html?`<div class="rp-total"><span>Нийт орлого</span><span>${derIncN()} дэр</span></div>`
+      +`<div class="rp-sub" style="border:0"><span>Зарлага ${derOutN()} дэр</span>`
+      +`<span style="color:${st<0?'var(--red)':'var(--g700)'}">Үлдэгдэл ${st} дэр</span></div>`:'')
+}
+async function delDerInc(id){
+  if(!await appConfirm('Энэ орлогыг устгах уу?'))return;
+  DB.sinc=derInc().filter(r=>r.id!==id);
+  saveDB();renderDerInc();renderDerWrap();showToast('Орлого устлаа')
+}
+let _derY=2026,_derM=1,_derD=1;
+function openDerIncAdd(){
+  const td=mnToday();_derY=td.y;_derM=td.m;_derD=td.d;
+  document.getElementById('derIncYear').textContent=_derY+' он';
+  document.getElementById('derIncN').value='';
+  openModal('derIncAddModal');
+  setTimeout(()=>{_derWheels();_derPrev()},40)
+}
+function _derSyncDays(){
+  const el=document.getElementById('derWhD');
+  const dim=daysInMonth(_derY,_derM);
+  if(_derD>dim)_derD=dim;
+  const days=[];for(let i=1;i<=dim;i++)days.push(i);
+  _wheelFill(el,days,_derD-1);el.scrollTop=(_derD-1)*_WH_IH
+}
+function _derWheels(){
+  const mEl=document.getElementById('derWhM'),dEl=document.getElementById('derWhD');
+  const months=[];for(let i=1;i<=12;i++)months.push(i);
+  _wheelFill(mEl,months,_derM-1);mEl.scrollTop=(_derM-1)*_WH_IH;
+  _derSyncDays();
+  if(!mEl._bound){
+    mEl._bound=1;
+    _wheelBind(mEl,()=>12,i=>{_derM=i+1;_derSyncDays()});
+    _wheelBind(dEl,()=>daysInMonth(_derY,_derM),i=>{_derD=i+1})
+  }
+}
+function setDerIncN(n){document.getElementById('derIncN').value=n;_derPrev()}
+function _derPrev(){
+  const e=document.getElementById('derIncPrev');if(!e)return;
+  const n=parseInt(document.getElementById('derIncN').value,10);
+  e.innerHTML=(!n||n<=0)?'Дэрийн тоогоо оруулна уу'
+    :`<b>${n}</b> дэр орлогод авна · агуулахад <b>${derStock()+n}</b> дэр болно`
+}
+function saveDerInc(){
+  if(!_modalOpen('derIncAddModal'))return;
+  const n=parseInt(document.getElementById('derIncN').value,10);
+  if(isNaN(n)||n<=0){showToast('Дэрийн тоогоо оруулна уу',2400);return}
+  const p=x=>(x<10?'0':'')+x;
+  derInc().push({id:'d-'+uid(),d:_derY+'-'+p(_derM)+'-'+p(_derD),n});
+  saveDB();closeModal('derIncAddModal');renderDerInc();renderDerWrap();
+  showToast(`✓ ${n} дэр орлогод авлаа · үлдэгдэл ${derStock()}`,3000)
+}
+function openDerOut(){
+  const rows=derOutRows(),b=document.getElementById('derOutBody');
+  if(!b)return;
+  let html='',N=0,W=0,T=0,grp='';
+  rows.forEach(r=>{
+    if(r.grp!==grp){grp=r.grp;html+=`<div class="sec-lbl" style="margin:10px 0 4px">${esc(grp)}</div>`}
+    N+=r.n;W+=r.wood;T+=r.tbd;
+    html+=`<div class="out-tr der-tr">
+      <span style="flex:1;font-weight:800">${esc(r.name)}</span>
+      <span style="font-weight:700;color:var(--ink3)">${r.wood} мод · ${r.tbd} ТБД</span>
+      <span style="font-weight:900;text-align:right">${r.n} дэр</span></div>`
+  });
+  b.innerHTML=html
+    ?html+`<div class="rp-total"><span>Нийт зарлага</span><span>${N} дэр</span></div>`
+      +`<div class="rp-sub" style="border:0"><span>Модон ${W} дэр</span><span>ТБД ${T} дэр</span></div>`
+    :_swEmpty('Зарлага алга — дэр солиогүй байна');
+  openModal('derOutModal')
 }
 const MN_MONTHS=['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар',
   '7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
@@ -4493,7 +4849,7 @@ function _revSwap(sec){
   const n=sec.sleepers.length;if(n<2)return false;
   sec.sleepers.reverse();
   const m=i=>n-1-i;
-  ['repl','fmap'].forEach(k=>{
+  ['repl','fmap','plan'].forEach(k=>{
     if(!sec[k])return;
     const o={};Object.keys(sec[k]).forEach(x=>{o[m(parseInt(x,10))]=sec[k][x]});
     sec[k]=o
@@ -5284,6 +5640,7 @@ function undoLast(){
   hap(18);const sec=activeSec();if(!sec||!sec.sleepers.length){showToast('Буцаах зүйл алга');return}
   const last=sec.sleepers[sec.sleepers.length-1];sec.sleepers.pop();
   clearReplAt(sec,sec.sleepers.length);   // буцаасан дэрийн сольсон тэмдэглэгээ хамт арилна
+  clearPlanAt(sec,sec.sleepers.length);   // төлөвлөгөө нь ч хамт
   clearFastAt(sec,sec.sleepers.length);   // бэхэлгээний тэмдэглэгээ мөн адил
   syncManual(sec,last.type,-1);saveDB();renderRecordView();showToast('Буцаалаа')
 }
@@ -5304,6 +5661,8 @@ function openEditSleeper(idx){
            :` Өмнө сольсон: ${fmtReplDate(rp.rec.d)} — дахин солих`;
   const tn=document.getElementById('typeBtnNow');
   if(tn)tn.textContent=TYPES[sec.sleepers[idx].type]?TYPES[sec.sleepers[idx].type].label:'';
+  const pl=planAt(sec,idx),pb=document.getElementById('planBtn');
+  if(pb)pb.lastChild.textContent=pl?` Төлөвлөсөн: ${matLabel(pl)} — засах`:' Солихоор төлөвлөх';
   openModal('editSleeperModal')
 }
 // Төрөл өөрчлөх нь тусдаа цонхонд. Дэр засах цонх нээлттэй хэвээр үлдэх тул
@@ -5431,7 +5790,7 @@ async function applyBulk(){
   if(n===cur){closeModal('bulkModal');return}
   if(n<cur&&!await appConfirm(`Сүүлийн ${cur-n} дэр устана. Үргэлжлүүлэх үү?`))return;
   if(n<cur){
-    for(let i=cur-1;i>=n;i--){clearReplAt(sec,i);clearFastAt(sec,i)}
+    for(let i=cur-1;i>=n;i--){clearReplAt(sec,i);clearPlanAt(sec,i);clearFastAt(sec,i)}
     sec.sleepers.length=n
   } else {
     const now=Date.now();
@@ -5592,6 +5951,7 @@ async function saveRepl(newType){
     sec.sleepers[idx].type=newType
   }
   setReplAt(sec,idx,date,newType,newType==='tbd'?'tbd':'wood',0,wasBad);
+  clearPlanAt(sec,idx);           // төлөвлөгөө хэрэгжлээ — хоёр газар тоологдохгүй
   // Дараалсан цэгт (3 ба түүнээс дээш) хамаарч байсан дэр бол явцын сүүлд
   // асууна: энэ сийрэгжилтээр солигдож байгаа дэр мөн үү?
   //   Тийм → сийрэгжилтэд бүртгэнэ (s:1)
@@ -9825,6 +10185,8 @@ function openSwDz(i){
       :prev?`Өмнөх паспортод сольсон: ${fmtReplDate(dr.rec.d)} · ${swLen(dr.rec.L||len)} м`
       :'Бүртгэлд ' + swLen(len) + ' пог/м гэж тооцогдоно';
   document.getElementById('swDzTypeNow').textContent=t.it[i]==='b'?'Тэнцэхгүй':'Хэвийн';
+  const pl=swDzPlan(t,i),pb=document.getElementById('swDzPlanBtn');
+  if(pb)pb.lastChild.textContent=pl?` Төлөвлөсөн: ${swLen(pl)} м — засах`:' Солихоор төлөвлөх';
   const b=document.getElementById('swDzReplBtn');
   if(b)b.lastChild.textContent=rp?` Сольсон: ${fmtReplDate(rp.d)} — засах`
     :prev?` Өмнө сольсон: ${fmtReplDate(dr.rec.d)} — дахин солих`:' Сольсон мэдээлэл оруулах';
@@ -9936,12 +10298,156 @@ function saveSwDzRepl(){
   swWrite(t,i,'n');                      // сольсон дүнз хэвийн болно
   if(!t.dRepl)t.dRepl={};
   t.dRepl[i]={d:date,L:_swDzL,o:wasBad?1:0};
+  if(t.dPlan)delete t.dPlan[i];          // төлөвлөгөө хэрэгжлээ
   saveDB();closeModal('swDzReplModal');
   renderSwRec(i);                        // тухайн дүнз дээрээ үлдэнэ
   const nom=swSlot(t,i).len;
   showToast(`#${i-(t.head||0)+1} дүнз сольсон · ${fmtReplDate(date)} · ${swLen(_swDzL)}м`
     +(_swDzL!==nom?` (бүртгэлд ${swLen(nom)}м)`:''),3000)
 }
+/* ══════════════════════════════════════════════
+   СОЛИХООР ТӨЛӨВЛӨХ — ДҮНЗ
+
+   `to.dPlan = { мөрийн индекс: төлөвлөсөн урт }`. Огноогүй — зөвхөн
+   "энэ дүнзийг ийм урттай дүнзээр солино" гэсэн санамж. Төлөвлөхдөө
+   агуулахад БАЙГАА дүнзнээс сонгоно, төлөвлөсөн нь үлдэгдлээс түр
+   "эзэмшигдэнэ" — нэг дүнзийг хоёр газар төлөвлөхгүй.
+   ══════════════════════════════════════════════ */
+function swDzPlan(to,i){return (to&&to.dPlan)?to.dPlan[i]||null:null}
+// Урт тус бүрээр ТӨЛӨВЛӨГДСӨН тоо
+function swPlanBy(f){
+  f=f||swFolder();const o={};
+  ((f&&f.turnouts)||[]).forEach(t=>{
+    const pl=t.dPlan||{};
+    Object.keys(pl).forEach(k=>{const L=+pl[k];if(L)o[L]=(o[L]||0)+1})});
+  return o
+}
+// Үлдэгдэл − төлөвлөсөн. Засварлаж байгаа дүнзний ӨӨРИЙНХ нь төлөвлөгөөг
+// буцааж нэмнэ (эс тэгвэл өөрийнхөө уртыг дахин сонгож чадахгүй).
+function _swPlanFree(){
+  const st=swStock(),pl=swPlanBy(),t=swTurnout(),o={};
+  Object.keys(st).forEach(L=>{o[L]=st[L]-(pl[L]||0)});
+  Object.keys(pl).forEach(L=>{if(!(L in o))o[L]=-pl[L]});
+  if(t&&_swDzIdx>=0){const L=+swDzPlan(t,_swDzIdx);if(L)o[L]=(o[L]||0)+1}
+  return o
+}
+function _swPlanLens(){
+  if(!_swHasInc())return SW_LENS.slice();
+  const f=_swPlanFree();
+  return Object.keys(f).map(Number).filter(L=>f[L]>0).sort((a,b)=>a-b)
+}
+function _swPlanLenLbl(L){
+  return _swHasInc()?`${swLen(L)} · ${_swPlanFree()[L]||0}ш`:swLen(L)
+}
+let _swPlL=SW_LENS[0];
+function openSwDzPlan(){
+  const t=swTurnout();if(!t||_swDzIdx<0)return;
+  const lens=_swPlanLens();
+  if(!lens.length){showToast('Агуулахад төлөвлөх дүнз үлдээгүй байна',3000);return}
+  const cur=swDzPlan(t,_swDzIdx),nom=swSlot(t,_swDzIdx).len;
+  const want=cur?+cur:nom;
+  _swPlL=lens.indexOf(want)>=0?want:lens[0];
+  document.getElementById('swPlanTitle').textContent=
+    `#${_swDzIdx-(t.head||0)+1} дүнз — төлөвлөх`;
+  document.getElementById('swPlanClear').style.display=cur?'block':'none';
+  closeModal('swDzModal');openModal('swPlanModal');
+  setTimeout(_swPlanWheel,40)
+}
+function _swPlanHint(){
+  const t=swTurnout();if(!t||_swDzIdx<0)return;
+  const e=document.getElementById('swPlanHint');if(!e)return;
+  const nom=swSlot(t,_swDzIdx).len;
+  const free=_swHasInc()?(_swPlanFree()[_swPlL]||0):null;
+  e.innerHTML=`${swLen(nom)} м дүнзийг <b>${swLen(_swPlL)}</b> м дүнзээр солихоор төлөвлөнө`+
+    (free===null?'':`<br><span style="color:var(--g700);font-weight:800">Агуулахад ${swLen(_swPlL)} м — `+
+      `${free} ш сул байна, төлөвлөсний дараа ${Math.max(0,free-1)} ш үлдэнэ</span>`)
+}
+function _swPlanWheel(){
+  const el=document.getElementById('swPlWhL');if(!el)return;
+  const L2=_swPlanLens();
+  if(L2.indexOf(_swPlL)<0)_swPlL=L2[0];
+  const i=Math.max(0,L2.indexOf(_swPlL));
+  _wheelFill(el,L2.map(_swPlanLenLbl),i);el.scrollTop=i*_WH_IH;
+  _swPlanHint();
+  if(!el._bound){
+    el._bound=1;
+    _wheelBind(el,()=>_swPlanLens().length,k=>{
+      const l=_swPlanLens();if(l[k]===undefined)return;
+      _swPlL=l[k];_swPlanHint()})
+  }
+}
+function saveSwDzPlan(){
+  const t=swTurnout();if(!t||_swDzIdx<0)return;
+  if(_swHasInc()&&(_swPlanFree()[_swPlL]||0)<=0){
+    showToast(`Агуулахад ${swLen(_swPlL)} м дүнз сул үлдээгүй`,2800);return}
+  if(!t.dPlan)t.dPlan={};
+  t.dPlan[_swDzIdx]=_swPlL;
+  const i=_swDzIdx;
+  saveDB();closeModal('swPlanModal');renderSwRec(i);renderSwFolderCards();
+  showToast(`#${i-(t.head||0)+1} дүнз → ${swLen(_swPlL)} м-ээр солихоор төлөвлөв`,2800)
+}
+function clearSwDzPlan(){
+  const t=swTurnout();if(!t||_swDzIdx<0)return;
+  if(t.dPlan)delete t.dPlan[_swDzIdx];
+  const i=_swDzIdx;
+  saveDB();closeModal('swPlanModal');renderSwRec(i);renderSwFolderCards();
+  showToast('Төлөвлөгөө цуцлагдлаа')
+}
+// Төлөвлөсөн дүнзний жагсаалт — сум, дугаараар
+function collectSwPlan(){
+  const out=[];
+  swAllTurnouts().forEach(t=>{
+    const pl=t.dPlan||{},rows=[];
+    Object.keys(pl).forEach(k=>{
+      const i=parseInt(k,10),L=+pl[k];
+      if(!L||isNaN(i))return;
+      rows.push({i,no:i-(t.head||0)+1,nom:swSlot(t,i).len,L})
+    });
+    rows.sort((a,b)=>a.no-b.no);
+    if(rows.length)out.push({id:t.id,num:t.num,mak:t.mak,mark:t.mark,rows})
+  });
+  return out
+}
+function swPlanTotal(){return collectSwPlan().reduce((s,t)=>s+t.rows.length,0)}
+function openSwPlanRep(){
+  const data=collectSwPlan(),b=document.getElementById('swPlanRepBody');
+  if(!b)return;
+  if(!data.length){
+    b.innerHTML=_swEmpty('Төлөвлөсөн дүнз алга — дүнз дээрээ "Солихоор төлөвлөх" дарна');
+    openModal('swPlanRepModal');return}
+  let html='',by={},N=0,M=0;
+  data.forEach(t=>{
+    html+=_swHd(`Сум ${t.num} · ${esc(t.mak)} · ${esc(t.mark)}`)
+      +`<div class="sw-tr sw-tr-h"><span class="sw-c1">Дүнз</span><span class="sw-c2">Одоо</span>
+         <span class="sw-c34">Төлөвлөсөн</span></div>`;
+    t.rows.forEach(r=>{
+      by[r.L]=(by[r.L]||0)+1;N++;M+=r.L;
+      html+=`<div class="sw-tr pl-row" onclick="hap();swGotoPlan('${t.id}',${r.i})">
+        <span class="sw-c1">#${r.no}</span>
+        <span class="sw-c2">${swLen(r.nom)} м</span>
+        <span class="sw-c34" style="color:var(--blue);font-weight:900">${swLen(r.L)} м ›</span></div>`
+    });
+    html+=`<div class="rp-sub"><span>Сум ${t.num}</span><span>${t.rows.length} дүнз</span></div></div>`
+  });
+  // Уртаар нь: ш · урт (м) · нийт пог.м
+  html+=_swHd('Уртаар нь')+
+    `<div class="sw-tr sw-tr-h"><span class="sw-c1">Урт</span><span class="sw-c2">Ширхэг</span>
+      <span class="sw-c34">Нийт пог/м</span></div>`+
+    Object.keys(by).map(Number).sort((a,b)=>a-b).map(L=>
+      `<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
+        <span class="sw-c2">${by[L]} ш</span>
+        <span class="sw-c34">${swM(by[L]*L)} пог/м</span></div>`).join('')+
+    `<div class="rp-sub"><span>${N} ш</span><span>${swM(M)} пог/м</span></div></div>`+
+    `<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N} ш · ${swM(M)} пог/м</span></div>`;
+  b.innerHTML=html;
+  openModal('swPlanRepModal')
+}
+function swGotoPlan(tid,i){
+  swTurnoutId=tid;_swFromRun=false;
+  closeModal('swPlanRepModal');
+  showView('swRecView');renderSwRec(i)
+}
+
 function clearSwDzRepl(){
   const t=swTurnout();if(!t||_swDzIdx<0)return;
   if(t.dRepl)delete t.dRepl[_swDzIdx];
@@ -10195,7 +10701,12 @@ function renderSwFolderCards(){
       (()=>{const u=swOutBy(),ks=Object.keys(u);
         if(!ks.length)return 'Зарлага алга';
         let n=0,m=0;ks.forEach(L=>{n+=u[L];m+=u[L]*L});
-        return `${n} ш · ${swM(m)} пог/м`})(),'openSwOut()')
+        return `${n} ш · ${swM(m)} пог/м`})(),'openSwOut()')+
+    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',
+      (()=>{const pb=swPlanBy(),ks=Object.keys(pb);
+        if(!ks.length)return 'Төлөвлөгөө алга';
+        let n=0,m=0;ks.forEach(L=>{n+=pb[L];m+=pb[L]*L});
+        return `${n} ш · ${swM(m)} пог/м`})(),'openSwPlanRep()')
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
 /* ══════════════════════════════════════════════
@@ -10739,7 +11250,7 @@ function _hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt
 /* Шахсан DB → хэсгүүд */
 function _splitDB(p){
   const parts={};
-  parts.meta={location:p.location||'',v:p.v||3,rpt:p.rpt||{}};
+  parts.meta={location:p.location||'',v:p.v||3,rpt:p.rpt||{},sinc:p.sinc||[]};
   parts.main={main:p.main||[]};
   (p.folders||[]).forEach(f=>{if(f&&f.id)parts[_partId('p',f.id)]={folder:f}});
   (p.sw||[]).forEach(f=>{if(f&&f.id)parts[_partId('s',f.id)]={sw:f}});
@@ -10747,11 +11258,12 @@ function _splitDB(p){
 }
 /* Хэсгүүд → шахсан DB (Шат 2-т унших, одоо шалгахад ашиглана) */
 function _joinParts(parts){
-  const out={location:'',v:3,tracks:[],folders:[],main:[],sw:[],rpt:{}};
+  const out={location:'',v:3,tracks:[],folders:[],main:[],sw:[],rpt:{},sinc:[]};
   const fo=[],sw=[];
   Object.keys(parts).forEach(k=>{
     const d=parts[k]; if(!d)return;
-    if(k==='meta'){out.location=d.location||'';out.v=d.v||3;out.rpt=d.rpt||{}}
+    if(k==='meta'){out.location=d.location||'';out.v=d.v||3;out.rpt=d.rpt||{};
+      out.sinc=Array.isArray(d.sinc)?d.sinc:[]}
     else if(k==='main')out.main=Array.isArray(d.main)?d.main:[];
     else if(d.folder)fo.push(d.folder);
     else if(d.sw)sw.push(d.sw);
@@ -10767,6 +11279,7 @@ function _canon(v){
 }
 function _cmpKey(o){
   const c=_canon({location:o.location||'',rpt:o.rpt||{},
+    sinc:o.sinc||[],
     main:o.main||[],
     folders:(o.folders||[]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id))),
     sw:(o.sw||[]).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)))});
@@ -11194,7 +11707,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.13·134';
+const APP_BUILD='2026.09.13·135';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
