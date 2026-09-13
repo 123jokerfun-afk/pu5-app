@@ -455,6 +455,11 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .inc-row .inc-m{font-size:13px;font-weight:900;color:var(--g700);text-align:right;white-space:nowrap}
 .inc-row .inc-x{background:none;border:none;color:var(--red);font-size:20px;font-weight:900;
   padding:0;line-height:1;min-height:34px;min-width:30px}
+/* Хүрдээр нэмсэн мөр — уншихад л зориулагдсан тул хүрээтэй хайрцаг */
+.inc-row-v{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rs);
+  padding:9px 10px;margin-bottom:7px}
+.inc-row-v .inc-l{font-size:14px;font-weight:900;color:var(--ink)}
+.inc-row-v .inc-q{font-size:14px;font-weight:900;color:var(--ink2);text-align:center}
 /* Зарлагын мөр: сум · урт · ш · пог/м · % */
 .out-tr{display:grid;grid-template-columns:54px 60px 46px 1fr 56px;align-items:center;gap:5px;
   padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800}
@@ -2481,8 +2486,16 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="wheel-col"><div class="wheel-lbl">Өдөр</div>
         <div style="position:relative"><div class="wheel" id="swIncWhD"></div><div class="wheel-band"></div></div></div>
     </div>
-    <div class="sec-lbl" style="margin-top:12px">Дүнз</div>
-    <div id="swIncRows"></div>
+    <div class="sec-lbl" style="margin-top:12px">Дүнз — урт, ширхэгээ гүйлгэж сонгоно</div>
+    <div class="wheel-row">
+      <div class="wheel-col"><div class="wheel-lbl">Урт (пог/м)</div>
+        <div style="position:relative"><div class="wheel" id="swIncWhL"></div><div class="wheel-band"></div></div></div>
+      <div class="wheel-col"><div class="wheel-lbl">Ширхэг</div>
+        <div style="position:relative"><div class="wheel" id="swIncWhN"></div><div class="wheel-band"></div></div></div>
+    </div>
+    <div id="swIncPick" style="font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);border-radius:var(--rs);padding:9px 11px;margin:8px 0 6px;line-height:1.6"></div>
+    <button class="etb" onclick="_incAdd()" style="width:100%;padding:12px;border-color:var(--g400);color:var(--g700);background:var(--g100)"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Жагсаалтад нэмэх</button>
+    <div id="swIncRows" style="margin-top:8px"></div>
     <div class="rp-total" style="margin-top:8px"><span id="swIncSumN">0 ш</span><span id="swIncSumM">0 пог/м</span></div>
     <button class="btn-ok" style="width:100%;margin-top:10px" onclick="saveSwInc()">Орлого авах</button>
   </div></div>
@@ -9833,7 +9846,11 @@ function openSwDzRepl(){
   _swDzY=td.y;
   if(rp&&/^\d{4}-\d{2}-\d{2}$/.test(rp.d)){const p=rp.d.split('-');_swDzY=+p[0];_swDzM=+p[1];_swDzD=+p[2]}
   else{_swDzM=td.m;_swDzD=td.d}
-  _swDzL=rp&&rp.L?rp.L:nom;              // анхдагчаар өөрийнх нь урт
+  // Агуулахад ЮУ БАЙГААГААС анхдагчийг сонгоно — байхгүй урт огт гарч ирэхгүй
+  const lens=_swDzLens();
+  if(!lens.length){showToast('Агуулахад дүнз үлдээгүй — эхлээд орлого аваарай',3200);return}
+  const want=rp&&rp.L?+rp.L:nom;
+  _swDzL=lens.indexOf(want)>=0?want:lens[0];
   document.getElementById('swDzRTitle').textContent=`#${i-head+1} дүнз — сольсон`;
   document.getElementById('swDzYear').textContent=_swDzY+' он';
   document.getElementById('swDzRClear').style.display=rp?'block':'none';
@@ -9847,28 +9864,40 @@ function _swDzSyncDays(){
   const days=[];for(let i=1;i<=dim;i++)days.push(i);
   _wheelFill(el,days,_swDzD-1);el.scrollTop=(_swDzD-1)*_WH_IH
 }
-/* Сольсон урт — АГУУЛАХАД байгаа дүнзнээс. Орлого огт бүртгээгүй бол
-   бүх уртыг харуулна (агуулахын бүртгэл нь заавал биш). */
+/* Агуулах хөтөлж эхэлсэн эсэх — орлого огт аваагүй бол хөтлөөгүй гэж үзнэ */
+function _swHasInc(){return Object.keys(swIncBy()).length>0}
+/* Энэ дүнзний ӨМНӨХ солилт агуулахаас аль хэдийн хасагдсан байдаг. Одоо
+   түүнийгээ ЗАСВАРЛАЖ байгаа тул өөрийнх нь хэрэглээг буцааж нэмнэ — эс
+   тэгвэл сүүлчийн ширхгээ өөрөө "дуусгаад" жагсаалтаас алга болно. */
+function _swDzStockNow(){
+  const st=swStock(),t=swTurnout();
+  if(t&&_swDzIdx>=0){
+    const rp=swDzRepl(t,_swDzIdx);
+    if(rp&&rp.d){const L=+rp.L||swSlot(t,_swDzIdx).len;st[L]=(st[L]||0)+1}
+  }
+  return st
+}
+/* Сольсон урт — ЗӨВХӨН агуулахад үлдэгдэлтэй дүнз. Байхгүй уртыг сонгуулж
+   болохгүй: сонгуулбал агуулахад алга дүнзээр сольсон бүртгэл үүснэ. */
 function _swDzLens(){
-  const st=swStock(),all=Object.keys(st).map(Number);
-  const ok=all.filter(L=>st[L]>0).sort((a,b)=>a-b);
-  if(!ok.length&&!all.length)return SW_LENS.slice();
-  // Одоо сонгогдсон нь үлдэгдэлгүй ч жагсаалтад үлдэнэ (засварлахад хэрэгтэй)
-  if(_swDzL&&ok.indexOf(_swDzL)<0)ok.push(_swDzL);
-  return ok.length?ok.sort((a,b)=>a-b):SW_LENS.slice()
+  if(!_swHasInc())return SW_LENS.slice();
+  const st=_swDzStockNow();
+  return Object.keys(st).map(Number).filter(L=>st[L]>0).sort((a,b)=>a-b)
 }
 function _swDzLenLbl(L){
-  const st=swStock();
-  return Object.keys(st).length?`${swLen(L)} · ${st[L]||0}ш`:swLen(L)
+  return _swHasInc()?`${swLen(L)} · ${_swDzStockNow()[L]||0}ш`:swLen(L)
 }
 function _swDzHint(){
   const t=swTurnout();if(!t||_swDzIdx<0)return;
   const nom=swSlot(t,_swDzIdx).len;
   const h=document.getElementById('swDzRHint');
-  const st=swStock(),have=st[_swDzL];
-  const warn=(have!==undefined&&have<=0)
-    ?`<br><span style="color:var(--red);font-weight:800">Агуулахад ${swLen(_swDzL)} м дүнз үлдээгүй байна</span>`:'';
-  h.innerHTML=warn+_x_swDzHintBody(nom)
+  let left='';
+  if(_swHasInc()){
+    const have=_swDzStockNow()[_swDzL]||0;
+    left=`<span style="color:var(--g700);font-weight:800">Агуулахад ${swLen(_swDzL)} м — ${have} ш`+
+      `, сольсны дараа ${Math.max(0,have-1)} ш үлдэнэ</span><br>`
+  }
+  h.innerHTML=left+_x_swDzHintBody(nom)
 }
 function _x_swDzHintBody(nom){
   return _swDzL===nom
@@ -9900,6 +9929,9 @@ function saveSwDzRepl(){
   const t=swTurnout();if(!t||_swDzIdx<0)return;
   const i=_swDzIdx,p=n=>(n<10?'0':'')+n;
   const date=_swDzY+'-'+p(_swDzM)+'-'+p(_swDzD);
+  // Агуулахад алга дүнзээр сольсон гэж бүртгүүлэхгүй
+  if(_swHasInc()&&(_swDzStockNow()[_swDzL]||0)<=0){
+    showToast(`Агуулахад ${swLen(_swDzL)} м дүнз үлдээгүй байна`,2800);return}
   const wasBad=t.it[i]==='b';
   swWrite(t,i,'n');                      // сольсон дүнз хэвийн болно
   if(!t.dRepl)t.dRepl={};
@@ -10244,10 +10276,11 @@ async function delSwInc(id){
 }
 
 /* ── Орлого авах ── */
-let _incY=2026,_incM=1,_incD=1,_incRows=[{L:'',n:''}];
+const INC_N_MAX=200;
+let _incY=2026,_incM=1,_incD=1,_incRows=[],_incL=SW_LENS[0],_incN=1;
 function openSwIncAdd(){
   const td=mnToday();_incY=td.y;_incM=td.m;_incD=td.d;
-  _incRows=[{L:'',n:''}];
+  _incRows=[];_incL=SW_LENS[0];_incN=1;
   document.getElementById('swIncYear').textContent=_incY+' он';
   openModal('swIncAddModal');
   setTimeout(()=>{_incWheels();_incPaint()},40)
@@ -10261,53 +10294,66 @@ function _incSyncDays(){
 }
 function _incWheels(){
   const mEl=document.getElementById('swIncWhM'),dEl=document.getElementById('swIncWhD');
+  const lEl=document.getElementById('swIncWhL'),nEl=document.getElementById('swIncWhN');
   const months=[];for(let i=1;i<=12;i++)months.push(i);
   _wheelFill(mEl,months,_incM-1);mEl.scrollTop=(_incM-1)*_WH_IH;
   _incSyncDays();
+  // Урт ба ширхэг — бичихгүй, гүйлгэж тааруулна
+  const li=Math.max(0,SW_LENS.indexOf(_incL));
+  _wheelFill(lEl,SW_LENS.map(L=>swLen(L)+' м'),li);lEl.scrollTop=li*_WH_IH;
+  const ns=[];for(let i=1;i<=INC_N_MAX;i++)ns.push(i+' ш');
+  _wheelFill(nEl,ns,_incN-1);nEl.scrollTop=(_incN-1)*_WH_IH;
   if(!mEl._bound){
     mEl._bound=1;
     _wheelBind(mEl,()=>12,i=>{_incM=i+1;_incSyncDays()});
-    _wheelBind(dEl,()=>daysInMonth(_incY,_incM),i=>{_incD=i+1})
+    _wheelBind(dEl,()=>daysInMonth(_incY,_incM),i=>{_incD=i+1});
+    _wheelBind(lEl,()=>SW_LENS.length,i=>{_incL=SW_LENS[i];_incPick()});
+    _wheelBind(nEl,()=>INC_N_MAX,i=>{_incN=i+1;_incPick()})
   }
+  _incPick()
 }
-/* Нэг урт сонгоод ширхэгээ бичихэд доор нь ДАРААГИЙН хоосон мөр өөрөө
-   нэмэгдэнэ — "өөр төрлийн дүнз оруулах" гэж тусад нь дарах шаардлагагүй. */
+// Хүрдээр сонгосон нь хэдэн пог/м болохыг тэр дороо харуулна
+function _incPick(){
+  const e=document.getElementById('swIncPick');if(!e)return;
+  const was=_incRows.find(r=>+r.L===+_incL);
+  e.innerHTML=`<b>${swLen(_incL)}</b> м × <b>${_incN}</b> ш = <b>${swM(_incL*_incN)}</b> пог/м`+
+    (was?`<br><span style="color:var(--ink3);font-weight:600">Жагсаалтад ${was.n} ш байна — нэмэхэд дээр нь нэмэгдэнэ</span>`:'')
+}
+// Хүрдээр сонгосныг жагсаалтад оруулна. Нэг урт дахин сонговол ХУРААНА.
+function _incAdd(){
+  const was=_incRows.find(r=>+r.L===+_incL);
+  if(was)was.n=+was.n+_incN; else _incRows.push({L:+_incL,n:_incN});
+  hap(8);_incPaint();showToast(`${swLen(_incL)} м · ${_incN} ш нэмлээ`,1500)
+}
+/* Нэмсэн уртууд — өөр төрлийн дүнзийг хүрдээ дахин эргүүлээд нэмнэ */
 function _incPaint(){
   const wrap=document.getElementById('swIncRows');if(!wrap)return;
-  const used=_incRows.map(r=>+r.L).filter(Boolean);
-  wrap.innerHTML=_incRows.map((r,i)=>{
-    const opts=['<option value="">Урт…</option>'].concat(SW_LENS.map(L=>
-      `<option value="${L}"${+r.L===L?' selected':''}${(used.indexOf(L)>=0&&+r.L!==L)?' disabled':''}>${swLen(L)} м</option>`)).join('');
-    const q=+r.n||0,m=(+r.L||0)*q;
-    return `<div class="inc-row">
-      <select onchange="_incSet(${i},'L',this.value)">${opts}</select>
-      <input type="number" min="0" inputmode="numeric" placeholder="ш" value="${r.n===''?'':r.n}"
-             oninput="_incSet(${i},'n',this.value)">
-      <span class="inc-m">${m?swM(m)+' пог/м':'—'}</span>
-      ${_incRows.length>1?`<button class="inc-x" onclick="_incDel(${i})" aria-label="Хасах">×</button>`:'<span></span>'}
-    </div>`
-  }).join('');
+  wrap.innerHTML=_incRows.length
+    ?_incRows.map((r,i)=>{
+      const q=+r.n||0,m=(+r.L||0)*q;
+      return `<div class="inc-row inc-row-v">
+        <span class="inc-l">${swLen(r.L)} м</span>
+        <span class="inc-q">${q} ш</span>
+        <span class="inc-m">${swM(m)} пог/м</span>
+        <button class="inc-x" onclick="_incDel(${i})" aria-label="Хасах">×</button>
+      </div>`}).join('')
+    :`<div style="text-align:center;padding:10px;color:var(--ink4);font-size:12px;font-weight:600">Хүрдээ тааруулаад "Жагсаалтад нэмэх" дарна</div>`;
   const t=_incTot();
   document.getElementById('swIncSumN').textContent=t.n+' ш';
-  document.getElementById('swIncSumM').textContent=swM(t.m)+' пог/м'
+  document.getElementById('swIncSumM').textContent=swM(t.m)+' пог/м';
+  _incPick()
 }
 function _incTot(){
   let n=0,m=0;
   _incRows.forEach(r=>{const L=+r.L||0,q=+r.n||0;if(L&&q>0){n+=q;m+=L*q}});
   return{n,m}
 }
-function _incSet(i,k,v){
-  if(!_incRows[i])return;
-  _incRows[i][k]=v;
-  // Сүүлийн мөр бүрэн бөглөгдвөл доор нь шинэ мөр
-  const last=_incRows[_incRows.length-1];
-  if(last&&+last.L&&+last.n>0&&_incRows.length<SW_LENS.length)_incRows.push({L:'',n:''});
-  _incPaint()
-}
-function _incDel(i){_incRows.splice(i,1);if(!_incRows.length)_incRows=[{L:'',n:''}];_incPaint()}
+function _incDel(i){_incRows.splice(i,1);_incPaint()}
 function saveSwInc(){
   if(!_modalOpen('swIncAddModal'))return;
   const f=swFolder();if(!f){showToast('Паспорт сонгоно уу');return}
+  // "Нэмэх" дарахаа мартсан ч хүрдэн дээрх сонголт нь алдагдахгүй
+  if(!_incRows.length&&_incL&&_incN>0)_incRows.push({L:+_incL,n:+_incN});
   const items=_incRows.map(r=>({L:+r.L,n:+r.n||0})).filter(x=>x.L&&x.n>0);
   if(!items.length){showToast('Урт ба ширхэгээ оруулна уу',2600);return}
   const p=n=>(n<10?'0':'')+n;
@@ -11148,7 +11194,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.13·133';
+const APP_BUILD='2026.09.13·134';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
