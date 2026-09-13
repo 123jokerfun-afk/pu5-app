@@ -428,6 +428,69 @@ ok('Нийт км, нийт дэр, тэнцэхгүй хувь хэвээр',
    /^Нийт км=2$/.test(hd[0])&&/^Нийт дэр=5$/.test(hd[1])&&/Тэнцэхгүй=40\.0%/.test(hd[3]),
    JSON.stringify(hd));
 
+/* ══════════════════════════════════════════════════════════════
+   ДАРААЛСАН ЦЭГ — ЯВАХ ЧИГЛЭЛЭЭС ХАМААРАХГҮЙ
+
+   Дараалсан тэнцэхгүй дэр бол замын ГЕОМЕТРИЙН шинж: #1 → #n гэсэн
+   жинхэнэ дарааллаар л тоологдоно. Ухарч бүртгэж байгаа үе нь ЯВАХ
+   дарааллаар түр эргүүлэгдсэн байдаг (sec.rw) тул түүнийг эсрэгээр нь
+   уншиж, жинхэнэ дарааллыг сэргээх ёстой. Эс тэгвэл үеийн ЗААГ буруу
+   талаараа залгагдаж, ҮЕ ДАМНАСАН дараалал алга болно — улмаар
+   сийрэгжилтийн тэмдэглэгээ ч алдагдана (ПУ-5 бол хуулийн бичиг баримт).
+   ══════════════════════════════════════════════════════════════ */
+console.log('\nДараалсан цэг ↔ явах чиглэл');
+await page.evaluate(()=>{
+  const mk=(id,lab,pat)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+    sleepers:pat.split('').map(c=>({type:c==='b'?'bad':'normal',ts:0}))});
+  DB.folders=[{id:'fc',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    tracks:[{id:'tc',num:2,kind:'station',note:'',sections:[
+      mk('c1','1-р үе','nnnnbb'),      // сүүлийн 2 тэнцэхгүй
+      mk('c2','2-р үе','bnnnnn'),      // эхний 1 → үе дамнасан 3
+      mk('c3','3-р үе','nnbbbn')]}]}]; // үе дотроо 3
+  DB.main=[];activeFolderId='fc';DB.tracks=DB.folders[0].tracks;
+  _revTrk={};_revAsked={};saveDB()});
+const cnorm=await page.evaluate(()=>
+  findConsecutiveBadForTrack(getTrack('tc').sections).map(g=>
+    g.len+':'+g.items.map(i=>i.secLabel+'#'+i.posInSec).join(',')));
+ok('Жинхэнэ дараалалд үе дамнасан 3 ба үе доторх 3 олдоно',
+   cnorm.length===2&&/1-р үе#5,1-р үе#6,2-р үе#1/.test(cnorm[0]),JSON.stringify(cnorm));
+
+const crev=await page.evaluate(async()=>{
+  openTrack('tc',1);await new Promise(r=>setTimeout(r,300));
+  _revTrk['tc']=1;
+  openSection('c2');await new Promise(r=>setTimeout(r,340));
+  const sec=activeSec();
+  return{rw:!!sec.rw,pat:sec.sleepers.map(s=>s.type==='bad'?'b':'n').join(''),
+    g:findConsecutiveBadForTrack(getTrack('tc').sections).map(x=>
+      x.len+':'+x.items.map(i=>i.secLabel+'#'+i.posInSec).join(',')),
+    n:consecTotalCount()}});
+ok('Ухрах горимд үе физикээр эргэдэг',crev.rw&&crev.pat==='nnnnnb',crev.pat);
+ok('Ухарч бүртгэж байхад ч ҮЕ ДАМНАСАН дараалал алга болохгүй',
+   crev.g.length===2&&/1-р үе#5,1-р үе#6,2-р үе#6/.test(crev.g[0])&&crev.n===2,
+   JSON.stringify(crev.g)+' · нийт '+crev.n);
+
+/* Сийрэгжилтийн гинж: асуулт → тэмдэг → жагсаалт */
+const ccar=await page.evaluate(async()=>{
+  let asked=null;const _ac=window.appConfirm;
+  window.appConfirm=m=>{asked=m;return Promise.resolve(true)};
+  const sec=activeSec(),li=sec.sleepers.length-1;   // геометрийн #1
+  const inRun=inConsecRun(activeTrack(),sec,li);
+  editIdx=li;_replY=2026;_replM=6;_replD=1;
+  await saveRepl('normal');await new Promise(r=>setTimeout(r,420));
+  const e=activeSec().repl[li];
+  const carve=!!(e&&e.s);
+  _revLeave();await new Promise(r=>setTimeout(r,300));
+  const s2=getTrack('tc').sections[1];
+  window.appConfirm=_ac;
+  return{inRun,asked,carve,keys:Object.keys(s2.repl||{}),
+    back:!!(s2.repl&&s2.repl[0]&&s2.repl[0].s),cv:collectCarve().map(x=>x.rows.length)}});
+ok('Ухрах горимд ч дэр нь дараалсан цэгт хамаарна',ccar.inRun,String(ccar.inRun));
+ok('Сийрэгжилтийн асуулт гарна',/сийрэгжилт/i.test(ccar.asked||''),(ccar.asked||'—').slice(0,52));
+ok('Солилт СИЙРЭГЖИЛТ гэж тэмдэглэгдэнэ',ccar.carve,String(ccar.carve));
+ok('Үеэс гарахад тэмдэг жинхэнэ дугаар (#1) дээрээ үлдэнэ',
+   ccar.back&&ccar.keys.length===1&&ccar.keys[0]==='0',JSON.stringify(ccar.keys));
+ok('Сийрэгжилтийн жагсаалтад орно',JSON.stringify(ccar.cv)==='[1]',JSON.stringify(ccar.cv));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);

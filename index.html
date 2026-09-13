@@ -6328,10 +6328,21 @@ function findConsecutiveBadForTrack(sections){
   sections.forEach((sec,si)=>{
     // Залгаагүй зааг дээр дараалал тасарна
     if(si>0&&!boundaryContinuous(sections[si-1],sec))flush();
-    sec.sleepers.forEach((sl,i)=>{
-      const item={type:sl.type,secId:sec.id,secLabel:sec.label,posInSec:i+1};
+    // Дараалсан цэг бол замын ГЕОМЕТРИЙН шинж чанар: #1 → #n гэсэн
+    // жинхэнэ дарааллаар л уншина. Ухарч бүртгэж байгаа үе (sec.rw) нь
+    // ЯВАХ дарааллаар түр эргүүлэгдсэн байдаг тул түүнийг эсрэгээр нь
+    // гүйж, жинхэнэ дарааллыг сэргээнэ — эс тэгвэл үеийн ЗААГ буруу
+    // талаараа залгагдаж, үе дамнасан дараалал алга болно.
+    // Байрлалыг нь ОДООГИЙН массив дахь индексээр буцаана: дуудагч
+    // талууд (жагсаалтын дугаар, inConsecRun, recomputeCarve) бүгд
+    // одоогийн индексээр ажилладаг.
+    const sl=sec.sleepers||[],n=sl.length,rw=!!sec.rw;
+    for(let k=0;k<n;k++){
+      const i=rw?n-1-k:k;
+      if(!sl[i])continue;
+      const item={type:sl[i].type,secId:sec.id,secLabel:sec.label,posInSec:i+1};
       if(isBadSleeper(item.type))run.push(item);else flush()
-    })
+    }
   });
   flush();
   return groups
@@ -11714,7 +11725,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.13·136';
+const APP_BUILD='2026.09.13·137';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
