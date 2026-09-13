@@ -28,15 +28,21 @@ await page.evaluate(()=>{
   DB.main=[{id:'k1',num:12,kind:'main',mat:'tbd',sections:[ue(1),ue(2)]}];
   activeFolderId='f1';DB.tracks=DB.folders[0].tracks;saveDB()});
 
-/* ── 1. Зам нээхэд чиглэл асууна ── */
-console.log('\nЧиглэл асуух');
+/* ── 1. Чиглэлийг ТОЛГОЙН ТОВЧООР сонгоно ──────────────────────
+   Зам бүрт цонх гарах нь ажил удаашруулдаг тул нээхэд ӨӨРӨӨ
+   асуухгүй (v133). Хүссэн үедээ товчоор солино. */
+console.log('\nЧиглэл сонгох');
 const ask=await page.evaluate(async()=>{
   openTrack('t1');await new Promise(r=>setTimeout(r,350));
-  return{open:document.getElementById('walkModal').classList.contains('open'),
+  const auto=document.getElementById('walkModal').classList.contains('open');
+  document.getElementById('walkBtn').click();
+  await new Promise(r=>setTimeout(r,260));
+  return{auto,open:document.getElementById('walkModal').classList.contains('open'),
     sub:document.getElementById('wkSub').textContent,
     fwd:document.getElementById('wkFwd').textContent,
     rev:document.getElementById('wkRev').textContent}});
-ok('Өртөөний зам нээхэд чиглэл асууна',ask.open===true,String(ask.open));
+ok('Зам нээхэд чиглэл ӨӨРӨӨ асуухгүй',ask.auto===false,String(ask.auto));
+ok('Толгойн товч дарахад чиглэлийн цонх гарна',ask.open===true,String(ask.open));
 ok('Замын нэр, үеийн тоо харагдана',/2-р зам/.test(ask.sub)&&/5 үе/.test(ask.sub),ask.sub);
 ok('Эхнээс нь 1-р үеэс, ухрах нь сүүлийн үеэс',
    /1-р үе$/.test(ask.fwd)&&/5-р үе$/.test(ask.rev),`${ask.fwd} · ${ask.rev}`);
@@ -126,6 +132,7 @@ const no=await page.evaluate(async()=>{
   const kmRev=isRevTrack(activeTrack());
   goHome();await new Promise(r=>setTimeout(r,120));
   openTrack('t9');await new Promise(r=>setTimeout(r,300));
+  document.getElementById('walkBtn').click();await new Promise(r=>setTimeout(r,240));
   const one=document.getElementById('walkModal').classList.contains('open');
   closeModal('walkModal');
   // Шинэ, ХООСОН зам дээр ч бүртгэл эхлэхийн өмнө асуух ёстой
@@ -133,15 +140,15 @@ const no=await page.evaluate(async()=>{
   DB.tracks=DB.folders[0].tracks;saveDB();
   goHome();await new Promise(r=>setTimeout(r,120));
   openTrack('t0');await new Promise(r=>setTimeout(r,300));
+  document.getElementById('walkBtn').click();await new Promise(r=>setTimeout(r,240));
   const empty=document.getElementById('walkModal').classList.contains('open');
   const emptySub=document.getElementById('wkSub').textContent;
   closeModal('walkModal');
   return{km,kmRev,one,empty,emptySub}});
 ok('Гол замд чиглэл асуухгүй',!no.km&&!no.kmRev,String(no.km));
-ok('ХООСОН зам дээр ч асууна',no.empty===true&&/шинэ бүртгэл/.test(no.emptySub),
-   `${no.empty} · ${no.emptySub}`);
-ok('Ганц үетэй замд ч асууна (дэрийн дугаар чиглэлээс шалтгаална)',
-   no.one===true,String(no.one));
+ok('ХООСОН зам дээр ч товчоор асуулгаж болно',
+   no.empty===true&&/шинэ бүртгэл/.test(no.emptySub),`${no.empty} · ${no.emptySub}`);
+ok('Ганц үетэй замд ч чиглэлийн товч ажиллана',no.one===true,String(no.one));
 
 /* ── 6. Тоо, дүн хөндөгдөөгүй ── */
 const same=await page.evaluate(async()=>{
@@ -389,7 +396,7 @@ ok('Замын дараалал дугаараар',JSON.stringify(sw.list)===JS
 ok('Баруун шудрахад ДАРААХ зам',sw.a==='3-р зам'&&sw.b==='4-р зам',`${sw.a} → ${sw.b}`);
 ok('Сүүлийн замаас цааш шилжихгүй',sw.c==='4-р зам',sw.c);
 ok('Зүүн шудрахад ӨМНӨХ зам',sw.d==='3-р зам',sw.d);
-ok('Шилжсэн замд чиглэл асууна (буцах замдаа бүртгэх)',sw.askA===true,String(sw.askA));
+ok('Зам шилжихэд ч цонх өөрөө гарахгүй',sw.askA===false,String(sw.askA));
 
 const swKm=await page.evaluate(async()=>{
   goHome();await new Promise(r=>setTimeout(r,150));
@@ -401,7 +408,7 @@ const swKm=await page.evaluate(async()=>{
     ask2:document.getElementById('walkModal').classList.contains('open')}});
 ok('Гол замд км шудралт хэвээр',/км солино/.test(swKm.ht)&&swKm.now==='682-р км',
    `${swKm.ht} · ${swKm.now}`);
-ok('Гол замд чиглэл асуухгүй',!swKm.ask&&!swKm.ask2,`${swKm.ask} · ${swKm.ask2}`);
+ok('Гол замд чиглэлийн цонх огт гарахгүй',!swKm.ask&&!swKm.ask2,`${swKm.ask} · ${swKm.ask2}`);
 
 /* ── 11. Км жагсаалтын дээрх дүн ── */
 console.log('\nКм жагсаалтын дүн');

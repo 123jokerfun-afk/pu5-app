@@ -447,6 +447,21 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .sw-st-l{font-size:8.5px;font-weight:800;color:var(--ink4);margin-top:3px;
   text-transform:uppercase;letter-spacing:.05em}
 /* Тайлангийн багана хэлбэрийн мөр */
+/* Орлогын мөр: урт · ширхэг · нийт пог/м */
+.inc-row{display:grid;grid-template-columns:1fr 76px 1fr 30px;align-items:center;gap:7px;margin-bottom:7px}
+.inc-row select,.inc-row input{width:100%;padding:11px 8px;border-radius:var(--rs);
+  border:1.5px solid var(--border);background:var(--card);color:var(--ink);
+  font-size:14px;font-weight:800;font-family:inherit;text-align:center}
+.inc-row .inc-m{font-size:13px;font-weight:900;color:var(--g700);text-align:right;white-space:nowrap}
+.inc-row .inc-x{background:none;border:none;color:var(--red);font-size:20px;font-weight:900;
+  padding:0;line-height:1;min-height:34px;min-width:30px}
+/* Зарлагын мөр: сум · урт · ш · пог/м · % */
+.out-tr{display:grid;grid-template-columns:54px 60px 46px 1fr 56px;align-items:center;gap:5px;
+  padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800}
+.out-tr:last-of-type{border-bottom:none}
+.out-tr-h{background:var(--bg);border-bottom:1.5px solid var(--border2)}
+.out-tr-h span{font-size:9px!important;font-weight:900!important;color:var(--ink4)!important;
+  text-transform:uppercase;letter-spacing:.04em}
 .sw-tr{display:grid;grid-template-columns:74px 52px 1fr 1fr;align-items:center;gap:6px;
   padding:8px 10px;border-bottom:1px solid var(--border);background:var(--card)}
 .sw-tr:last-of-type{border-bottom:none}
@@ -2439,6 +2454,51 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 </div>
 
 <!-- СШ ПУ-5: дүнзний бодит мэдээлэл -->
+<!-- СШ ПУ-5: ДҮНЗНИЙ АГУУЛАХ — орлого -->
+<div class="overlay" id="swIncModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--g700)">📥 Орлого</div>
+      <button onclick="closeModal('swIncModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div id="swIncBody"></div>
+    <button class="btn-ok" style="width:100%;margin-top:10px" onclick="openSwIncAdd()">Орлого авах</button>
+  </div></div>
+</div>
+
+<!-- Орлого авах — огноо + урт тус бүрээр -->
+<div class="overlay" id="swIncAddModal" style="z-index:440">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Орлого авах</div>
+      <button onclick="closeModal('swIncAddModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;font-weight:600">Огноогоо гүйлгэж сонгоод, урт тус бүрээр ширхэгийг бичнэ</div>
+    <div class="wheel-year" id="swIncYear">—</div>
+    <div class="wheel-row">
+      <div class="wheel-col"><div class="wheel-lbl">Сар</div>
+        <div style="position:relative"><div class="wheel" id="swIncWhM"></div><div class="wheel-band"></div></div></div>
+      <div class="wheel-col"><div class="wheel-lbl">Өдөр</div>
+        <div style="position:relative"><div class="wheel" id="swIncWhD"></div><div class="wheel-band"></div></div></div>
+    </div>
+    <div class="sec-lbl" style="margin-top:12px">Дүнз</div>
+    <div id="swIncRows"></div>
+    <div class="rp-total" style="margin-top:8px"><span id="swIncSumN">0 ш</span><span id="swIncSumM">0 пог/м</span></div>
+    <button class="btn-ok" style="width:100%;margin-top:10px" onclick="saveSwInc()">Орлого авах</button>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: ДҮНЗНИЙ АГУУЛАХ — зарлага (автоматаар) -->
+<div class="overlay" id="swOutModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="sheet-title" style="margin:0;color:var(--orange)">📤 Зарлага</div>
+      <button onclick="closeModal('swOutModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div id="swOutBody"></div>
+  </div></div>
+</div>
+
 <div class="overlay" id="swRealRepModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -4459,14 +4519,11 @@ function _revLeave(){
 addEventListener('visibilitychange',()=>{if(document.hidden)_revLeave()});
 addEventListener('pagehide',()=>_revLeave());
 
+/* Явах чиглэлийг ӨӨРӨӨ АСУУХГҮЙ. Зам бүрт цонх гарах нь ажил
+   удаашруулдаг тул толгойн "эхнээс → / ← ухарч" товчоор хүссэн үедээ
+   солино. noAsk нь хуучин дуудлагуудтай нийцүүлэхийн тулд үлдсэн. */
 function openTrack(id,noAsk){
-  _fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView();
-  // Гол зам нь нэг км дотор нэг чиглэлтэй тул зөвхөн өртөөний замд асууна
-  const t=activeTrack();
-  // Шинэ, ХООСОН зам дээр ч асууна — бүртгэл эхлэхийн ӨМНӨ чиглэлээ
-  // сонгох нь чухал (үе дотрын дэрийн дугаар үүнээс шалтгаална)
-  if(noAsk||!t||isMainTrack(t))return;
-  askWalk()
+  _fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView()
 }
 function askWalk(){
   const t=activeTrack();if(!t||isMainTrack(t))return;
@@ -5645,10 +5702,7 @@ function navTrk(dir){
     tv.classList.add(dir>0?'km-slide-next':'km-slide-prev');
     setTimeout(()=>tv.classList.remove('km-slide-next','km-slide-prev'),340)
   }
-  showToast(`${trackLabel(l[j])} · ${j+1}/${l.length}`);
-  // Зэргэлдээ замыг БУЦАХ замдаа бүртгэх нь энэ шудралтын гол хэрэглээ.
-  // Тухайн замд чиглэлээ нэг ч удаа заагаагүй бол асууна.
-  if(!isMainTrack(l[j])&&!_revAsked[l[j].id])askWalk()
+  showToast(`${trackLabel(l[j])} · ${j+1}/${l.length}`)
 }
 // Хуучин нэр — гол замын км шилжилтэд хэрэглэгдэж байсан
 function navKm(dir){return navTrk(dir)}
@@ -9793,11 +9847,31 @@ function _swDzSyncDays(){
   const days=[];for(let i=1;i<=dim;i++)days.push(i);
   _wheelFill(el,days,_swDzD-1);el.scrollTop=(_swDzD-1)*_WH_IH
 }
+/* Сольсон урт — АГУУЛАХАД байгаа дүнзнээс. Орлого огт бүртгээгүй бол
+   бүх уртыг харуулна (агуулахын бүртгэл нь заавал биш). */
+function _swDzLens(){
+  const st=swStock(),all=Object.keys(st).map(Number);
+  const ok=all.filter(L=>st[L]>0).sort((a,b)=>a-b);
+  if(!ok.length&&!all.length)return SW_LENS.slice();
+  // Одоо сонгогдсон нь үлдэгдэлгүй ч жагсаалтад үлдэнэ (засварлахад хэрэгтэй)
+  if(_swDzL&&ok.indexOf(_swDzL)<0)ok.push(_swDzL);
+  return ok.length?ok.sort((a,b)=>a-b):SW_LENS.slice()
+}
+function _swDzLenLbl(L){
+  const st=swStock();
+  return Object.keys(st).length?`${swLen(L)} · ${st[L]||0}ш`:swLen(L)
+}
 function _swDzHint(){
   const t=swTurnout();if(!t||_swDzIdx<0)return;
   const nom=swSlot(t,_swDzIdx).len;
   const h=document.getElementById('swDzRHint');
-  h.innerHTML=_swDzL===nom
+  const st=swStock(),have=st[_swDzL];
+  const warn=(have!==undefined&&have<=0)
+    ?`<br><span style="color:var(--red);font-weight:800">Агуулахад ${swLen(_swDzL)} м дүнз үлдээгүй байна</span>`:'';
+  h.innerHTML=warn+_x_swDzHintBody(nom)
+}
+function _x_swDzHintBody(nom){
+  return _swDzL===nom
     ?`${swLen(nom)} м дүнзийг <b>${swLen(_swDzL)}</b> м дүнзээр сольсон`
     :`${swLen(nom)} м дүнзийг <b>${swLen(_swDzL)}</b> м дүнзээр сольсон<br>`+
      `<span style="color:var(--ink3);font-weight:600">Бүртгэлд <b>${swLen(nom)}</b> м хэвээр тооцогдоно — сумын нийт пог/м өөрчлөгдөхгүй</span>`
@@ -9807,14 +9881,19 @@ function _swDzWheels(){
   const months=[];for(let i=1;i<=12;i++)months.push(i);
   _wheelFill(mEl,months,_swDzM-1);mEl.scrollTop=(_swDzM-1)*_WH_IH;
   _swDzSyncDays();
-  const li=Math.max(0,SW_LENS.indexOf(_swDzL));
-  _wheelFill(lEl,SW_LENS.map(swLen),li);lEl.scrollTop=li*_WH_IH;
+  // Агуулахад байгаа урт бүрийн ард ҮЛДЭГДЛИЙГ харуулна
+  let L2=_swDzLens();
+  if(L2.indexOf(_swDzL)<0)_swDzL=L2[0];
+  const li=Math.max(0,L2.indexOf(_swDzL));
+  _wheelFill(lEl,L2.map(_swDzLenLbl),li);lEl.scrollTop=li*_WH_IH;
   _swDzHint();
   if(!mEl._bound){
     mEl._bound=1;
     _wheelBind(mEl,()=>12,i=>{_swDzM=i+1;_swDzSyncDays()});
     _wheelBind(dEl,()=>daysInMonth(_swDzY,_swDzM),i=>{_swDzD=i+1});
-    _wheelBind(lEl,()=>SW_LENS.length,i=>{_swDzL=SW_LENS[i];_swDzHint()})
+    _wheelBind(lEl,()=>_swDzLens().length,i=>{
+      const l=_swDzLens();if(l[i]===undefined)return;
+      _swDzL=l[i];_swDzHint()})
   }
 }
 function saveSwDzRepl(){
@@ -10074,9 +10153,198 @@ function renderSwFolderCards(){
     card('var(--purple)','var(--purple-bg)','Дараалсан дүнз',
       nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга','openSwRunRep()')+
     card('var(--blue)','var(--blue-bg)','Дүнзний бодит мэдээлэл',
-      nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга','openSwRealRep()')
+      nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга','openSwRealRep()')+
+    card('var(--g700)','var(--g100)','Орлого',
+      (()=>{const i=swIncBy(),ks=Object.keys(i);
+        if(!ks.length)return 'Орлого бүртгээгүй';
+        let n=0,m=0;ks.forEach(L=>{n+=i[L];m+=i[L]*L});
+        return `${n} ш · ${swM(m)} пог/м`})(),'openSwInc()')+
+    card('var(--orange)','var(--orange-bg)','Зарлага',
+      (()=>{const u=swOutBy(),ks=Object.keys(u);
+        if(!ks.length)return 'Зарлага алга';
+        let n=0,m=0;ks.forEach(L=>{n+=u[L];m+=u[L]*L});
+        return `${n} ш · ${swM(m)} пог/м`})(),'openSwOut()')
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
+/* ══════════════════════════════════════════════
+   ДҮНЗНИЙ АГУУЛАХ — ОРЛОГО / ЗАРЛАГА
+
+   Сумын паспорт бүр өөрийн агуулахтай: `f.inc` нь орлогын баримтууд
+   [{id, d:'2026-09-13', items:[{L:3, n:10}, …]}].
+
+   ЗАРЛАГА нь тусад нь бүртгэгддэггүй — сумын дүнз солих бүрт тухайн
+   урт агуулахаас гарна (`swReplRows(t).real`). Ингэснээр тоо хоёр
+   газраас гарахгүй: солилт бол ганц эх сурвалж.
+   ══════════════════════════════════════════════ */
+function swInc(f){f=f||swFolder();if(!f)return [];if(!Array.isArray(f.inc))f.inc=[];return f.inc}
+// Урт тус бүрийн ОРЛОГО
+function swIncBy(f){
+  const o={};
+  swInc(f).forEach(r=>(r.items||[]).forEach(it=>{
+    const L=+it.L,n=+it.n||0;if(!L||n<=0)return;o[L]=(o[L]||0)+n}));
+  return o
+}
+// Урт тус бүрийн ЗАРЛАГА — солилтоос гарна
+function swOutBy(f){
+  f=f||swFolder();
+  const o={};
+  ((f&&f.turnouts)||[]).forEach(t=>swReplRows(t).forEach(r=>{
+    const L=+r.real;if(!L)return;o[L]=(o[L]||0)+1}));
+  return o
+}
+// Үлдэгдэл
+function swStock(f){
+  const i=swIncBy(f),u=swOutBy(f),o={};
+  Object.keys(i).forEach(L=>{o[L]=i[L]-(u[L]||0)});
+  Object.keys(u).forEach(L=>{if(!(L in o))o[L]=-u[L]});
+  return o
+}
+function swStockAt(L,f){const s=swStock(f);return s[L]||0}
+
+/* ── Орлогын жагсаалт ── */
+function openSwInc(){renderSwInc();openModal('swIncModal')}
+function renderSwInc(){
+  const b=document.getElementById('swIncBody');if(!b)return;
+  const list=swInc().slice().sort((a,x)=>String(a.d).localeCompare(String(x.d)));
+  const st=swStock();
+  let html='',N=0,M=0;
+  list.forEach(r=>{
+    let n=0,m=0;
+    const cells=(r.items||[]).map(it=>{
+      const L=+it.L,q=+it.n||0;n+=q;m+=q*L;
+      return `<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
+        <span class="sw-c2">${q} ш</span><span class="sw-c34">${swM(q*L)} пог/м</span></div>`
+    }).join('');
+    N+=n;M+=m;
+    html+=_swHd(fmtReplDate(r.d))+cells+
+      `<div class="rp-sub"><span>${n} ш</span><span>${swM(m)} пог/м</span>
+        <button class="rb-btn" style="color:var(--red);border-color:rgba(220,60,60,.35);padding:4px 9px;font-size:11px"
+          onclick="event.stopPropagation();delSwInc('${r.id}')">Устгах</button></div></div>`
+  });
+  // Үлдэгдэл — урт тус бүрээр
+  const ks=Object.keys(st).map(Number).sort((a,x)=>a-x);
+  let rest='';
+  if(ks.length){
+    rest=_swHd('Үлдэгдэл')+
+      `<div class="sw-tr sw-tr-h"><span class="sw-c1">Урт</span><span class="sw-c2">Үлдсэн</span>
+        <span class="sw-c34">пог/м</span></div>`+
+      ks.map(L=>`<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
+        <span class="sw-c2" style="color:${st[L]>0?'var(--g700)':'var(--red)'}">${st[L]} ш</span>
+        <span class="sw-c34">${swM(Math.max(0,st[L])*L)} пог/м</span></div>`).join('')+'</div>'
+  }
+  b.innerHTML=(html||_swEmpty('Орлого бүртгээгүй байна'))+
+    (html?`<div class="rp-total"><span>Нийт орлого</span><span>${N} ш · ${swM(M)} пог/м</span></div>`:'')+
+    rest
+}
+async function delSwInc(id){
+  const f=swFolder();if(!f)return;
+  if(!await appConfirm('Энэ орлогыг устгах уу?'))return;
+  f.inc=swInc(f).filter(r=>r.id!==id);
+  saveDB();renderSwInc();renderSwFolderCards();showToast('Орлого устлаа')
+}
+
+/* ── Орлого авах ── */
+let _incY=2026,_incM=1,_incD=1,_incRows=[{L:'',n:''}];
+function openSwIncAdd(){
+  const td=mnToday();_incY=td.y;_incM=td.m;_incD=td.d;
+  _incRows=[{L:'',n:''}];
+  document.getElementById('swIncYear').textContent=_incY+' он';
+  openModal('swIncAddModal');
+  setTimeout(()=>{_incWheels();_incPaint()},40)
+}
+function _incSyncDays(){
+  const el=document.getElementById('swIncWhD');
+  const dim=daysInMonth(_incY,_incM);
+  if(_incD>dim)_incD=dim;
+  const days=[];for(let i=1;i<=dim;i++)days.push(i);
+  _wheelFill(el,days,_incD-1);el.scrollTop=(_incD-1)*_WH_IH
+}
+function _incWheels(){
+  const mEl=document.getElementById('swIncWhM'),dEl=document.getElementById('swIncWhD');
+  const months=[];for(let i=1;i<=12;i++)months.push(i);
+  _wheelFill(mEl,months,_incM-1);mEl.scrollTop=(_incM-1)*_WH_IH;
+  _incSyncDays();
+  if(!mEl._bound){
+    mEl._bound=1;
+    _wheelBind(mEl,()=>12,i=>{_incM=i+1;_incSyncDays()});
+    _wheelBind(dEl,()=>daysInMonth(_incY,_incM),i=>{_incD=i+1})
+  }
+}
+/* Нэг урт сонгоод ширхэгээ бичихэд доор нь ДАРААГИЙН хоосон мөр өөрөө
+   нэмэгдэнэ — "өөр төрлийн дүнз оруулах" гэж тусад нь дарах шаардлагагүй. */
+function _incPaint(){
+  const wrap=document.getElementById('swIncRows');if(!wrap)return;
+  const used=_incRows.map(r=>+r.L).filter(Boolean);
+  wrap.innerHTML=_incRows.map((r,i)=>{
+    const opts=['<option value="">Урт…</option>'].concat(SW_LENS.map(L=>
+      `<option value="${L}"${+r.L===L?' selected':''}${(used.indexOf(L)>=0&&+r.L!==L)?' disabled':''}>${swLen(L)} м</option>`)).join('');
+    const q=+r.n||0,m=(+r.L||0)*q;
+    return `<div class="inc-row">
+      <select onchange="_incSet(${i},'L',this.value)">${opts}</select>
+      <input type="number" min="0" inputmode="numeric" placeholder="ш" value="${r.n===''?'':r.n}"
+             oninput="_incSet(${i},'n',this.value)">
+      <span class="inc-m">${m?swM(m)+' пог/м':'—'}</span>
+      ${_incRows.length>1?`<button class="inc-x" onclick="_incDel(${i})" aria-label="Хасах">×</button>`:'<span></span>'}
+    </div>`
+  }).join('');
+  const t=_incTot();
+  document.getElementById('swIncSumN').textContent=t.n+' ш';
+  document.getElementById('swIncSumM').textContent=swM(t.m)+' пог/м'
+}
+function _incTot(){
+  let n=0,m=0;
+  _incRows.forEach(r=>{const L=+r.L||0,q=+r.n||0;if(L&&q>0){n+=q;m+=L*q}});
+  return{n,m}
+}
+function _incSet(i,k,v){
+  if(!_incRows[i])return;
+  _incRows[i][k]=v;
+  // Сүүлийн мөр бүрэн бөглөгдвөл доор нь шинэ мөр
+  const last=_incRows[_incRows.length-1];
+  if(last&&+last.L&&+last.n>0&&_incRows.length<SW_LENS.length)_incRows.push({L:'',n:''});
+  _incPaint()
+}
+function _incDel(i){_incRows.splice(i,1);if(!_incRows.length)_incRows=[{L:'',n:''}];_incPaint()}
+function saveSwInc(){
+  if(!_modalOpen('swIncAddModal'))return;
+  const f=swFolder();if(!f){showToast('Паспорт сонгоно уу');return}
+  const items=_incRows.map(r=>({L:+r.L,n:+r.n||0})).filter(x=>x.L&&x.n>0);
+  if(!items.length){showToast('Урт ба ширхэгээ оруулна уу',2600);return}
+  const p=n=>(n<10?'0':'')+n;
+  swInc(f).push({id:'i-'+uid(),d:_incY+'-'+p(_incM)+'-'+p(_incD),items});
+  saveDB();closeModal('swIncAddModal');renderSwInc();renderSwFolderCards();
+  const t=_incTot();
+  showToast(`✓ ${t.n} ш · ${swM(t.m)} пог/м орлогод авлаа`,3000)
+}
+
+/* ── Зарлага — солилтоос автоматаар ── */
+function openSwOut(){
+  const ts=swAllTurnouts();
+  let html='',N=0,M=0;
+  ts.forEach(t=>{
+    const rows=swReplRows(t);if(!rows.length)return;
+    const by={};rows.forEach(r=>{by[r.real]=(by[r.real]||0)+1});
+    const pct=swTally(t).pct;
+    const col=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
+    Object.keys(by).map(Number).sort((a,b)=>a-b).forEach((L,k)=>{
+      const q=by[L],m=q*L;N+=q;M+=m;
+      html+=`<div class="out-tr">
+        <span>${k?'':'Сум '+t.num}</span>
+        <span>${swLen(L)} м</span>
+        <span>${q} ш</span>
+        <span style="text-align:right">${swM(m)} пог/м</span>
+        <span style="text-align:right;color:${col}">${k?'':pct.toFixed(1)+'%'}</span></div>`
+    })
+  });
+  const b=document.getElementById('swOutBody');
+  b.innerHTML=html
+    ?`<div class="out-tr out-tr-h"><span>Сум №</span><span>пог/м</span><span>ш</span>
+        <span style="text-align:right">Нийт пог/м</span><span style="text-align:right">Тэнцэхгүй</span></div>`
+     +html+`<div class="rp-total"><span>Нийт зарлага</span><span>${N} ш · ${swM(M)} пог/м</span></div>`
+    :_swEmpty('Зарлага алга — дүнз солиогүй байна');
+  openModal('swOutModal')
+}
+
 const _swHd=t=>`<div class="rp-track"><div class="rp-track-hd">${t}</div>`;
 // 1. Сольсон дүнз — ҮРГЭЛЖ анхны уртаар
 function openSwReplRep(){
@@ -10880,7 +11148,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.12·132';
+const APP_BUILD='2026.09.13·133';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
