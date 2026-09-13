@@ -64,12 +64,30 @@ const items=await page.evaluate(()=>({
   form:!!document.getElementById('swFormBtn'),
   add:[...document.querySelectorAll('#swTurnoutsSection button')].some(b=>/Сум нэмэх/.test(b.textContent))}));
 ok('Сумын карт 2',items.cards===2,JSON.stringify(items));
-// v133-т Орлого, Зарлага (дүнзний агуулах), v135-т Төлөвлөсөн дүнз нэмэгдсэн
-ok('Сольсон/Дараалсан/Бодит + Орлого/Зарлага/Төлөвлөсөн = 6 хавтас',
-   items.folders===6,String(items.folders));
-ok('Агуулах ба төлөвлөгөөний хавтас нэрээрээ байна',
-   /Орлого/.test(items.names)&&/Зарлага/.test(items.names)
-   &&/Төлөвлөсөн дүнз/.test(items.names),items.names);
+// v135-т Төлөвлөсөн дүнз нэмэгдсэн. v138-т Орлого/Зарлага нь паспортын
+// хавтаснуудаас гарч, паспортуудын жагсаалтын доор тусдаа хэсэг болсон.
+ok('Сольсон/Дараалсан/Бодит/Төлөвлөсөн = 4 хавтас',
+   items.folders===4,String(items.folders));
+ok('Төлөвлөсөн дүнзний хавтас нэрээрээ байна',
+   /Төлөвлөсөн дүнз/.test(items.names),items.names);
+ok('Орлого/Зарлага нь паспортын хавтаснуудын дотор БАЙХГҮЙ',
+   !/Орлого/.test(items.names)&&!/Зарлага/.test(items.names),items.names);
+const incSec=await page.evaluate(()=>({
+  vis:getComputedStyle(document.getElementById('swIncSection')).display,
+  lbl:document.querySelector('#swIncSection .sec-lbl').textContent.trim(),
+  cards:[...document.querySelectorAll('#swIncWrap .folder-card .folder-name')]
+    .map(e=>e.textContent.trim()),
+  // Паспортуудын жагсаалтаас ДООШ, Сумуудаас ДЭЭШ байрлана
+  after:document.getElementById('swFolders').compareDocumentPosition(
+    document.getElementById('swIncSection'))&Node.DOCUMENT_POSITION_FOLLOWING?1:0,
+  before:document.getElementById('swIncSection').compareDocumentPosition(
+    document.getElementById('swTurnoutsSection'))&Node.DOCUMENT_POSITION_FOLLOWING?1:0}));
+ok('Дүнзний агуулах тусдаа хэсэг болж, Орлого/Зарлага тэнд байна',
+   incSec.vis!=='none'&&/Дүнзний агуулах/.test(incSec.lbl)
+   &&incSec.cards.length===2&&/Орлого/.test(incSec.cards[0])&&/Зарлага/.test(incSec.cards[1]),
+   incSec.lbl+' · '+JSON.stringify(incSec.cards));
+ok('Паспортуудын жагсаалтын ДООР, Сумуудын ДЭЭР байрлана',
+   incSec.after===1&&incSec.before===1,`${incSec.after}·${incSec.before}`);
 ok('Дүнзний маягт татах товч',items.form);
 ok('Сум нэмэх товч',items.add);
 

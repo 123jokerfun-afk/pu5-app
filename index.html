@@ -264,6 +264,14 @@ button{font-family:inherit}
   font-variant-numeric:tabular-nums;will-change:transform}
 .hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 #swHero{background:linear-gradient(135deg,#6D28D9,#9333EA 55%,#C026D3)}
+/* СШ-ийн толгой нь хоёр эгнээ дүнтэй тул дэрийнхээс өндөр болдог.
+   Хөвөөг нь чангалж бүх агуулгыг ~24px дээшлүүлнэ — хамгаалалтын
+   зай (--sat) хэвээр тул хиртэлттэй утсанд ч дарагдахгүй. */
+#swHero{padding:calc(var(--sat) + 12px) 20px 16px}
+#swHero .hero-stats{margin-top:13px}
+#swHero .hero-stats-2{margin-top:8px}
+#swHero .hero-stat{padding:8px 12px}
+#swHeroMeta{margin-top:-2px}
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -621,6 +629,13 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
    Сүүдэр биш ХҮРЭЭ ашигласан нь бөмбөрөгийн "одоо таарсан мөр"-ийн
    гэрэлтэлттэй (.dr-in) зөрчилдөхгүйн тулд. */
 .drow.dr-plan{border-color:var(--blue);border-width:2.5px}
+/* Солихоор төлөвлөсөн — төрлийн ард цэнхэр хадаасны тэмдэг. Эможи биш
+   SVG ашигласан нь: эможи утас бүр дээр өөр өнгө, өөр хэмжээтэй
+   зурагддаг бол энэ нь хаана ч ЦЭНХЭР, ижил хэмжээтэй гарна. */
+.pl-pin{display:inline-flex;align-items:center;justify-content:center;
+  width:21px;height:21px;flex-shrink:0;color:var(--blue);
+  background:var(--blue-bg);border:1.5px solid var(--blue-mid);border-radius:7px}
+.pl-pin svg{width:13px;height:13px;display:block}
 .drow.dr-in{box-shadow:0 5px 22px rgba(255,150,40,.3),0 0 0 1.5px rgba(255,168,50,.55);
   filter:saturate(1.2) contrast(1.04)}
 .drow{transition:filter .18s ease,box-shadow .18s ease}
@@ -1793,6 +1808,12 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button class="add-track-btn" onclick="openSwFolder()" style="border-color:#C084FC;color:#7E22CE">
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 11v5M9.5 13.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Шинэ паспорт нэмэх
       </button>
+    </div>
+    <!-- Дүнзний агуулах — паспортын хавтаснуудын дотор биш, дэрийнхтэй
+         ижилхэн паспортуудын жагсаалтын ДООР тусдаа хэсэг болно -->
+    <div class="home-section" id="swIncSection" style="margin-top:16px;display:none">
+      <div class="sec-lbl" style="margin-top:0">Дүнзний агуулах</div>
+      <div id="swIncWrap" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
     <div id="swTurnoutsSection" style="display:none">
     <div class="home-section">
@@ -3350,6 +3371,9 @@ const ICONS={
   sheet:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'
 };
 function ic(name,cls){return '<svg class="ic '+(cls||'')+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[name]||'')+'</svg>'}
+// Солихоор төлөвлөсөн дэр/дүнзний тэмдэг — жагсаалтад төрлийн ард орно
+const PIN_HTML='<span class="pl-pin" title="Солихоор төлөвлөсөн" aria-label="Солихоор төлөвлөсөн">'+
+  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 9V4h1a1 1 0 0 0 0-2H7a1 1 0 0 0 0 2h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg></span>';
 
 // Haptic — дэр бүртгэх, товч дарахад
 function hap(ms){try{if(navigator.vibrate)navigator.vibrate(ms||12)}catch(e){}}
@@ -5532,10 +5556,12 @@ function renderRecordLog(sec,focusIdx){
       const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       const rno=runNo[sec.id+'#'+(i+1)];
       const rn=rno?'<span class="dr-run">'+rno+'</span>':'';
-      const pc=planAt(sec,i)?' dr-plan':'';   // солихоор төлөвлөсөн
+      const pl=planAt(sec,i);                // солихоор төлөвлөсөн
+      const pc=pl?' dr-plan':'';
       html+='<div class="drow dr-rec '+tc+pc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
-        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+rn+
+        '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+
+        (pl?PIN_HTML:'')+ft+rb+rn+
         '<span class="dr-edit">'+ic('edit',12)+'</span></div>';
     }
   }
@@ -9697,6 +9723,9 @@ function renderSwHome(){
   countTo(document.getElementById('swHsMB'),nMB,800,{delay:280,fmt:pm(nMB)});
   const _sec=document.getElementById('swTurnoutsSection');
   if(_sec)_sec.style.display=_sf?'block':'none';
+  const _inc=document.getElementById('swIncSection');
+  if(_inc)_inc.style.display=_sf?'block':'none';
+  renderSwIncCards();
   if(_sf)renderSwList();
   // Нэмэх тэмдэг зөвхөн ПД-6 хаяг дээр
   const ab=document.getElementById('swAddSpecBtn');
@@ -9780,8 +9809,8 @@ function openSwFolderView(id){
 }
 function closeSwFolder(){
   swFolderId=null;
-  const sec=document.getElementById('swTurnoutsSection');
-  if(sec)sec.style.display='none';
+  ['swTurnoutsSection','swIncSection'].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.style.display='none'});
   renderSwHome()
 }
 function renderSwList(){
@@ -9954,8 +9983,8 @@ function renderSwRec(focus){
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),bad=t.it[i]==='b';
     const isSl=sl.kind==='дэр';
-    const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')
-      +(!isSl&&swDzPlan(t,i)?' dr-plan':'');   // солихоор төлөвлөсөн
+    const pln=!isSl&&swDzPlan(t,i);           // солихоор төлөвлөсөн
+    const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')+(pln?' dr-plan':'');
     const dr=isSl?null:dMap[i];
     const rp=isSl?(t.slRepl||{})[i]:(dr?dr.rec:null);
     const prev=!!(dr&&!dr.own);       // өмнөх паспортынх — зөвхөн тэмдэглэгээ
@@ -9963,6 +9992,7 @@ function renderSwRec(focus){
       <span class="dr-num">#${no(i)}</span>
       <span class="sw-kind">${swKindLbl(sl)}</span>
       <span class="sw-state">${bad?'Тэнцэхгүй':'Хэвийн'}</span>
+      ${pln?PIN_HTML:''}
       ${rp?`<span class="repl-date${prev?' rd-prev':''}">${fmtReplDate(rp.d)}</span>`:''}
       <span class="dr-edit">${ic('edit',12)}</span></div>`
   }
@@ -10710,21 +10740,27 @@ function renderSwFolderCards(){
       nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга','openSwRunRep()')+
     card('var(--blue)','var(--blue-bg)','Дүнзний бодит мэдээлэл',
       nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга','openSwRealRep()')+
-    card('var(--g700)','var(--g100)','Орлого',
-      (()=>{const i=swIncBy(),ks=Object.keys(i);
-        if(!ks.length)return 'Орлого бүртгээгүй';
-        let n=0,m=0;ks.forEach(L=>{n+=i[L];m+=i[L]*L});
-        return `${n} ш · ${swM(m)} пог/м`})(),'openSwInc()')+
-    card('var(--orange)','var(--orange-bg)','Зарлага',
-      (()=>{const u=swOutBy(),ks=Object.keys(u);
-        if(!ks.length)return 'Зарлага алга';
-        let n=0,m=0;ks.forEach(L=>{n+=u[L];m+=u[L]*L});
-        return `${n} ш · ${swM(m)} пог/м`})(),'openSwOut()')+
     card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',
       (()=>{const pb=swPlanBy(),ks=Object.keys(pb);
         if(!ks.length)return 'Төлөвлөгөө алга';
         let n=0,m=0;ks.forEach(L=>{n+=pb[L];m+=pb[L]*L});
         return `${n} ш · ${swM(m)} пог/м`})(),'openSwPlanRep()')
+}
+/* Дүнзний агуулах — паспортуудын жагсаалтын доор, дэрийнхтэй ижил байрлалд.
+   Агуулах нь паспорт тус бүрийнх (f.inc) тул паспорт нээгээгүй бол хоосон. */
+function renderSwIncCards(){
+  const wrap=document.getElementById('swIncWrap');if(!wrap)return;
+  if(!swFolder()){wrap.innerHTML='';return}
+  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
+    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
+      <div class="folder-meta">${meta}</div></div></div>`;
+  const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
+    let n=0,m=0;ks.forEach(L=>{n+=o[L];m+=o[L]*L});return `${n} ш · ${swM(m)} пог/м`};
+  const i=sum(swIncBy()),u=sum(swOutBy());
+  wrap.innerHTML=
+    card('var(--g700)','var(--g100)','Орлого',i||'Орлого бүртгээгүй','openSwInc()')+
+    card('var(--orange)','var(--orange-bg)','Зарлага',u||'Зарлага алга','openSwOut()')
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
 /* ══════════════════════════════════════════════
@@ -10801,7 +10837,7 @@ async function delSwInc(id){
   const f=swFolder();if(!f)return;
   if(!await appConfirm('Энэ орлогыг устгах уу?'))return;
   f.inc=swInc(f).filter(r=>r.id!==id);
-  saveDB();renderSwInc();renderSwFolderCards();showToast('Орлого устлаа')
+  saveDB();renderSwInc();renderSwIncCards();showToast('Орлого устлаа')
 }
 
 /* ── Орлого авах ── */
@@ -10887,7 +10923,7 @@ function saveSwInc(){
   if(!items.length){showToast('Урт ба ширхэгээ оруулна уу',2600);return}
   const p=n=>(n<10?'0':'')+n;
   swInc(f).push({id:'i-'+uid(),d:_incY+'-'+p(_incM)+'-'+p(_incD),items});
-  saveDB();closeModal('swIncAddModal');renderSwInc();renderSwFolderCards();
+  saveDB();closeModal('swIncAddModal');renderSwInc();renderSwIncCards();
   const t=_incTot();
   showToast(`✓ ${t.n} ш · ${swM(t.m)} пог/м орлогод авлаа`,3000)
 }
@@ -11725,7 +11761,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.13·137';
+const APP_BUILD='2026.09.13·138';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
