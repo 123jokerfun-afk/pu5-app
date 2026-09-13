@@ -616,6 +616,11 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .drow.dr-bad{background:var(--orange-bg);border-color:#F5C272}
 .drow.dr-tbd{background:var(--red-bg);border-color:#F5A0A0}
 .drow.dr-bad-tbd{background:var(--dred-bg);border-color:#E0A0A0}
+/* Солихоор ТӨЛӨВЛӨСӨН дэр/дүнз — цэнхэр хүрээгээр ялгана. Зөвхөн хүрээ л
+   солигдоно: төрлийн өнгө (тэнцэхгүй улбар шар гэх мэт) хэвээр үлдэнэ.
+   Сүүдэр биш ХҮРЭЭ ашигласан нь бөмбөрөгийн "одоо таарсан мөр"-ийн
+   гэрэлтэлттэй (.dr-in) зөрчилдөхгүйн тулд. */
+.drow.dr-plan{border-color:var(--blue);border-width:2.5px}
 .drow.dr-in{box-shadow:0 5px 22px rgba(255,150,40,.3),0 0 0 1.5px rgba(255,168,50,.55);
   filter:saturate(1.2) contrast(1.04)}
 .drow{transition:filter .18s ease,box-shadow .18s ease}
@@ -5527,7 +5532,8 @@ function renderRecordLog(sec,focusIdx){
       const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       const rno=runNo[sec.id+'#'+(i+1)];
       const rn=rno?'<span class="dr-run">'+rno+'</span>':'';
-      html+='<div class="drow dr-rec '+tc+'" data-i="'+i+'" data-rec="1">'+
+      const pc=planAt(sec,i)?' dr-plan':'';   // солихоор төлөвлөсөн
+      html+='<div class="drow dr-rec '+tc+pc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
         '<span class="drum-badge"><span class="'+tp.cls+'">'+tp.label+'</span></span>'+ft+rb+rn+
         '<span class="dr-edit">'+ic('edit',12)+'</span></div>';
@@ -9937,7 +9943,8 @@ function renderSwRec(focus){
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),bad=t.it[i]==='b';
     const isSl=sl.kind==='дэр';
-    const cls=isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok';
+    const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')
+      +(!isSl&&swDzPlan(t,i)?' dr-plan':'');   // солихоор төлөвлөсөн
     const dr=isSl?null:dMap[i];
     const rp=isSl?(t.slRepl||{})[i]:(dr?dr.rec:null);
     const prev=!!(dr&&!dr.own);       // өмнөх паспортынх — зөвхөн тэмдэглэгээ
@@ -11707,7 +11714,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.13·135';
+const APP_BUILD='2026.09.13·136';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

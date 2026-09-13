@@ -48,6 +48,24 @@ ok('Агуулах хөтлөөгүй бол зөвлөмж өгнө',/агуу�
 ok('Төлөвлөгөө хадгалагдана',pl.plan==='tbd'&&pl.n===1,`${pl.plan} · ${pl.n}`);
 ok('Төлөвлөх нь дэрийн ТӨРЛИЙГ өөрчлөхгүй',pl.type==='bad',pl.type);
 
+/* Жагсаалт дээр ЦЭНХЭР ХҮРЭЭГЭЭР ялгагдана */
+const mark=await page.evaluate(async()=>{
+  renderRecordView(5);await new Promise(r=>setTimeout(r,320));
+  const rows=[...document.querySelectorAll('#rvLog .drow.dr-rec')];
+  const cs=getComputedStyle(rows[5]);
+  return{on:rows[5].className,off:rows[4].className,
+    col:cs.borderTopColor,w:cs.borderTopWidth,
+    w4:getComputedStyle(rows[4]).borderTopWidth,
+    keep:/dr-bad/.test(rows[5].className)}});
+ok('Төлөвлөсөн дэр жагсаалт дээр тэмдэглэгдэнэ',
+   /dr-plan/.test(mark.on)&&!/dr-plan/.test(mark.off),mark.on);
+// Цэнхэр эсэхийг нэрээр нь биш, ЦЭНХЭР СУВАГ нь давамгайлж байгаагаар шалгана
+const _isBlue=c=>{const m=c.match(/\d+/g);return m&&+m[2]>+m[0]+40&&+m[2]>=+m[1]};
+ok('Хүрээ нь цэнхэр, зузаан',
+   _isBlue(mark.col)&&parseFloat(mark.w)>parseFloat(mark.w4),
+   `${mark.col} · ${mark.w} vs ${mark.w4}`);
+ok('Төрлийн өнгө (тэнцэхгүй) хэвээр үлдэнэ',mark.keep,mark.on);
+
 /* ── 2. Төлөвлөсөн дэрийн жагсаалт ── */
 const rep=await page.evaluate(async()=>{
   // Хоёр дахь үед бас нэгийг төлөвлөнө
@@ -94,6 +112,10 @@ const done=await page.evaluate(async()=>{
   return{plan:!!(sec.plan&&sec.plan[2]),repl:!!(sec.repl&&sec.repl[2]),n:planTotalCount()}});
 ok('Сольсны дараа төлөвлөгөө нь өөрөө арилна',
    !done.plan&&done.repl&&done.n===1,`төлөвлөгөө ${done.plan} · солилт ${done.repl}`);
+const unmark=await page.evaluate(async()=>{
+  renderRecordView(2);await new Promise(r=>setTimeout(r,300));
+  return[...document.querySelectorAll('#rvLog .drow.dr-rec')][2].className});
+ok('Сольсны дараа цэнхэр хүрээ нь арилна',!/dr-plan/.test(unmark),unmark);
 
 /* ── 5. ДЭРИЙН АГУУЛАХ ── */
 console.log('\nДэрийн агуулах');
@@ -169,6 +191,17 @@ ok('Төлөвлөхөд ОРЛОГОД байгаа дүнз л сонгогд�
    sp.items.length===2&&/^3 · 2ш$/.test(sp.items[0])&&/^3,5 · 1ш$/.test(sp.items[1]),
    JSON.stringify(sp.items));
 ok('Дүнзний төлөвлөгөө хадгалагдана',+sp.plan===3.5,String(sp.plan));
+const smark=await page.evaluate(async()=>{
+  renderSwRec(2);await new Promise(r=>setTimeout(r,320));
+  const rows=[...document.querySelectorAll('#swLog .drow.dr-rec')];
+  return{on:rows[2].className,off:rows[3].className,
+    col:getComputedStyle(rows[2]).borderTopColor,
+    w:getComputedStyle(rows[2]).borderTopWidth,
+    w3:getComputedStyle(rows[3]).borderTopWidth}});
+ok('Төлөвлөсөн дүнз жагсаалт дээр цэнхэр хүрээтэй',
+   /dr-plan/.test(smark.on)&&!/dr-plan/.test(smark.off)
+   &&_isBlue(smark.col)&&parseFloat(smark.w)>parseFloat(smark.w3),
+   `${smark.on} · ${smark.col} ${smark.w}`);
 // Төлөвлөх нь агуулахаас дүнз ГАРГАХГҮЙ — зөвхөн сул үлдэгдлийг "захиалдаг".
 // Бодит үлдэгдэл зөвхөн СОЛИХОД буурна.
 ok('Төлөвлөсөн дүнз захиалагдана, үлдэгдэл нь хэвээр',
@@ -231,6 +264,71 @@ const pk=await page.evaluate(()=>{
   return{sinc:(j.sinc||[]).length,meta:!!parts.meta.sinc,plan:sec&&sec.plan?sec.plan['5']:null}});
 ok('Дэрийн орлого үүлний meta хэсэгт очно',pk.meta&&pk.sinc===1,`${pk.sinc} баримт`);
 ok('Төлөвлөгөө шахалтад алдагдахгүй',pk.plan==='tbd',String(pk.plan));
+
+/* ── 8. Захын тохиолдол ── */
+console.log('\nЗахын тохиолдол');
+
+/* Зарлага нь БҮХ паспортыг хамарна. DB.tracks нь идэвхтэй паспортын
+   tracks-тай НЭГ объект тул паспортуудыг гүйхэд давхардах эрсдэлтэй. */
+const dup=await page.evaluate(async()=>{
+  goHome();await new Promise(r=>setTimeout(r,300));
+  // Өмнөх шалгалтуудын үлдэгдлээс салгаж, мэдэгдэх байдлаас эхэлнэ
+  const wipe=t=>(t.sections||[]).forEach(s=>{delete s.repl;delete s.plan});
+  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(wipe));
+  (DB.main||[]).forEach(wipe);
+  const f1=DB.folders[0],f2=DB.folders[1];
+  f1.tracks[0].sections[0].repl={5:{d:'2026-06-01',t:'normal',m:'wood'}};
+  f2.tracks[0].sections[0].repl={5:{d:'2026-06-02',t:'tbd',m:'tbd'},
+                                 6:{d:'2026-06-03',t:'normal',m:'wood'}};
+  DB.main[0].sections[0].repl={7:{d:'2026-06-04',t:'normal',m:'wood'}};
+  DB.sinc=[{id:'d1',d:'2026-05-01',n:10}];saveDB();
+  return{same:DB.tracks===DB.folders[0].tracks,out:derOutN(),st:derStock(),
+    rows:derOutRows().map(r=>r.grp+'/'+r.name+'='+r.n)}});
+ok('DB.tracks нь идэвхтэй паспортын tracks-тай НЭГ объект',dup.same,String(dup.same));
+ok('Зарлага бүх паспортыг хамарна, давхардахгүй (1+2+1=4)',
+   dup.out===4,dup.out+' · '+JSON.stringify(dup.rows));
+ok('Үлдэгдэл = орлого − зарлага (10−4)',dup.st===6,String(dup.st));
+const neg=await page.evaluate(()=>{DB.sinc=[{id:'d1',d:'2026-05-01',n:2}];saveDB();return derStock()});
+ok('Орлогоос их сольвол сөрөг үлдэгдэл ил гарна (2−4)',neg===-2,String(neg));
+
+/* Дэрийн тоо өөрчлөгдөхөд төлөвлөгөө нь дагаж зөв дэр дээрээ үлдэнэ */
+const bulk=await page.evaluate(async()=>{
+  openTrack('t1',1);await new Promise(r=>setTimeout(r,300));
+  const sec=activeTrack().sections[0];
+  openSection(sec.id);await new Promise(r=>setTimeout(r,320));
+  sec.plan={};secPlan(sec)[20]='tbd';secPlan(sec)[3]='wood';saveDB();
+  document.getElementById('bulkN').value=10;
+  await applyBulk();await new Promise(r=>setTimeout(r,420));
+  return Object.keys(activeSec().plan||{})});
+ok('Дэр цөөрүүлэхэд гадуур үлдсэн төлөвлөгөө арилна',
+   bulk.length===1&&bulk[0]==='3',JSON.stringify(bulk));
+const dl=await page.evaluate(async()=>{
+  const sec=activeSec();
+  sec.plan={5:'tbd'};sec.repl={5:{d:'2026-06-01',t:'normal',m:'wood'}};saveDB();
+  editIdx=2;await deleteSleeper();await new Promise(r=>setTimeout(r,380));
+  const s=activeSec();
+  return{plan:Object.keys(s.plan||{}),repl:Object.keys(s.repl||{})}});
+ok('Дунд нь дэр устгахад төлөвлөгөө солилттой хамт 1-ээр ухарна',
+   dl.plan.length===1&&dl.plan[0]==='4'&&dl.repl[0]==='4',
+   JSON.stringify(dl.plan)+' · '+JSON.stringify(dl.repl));
+const rv=await page.evaluate(()=>{
+  const sec=activeSec(),n=sec.sleepers.length;
+  sec.plan={0:'tbd'};delete sec.repl;saveDB();
+  _revSwap(sec);const a=Object.keys(sec.plan)[0];
+  _revSwap(sec);return{n,a,back:Object.keys(sec.plan)[0]}});
+ok('Ухарч бүртгэхэд төлөвлөгөө дугаартайгаа хамт эргэнэ',
+   +rv.a===rv.n-1&&rv.back==='0',`#1 → #${+rv.a+1} → #${+rv.back+1}`);
+
+/* Сум устахад түүний дүнзний төлөвлөгөө хамт алга болно */
+const swd=await page.evaluate(()=>{
+  const f=swFolder();
+  f.turnouts.push({id:'w9',num:9,mak:'Р-65',mark:'1/9',head:2,it:f.turnouts[0].it,
+    dRepl:{},dPlan:{5:3}});saveDB();
+  const a=swPlanTotal();
+  f.turnouts=f.turnouts.filter(t=>t.id!=='w9');saveDB();
+  return{a,b:swPlanTotal()}});
+ok('Сум устахад түүний дүнзний төлөвлөгөө хамт арилна',
+   swd.a===1&&swd.b===0,`${swd.a} → ${swd.b}`);
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
