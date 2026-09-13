@@ -64,11 +64,12 @@ const items=await page.evaluate(()=>({
   form:!!document.getElementById('swFormBtn'),
   add:[...document.querySelectorAll('#swTurnoutsSection button')].some(b=>/Сум нэмэх/.test(b.textContent))}));
 ok('Сумын карт 2',items.cards===2,JSON.stringify(items));
-// v133-т Орлого, Зарлага (дүнзний агуулах) хоёр хавтас нэмэгдсэн
-ok('Сольсон/Дараалсан/Бодит + Орлого/Зарлага = 5 хавтас',
-   items.folders===5,String(items.folders));
-ok('Агуулахын хоёр хавтас нэрээрээ байна',
-   /Орлого/.test(items.names)&&/Зарлага/.test(items.names),items.names);
+// v133-т Орлого, Зарлага (дүнзний агуулах), v135-т Төлөвлөсөн дүнз нэмэгдсэн
+ok('Сольсон/Дараалсан/Бодит + Орлого/Зарлага/Төлөвлөсөн = 6 хавтас',
+   items.folders===6,String(items.folders));
+ok('Агуулах ба төлөвлөгөөний хавтас нэрээрээ байна',
+   /Орлого/.test(items.names)&&/Зарлага/.test(items.names)
+   &&/Төлөвлөсөн дүнз/.test(items.names),items.names);
 ok('Дүнзний маягт татах товч',items.form);
 ok('Сум нэмэх товч',items.add);
 
