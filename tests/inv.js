@@ -33,24 +33,36 @@ const inc=await page.evaluate(async()=>{
   const empty=document.getElementById('swIncBody').textContent.trim();
   openSwIncAdd();await new Promise(r=>setTimeout(r,250));
   const n0=document.querySelectorAll('#swIncRows .inc-row').length;
-  _incSet(0,'L','3');_incSet(0,'n','10');await new Promise(r=>setTimeout(r,90));
+  // Урт ба ширхэг нь бичихгүй, ХҮРДЭЭР сонгогдоно
+  const lw=[...document.querySelectorAll('#swIncWhL .wh-item')].map(e=>e.textContent);
+  const nw=document.querySelectorAll('#swIncWhN .wh-item').length;
+  const inp=document.querySelectorAll('#swIncAddModal input,#swIncAddModal select').length;
+  _incL=3;_incN=10;_incAdd();await new Promise(r=>setTimeout(r,90));
   const n1=document.querySelectorAll('#swIncRows .inc-row').length;
-  _incSet(1,'L','3.25');_incSet(1,'n','4');await new Promise(r=>setTimeout(r,90));
+  _incL=3.25;_incN=4;_incAdd();await new Promise(r=>setTimeout(r,90));
   const n2=document.querySelectorAll('#swIncRows .inc-row').length;
-  // Аль хэдийн сонгосон уртыг дахин санал болгохгүй
-  const dis=[...document.querySelectorAll('#swIncRows .inc-row:last-child option')]
-    .filter(o=>o.disabled).map(o=>o.value);
+  // Нэг уртыг дахин нэмэхэд шинэ мөр гарахгүй, ХУРААГДАНА
+  _incL=3;_incN=2;_incAdd();await new Promise(r=>setTimeout(r,90));
+  const n3=document.querySelectorAll('#swIncRows .inc-row').length;
+  const sum3=(_incRows.find(r=>+r.L===3)||{}).n;
+  _incDel(_incRows.findIndex(r=>+r.L===3));await new Promise(r=>setTimeout(r,60));
+  _incL=3;_incN=10;_incAdd();await new Promise(r=>setTimeout(r,60));
   const sumN=document.getElementById('swIncSumN').textContent;
   const sumM=document.getElementById('swIncSumM').textContent;
   saveSwInc();await new Promise(r=>setTimeout(r,250));
-  return{empty,n0,n1,n2,dis,sumN,sumM,open:document.getElementById('swIncAddModal').classList.contains('open'),
+  return{empty,n0,n1,n2,n3,sum3,lw,nw,inp,sumN,sumM,
+    open:document.getElementById('swIncAddModal').classList.contains('open'),
     by:swIncBy(),st:swStock(),n:swInc().length}});
 ok('Эхэндээ орлого хоосон',/Орлого бүртгээгүй/.test(inc.empty),inc.empty.slice(0,30));
-ok('Эхлээд нэг мөр',inc.n0===1,String(inc.n0));
-ok('Урт+ширхэг бөглөхөд ДООР нь шинэ мөр өөрөө нэмэгдэнэ',
-   inc.n1===2&&inc.n2===3,`${inc.n0} → ${inc.n1} → ${inc.n2}`);
-ok('Сонгосон уртыг дахин санал болгохгүй',
-   inc.dis.indexOf('3')>=0&&inc.dis.indexOf('3.25')>=0,JSON.stringify(inc.dis));
+ok('Эхлээд жагсаалт хоосон',inc.n0===0,String(inc.n0));
+ok('Урт ба ширхэг нь хүрдтэй',
+   inc.lw.length===11&&/^3 м$/.test(inc.lw[0])&&/^5,5 м$/.test(inc.lw[10])&&inc.nw===200,
+   `${inc.lw.length} урт · ${inc.nw} ширхэг`);
+ok('Гараар бичих талбар үлдээгүй',inc.inp===0,String(inc.inp));
+ok('Нэмэх бүрд жагсаалтад мөр нэмэгдэнэ',
+   inc.n1===1&&inc.n2===2,`${inc.n0} → ${inc.n1} → ${inc.n2}`);
+ok('Нэг уртыг дахин нэмэхэд хураагдана',
+   inc.n3===2&&inc.sum3===12,`${inc.n3} мөр · 3 м → ${inc.sum3} ш`);
 ok('Нийт ш ба нийт пог/м авто бодогдоно (10×3 + 4×3,25 = 43)',
    inc.sumN==='14 ш'&&/^43 пог\/м$/.test(inc.sumM),`${inc.sumN} · ${inc.sumM}`);
 ok('Орлого хадгалагдаж, цонх хаагдана',inc.n===1&&!inc.open,inc.n+' баримт');
@@ -59,13 +71,18 @@ ok('Урт тус бүрийн орлого',
 ok('Солилт хийгээгүй тул үлдэгдэл = орлого',
    inc.st['3']===10&&inc.st['3.25']===4,JSON.stringify(inc.st));
 
-/* Хоосон мөрөөр хадгалахгүй */
+/* "Нэмэх" дарахаа мартсан ч хүрдэн дээрх сонголт нь алдагдахгүй */
 const bad0=await page.evaluate(async()=>{
   openSwIncAdd();await new Promise(r=>setTimeout(r,220));
-  saveSwInc();await new Promise(r=>setTimeout(r,200));
-  const o={n:swInc().length,open:document.getElementById('swIncAddModal').classList.contains('open')};
+  _incL=5.5;_incN=2;
+  saveSwInc();await new Promise(r=>setTimeout(r,220));
+  const o={n:swInc().length,st:swStock(),
+    open:document.getElementById('swIncAddModal').classList.contains('open')};
+  // Тестийн цаашдын тооцоог эвдэхгүйн тулд буцааж устгана
+  const f=swFolder();f.inc=f.inc.filter(r=>r.items.every(i=>+i.L!==5.5));saveDB();
   closeModal('swIncAddModal');return o});
-ok('Хоосон орлого хадгалагдахгүй',bad0.n===1&&bad0.open,`${bad0.n} баримт`);
+ok('Нэмэх дараагүй ч хүрдний сонголт орлогод орно',
+   bad0.n===2&&!bad0.open&&bad0.st['5.5']===2,`${bad0.n} баримт · ${JSON.stringify(bad0.st)}`);
 
 /* ── 2. Солилт — агуулахаас сонгож, үлдэгдэл буурна ── */
 console.log('\nСолилт ↔ агуулах');
@@ -152,6 +169,41 @@ const del=await page.evaluate(async()=>{
 ok('Орлого устгахад агуулах хоосорно',del.n===0,`${del.n} баримт`);
 ok('Устгасны дараа зөвхөн зарлага үлдэнэ (сөрөг үлдэгдэл харагдана)',
    del.st['3']===-1,JSON.stringify(del.st));
+
+/* ── Үлдэгдэлгүй уртыг СОНГУУЛАХГҮЙ ── */
+console.log('\nҮлдэгдэлгүй урт');
+const zero=await page.evaluate(async()=>{
+  // Зөвхөн 3,5 м ганц ширхэг байхаар агуулахыг цэвэрхэн тавина
+  const f=swFolder();
+  (f.turnouts||[]).forEach(t=>{t.dRepl={}});
+  f.inc=[{id:'i-z',d:'2026-05-01',items:[{L:3.5,n:1}]}];saveDB();
+  swTurnoutId='w3';showView('swRecView');renderSwRec();
+  await new Promise(r=>setTimeout(r,280));
+  openSwDz(2);await new Promise(r=>setTimeout(r,170));
+  openSwDzRepl();await new Promise(r=>setTimeout(r,320));
+  const first=[...document.querySelectorAll('#swWhL .wh-item')].map(e=>e.textContent);
+  const pick1=_swDzL;
+  saveSwDzRepl();await new Promise(r=>setTimeout(r,280));   // ганц 3,5 нь дуусна
+  openSwDz(3);await new Promise(r=>setTimeout(r,170));
+  openSwDzRepl();await new Promise(r=>setTimeout(r,320));
+  const opened=document.getElementById('swDzReplModal').classList.contains('open');
+  // Хүчээр байхгүй уртыг тавиад хадгалахыг оролдоно
+  _swDzIdx=3;_swDzL=3.5;saveSwDzRepl();await new Promise(r=>setTimeout(r,240));
+  const t=swTurnout(),has3=!!(t.dRepl&&t.dRepl[3]);
+  closeModal('swDzReplModal');closeModal('swDzModal');
+  // Засварлахад ӨӨРИЙНХ нь урт жагсаалтаас алга болохгүй
+  openSwDz(2);await new Promise(r=>setTimeout(r,170));
+  openSwDzRepl();await new Promise(r=>setTimeout(r,320));
+  const edit=[...document.querySelectorAll('#swWhL .wh-item')].map(e=>e.textContent);
+  closeModal('swDzReplModal');closeModal('swDzModal');
+  return{first,pick1,opened,has3,edit,st:swStock()}});
+ok('Агуулахад байгаа ганц урт л хүрдэнд гарна',
+   zero.first.length===1&&/^3,5 · 1ш$/.test(zero.first[0]),JSON.stringify(zero.first));
+ok('Анхдагч сонголт нь агуулахад БАЙГАА урт',zero.pick1===3.5,String(zero.pick1));
+ok('Үлдэгдэл дуусахад сольсон мэдээллийн цонх нээгдэхгүй',!zero.opened,String(zero.opened));
+ok('Байхгүй дүнзээр сольсон бүртгэл ҮҮСЭХГҮЙ',!zero.has3,String(zero.has3));
+ok('Засварлахад өөрийнх нь урт жагсаалтаас алга болохгүй',
+   zero.edit.length===1&&/^3,5 · 1ш$/.test(zero.edit[0]),JSON.stringify(zero.edit));
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
