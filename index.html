@@ -1948,6 +1948,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('planRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зам, үе, дэрийн дугаараар. Сумын рам замын дэр ч энд орно. Мөр дээр дарвал тэр жагсаалт руу шууд очно.</div>
+    <button class="btn-ok" onclick="exportPlanForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
     <div id="planRepBody"></div>
   </div></div>
 </div>
@@ -2033,6 +2034,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('swPlanRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сум, дүнзний дугаараар. Мөр дээр дарвал тэр сумын дүнзний жагсаалт руу шууд очно.</div>
+    <button class="btn-ok" onclick="exportPlanForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
     <div id="swPlanRepBody"></div>
   </div></div>
 </div>
@@ -10640,6 +10642,181 @@ function openSwPlanRep(){
   b.innerHTML=html;
   openModal('swPlanRepModal')
 }
+/* ══════════════════════════════════════════════
+   ТӨЛӨВЛӨГӨӨНИЙ EXCEL — "Дэр" ба "Дүнз" гэсэн хоёр шийт
+
+   Албан маягт биш, ДОТООД ажлын жагсаалт тул загварыг нь аппын бусад
+   маягтын хэв маягаар (Arial, нимгэн хүрээ, 5-6-р мөрийн толгой)
+   өөрсдөө тогтоов. Хамгийн чухал нь: аль дэр/дүнзийг юугаар солихыг
+   ба сольсноор тэнцэхгүй хувь нь хэд болохыг хамт харуулна.
+   ══════════════════════════════════════════════ */
+function _plXls(ws){
+  const AR=(sz,b)=>({name:'Arial',size:sz||10,bold:!!b});
+  const TH={style:'thin'};
+  const box=c=>{c.border={top:TH,bottom:TH,left:TH,right:TH}};
+  const put=(addr,v,opt)=>{
+    const c=ws.getCell(addr);c.value=v;const o=opt||{};
+    c.font=o.font||AR(10);
+    c.alignment=Object.assign({horizontal:'center',vertical:'middle'},o.align||{});
+    if(o.box!==false)box(c);
+    if(o.fmt)c.numFmt=o.fmt;
+    return c
+  };
+  return{AR,TH,box,put}
+}
+/* Маягтын албан толгой: хэсэг, нэр, хамрах хүрээ, огноо */
+function _plHead(ws,lastCol,title,scope){
+  const {AR,TH,put}=_plXls(ws);
+  const r=DB.rpt||{};
+  const heseg=`${r.cls||''}${r.cls?'-р анги':''} ${r.secName||('ПД-'+(r.sec||''))} хэсэг`;
+  ws.mergeCells(`A1:${lastCol}1`);
+  put('A1',heseg.trim(),{font:AR(10),align:{horizontal:'left'},box:false});
+  ws.mergeCells(`A2:${lastCol}2`);
+  put('A2',title,{font:AR(12,true),box:false});
+  ws.mergeCells(`A3:${lastCol}3`);
+  put('A3',scope,{font:AR(10),box:false});
+  ws.mergeCells(`A4:${lastCol}4`);
+  const hd=put('A4',_formHdrDate(),{font:AR(10),align:{horizontal:'right'},box:false});
+  hd.border={bottom:TH};
+  ws.getRow(2).height=19.5
+}
+/* 1. ДЭР — зам, үе, дэрийн дугаараар. Сумын рам замын дэр ч энд орно. */
+function buildPlanSleeperSheet(wb){
+  const data=collectPlan();
+  const ws=wb.addWorksheet('Дэр',{pageSetup:{orientation:'portrait',scale:90,
+    margins:{left:.7,right:.7,top:.75,bottom:.75,header:.3,footer:.3}}});
+  ws.columns=[{width:4.33},{width:14},{width:12},{width:8},{width:13},
+              {width:12},{width:9.5},{width:11},{width:9.5},{width:11}];
+  const {AR,box,put}=_plXls(ws);
+  _plHead(ws,'J','СОЛИХООР ТӨЛӨВЛӨСӨН ДЭРИЙН ЖАГСААЛТ',
+    '/ өртөө, гол зам, салбар зам, сумын рам зам /');
+  const PCT='0.0"%"';
+  [['A5:A6','Д/д'],['B5:B6','Зам / Сум'],['C5:C6','Үе'],['D5:D6','Дэрийн дугаар'],
+   ['E5:E6','Одоогийн төрөл'],['F5:F6','Солих төрөл'],
+   ['G5:H5','Үеийн тэнцэхгүй хувь'],['I5:J5','Замын тэнцэхгүй хувь']
+  ].forEach(([rng,txt])=>{ws.mergeCells(rng);put(rng.split(':')[0],txt,{align:{wrapText:true}})});
+  [['G6','одоо'],['H6','төлөвлөснөөр'],['I6','одоо'],['J6','төлөвлөснөөр']]
+    .forEach(([a,v])=>put(a,v,{font:AR(9),align:{wrapText:true}}));
+  ['A6','B6','C6','D6','E6','F6'].forEach(a=>box(ws.getCell(a)));
+  ['G5','H5','I5','J5'].forEach(a=>box(ws.getCell(a)));
+  ws.getRow(5).height=19.5;ws.getRow(6).height=30;
+  let rn=7,no=0,W=0,T=0;
+  const pc=(b,t)=>t?Math.round(b/t*1000)/10:0;
+  data.forEach(tr=>{
+    tr.secs.forEach(sc=>{
+      sc.rows.forEach(r=>{
+        no++;if(r.m==='tbd')T++;else W++;
+        put('A'+rn,no);
+        put('B'+rn,tr.name,{font:AR(9),align:{wrapText:true}});
+        put('C'+rn,sc.label,{font:AR(9),align:{wrapText:true}});
+        put('D'+rn,r.idx);
+        put('E'+rn,TYPES[r.now]?TYPES[r.now].label:'',{font:AR(9)});
+        put('F'+rn,matLabel(r.m),{font:AR(9,true)});
+        put('G'+rn,pc(sc.bad,sc.total),{fmt:PCT});
+        put('H'+rn,pc(sc.bad2,sc.total),{fmt:PCT,font:AR(10,true)});
+        put('I'+rn,pc(tr.bad,tr.total),{fmt:PCT});
+        put('J'+rn,pc(tr.bad2,tr.total),{fmt:PCT,font:AR(10,true)});
+        rn++
+      })
+    })
+  });
+  if(!no){ws.mergeCells('A7:J7');put('A7','Төлөвлөсөн дэр алга',{font:AR(10)});rn=8}
+  else{
+    ws.mergeCells(`A${rn}:F${rn}`);
+    put('A'+rn,`НИЙТ — модон ${W} ш, ТБД ${T} ш`,{font:AR(10,true),align:{horizontal:'right'}});
+    ws.mergeCells(`G${rn}:J${rn}`);
+    put('G'+rn,no+' дэр',{font:AR(11,true)});
+    rn++
+  }
+  _plSign(ws,rn,'E');
+  return no
+}
+/* 2. ДҮНЗ — сум, дүнзний дугаараар. Дүнзний хувь нь ПОГ/М-ээр. */
+function buildPlanTimberSheet(wb){
+  const data=collectSwPlan();
+  const ws=wb.addWorksheet('Дүнз',{pageSetup:{orientation:'portrait',scale:90,
+    margins:{left:.7,right:.7,top:.75,bottom:.75,header:.3,footer:.3}}});
+  ws.columns=[{width:4.33},{width:8},{width:10},{width:8},{width:8.5},
+              {width:11},{width:11},{width:9.5},{width:11}];
+  const {AR,box,put}=_plXls(ws);
+  _plHead(ws,'I','СОЛИХООР ТӨЛӨВЛӨСӨН ДҮНЗНИЙ ЖАГСААЛТ','/ сум шилжүүлгийн дүнз /');
+  const PCT='0.0"%"';
+  [['A5:A6','Д/д'],['B5:B6','Сум №'],['C5:C6','Сумын маяг'],['D5:D6','Марк'],
+   ['E5:E6','Дүнзний дугаар'],['F5:F6','Одоогийн урт, пог/м'],
+   ['G5:G6','Төлөвлөсөн урт, пог/м'],['H5:I5','Сумын тэнцэхгүй хувь']
+  ].forEach(([rng,txt])=>{ws.mergeCells(rng);put(rng.split(':')[0],txt,{align:{wrapText:true}})});
+  [['H6','одоо'],['I6','төлөвлөснөөр']].forEach(([a,v])=>
+    put(a,v,{font:AR(9),align:{wrapText:true}}));
+  ['A6','B6','C6','D6','E6','F6','G6'].forEach(a=>box(ws.getCell(a)));
+  ['H5','I5'].forEach(a=>box(ws.getCell(a)));
+  ws.getRow(5).height=19.5;ws.getRow(6).height=34;
+  let rn=7,no=0,M=0;const by={};
+  const pc=(b,t)=>t?Math.round(b/t*1000)/10:0;
+  data.forEach(t=>{
+    t.rows.forEach(r=>{
+      no++;M+=r.L;by[r.L]=(by[r.L]||0)+1;
+      put('A'+rn,no);
+      put('B'+rn,t.num);
+      put('C'+rn,t.mak||'',{font:AR(9)});
+      put('D'+rn,t.mark||'',{font:AR(9)});
+      put('E'+rn,r.no);
+      put('F'+rn,r.nom,{fmt:'0.00'});
+      put('G'+rn,r.L,{fmt:'0.00',font:AR(10,true)});
+      put('H'+rn,pc(t.mBad,t.m),{fmt:PCT});
+      put('I'+rn,pc(t.mBad2,t.m),{fmt:PCT,font:AR(10,true)});
+      rn++
+    })
+  });
+  if(!no){ws.mergeCells('A7:I7');put('A7','Төлөвлөсөн дүнз алга',{font:AR(10)});rn=8}
+  else{
+    // Уртаар нь задаргаа — ш ба нийт пог/м
+    rn++;
+    ws.mergeCells(`A${rn}:I${rn}`);
+    put('A'+rn,'УРТААР НЬ',{font:AR(10,true),box:false});rn++;
+    [['A','Урт, пог/м'],['B','Ширхэг'],['C','Нийт пог/м']].forEach(([c,v],i)=>{
+      if(i===2){ws.mergeCells(`C${rn}:D${rn}`)}
+      put(c+rn,v,{font:AR(9,true),align:{wrapText:true}})});
+    rn++;
+    Object.keys(by).map(Number).sort((a,b)=>a-b).forEach(L=>{
+      put('A'+rn,L,{fmt:'0.00'});
+      put('B'+rn,by[L]);
+      ws.mergeCells(`C${rn}:D${rn}`);
+      put('C'+rn,by[L]*L,{fmt:'0.00'});
+      rn++
+    });
+    put('A'+rn,'Нийт',{font:AR(10,true)});
+    put('B'+rn,no,{font:AR(10,true)});
+    ws.mergeCells(`C${rn}:D${rn}`);
+    put('C'+rn,M,{fmt:'0.00',font:AR(10,true)});
+    rn+=1
+  }
+  _plSign(ws,rn,'D');
+  return no
+}
+// Гарын үсгийн мөр — бусад маягттай ижил
+function _plSign(ws,rn,col){
+  const r=DB.rpt||{};
+  const c=ws.getCell(col+(rn+2));
+  c.value=(r.secName||('ПД-'+(r.sec||'')))+'                                         '+(r.sign||'');
+  c.font={name:'Arial',size:11};
+  c.alignment={horizontal:'center',vertical:'middle'}
+}
+async function exportPlanForm(){
+  const nD=planTotalCount(),nZ=swPlanTotal();
+  if(!nD&&!nZ){showToast('Төлөвлөсөн дэр, дүнз алга байна',2800);return}
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  buildPlanSleeperSheet(wb);
+  buildPlanTimberSheet(wb);
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const t=mnToday(),p=x=>(x<10?'0':'')+x;
+    dlBlob(blob,`Төлөвлөгөө_${t.y}-${p(t.m)}-${p(t.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ${nD} дэр · ${nZ} дүнз татагдлаа`,2800)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+
 function swGotoPlan(tid,i){
   swTurnoutId=tid;_swFromRun=false;
   closeModal('swPlanRepModal');
@@ -11907,7 +12084,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.14·142';
+const APP_BUILD='2026.09.14·143';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
