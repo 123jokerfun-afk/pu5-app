@@ -153,9 +153,10 @@ const cards=await page.evaluate(async()=>{
   return[...document.querySelectorAll('#swIncWrap .folder-card')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim())});
-ok('Дүнзний агуулахын хэсэгт Орлого, Зарлага карт байна',
-   cards.length===2&&/^Орлого\|/.test(cards[0])&&/^Зарлага\|/.test(cards[1]),
-   JSON.stringify(cards));
+// v141: төлөвлөгөөний хавтас ч паспортоос гарч, агуулахын доор орсон
+ok('Дүнзний агуулахын хэсэгт Орлого, Зарлага, Төлөвлөсөн карт байна',
+   cards.length===3&&/^Орлого\|/.test(cards[0])&&/^Зарлага\|/.test(cards[1])
+   &&/^Төлөвлөсөн дүнз\|/.test(cards[2]),JSON.stringify(cards));
 ok('Орлогын карт дүнгээ харуулна',
    cards.some(x=>/^Орлого\|14 ш · 43 пог\/м$/.test(x)),
    JSON.stringify(cards.filter(x=>/Орлого/.test(x))));

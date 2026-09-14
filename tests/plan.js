@@ -88,19 +88,33 @@ const rep=await page.evaluate(async()=>{
   openPlanModal();await new Promise(r=>setTimeout(r,240));
   savePlan('wood');await new Promise(r=>setTimeout(r,280));
   goHome();await new Promise(r=>setTimeout(r,320));
-  const cards=[...document.querySelectorAll('#replFolderWrap .folder-card')]
+  // v141: төлөвлөгөөний хавтас нь паспортоос гарч, агуулахын доор очсон
+  const cards=[...document.querySelectorAll('#derWrap .folder-card')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim());
+  const inPass=[...document.querySelectorAll('#replFolderWrap .folder-name')]
+    .map(e=>e.textContent.trim());
   openPlanReport();await new Promise(r=>setTimeout(r,300));
   const rows=[...document.querySelectorAll('#planRepBody .pl-row')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
+  const ue=[...document.querySelectorAll('#planRepBody .pl-ue')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
   const tot=(document.querySelector('#planRepBody .rp-total')||{}).textContent||'';
   const subs=[...document.querySelectorAll('#planRepBody .rp-sub')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
-  return{cards,rows,tot,subs}});
-ok('Паспортад "Төлөвлөсөн дэр" карт нэмэгдэв',
+  return{cards,inPass,rows,ue,tot,subs}});
+ok('"Төлөвлөсөн дэр" карт нь Дэрийн агуулахын доор байна',
    rep.cards.some(x=>/^Төлөвлөсөн дэр\|2 дэр/.test(x)),JSON.stringify(rep.cards));
-ok('Жагсаалт нь зам · үе · дэрийн дугаартай',
-   rep.rows.length===2&&/1-р үе #6 ТБД/.test(rep.rows[0])&&/2-р үе #3 Модон/.test(rep.rows[1]),
-   JSON.stringify(rep.rows));
+ok('Орлого · Зарлага · Төлөвлөсөн дэр гэсэн дараалалтай',
+   /^Орлого\|/.test(rep.cards[0])&&/^Зарлага\|/.test(rep.cards[1])
+   &&/^Төлөвлөсөн дэр\|/.test(rep.cards[2]),JSON.stringify(rep.cards.map(x=>x.split('|')[0])));
+ok('Паспортын хавтаснуудад төлөвлөгөө БАЙХГҮЙ',
+   !rep.inPass.some(x=>/Төлөвлөсөн/.test(x)),JSON.stringify(rep.inPass));
+// Үеийн нэр нь бүлгийн мөрөнд байгаа тул мөрөнд давтагдахгүй:
+// "#6 Тэнцэхгүй → ТБД" гэж одоогийн төрөл нь харагдана
+ok('Мөр нь дугаар · одоогийн төрөл · төлөвлөсөн төрлөөр гарна',
+   rep.rows.length===2&&/^#6 Тэнцэхгүй → ТБД/.test(rep.rows[0])
+   &&/^#3 Тэнцэхгүй → Модон/.test(rep.rows[1]),JSON.stringify(rep.rows));
+ok('Үеийн нэр нь бүлгийн мөрөнд л байна',
+   rep.ue.length===2&&/^1-р үе/.test(rep.ue[0])&&/^2-р үе/.test(rep.ue[1]),
+   JSON.stringify(rep.ue));
 ok('Доор нь нийт дэр гарна',/Нийт төлөвлөсөн/.test(rep.tot)&&/2 дэр/.test(rep.tot),rep.tot);
 ok('Модон / ТБД задаргаа гарна',
    rep.subs.some(x=>/Модон 1 дэр/.test(x)&&/ТБД 1 дэр/.test(x)),JSON.stringify(rep.subs));
@@ -149,9 +163,9 @@ const der=await page.evaluate(async()=>{
   return{cards,empty,prev,inc:derIncN(),out:derOutN(),st:derStock(),
     open:document.getElementById('derIncAddModal').classList.contains('open'),
     body:document.getElementById('derIncBody').textContent.replace(/\s+/g,' ').trim()}});
-ok('Нүүр хуудсанд Орлого, Зарлага карт гарна',
-   der.cards.length===2&&/^Орлого\|/.test(der.cards[0])&&/^Зарлага\|/.test(der.cards[1]),
-   JSON.stringify(der.cards));
+ok('Нүүр хуудсанд Орлого · Зарлага · Төлөвлөсөн дэр гэсэн 3 карт',
+   der.cards.length===3&&/^Орлого\|/.test(der.cards[0])&&/^Зарлага\|/.test(der.cards[1])
+   &&/^Төлөвлөсөн дэр\|/.test(der.cards[2]),JSON.stringify(der.cards));
 ok('Эхэндээ орлого хоосон',/Орлого бүртгээгүй/.test(der.empty),der.empty.slice(0,30));
 ok('Орлого авахад он сар өдөр + дэрийн тоо л хэрэгтэй',der.inc===200,String(der.inc));
 ok('Цонх хаагдаж, жагсаалтад орно',!der.open&&/200 дэр/.test(der.body),der.body.slice(0,60));
@@ -244,7 +258,7 @@ ok('Сул үлдэгдэлгүй уртаар төлөвлөх боломжгү
 
 const srep=await page.evaluate(async()=>{
   goSwHome();await new Promise(r=>setTimeout(r,320));
-  const cards=[...document.querySelectorAll('#swFolderWrap .folder-card')]
+  const cards=[...document.querySelectorAll('#swIncWrap .folder-card')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim());
   openSwPlanRep();await new Promise(r=>setTimeout(r,320));
@@ -252,8 +266,9 @@ const srep=await page.evaluate(async()=>{
   const body=document.getElementById('swPlanRepBody').textContent.replace(/\s+/g,' ');
   const tot=(document.querySelector('#swPlanRepBody .rp-total')||{}).textContent||'';
   return{cards,rows,body,tot}});
-ok('Сумын паспортад "Төлөвлөсөн дүнз" карт нэмэгдэв',
-   srep.cards.some(x=>/^Төлөвлөсөн дүнз\|1 ш · 3,5 пог\/м$/.test(x)),JSON.stringify(srep.cards));
+ok('"Төлөвлөсөн дүнз" карт нь Дүнзний агуулахын доор байна',
+   srep.cards.length===3&&/^Орлого\|/.test(srep.cards[0])&&/^Зарлага\|/.test(srep.cards[1])
+   &&/^Төлөвлөсөн дүнз\|1 ш · 3,5 пог\/м$/.test(srep.cards[2]),JSON.stringify(srep.cards));
 ok('Жагсаалт нь дүнзний дугаар, одоогийн ба төлөвлөсөн уртыг харуулна',
    srep.rows.length===1&&/#1/.test(srep.rows[0])&&/3,5 м/.test(srep.rows[0]),
    JSON.stringify(srep.rows));
@@ -397,10 +412,13 @@ const slrep=await page.evaluate(async()=>{
   return{heads:[...document.querySelectorAll('#planRepBody .rp-track-hd')].map(e=>e.textContent.trim()),
     rows:[...document.querySelectorAll('#planRepBody .pl-row')].map(e=>e.textContent.replace(/\s+/g,' ').trim()),
     tot:(document.querySelector('#planRepBody .rp-total')||{}).textContent||''}});
+// Толгойд нь одоо "одоо % → дараа %" хамт гардаг тул нэрээр нь л шүүнэ
 ok('Төлөвлөсөн дэрийн жагсаалтад "3-р сум" бүлэг гарна',
-   slrep.heads.indexOf('3-р сум')>=0,JSON.stringify(slrep.heads));
-ok('Мөр нь "Рам зам төмөр · #2 · ТБД" гэж гарна',
-   slrep.rows.some(x=>/Рам зам төмөр #2 ТБД/.test(x)),JSON.stringify(slrep.rows));
+   slrep.heads.some(x=>/^3-р сум/.test(x)),JSON.stringify(slrep.heads));
+ok('Рам замын дэрийн хувь ч "одоо → дараа" гэж гарна',
+   slrep.heads.some(x=>/%.*→.*%/.test(x)),JSON.stringify(slrep.heads));
+ok('Мөр нь "#2 · Тэнцэхгүй → ТБД" гэж гарна',
+   slrep.rows.some(x=>/^#2 Тэнцэхгүй → ТБД/.test(x)),JSON.stringify(slrep.rows));
 ok('Нийт төлөвлөсөн дэрд тоологдоно',/1 дэр/.test(slrep.tot),slrep.tot);
 
 const sljump=await page.evaluate(async()=>{
@@ -426,6 +444,69 @@ ok('Сольсны дараа төлөвлөгөө, тэмдэг хоёулаа 
 ok('Рам замын солилт ДЭРИЙН зарлагад орж, үлдэгдэл буурна',
    sldone.out===1&&sldone.rows.some(x=>/Сумын рам зам\/3-р сум=1/.test(x))&&sldone.st===49,
    JSON.stringify(sldone.rows)+' · үлдэгдэл '+sldone.st);
+
+/* ── 10. "Сольсны дараа хэдэн хувь болох" ──
+   Төлөвлөгөө бол шийдвэр гаргах хэрэгсэл: тэнцэхгүй хувь нь хэд болж
+   буурахыг тэр дороо харуулах ёстой. Төлөвлөсөн дэр нь ТЭНЦЭХГҮЙ
+   байсан үед л хувь буурна — хэвийн дэрийг солихоор төлөвлөсөн нь
+   дүнг өөрчлөхгүй. */
+console.log('\nТөлөвлөснөөр хэдэн хувь болох');
+await page.evaluate(()=>{
+  const mk=(id,lab,pat)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+    sleepers:pat.split('').map(c=>({type:c==='b'?'bad':'normal',ts:0}))});
+  DB.folders=[{id:'fp',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    tracks:[{id:'tp',num:2,kind:'station',note:'',sections:[
+      mk('p1','1-р үе','bbbbnnnnnn'),   // 4/10 = 40%
+      mk('p2','2-р үе','bbnnnnnnnn')]}]}]; // 2/10 = 20%
+  DB.main=[];activeFolderId='fp';DB.tracks=DB.folders[0].tracks;
+  // 1-р үеэс 2 тэнцэхгүй, 2-р үеэс 1 тэнцэхгүй + 1 ХЭВИЙН дэр
+  DB.folders[0].tracks[0].sections[0].plan={0:'tbd',1:'wood'};
+  DB.folders[0].tracks[0].sections[1].plan={0:'tbd',5:'wood'};
+  DB.sw=[];saveDB()});
+const prj=await page.evaluate(()=>{
+  const p=collectPlan()[0];
+  return{n:p.n,tot:p.total,bad:p.bad,bad2:p.bad2,
+    secs:p.secs.map(x=>`${x.label}:${x.bad}/${x.total}→${x.bad2}`)}});
+ok('Замын дүн: 20 дэр, 6 тэнцэхгүй → 3 үлдэнэ',
+   prj.tot===20&&prj.bad===6&&prj.bad2===3,`${prj.bad}/${prj.tot}→${prj.bad2}`);
+ok('ХЭВИЙН дэрийг төлөвлөсөн нь хувийг бууруулахгүй',
+   prj.secs[1]==='2-р үе:2/10→1',JSON.stringify(prj.secs));
+const prui=await page.evaluate(async()=>{
+  goHome();await new Promise(r=>setTimeout(r,340));
+  openPlanReport();await new Promise(r=>setTimeout(r,340));
+  return{hd:document.querySelector('#planRepBody .pl-hd').textContent.replace(/\s+/g,' ').trim(),
+    ue:[...document.querySelectorAll('#planRepBody .pl-ue')].map(e=>e.textContent.replace(/\s+/g,' ').trim()),
+    pcts:[...document.querySelectorAll('#planRepBody .pl-pct')].map(e=>e.textContent.replace(/\s+/g,'')),
+    rows:[...document.querySelectorAll('#planRepBody .pl-row')].length}});
+ok('Замын толгойд 30,0% → 15,0% гарна',
+   /2-р зам\s*30\.0%\s*→\s*15\.0%/.test(prui.hd),prui.hd);
+ok('Дэрүүд нь ҮЕ-ээрээ бүлэглэгдэж, үе бүр өөрийн хувьтай',
+   prui.ue.length===2&&/1-р үе/.test(prui.ue[0])&&/2-р үе/.test(prui.ue[1]),
+   JSON.stringify(prui.ue));
+ok('1-р үе 40,0% → 20,0%',/^40\.0%→20\.0%$/.test(prui.pcts[1]),prui.pcts[1]);
+ok('2-р үе 20,0% → 10,0%',/^20\.0%→10\.0%$/.test(prui.pcts[2]),prui.pcts[2]);
+ok('Мөрийн тоо хэвээр',prui.rows===4,String(prui.rows));
+
+/* Дүнз — хувь нь ПОГ/М-ээр бодогдоно */
+const swp=await page.evaluate(async()=>{
+  let it='nn';for(let i=0;i<8;i++)it+=i<4?'b':'n';
+  DB.sw=[{id:'sp',name:'Намар',season:'намар',year:'2026',date:'2026-09-10',sc:'ПД-6',
+    turnouts:[{id:'ws',num:5,mak:'Р-65',mark:'1/9',head:2,it,dRepl:{},
+      dPlan:{2:3,3:3.5,7:3}}],       // #2,#3 тэнцэхгүй; #7 нь ХЭВИЙН
+    inc:[{id:'i1',d:'2026-05-01',items:[{L:3,n:9},{L:3.5,n:9}]}]}];
+  swFolderId='sp';saveDB();
+  const c=collectSwPlan()[0];
+  openSwPlanRep();await new Promise(r=>setTimeout(r,340));
+  return{m:c.m,mBad:c.mBad,mBad2:c.mBad2,
+    hd:document.querySelector('#swPlanRepBody .pl-hd').textContent.replace(/\s+/g,' ').trim(),
+    sub:[...document.querySelectorAll('#swPlanRepBody .rp-sub')]
+      .map(e=>e.textContent.replace(/\s+/g,' ').trim())[0]}});
+ok('Тэнцэхгүй пог/м нь АНХНЫ уртаар хасагдана (12 → 6)',
+   swp.m===24&&swp.mBad===12&&swp.mBad2===6,`${swp.mBad}→${swp.mBad2} / ${swp.m}`);
+ok('Сумын толгойд 50,0% → 25,0% гарна',
+   /50\.0%\s*→\s*25\.0%/.test(swp.hd),swp.hd);
+ok('Хөл мөрөнд тэнцэхгүй пог/м-ийн өөрчлөлт гарна',
+   /12 → 6 тэнцэхгүй пог\/м/.test(swp.sub||''),swp.sub);
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
