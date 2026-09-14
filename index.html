@@ -1938,7 +1938,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="sheet-title" style="margin:0;color:var(--blue)">📋 Төлөвлөсөн дэр</div>
       <button onclick="closeModal('planRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
-    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зам, үе, дэрийн дугаараар. Мөр дээр дарвал тэр үеийн дэрийн жагсаалт руу шууд очно.</div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зам, үе, дэрийн дугаараар. Сумын рам замын дэр ч энд орно. Мөр дээр дарвал тэр жагсаалт руу шууд очно.</div>
     <div id="planRepBody"></div>
   </div></div>
 </div>
@@ -2687,6 +2687,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button class="etb etb-n" id="swSlBn" onclick="setSwSl('n')"><span class="etb-icon">✓</span>Хэвийн</button>
       <button class="etb etb-b" id="swSlBb" onclick="setSwSl('b')"><span class="etb-icon">~</span>Тэнцэхгүй</button>
     </div>
+    <button class="etb" id="swSlPlanBtn" onclick="openSwSlPlan()" style="width:100%;margin-top:6px;padding:14px;background:var(--blue-bg);color:var(--blue);border-color:var(--blue-mid)"><svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Солихоор төлөвлөх</button>
     <button class="etb" id="swSlReplBtn" onclick="openSwSlRepl()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
     <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('swSlModal')">Буцах</button>
   </div></div>
@@ -4057,7 +4058,7 @@ function renderReplFolder(){
     card('var(--purple)','var(--purple-bg)','Дараалсан цэг',
       c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()")+
     card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
-      pn?`${pn} дэр · зам, үеээр`:'Төлөвлөгөө алга',"openPlanReport()");
+      pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',"openPlanReport()");
 }
 
 /* ══════════════════════════════════════════════
@@ -4068,6 +4069,9 @@ function renderReplFolder(){
    санамж төдий. Үнэхээр солиход "Сольсон мэдээлэл"-д шилжиж, төлөвлөгөө
    нь өөрөө арилна — нэг дэр хоёр газар тоологдохгүй.
    ══════════════════════════════════════════════ */
+// Төлөвлөх цонх нь хоёр эзэнтэй: үеийн дэр ('sec') ба сумын рам замын
+// дэр ('swsl'). replModal-ийн _replMode-той ижил зарчим.
+let _planMode='sec';
 function secPlan(sec){if(!sec.plan||typeof sec.plan!=='object')sec.plan={};return sec.plan}
 function planAt(sec,idx){return (sec&&sec.plan&&sec.plan[idx])||null}
 function clearPlanAt(sec,idx){if(sec&&sec.plan)delete sec.plan[idx]}
@@ -4087,6 +4091,18 @@ function collectPlan(){
     rows.sort((a,b)=>a.sec===b.sec?a.idx-b.idx:String(a.sec).localeCompare(String(b.sec),'mn'));
     if(rows.length)out.push({id:t.id,name:trackLabel(t),rows})
   });
+  // Сумын рам замын дэр (2,75 м) нь сумын дүнд ордоггүй ч ДЭР л тул
+  // дэрийн төлөвлөгөөнд нэг доор жагсана: "N-р сум · рам зам төмөр #M"
+  swAllTurnouts().forEach(tt=>{
+    const pl=tt.slPlan||{},rows=[];
+    Object.keys(pl).forEach(k=>{
+      const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
+      rows.push({sw:true,tid:tt.id,sec:'Рам зам төмөр',pos:i,idx:i+1,m:pl[k],
+        now:(tt.it||'')[i]==='b'?'bad':'normal'})
+    });
+    rows.sort((a,b)=>a.idx-b.idx);
+    if(rows.length)out.push({id:'sw:'+tt.id,sw:true,name:`${tt.num}-р сум`,rows})
+  });
   return out
 }
 function planTotalCount(){return collectPlan().reduce((s,t)=>s+t.rows.length,0)}
@@ -4101,6 +4117,7 @@ function _planStockHtml(){
 }
 function openPlanModal(){
   const sec=activeSec();if(!sec||editIdx<0)return;
+  _planMode='sec';
   const cur=planAt(sec,editIdx);
   document.getElementById('planTitle').textContent=`#${editIdx+1} дэр — төлөвлөх`;
   ['wood','tbd'].forEach(k=>{
@@ -4110,6 +4127,7 @@ function openPlanModal(){
   closeModal('editSleeperModal');openModal('planModal')
 }
 function savePlan(m){
+  if(_planMode==='swsl')return saveSwSlPlan(m);
   const sec=activeSec();if(!sec||editIdx<0)return;
   const idx=editIdx;
   secPlan(sec)[idx]=m;
@@ -4117,6 +4135,7 @@ function savePlan(m){
   showToast(`#${idx+1} → ${matLabel(m)} дэрээр солихоор төлөвлөв`,2600)
 }
 function clearPlan(){
+  if(_planMode==='swsl')return clearSwSlPlan();
   const sec=activeSec();if(!sec||editIdx<0)return;
   const idx=editIdx;clearPlanAt(sec,idx);
   saveDB();closeModal('planModal');renderRecordView(idx);renderHome();
@@ -4133,7 +4152,9 @@ function renderPlanReport(){
     html+=`<div class="rp-track"><div class="rp-track-hd">${esc(t.name)}</div>`;
     t.rows.forEach(r=>{
       N++;if(r.m==='tbd')T++;else W++;
-      html+=`<div class="rp-row pl-row" onclick="hap();jumpToPlan('${t.id}','${r.secId}',${r.pos})">
+      const go=r.sw?`jumpToSwPlan('${r.tid}',${r.pos})`
+                  :`jumpToPlan('${t.id}','${r.secId}',${r.pos})`;
+      html+=`<div class="rp-row pl-row" onclick="hap();${go}">
         <span style="flex:1;font-weight:700;color:var(--ink2)">${esc(r.sec)}</span>
         <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
         <span class="mat-tag">${matLabel(r.m)}</span>
@@ -4183,6 +4204,13 @@ function derOutRows(){
   };
   mainTracks().forEach(t=>add('Гол зам',t));
   (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(t=>add(f.name||'Паспорт',t)));
+  // Сумын рам замын дэр ч мөн ижил агуулахаас гардаг
+  swAllTurnouts().forEach(tt=>{
+    const rp=tt.slRepl||{},rows=Object.keys(rp).map(k=>rp[k]).filter(r=>r&&r.d);
+    if(rows.length)out.push({grp:'Сумын рам зам',name:`${tt.num}-р сум`,n:rows.length,
+      tbd:rows.filter(r=>replMatOf(r)==='tbd').length,
+      wood:rows.filter(r=>replMatOf(r)!=='tbd').length})
+  });
   return out
 }
 function derOutN(){return derOutRows().reduce((s,r)=>s+r.n,0)}
@@ -9983,7 +10011,7 @@ function renderSwRec(focus){
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),bad=t.it[i]==='b';
     const isSl=sl.kind==='дэр';
-    const pln=!isSl&&swDzPlan(t,i);           // солихоор төлөвлөсөн
+    const pln=isSl?swSlPlan(t,i):swDzPlan(t,i);   // солихоор төлөвлөсөн
     const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')+(pln?' dr-plan':'');
     const dr=isSl?null:dMap[i];
     const rp=isSl?(t.slRepl||{})[i]:(dr?dr.rec:null);
@@ -10079,6 +10107,7 @@ function swUndo(){
   const i=t.it.length-1;
   hap(18);t.it=t.it.slice(0,-1);
   if(t.slRepl)delete t.slRepl[i];   // буцаасан дэрийн солилтын тэмдэглэгээ хамт арилна
+  if(t.slPlan)delete t.slPlan[i];   // төлөвлөгөө нь ч мөн адил
   saveDB();renderSwRec()
 }
 // ── Бөөрөнхий удирдлага: дарвал Хэвийн, доош шудрахад Тэнцэхгүй ──
@@ -10116,6 +10145,8 @@ function openSwSl(i){
   document.getElementById('swSlBb').classList.toggle('sel',t.it[i]==='b');
   const rp=(t.slRepl||{})[i],b=document.getElementById('swSlReplBtn');
   if(b)b.lastChild.textContent=rp?` Сольсон: ${fmtReplDate(rp.d)} — засах`:' Энэ дэрийг сольсон';
+  const pl=swSlPlan(t,i),pb=document.getElementById('swSlPlanBtn');
+  if(pb)pb.lastChild.textContent=pl?` Төлөвлөсөн: ${matLabel(pl)} — засах`:' Солихоор төлөвлөх';
   openModal('swSlModal')
 }
 function setSwSl(ch){
@@ -10146,10 +10177,50 @@ function saveSwSlRepl(newType){
   swWrite(t,i,'n');                       // сольсон дэр хэвийн болно
   if(!t.slRepl)t.slRepl={};
   t.slRepl[i]={d:date,t:newType,m:newType==='tbd'?'tbd':'wood',o:wasBad?1:0};
+  if(t.slPlan)delete t.slPlan[i];         // төлөвлөгөө хэрэгжлээ
   _replMode='sec';
   saveDB();closeModal('replModal');renderSwRec(i);
   showToast(`#${i+1} дэр сольсон · ${fmtReplDate(date)}`,2600)
 }
+/* Рам замын дэр (2,75 м) нь сумын дүнд ордоггүй ч ДЭР л юм. Тиймээс
+   төлөвлөгөө нь дүнзнийхтэй биш, ДЭРИЙН төлөвлөгөөтэй нийлж, дэрийн
+   агуулахаас гардаг. t.slPlan = { мөрийн индекс: 'wood' | 'tbd' } */
+function swSlPlan(t,i){return (t&&t.slPlan)?t.slPlan[i]||null:null}
+function openSwSlPlan(){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  _planMode='swsl';
+  const cur=swSlPlan(t,_swSlIdx);
+  document.getElementById('planTitle').textContent=
+    `Сум ${t.num} · рам зам төмөр #${_swSlIdx+1} — төлөвлөх`;
+  ['wood','tbd'].forEach(k=>{
+    const b=document.getElementById('plB_'+k);if(b)b.classList.toggle('sel',k===cur)});
+  document.getElementById('planClear').style.display=cur?'block':'none';
+  document.getElementById('planStock').innerHTML=_planStockHtml();
+  closeModal('swSlModal');openModal('planModal')
+}
+function saveSwSlPlan(m){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  if(!t.slPlan)t.slPlan={};
+  t.slPlan[_swSlIdx]=m;
+  const i=_swSlIdx;_planMode='sec';
+  saveDB();closeModal('planModal');renderSwRec(i);
+  showToast(`Сум ${t.num} · рам зам #${i+1} → ${matLabel(m)} дэрээр солихоор төлөвлөв`,2800)
+}
+function clearSwSlPlan(){
+  const t=swTurnout();if(!t||_swSlIdx<0)return;
+  if(t.slPlan)delete t.slPlan[_swSlIdx];
+  const i=_swSlIdx;_planMode='sec';
+  saveDB();closeModal('planModal');renderSwRec(i);showToast('Төлөвлөгөө цуцлагдлаа')
+}
+// Төлөвлөсөн жагсаалтаас сумын рам замын дэр рүү шууд очно
+function jumpToSwPlan(tid,i){
+  hap(8);closeModal('planRepModal');
+  swTurnoutId=tid;_swFromRun=false;
+  const t=swTurnout();if(!t){showToast('Сум олдсонгүй');return}
+  showView('swRecView');renderSwRec(i);
+  showToast(`Сум ${t.num} · рам зам төмөр #${i+1}`,2200)
+}
+
 function clearSwSlRepl(){
   const t=swTurnout();if(!t||_swSlIdx<0)return;
   if(t.slRepl)delete t.slRepl[_swSlIdx];
@@ -11761,7 +11832,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.13·138';
+const APP_BUILD='2026.09.14·139';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
