@@ -508,6 +508,41 @@ ok('Сумын толгойд 50,0% → 25,0% гарна',
 ok('Хөл мөрөнд тэнцэхгүй пог/м-ийн өөрчлөлт гарна',
    /12 → 6 тэнцэхгүй пог\/м/.test(swp.sub||''),swp.sub);
 
+/* ── 11. Том өгөгдөл дээрх зардал ──
+   collectPlan нь renderHome бүрд дуудагддаг. Төлөвлөгөөгүй зам дээр үе
+   бүрийг задалдаг байсныг больж, эхлээд төлөвлөгөө байгаа эсэхийг
+   шалгадаг болгов — 100 км × 40 үетэй гол замд энэ нь шийдвэрлэх ялгаа. */
+console.log('\nТом өгөгдөл');
+const big=await page.evaluate(()=>{
+  const mk=(id,lab,n)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+    sleepers:Array.from({length:n},(_,i)=>({type:i%9===0?'bad':'normal',ts:0}))});
+  const km=[];
+  for(let k=0;k<60;k++){
+    const secs=[];for(let u=1;u<=40;u++)secs.push(mk('k'+k+'u'+u,u+'-р үе',46));
+    km.push({id:'km'+k,num:600+k,kind:'main',mat:'tbd',sections:secs})
+  }
+  DB.main=km;DB.sw=[];swFolderId=null;
+  DB.folders=[{id:'FB',name:'Хавар',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    tracks:[{id:'TB',num:2,kind:'station',note:'',sections:(()=>{const a=[];
+      for(let u=1;u<=40;u++)a.push(mk('tb'+u,u+'-р үе',46));return a})()}]}];
+  activeFolderId='FB';DB.tracks=DB.folders[0].tracks;saveDB();
+  const secN=km.reduce((s,k)=>s+k.sections.length,0)+DB.tracks[0].sections.length;
+  const t0=performance.now();
+  const empty=collectPlan();
+  const tEmpty=performance.now()-t0;
+  // Нэг үед төлөвлөгөө тавимагц тэр зам нь бүрэн задарна
+  DB.tracks[0].sections[5].plan={3:'tbd'};saveDB();
+  const one=collectPlan();
+  return{secN,emptyLen:empty.length,tEmpty:Math.round(tEmpty),
+    oneLen:one.length,oneN:one[0]&&one[0].n,
+    ueTotal:one[0]&&one[0].secs[0]&&one[0].secs[0].total,
+    trkTotal:one[0]&&one[0].total}});
+ok('Төлөвлөгөө байхгүй бол хоосон буцаана, үе задлахгүй',
+   big.emptyLen===0&&big.tEmpty<150,`${big.secN} үе · ${big.tEmpty} мс`);
+ok('Нэг төлөвлөгөө тавихад тэр зам БҮРЭН тоологдоно',
+   big.oneLen===1&&big.oneN===1&&big.ueTotal===46&&big.trkTotal===40*46,
+   `${big.oneN} төлөвлөгөө · үе ${big.ueTotal} дэр · зам ${big.trkTotal} дэр`);
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
