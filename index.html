@@ -4101,6 +4101,10 @@ function clearPlanAt(sec,idx){if(sec&&sec.plan)delete sec.plan[idx]}
 function collectPlan(){
   const out=[];
   allTracks().forEach(t=>{
+    // Төлөвлөгөөгүй зам дээр дүн бодох шалтгаангүй. Энэ нь renderHome
+    // бүрд дуудагддаг тул 100 км × 40 үетэй гол замд үе бүрийг задлахаас
+    // сэргийлнэ — төлөвлөгөө хоосон үед (түгээмэл тохиолдол) бараг үнэгүй.
+    if(!(t.sections||[]).some(sc=>sc.plan&&Object.keys(sc.plan).length))return;
     const secs=[];let n=0,tot=0,bad=0,bad2=0;
     (t.sections||[]).forEach(sc=>{
       const a=analyzeSection(sc);
@@ -4993,6 +4997,11 @@ function _revSwap(sec){
 let _revOpen=null;
 function _revEnter(sec){
   if(!sec||!isRevTrack())return;
+  // Үеийг зөвхөн БҮРТГЭЛИЙН ДЭЛГЭЦ дээр байхад эргүүлнэ. Ингэснээр
+  // "rw тэмдэгтэй үе = яг одоо нээлттэй байгаа үе" гэдэг нь дүрмээр
+  // биш БҮТЦЭЭР баталгаажна — өөр дэлгэцээс санамсаргүй дуудсан ч
+  // өгөгдөл эргэхгүй.
+  if((document.querySelector('.view.active')||{}).id!=='recordView')return;
   if(sec.rw){_revOpen=sec;return}
   _revSwap(sec);sec.rw=1;_revOpen=sec;saveDB()
 }
@@ -5416,10 +5425,12 @@ function openSection(secId,focusIdx){
   const sec=t.sections.find(s=>s.id===secId);if(!sec)return;
   if(isTurnout(sec)){openEditTurnout(secId);return}   // сум дээр дэр бүртгэхгүй
   if(activeSectionId!==secId)_revLeave();
-  activeSectionId=secId;_revEnter(sec);
+  activeSectionId=secId;
   document.getElementById('rvTitle').textContent=sec.label;
   _rvSub(t);
-  showView('recordView');renderRecordView(focusIdx);
+  showView('recordView');
+  _revEnter(sec);                 // дэлгэц солигдсоны ДАРАА эргүүлнэ
+  renderRecordView(focusIdx);
   // Өмнөх лавлагаа banner харуулах
   setTimeout(updateNavBtns,50)
 }
@@ -12084,7 +12095,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.14·143';
+const APP_BUILD='2026.09.14·144';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
