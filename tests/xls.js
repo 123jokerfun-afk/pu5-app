@@ -204,6 +204,99 @@ console.log('\nАдмины нэгтгэл');
   }
 }
 
+/* ══ ТӨЛӨВЛӨГӨӨ — "Дэр" ба "Дүнз" хоёр шийт ═════════════════
+   Албан маягт биш дотоод ажлын жагсаалт. Гол нь: аль дэр/дүнзийг
+   юугаар солихыг БА сольсноор тэнцэхгүй хувь нь хэд болохыг хамт
+   харуулах. Хувийг ЭКСЕЛД ТОО болгож бичнэ — гараар дахин бодохгүй. */
+console.log('\nТөлөвлөгөө (Дэр · Дүнз)');
+{
+  await page.evaluate(()=>{
+    const mk=(id,lab,pat)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+      sleepers:pat.split('').map(c=>({type:c==='b'?'bad':'normal',ts:0}))});
+    DB.rpt={cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:'2026',date:'2026-04-01',sign:'Б.Болд'};
+    DB.folders=[{id:'fp',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'tp',num:2,kind:'station',note:'',sections:[
+        mk('a1','1-р үе','bbbbnnnnnn'),    // 4/10 = 40%
+        mk('a2','2-р үе','bbnnnnnnnn')]}]}];// 2/10 = 20%
+    DB.main=[];activeFolderId='fp';DB.tracks=DB.folders[0].tracks;
+    DB.folders[0].tracks[0].sections[0].plan={0:'tbd',1:'wood'};
+    DB.folders[0].tracks[0].sections[1].plan={0:'tbd'};
+    let it='nn';for(let i=0;i<8;i++)it+=i<4?'b':'n';
+    DB.sw=[{id:'sf',name:'Намар',season:'намар',year:'2026',date:'2026-09-10',sc:'ПД-6',
+      turnouts:[{id:'w1',num:5,mak:'Р-65',mark:'1/9',head:2,it,dRepl:{},
+        dPlan:{2:3,3:3.5},slPlan:{1:'wood'}}],
+      inc:[{id:'i1',d:'2026-05-01',items:[{L:3,n:9},{L:3.5,n:9}]}]}];
+    swFolderId='sf';saveDB()});
+  const {wb,name}=await grab('exportPlanForm()');
+  ok('Файлын нэр огноотой',/^Төлөвлөгөө_\d{4}-\d{2}-\d{2}\.xlsx$/.test(name),name);
+  const names=wb.worksheets.map(w=>w.name);
+  ok('Хоёр шийт: Дэр, Дүнз',names.length===2&&names[0]==='Дэр'&&names[1]==='Дүнз',
+     JSON.stringify(names));
+
+  const d=wb.getWorksheet('Дэр');
+  ok('Дэрийн толгойд хэсэг, нэр, хамрах хүрээ',
+     /3-р анги ПД-6 хэсэг/.test(String(V(d.getRow(1))[1]||''))
+     &&/СОЛИХООР ТӨЛӨВЛӨСӨН ДЭРИЙН ЖАГСААЛТ/.test(String(V(d.getRow(2))[1]||''))
+     &&/өртөө/.test(String(V(d.getRow(3))[1]||'')),
+     String(V(d.getRow(2))[1]||''));
+  const hdr=V(d.getRow(5)).slice(1,11).map(x=>String(x||''));
+  ok('Хүснэгтийн толгой бүрэн',
+     /Д\/д/.test(hdr[0])&&/Зам/.test(hdr[1])&&/Үе/.test(hdr[2])&&/Дэрийн дугаар/.test(hdr[3])
+     &&/Одоогийн төрөл/.test(hdr[4])&&/Солих төрөл/.test(hdr[5])
+     &&/Үеийн тэнцэхгүй хувь/.test(hdr[6])&&/Замын тэнцэхгүй хувь/.test(hdr[8]),
+     JSON.stringify(hdr));
+  const r7=V(d.getRow(7)),r9=V(d.getRow(9));
+  ok('Мөр: зам · үе · дугаар · одоогийн төрөл · солих төрөл',
+     r7[1]===1&&/2-р зам/.test(String(r7[2]))&&r7[3]==='1-р үе'&&r7[4]===1
+     &&r7[5]==='Тэнцэхгүй'&&r7[6]==='ТБД',JSON.stringify(r7.slice(1,7)));
+  ok('Үеийн хувь 40 → 20, замын хувь 30 → 15',
+     r7[7]===40&&r7[8]===20&&r7[9]===30&&r7[10]===15,
+     `үе ${r7[7]}→${r7[8]} · зам ${r7[9]}→${r7[10]}`);
+  ok('Хувь нь ТОО бөгөөд хувийн форматтай',
+     typeof r7[7]==='number'&&/%/.test(d.getCell('G7').numFmt||''),
+     typeof r7[7]+' · '+d.getCell('G7').numFmt);
+  ok('Дараагийн үе рүү зөв шилжинэ',r9[3]==='2-р үе'&&r9[7]===20&&r9[8]===10,
+     JSON.stringify(r9.slice(1,9)));
+  let swRow=null;for(let i=7;i<=20;i++){const v=V(d.getRow(i));
+    if(/сум/.test(String(v[2]||''))){swRow=v;break}}
+  ok('Сумын рам замын дэр ч энд орно',
+     !!swRow&&/5-р сум/.test(String(swRow[2]))&&/Рам зам/.test(String(swRow[3])),
+     JSON.stringify(swRow&&swRow.slice(1,7)));
+  let tot=null;for(let i=7;i<=22;i++){const v=V(d.getRow(i));
+    if(/НИЙТ/.test(String(v[1]||''))){tot=v;break}}
+  ok('Доор нь нийт ба модон/ТБД задаргаа',
+     !!tot&&/модон 2 ш/.test(String(tot[1]))&&/ТБД 2 ш/.test(String(tot[1]))
+     &&/4 дэр/.test(String(tot[7])),JSON.stringify(tot&&[tot[1],tot[7]]));
+
+  const z=wb.getWorksheet('Дүнз');
+  ok('Дүнзний толгой',
+     /СОЛИХООР ТӨЛӨВЛӨСӨН ДҮНЗНИЙ ЖАГСААЛТ/.test(String(V(z.getRow(2))[1]||'')),
+     String(V(z.getRow(2))[1]||''));
+  const zh=V(z.getRow(5)).slice(1,10).map(x=>String(x||''));
+  ok('Дүнзний хүснэгтийн толгой',
+     /Сум №/.test(zh[1])&&/Сумын маяг/.test(zh[2])&&/Марк/.test(zh[3])
+     &&/Дүнзний дугаар/.test(zh[4])&&/Одоогийн урт/.test(zh[5])
+     &&/Төлөвлөсөн урт/.test(zh[6])&&/Сумын тэнцэхгүй хувь/.test(zh[7]),
+     JSON.stringify(zh));
+  const z7=V(z.getRow(7));
+  ok('Дүнзний мөр бүрэн',
+     z7[2]===5&&z7[3]==='Р-65'&&z7[4]==='1/9'&&z7[5]===1&&z7[6]===3&&z7[7]===3,
+     JSON.stringify(z7.slice(1,8)));
+  // Сумын хувь нь ПОГ/М-ээр: 12 / 24 = 50%, төлөвлөснөөр 6 / 24 = 25%
+  ok('Сумын хувь пог/м-ээр 50 → 25',z7[8]===50&&z7[9]===25,`${z7[8]} → ${z7[9]}`);
+  let lenHd=null;for(let i=8;i<=22;i++){
+    if(/УРТААР НЬ/.test(String(V(z.getRow(i))[1]||''))){lenHd=i;break}}
+  ok('Уртаар нь задаргаа гарна',!!lenHd,String(lenHd));
+  if(lenHd){
+    const a=V(z.getRow(lenHd+2)),b2=V(z.getRow(lenHd+3)),c=V(z.getRow(lenHd+4));
+    ok('Урт бүрийн ширхэг ба нийт пог/м',
+       a[1]===3&&a[2]===1&&a[3]===3&&b2[1]===3.5&&b2[2]===1&&b2[3]===3.5,
+       JSON.stringify([a.slice(1,4),b2.slice(1,4)]));
+    ok('Нийт мөр: 2 ш · 6,5 пог/м',
+       /Нийт/.test(String(c[1]))&&c[2]===2&&c[3]===6.5,JSON.stringify(c.slice(1,4)));
+  }
+}
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('\nSUMMARY '+R.filter(Boolean).length+'/'+R.length);
