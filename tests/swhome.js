@@ -66,12 +66,11 @@ const items=await page.evaluate(()=>({
 ok('Сумын карт 2',items.cards===2,JSON.stringify(items));
 // v135-т Төлөвлөсөн дүнз нэмэгдсэн. v138-т Орлого/Зарлага нь паспортын
 // хавтаснуудаас гарч, паспортуудын жагсаалтын доор тусдаа хэсэг болсон.
-ok('Сольсон/Дараалсан/Бодит/Төлөвлөсөн = 4 хавтас',
-   items.folders===4,String(items.folders));
-ok('Төлөвлөсөн дүнзний хавтас нэрээрээ байна',
-   /Төлөвлөсөн дүнз/.test(items.names),items.names);
-ok('Орлого/Зарлага нь паспортын хавтаснуудын дотор БАЙХГҮЙ',
-   !/Орлого/.test(items.names)&&!/Зарлага/.test(items.names),items.names);
+ok('Сольсон/Дараалсан/Бодит = 3 хавтас',
+   items.folders===3,String(items.folders));
+ok('Орлого/Зарлага/Төлөвлөсөн нь паспортын хавтаснуудын дотор БАЙХГҮЙ',
+   !/Орлого/.test(items.names)&&!/Зарлага/.test(items.names)
+   &&!/Төлөвлөсөн/.test(items.names),items.names);
 const incSec=await page.evaluate(()=>({
   vis:getComputedStyle(document.getElementById('swIncSection')).display,
   lbl:document.querySelector('#swIncSection .sec-lbl').textContent.trim(),
@@ -82,9 +81,10 @@ const incSec=await page.evaluate(()=>({
     document.getElementById('swIncSection'))&Node.DOCUMENT_POSITION_FOLLOWING?1:0,
   before:document.getElementById('swIncSection').compareDocumentPosition(
     document.getElementById('swTurnoutsSection'))&Node.DOCUMENT_POSITION_FOLLOWING?1:0}));
-ok('Дүнзний агуулах тусдаа хэсэг болж, Орлого/Зарлага тэнд байна',
+ok('Дүнзний агуулах тусдаа хэсэг: Орлого · Зарлага · Төлөвлөсөн дүнз',
    incSec.vis!=='none'&&/Дүнзний агуулах/.test(incSec.lbl)
-   &&incSec.cards.length===2&&/Орлого/.test(incSec.cards[0])&&/Зарлага/.test(incSec.cards[1]),
+   &&incSec.cards.length===3&&/Орлого/.test(incSec.cards[0])
+   &&/Зарлага/.test(incSec.cards[1])&&/Төлөвлөсөн дүнз/.test(incSec.cards[2]),
    incSec.lbl+' · '+JSON.stringify(incSec.cards));
 ok('Паспортуудын жагсаалтын ДООР, Сумуудын ДЭЭР байрлана',
    incSec.after===1&&incSec.before===1,`${incSec.after}·${incSec.before}`);

@@ -1151,6 +1151,15 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .rp-row{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid var(--border);
   border-bottom:none;font-size:12px;background:var(--card)}
 .rp-row:last-of-type{border-bottom:1.5px solid var(--border)}
+/* Төлөвлөгөөний толгой: нэр зүүн, "одоо % → дараа %" баруун талд */
+.pl-hd{display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* Үеийн мөр — замын толгойн доор, дэрүүдийн дээр */
+.pl-ue{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 12px;background:var(--blue-bg);border:1.5px solid var(--border);
+  border-bottom:none;font-size:11px;font-weight:800;color:var(--blue)}
+.pl-pct{display:inline-flex;align-items:center;gap:4px;font-size:11px;
+  font-weight:800;white-space:nowrap;flex-shrink:0}
+.pl-arw{color:var(--ink4);font-weight:900}
 .rp-sub{display:flex;justify-content:space-between;padding:8px 12px;background:var(--g100);
   border:1.5px solid var(--border);border-radius:0 0 10px 10px;font-size:12px;font-weight:800;color:var(--g700)}
 .rp-total{display:flex;justify-content:space-between;padding:14px 16px;margin-top:6px;
@@ -4043,8 +4052,8 @@ function consecTotalCount(){
 function renderReplFolder(){
   const wrap=document.getElementById('replFolderWrap');if(!wrap)return;
   if(!activeFolderId){wrap.innerHTML='';return}
-  const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCount();
-  if(!n&&!c&&!pn){wrap.innerHTML='';return}
+  const n=replTotalCount(),c=consecTotalCount();
+  if(!n&&!c){wrap.innerHTML='';return}
   const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
     <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
     <div class="folder-info">
@@ -4056,9 +4065,7 @@ function renderReplFolder(){
     card('var(--red)','var(--red-bg)','Солигдсон дэр',
       n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',"openReplReport()")+
     card('var(--purple)','var(--purple-bg)','Дараалсан цэг',
-      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()")+
-    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
-      pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',"openPlanReport()");
+      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()");
 }
 
 /* ══════════════════════════════════════════════
@@ -4076,36 +4083,65 @@ function secPlan(sec){if(!sec.plan||typeof sec.plan!=='object')sec.plan={};retur
 function planAt(sec,idx){return (sec&&sec.plan&&sec.plan[idx])||null}
 function clearPlanAt(sec,idx){if(sec&&sec.plan)delete sec.plan[idx]}
 // Энэ паспортын (+ гол замын) төлөвлөсөн дэр — зам → үе → дугаараар
+/* Төлөвлөсөн дэрүүд — зам → үе → дугаараар, ҮЕ БА ЗАМ тус бүрд
+   "одоо хэдэн хувь → төлөвлөснийг гүйцэтгэвэл хэдэн хувь" болохыг
+   хамт тооцно. Төлөвлөсөн дэр нь ТЭНЦЭХГҮЙ байсан үед л хувь буурна:
+   хэвийн дэрийг солихоор төлөвлөсөн бол дүн өөрчлөгдөхгүй. */
 function collectPlan(){
   const out=[];
   allTracks().forEach(t=>{
-    const rows=[];
+    const secs=[];let n=0,tot=0,bad=0,bad2=0;
     (t.sections||[]).forEach(sc=>{
-      const pl=sc.plan||{};
+      const a=analyzeSection(sc);
+      tot+=a.total;bad+=a.totalBad;
+      const pl=sc.plan||{},rows=[];let fix=0;
       Object.keys(pl).forEach(k=>{
         const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
-        rows.push({secId:sc.id,sec:sc.label||'—',pos:i,idx:i+1,m:pl[k],
-          now:((sc.sleepers||[])[i]||{}).type||''})
-      })
+        const now=((sc.sleepers||[])[i]||{}).type||'';
+        if(isBadSleeper(now))fix++;
+        rows.push({secId:sc.id,sec:sc.label||'—',pos:i,idx:i+1,m:pl[k],now})
+      });
+      const b2=Math.max(0,a.totalBad-fix);
+      bad2+=b2;
+      if(!rows.length)return;
+      rows.sort((x,y)=>x.idx-y.idx);
+      n+=rows.length;
+      secs.push({id:sc.id,label:sc.label||'—',rows,
+        total:a.total,bad:a.totalBad,bad2:b2})
     });
-    rows.sort((a,b)=>a.sec===b.sec?a.idx-b.idx:String(a.sec).localeCompare(String(b.sec),'mn'));
-    if(rows.length)out.push({id:t.id,name:trackLabel(t),rows})
+    if(n)out.push({id:t.id,name:trackLabel(t),secs,n,total:tot,bad,bad2})
   });
   // Сумын рам замын дэр (2,75 м) нь сумын дүнд ордоггүй ч ДЭР л тул
-  // дэрийн төлөвлөгөөнд нэг доор жагсана: "N-р сум · рам зам төмөр #M"
+  // дэрийн төлөвлөгөөнд нэг доор жагсана: "N-р сум · рам зам төмөр #M".
+  // Хувь нь сумын дүнзний хувь БИШ — рам замын дэрийн өөрийн хувь.
   swAllTurnouts().forEach(tt=>{
-    const pl=tt.slPlan||{},rows=[];
+    const pl=tt.slPlan||{},rows=[];let fix=0;
     Object.keys(pl).forEach(k=>{
       const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
+      const bd=(tt.it||'')[i]==='b';if(bd)fix++;
       rows.push({sw:true,tid:tt.id,sec:'Рам зам төмөр',pos:i,idx:i+1,m:pl[k],
-        now:(tt.it||'')[i]==='b'?'bad':'normal'})
+        now:bd?'bad':'normal'})
     });
-    rows.sort((a,b)=>a.idx-b.idx);
-    if(rows.length)out.push({id:'sw:'+tt.id,sw:true,name:`${tt.num}-р сум`,rows})
+    if(!rows.length)return;
+    rows.sort((x,y)=>x.idx-y.idx);
+    const a=swTally(tt),b2=Math.max(0,a.slBad-fix);
+    out.push({id:'sw:'+tt.id,sw:true,name:`${tt.num}-р сум`,n:rows.length,
+      secs:[{id:'sl',label:'Рам зам төмөр',rows,total:a.sl,bad:a.slBad,bad2:b2}],
+      total:a.sl,bad:a.slBad,bad2:b2})
   });
   return out
 }
-function planTotalCount(){return collectPlan().reduce((s,t)=>s+t.rows.length,0)}
+function planTotalCount(){return collectPlan().reduce((s,t)=>s+t.n,0)}
+// "12,0% → 8,0%" гэсэн хоёр хувийн шошго. Сольсноор буурахгүй бол
+// сумыг харуулахгүй — хэрэглэгч дэмий эргэлзэхгүй.
+function _pctPair(bad,bad2,total){
+  if(!total)return '';
+  const p=bad/total*100,q=bad2/total*100;
+  const col=x=>x>=25?'var(--dred)':x>=15?'var(--orange)':'var(--g600)';
+  const one=(v,c)=>`<b style="color:${c}">${v.toFixed(1)}%</b>`;
+  return p===q?`<span class="pl-pct">${one(p,col(p))}</span>`
+    :`<span class="pl-pct">${one(p,col(p))}<span class="pl-arw">→</span>${one(q,col(q))}</span>`
+}
 /* Төлөвлөх цонх — дээрээ агуулахын үлдэгдлийг харуулна */
 function _planStockHtml(){
   const have=derIncN();
@@ -4149,19 +4185,29 @@ function renderPlanReport(){
     return}
   let html='',N=0,W=0,T=0;
   data.forEach(t=>{
-    html+=`<div class="rp-track"><div class="rp-track-hd">${esc(t.name)}</div>`;
-    t.rows.forEach(r=>{
-      N++;if(r.m==='tbd')T++;else W++;
-      const go=r.sw?`jumpToSwPlan('${r.tid}',${r.pos})`
-                  :`jumpToPlan('${t.id}','${r.secId}',${r.pos})`;
-      html+=`<div class="rp-row pl-row" onclick="hap();${go}">
-        <span style="flex:1;font-weight:700;color:var(--ink2)">${esc(r.sec)}</span>
-        <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
-        <span class="mat-tag">${matLabel(r.m)}</span>
-        <span style="font-weight:900;color:var(--blue)">›</span>
-      </div>`
+    html+=`<div class="rp-track"><div class="rp-track-hd pl-hd">
+      <span>${esc(t.name)}</span>${_pctPair(t.bad,t.bad2,t.total)}</div>`;
+    t.secs.forEach(sc=>{
+      // Үе бүрийн өөрийнх нь хувь — тэр үеийнхээ дэрийг сольсноор хэд болох
+      html+=`<div class="pl-ue"><span>${esc(sc.label)}</span>
+        ${_pctPair(sc.bad,sc.bad2,sc.total)}</div>`;
+      sc.rows.forEach(r=>{
+        N++;if(r.m==='tbd')T++;else W++;
+        const go=r.sw?`jumpToSwPlan('${r.tid}',${r.pos})`
+                    :`jumpToPlan('${t.id}','${r.secId}',${r.pos})`;
+        // Үеийн нэр нь дээрх мөрөнд аль хэдийн байгаа тул давтахгүй.
+        // Оронд нь дэрийн ОДООГИЙН төрлийг харуулна: "#6 Тэнцэхгүй → ТБД"
+        const nw=TYPES[r.now]?TYPES[r.now].label:'';
+        html+=`<div class="rp-row pl-row" onclick="hap();${go}">
+          <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
+          <span style="flex:1;font-weight:700;color:var(--ink3)">${nw}</span>
+          <span class="pl-arw">→</span>
+          <span class="mat-tag">${matLabel(r.m)}</span>
+          <span style="font-weight:900;color:var(--blue)">›</span>
+        </div>`
+      })
     });
-    html+=`<div class="rp-sub"><span>${esc(t.name)}</span><span>${t.rows.length} дэр</span></div></div>`
+    html+=`<div class="rp-sub"><span>${esc(t.name)}</span><span>${t.n} дэр</span></div></div>`
   });
   html+=`<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N} дэр</span></div>`+
     `<div class="rp-sub" style="border:0"><span>Модон ${W} дэр</span><span>ТБД ${T} дэр</span></div>`;
@@ -4222,11 +4268,14 @@ function renderDerWrap(){
     <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
     <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
       <div class="folder-meta">${meta}</div></div></div>`;
+  const pn=planTotalCount();
   wrap.innerHTML=
     card('var(--g700)','var(--g100)','Орлого',
       inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй','openDerInc()')+
     card('var(--orange)','var(--orange-bg)','Зарлага',
-      out?`${out} дэр · сольсноор`:'Зарлага алга','openDerOut()')
+      out?`${out} дэр · сольсноор`:'Зарлага алга','openDerOut()')+
+    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
+      pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга','openPlanReport()')
 }
 function openDerInc(){renderDerInc();openModal('derIncModal')}
 function renderDerInc(){
@@ -10502,28 +10551,36 @@ function saveSwDzPlan(){
   if(!t.dPlan)t.dPlan={};
   t.dPlan[_swDzIdx]=_swPlL;
   const i=_swDzIdx;
-  saveDB();closeModal('swPlanModal');renderSwRec(i);renderSwFolderCards();
+  saveDB();closeModal('swPlanModal');renderSwRec(i);renderSwIncCards();
   showToast(`#${i-(t.head||0)+1} дүнз → ${swLen(_swPlL)} м-ээр солихоор төлөвлөв`,2800)
 }
 function clearSwDzPlan(){
   const t=swTurnout();if(!t||_swDzIdx<0)return;
   if(t.dPlan)delete t.dPlan[_swDzIdx];
   const i=_swDzIdx;
-  saveDB();closeModal('swPlanModal');renderSwRec(i);renderSwFolderCards();
+  saveDB();closeModal('swPlanModal');renderSwRec(i);renderSwIncCards();
   showToast('Төлөвлөгөө цуцлагдлаа')
 }
 // Төлөвлөсөн дүнзний жагсаалт — сум, дугаараар
 function collectSwPlan(){
   const out=[];
   swAllTurnouts().forEach(t=>{
-    const pl=t.dPlan||{},rows=[];
+    const pl=t.dPlan||{},rows=[];let fixM=0;
     Object.keys(pl).forEach(k=>{
       const i=parseInt(k,10),L=+pl[k];
       if(!L||isNaN(i))return;
-      rows.push({i,no:i-(t.head||0)+1,nom:swSlot(t,i).len,L})
+      const nom=swSlot(t,i).len;
+      // Сумын тэнцэхгүй хувь нь ПОГ/М-ээр бодогддог бөгөөд сольсон дүнз
+      // ҮРГЭЛЖ анхны уртаараа тооцогддог. Тиймээс тэнцэхгүй пог/м-ээс
+      // яг анхны урт нь хасагдана — нийт пог/м өөрчлөгдөхгүй.
+      if((t.it||'')[i]==='b')fixM+=nom;
+      rows.push({i,no:i-(t.head||0)+1,nom,L})
     });
     rows.sort((a,b)=>a.no-b.no);
-    if(rows.length)out.push({id:t.id,num:t.num,mak:t.mak,mark:t.mark,rows})
+    if(!rows.length)return;
+    const a=swTally(t);
+    out.push({id:t.id,num:t.num,mak:t.mak,mark:t.mark,rows,
+      m:a.m,mBad:a.mBad,mBad2:Math.max(0,a.mBad-fixM)})
   });
   return out
 }
@@ -10536,7 +10593,9 @@ function openSwPlanRep(){
     openModal('swPlanRepModal');return}
   let html='',by={},N=0,M=0;
   data.forEach(t=>{
-    html+=_swHd(`Сум ${t.num} · ${esc(t.mak)} · ${esc(t.mark)}`)
+    html+=`<div class="rp-track"><div class="rp-track-hd pl-hd">
+        <span>Сум ${t.num} · ${esc(t.mak)} · ${esc(t.mark)}</span>
+        ${_pctPair(t.mBad,t.mBad2,t.m)}</div>`
       +`<div class="sw-tr sw-tr-h"><span class="sw-c1">Дүнз</span><span class="sw-c2">Одоо</span>
          <span class="sw-c34">Төлөвлөсөн</span></div>`;
     t.rows.forEach(r=>{
@@ -10546,7 +10605,8 @@ function openSwPlanRep(){
         <span class="sw-c2">${swLen(r.nom)} м</span>
         <span class="sw-c34" style="color:var(--blue);font-weight:900">${swLen(r.L)} м ›</span></div>`
     });
-    html+=`<div class="rp-sub"><span>Сум ${t.num}</span><span>${t.rows.length} дүнз</span></div></div>`
+    html+=`<div class="rp-sub"><span>Сум ${t.num} · ${t.rows.length} дүнз</span>
+      <span>${swM(t.mBad)} → ${swM(t.mBad2)} тэнцэхгүй пог/м</span></div></div>`
   });
   // Уртаар нь: ш · урт (м) · нийт пог.м
   html+=_swHd('Уртаар нь')+
@@ -10810,12 +10870,7 @@ function renderSwFolderCards(){
     card('var(--purple)','var(--purple-bg)','Дараалсан дүнз',
       nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга','openSwRunRep()')+
     card('var(--blue)','var(--blue-bg)','Дүнзний бодит мэдээлэл',
-      nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга','openSwRealRep()')+
-    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',
-      (()=>{const pb=swPlanBy(),ks=Object.keys(pb);
-        if(!ks.length)return 'Төлөвлөгөө алга';
-        let n=0,m=0;ks.forEach(L=>{n+=pb[L];m+=pb[L]*L});
-        return `${n} ш · ${swM(m)} пог/м`})(),'openSwPlanRep()')
+      nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга','openSwRealRep()')
 }
 /* Дүнзний агуулах — паспортуудын жагсаалтын доор, дэрийнхтэй ижил байрлалд.
    Агуулах нь паспорт тус бүрийнх (f.inc) тул паспорт нээгээгүй бол хоосон. */
@@ -10828,10 +10883,11 @@ function renderSwIncCards(){
       <div class="folder-meta">${meta}</div></div></div>`;
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,m=0;ks.forEach(L=>{n+=o[L];m+=o[L]*L});return `${n} ш · ${swM(m)} пог/м`};
-  const i=sum(swIncBy()),u=sum(swOutBy());
+  const i=sum(swIncBy()),u=sum(swOutBy()),pn=sum(swPlanBy());
   wrap.innerHTML=
     card('var(--g700)','var(--g100)','Орлого',i||'Орлого бүртгээгүй','openSwInc()')+
-    card('var(--orange)','var(--orange-bg)','Зарлага',u||'Зарлага алга','openSwOut()')
+    card('var(--orange)','var(--orange-bg)','Зарлага',u||'Зарлага алга','openSwOut()')+
+    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',pn||'Төлөвлөгөө алга','openSwPlanRep()')
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
 /* ══════════════════════════════════════════════
@@ -11832,7 +11888,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.14·139';
+const APP_BUILD='2026.09.14·141';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
