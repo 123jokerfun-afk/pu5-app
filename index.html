@@ -3488,6 +3488,15 @@ const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,rec
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
+  /* Бүртгэлийн дэлгэцээс ГАРЧ байвал ухарч нээсэн үеийг жинхэнэ
+     дараалалд нь буцаана. Энэ бол ГАНЦ баталгаатай цэг: доод таб,
+     хажуу тийш шудрах, "Дүн", админ гэх мэт бүх гарц эцэстээ энд
+     ирдэг. Тус бүрт нь тусад нь дуудвал нэгийг нь мартахад үе
+     ухраасан хэвээрээ үлдэнэ. */
+  if(id!=='recordView'){
+    const av=document.querySelector('.view.active');
+    if(av&&av.id==='recordView')_revLeave()
+  }
   // Дэлгэц солигдоход нээлттэй үлдсэн цонхыг хаана. Эс тэгвэл хуучин цонх
   // шинэ дэлгэцийн дээр өлгөөтэй үлдэж, ард нь юу байгаа нь харагдахгүй.
   // Баталгаажуулах цонх нь хариулт хүлээж байдаг тул хөндөхгүй.
@@ -4974,20 +4983,23 @@ function _revSwap(sec){
   }
   return true
 }
-let _revOpen=null;                // ЯВАХ дарааллаар нээлттэй байгаа үе
+/* ЯВАХ дарааллаар нээлттэй байгаа үеийг ӨӨРИЙНХ нь объектоор санана.
+   Өмнө нь зөвхөн id-г санаж, эргүүлэхдээ activeTrack()-аас хайдаг байв.
+   Тэгэхээр үе нээлттэй байхад ӨӨР ЗАМ руу шилжвэл хайлт нь оносонгүй
+   бөгөөд тэр үе ухраасан хэвээрээ үлддэг байлаа. Объект нь хаана ч
+   яваа хамаагүй хэвээр тул одоо ямар ч замаар гарсан эргэнэ. */
+let _revOpen=null;
 function _revEnter(sec){
   if(!sec||!isRevTrack())return;
-  if(sec.rw){_revOpen=sec.id;return}
-  _revSwap(sec);sec.rw=1;_revOpen=sec.id;saveDB()
+  if(sec.rw){_revOpen=sec;return}
+  _revSwap(sec);sec.rw=1;_revOpen=sec;saveDB()
 }
 function _revLeave(){
-  if(!_revOpen)return;
-  const id=_revOpen;_revOpen=null;
-  const t=activeTrack();
-  const sec=(t&&(t.sections||[]).find(x=>x.id===id))||null;
-  if(!sec||!sec.rw)return;
+  const sec=_revOpen;if(!sec)return;
+  _revOpen=null;
+  if(!sec.rw)return;
   _revSwap(sec);delete sec.rw;saveDB();
-  const n=sec.sleepers.length;
+  const n=(sec.sleepers||[]).length;
   if(n>1)showToast(`${sec.label}: дугаар эргэлээ (#1 ↔ #${n})`,2400)
 }
 /* Апп унтрах, арын дэвсгэрт орох үед ч эргүүлж амжина */
@@ -4998,6 +5010,7 @@ addEventListener('pagehide',()=>_revLeave());
    удаашруулдаг тул толгойн "эхнээс → / ← ухарч" товчоор хүссэн үедээ
    солино. noAsk нь хуучин дуудлагуудтай нийцүүлэхийн тулд үлдсэн. */
 function openTrack(id,noAsk){
+  _revLeave();                        // өмнөх замд нээлттэй үлдсэн үеийг эргүүлнэ
   _fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView()
 }
 function askWalk(){
@@ -5015,6 +5028,10 @@ function askWalk(){
 function pickWalk(rev){
   const t=activeTrack();if(!t)return;
   hap(8);
+  // Чиглэл солихоос ӨМНӨ нээлттэй үлдсэн үеийг жинхэнэ дараалалд нь
+  // буцаана. Эс тэгвэл "эхнээс нь" рүү шилжсэн ч тэр үе ухраасан
+  // хэвээрээ үлдэнэ.
+  _revLeave();
   _revAsked[t.id]=1;
   if(rev)_revTrk[t.id]=1;else delete _revTrk[t.id];
   closeModal('walkModal');renderTrackView();
@@ -7600,6 +7617,7 @@ function addFolder(){
 }
 function openFolder(fid){
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
+  _revLeave();                       // DB.tracks солигдохоос ӨМНӨ эргүүлнэ
   activeFolderId=fid;DB.tracks=f.tracks;
   if(!DB.rpt)DB.rpt={};
   DB.rpt.season=f.season;DB.rpt.year=f.year;DB.rpt.yr=parseInt(f.year)||new Date().getFullYear();DB.rpt.date=f.date;
@@ -7609,6 +7627,7 @@ function openFolder(fid){
   setTimeout(()=>{const ts=document.getElementById('tracksSection');if(ts)ts.scrollIntoView({behavior:'smooth',block:'start'})},100)
 }
 function closeFolder(){
+  _revLeave();
   activeFolderId=null;DB.tracks=[];
   document.getElementById('tracksSection').style.display='none';
   renderHome()
@@ -11888,7 +11907,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.14·141';
+const APP_BUILD='2026.09.14·142';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
