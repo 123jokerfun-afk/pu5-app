@@ -491,6 +491,103 @@ ok('Үеэс гарахад тэмдэг жинхэнэ дугаар (#1) дээ
    ccar.back&&ccar.keys.length===1&&ccar.keys[0]==='0',JSON.stringify(ccar.keys));
 ok('Сийрэгжилтийн жагсаалтад орно',JSON.stringify(ccar.cv)==='[1]',JSON.stringify(ccar.cv));
 
+/* ══════════════════════════════════════════════════════════════
+   УХРАХ ГОРИМООС ГАРАХ БҮХ ЗАМ
+
+   Ухарч нээсэн үе нь ЯВАХ дарааллаар физикээр эргүүлэгдсэн байдаг
+   (sec.rw). Тэр үеэс ямар ч замаар гарсан ЖИНХЭНЭ дарааллаа эргэж
+   авах ёстой — эс тэгвэл паспортад дэрүүд эсрэгээрээ үлдэж, ПУ-5
+   дэвтэр буруу гарна. Доод таб, хажуу тийш шудрах, өөр зам, өөр
+   паспорт, "Дүн", гарах гэх мэт БҮХ гарцыг энд барина.
+   ══════════════════════════════════════════════════════════════ */
+console.log('\nУхрах горимоос гарах бүх зам');
+const _seedRev=()=>page.evaluate(()=>{
+  const mk=(id,lab,pat)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+    sleepers:pat.split('').map(c=>({type:c==='b'?'bad':'normal',ts:0}))});
+  DB.folders=[{id:'fr',name:'Хавар',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    tracks:[{id:'tr',num:2,kind:'station',note:'',sections:[
+      mk('r1','1-р үе','bnnnn'),mk('r2','2-р үе','nnnnb')]},
+            {id:'tr2',num:3,kind:'station',note:'',sections:[]}]},
+    {id:'fr2',name:'Намар',season:'намар',year:'2026',date:'2026-09-01',sc:'ПД-6',tracks:[]}];
+  DB.main=[];activeFolderId='fr';DB.tracks=DB.folders[0].tracks;
+  _revTrk={};_revAsked={};_revOpen=null;
+  DB.folders[0].tracks[0].sections.forEach(s=>delete s.rw);
+  saveDB();goHome()});
+// Паспорт солигдсон ч олдохоор бүх хавтаснаас хайна
+const _revState=()=>page.evaluate(()=>{
+  let t=null;
+  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(x=>{if(x.id==='tr')t=x}));
+  if(!t)return 'ЗАМ ОЛДСОНГҮЙ';
+  return (t.sections||[]).map(s=>s.label+'='+s.sleepers.map(x=>x.type==='bad'?'b':'n').join('')
+    +(s.rw?'[rw]':'')).join(' | ')});
+const TRUE_ORDER='1-р үе=bnnnn | 2-р үе=nnnnb';
+// Ухрах горимд 1-р үеийг нээгээд, дараа нь өгөгдсөн гарцаар гарна
+const _exit=code=>page.evaluate(async(c)=>{
+  openTrack('tr',1);await new Promise(r=>setTimeout(r,260));
+  pickWalk(true);await new Promise(r=>setTimeout(r,220));
+  openSection('r1');await new Promise(r=>setTimeout(r,300));
+  await (0,eval)('(async()=>{'+c+'})()');
+  await new Promise(r=>setTimeout(r,340))},code);
+
+const EXITS=[
+  ['Замын жагсаалт руу буцаад чиглэл солих',
+   "goTrack();await new Promise(r=>setTimeout(r,260));pickWalk(false)"],
+  ['Тэмдэглээд, арилгаад гарах',
+   "editIdx=0;openReplModal();await new Promise(r=>setTimeout(r,240));"+
+   "await saveRepl('normal');await new Promise(r=>setTimeout(r,320));"+
+   "editIdx=0;openReplModal();await new Promise(r=>setTimeout(r,220));"+
+   "clearRepl();await new Promise(r=>setTimeout(r,300));"+
+   "goTrack();await new Promise(r=>setTimeout(r,240));pickWalk(false)"],
+  ['Доод таб "Нүүр"','goTab("home")'],
+  ['Доод таб "Паспорт"','goTab("pass")'],
+  ['СШ ПУ-5 руу шудрах','goSwHome()'],
+  ['"Дүн" дэлгэц','showSummaryAll()'],
+  ['Өөр зам руу шилжих','openTrack("tr2",1)'],
+  ['Өөр паспорт руу шилжих','openFolder("fr2")'],
+  ['Үе хооронд шудраад буцах',
+   "navNextSection();await new Promise(r=>setTimeout(r,320));"+
+   "goTrack();await new Promise(r=>setTimeout(r,240));pickWalk(false)"],
+  ['Үеүүдийг ээлжлэн нээгээд гарах',
+   "openSection('r2');await new Promise(r=>setTimeout(r,280));"+
+   "openSection('r1');await new Promise(r=>setTimeout(r,280));goTab('home')"],
+];
+for(const [name,code] of EXITS){
+  await _seedRev();
+  await _exit(code);
+  const st=await _revState();
+  ok('Гарц: '+name,st===TRUE_ORDER,st)
+}
+/* Гарах нь өгөгдлийг цэвэрлэдэг тул хэсгээ УРЬДЧИЛАН барьж аваад шалгана */
+await _seedRev();
+const outSt=await page.evaluate(async()=>{
+  openTrack('tr',1);await new Promise(r=>setTimeout(r,260));
+  pickWalk(true);await new Promise(r=>setTimeout(r,220));
+  openSection('r1');await new Promise(r=>setTimeout(r,300));
+  let t=null;(DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(x=>{if(x.id==='tr')t=x}));
+  doLogout();await new Promise(r=>setTimeout(r,420));
+  return (t.sections||[]).map(s=>s.label+'='+s.sleepers.map(x=>x.type==='bad'?'b':'n').join('')
+    +(s.rw?'[rw]':'')).join(' | ')});
+ok('Гарц: Аппаас гарах',outSt===TRUE_ORDER,outSt);
+await B.login(page,'ПД-6');
+
+/* Ухрахад тэмдэглэсэн солилт ЖИНХЭНЭ дугаар дээрээ очих ёстой:
+   ухрах дарааллын #5 нь жинхэнэ #1 (тэнцэхгүй нь) юм */
+await _seedRev();
+const revMark=await page.evaluate(async()=>{
+  openTrack('tr',1);await new Promise(r=>setTimeout(r,260));
+  pickWalk(true);await new Promise(r=>setTimeout(r,220));
+  openSection('r1');await new Promise(r=>setTimeout(r,320));
+  editIdx=4;_replY=2026;_replM=6;_replD=1;
+  await saveRepl('normal');await new Promise(r=>setTimeout(r,340));
+  goTab('home');await new Promise(r=>setTimeout(r,340));
+  let t=null;(DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(x=>{if(x.id==='tr')t=x}));
+  const s=t.sections[0];
+  return{keys:Object.keys(s.repl||{}),
+    pat:s.sleepers.map(x=>x.type==='bad'?'b':'n').join(''),rw:!!s.rw}});
+ok('Ухрахад сольсон тэмдэг жинхэнэ #1 дээрээ очно',
+   revMark.keys.length===1&&revMark.keys[0]==='0'&&revMark.pat==='nnnnn'&&!revMark.rw,
+   JSON.stringify(revMark));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
