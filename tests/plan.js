@@ -351,6 +351,82 @@ const swd=await page.evaluate(()=>{
 ok('Сум устахад түүний дүнзний төлөвлөгөө хамт арилна',
    swd.a===1&&swd.b===0,`${swd.a} → ${swd.b}`);
 
+/* ── 9. Сумын рам замын дэр (2,75 м) ──
+   Сумын дүнд ордоггүй ч ДЭР л тул төлөвлөгөө нь дүнзнийхтэй биш,
+   ДЭРИЙН төлөвлөгөөтэй нийлж, дэрийн агуулахаас гарна. */
+console.log('\nСумын рам замын дэр');
+await page.evaluate(()=>{
+  let it='bbn';for(let i=0;i<40;i++)it+=i<3?'b':'n';
+  DB.sw=[{id:'sfh',name:'Намар 2026',season:'намар',year:'2026',date:'2026-09-10',sc:'ПД-6',
+    turnouts:[{id:'wh',num:3,station:'Шивээговь',mak:'Р-65',mark:'1/9',head:3,it,dRepl:{},dPlan:{}}],
+    inc:[{id:'i1',d:'2026-05-01',items:[{L:3,n:6}]}]}];
+  swFolderId='sfh';DB.sinc=[{id:'dh',d:'2026-05-01',n:50}];
+  // Өмнөх шалгалтуудын дэрийн төлөвлөгөө, солилтоос салгана
+  const wipe=t=>(t.sections||[]).forEach(x=>{delete x.repl;delete x.plan});
+  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(wipe));
+  (DB.main||[]).forEach(wipe);
+  activeFolderId='f-test1';DB.tracks=DB.folders[0].tracks;saveDB()});
+const slp=await page.evaluate(async()=>{
+  swTurnoutId='wh';showView('swRecView');renderSwRec();await new Promise(r=>setTimeout(r,340));
+  openSwSl(1);await new Promise(r=>setTimeout(r,240));
+  const btns=[...document.querySelectorAll('#swSlModal .etb')].map(b=>b.id||'');
+  const pb=document.getElementById('swSlPlanBtn'),rb=document.getElementById('swSlReplBtn');
+  const above=pb.compareDocumentPosition(rb)&Node.DOCUMENT_POSITION_FOLLOWING?1:0;
+  openSwSlPlan();await new Promise(r=>setTimeout(r,300));
+  const title=document.getElementById('planTitle').textContent;
+  const stock=document.getElementById('planStock').textContent.replace(/\s+/g,' ').trim();
+  savePlan('tbd');await new Promise(r=>setTimeout(r,320));
+  const t=swTurnout(),rows=[...document.querySelectorAll('#swLog .drow.dr-rec')];
+  return{btns,above,title,stock,plan:t.slPlan&&t.slPlan[1],n:planTotalCount(),
+    pin:!!rows[1].querySelector('.pl-pin'),none:!rows[0].querySelector('.pl-pin'),
+    cls:rows[1].className,swN:swPlanTotal()}});
+ok('Рам замын дэр засах цонхонд "Солихоор төлөвлөх" гарна',
+   slp.btns.indexOf('swSlPlanBtn')>=0,JSON.stringify(slp.btns));
+ok('Сольсон мэдээллийн ДЭЭР байна',slp.above===1,String(slp.above));
+ok('Гарчиг нь сум, рам замыг заана',/Сум 3 · рам зам төмөр #2/.test(slp.title),slp.title);
+ok('ДЭРИЙН агуулахын үлдэгдэл харагдана',/Агуулахад 50 дэр/.test(slp.stock),slp.stock.slice(0,52));
+ok('Төлөвлөгөө хадгалагдана',slp.plan==='tbd',String(slp.plan));
+ok('ДЭРИЙН төлөвлөгөөнд тоологдоно, дүнзнийхэд ОРОХГҮЙ',
+   slp.n===1&&slp.swN===0,`дэр ${slp.n} · дүнз ${slp.swN}`);
+ok('Жагсаалт дээр хадаас, цэнхэр хүрээ гарна',
+   slp.pin&&slp.none&&/dr-plan/.test(slp.cls),slp.cls);
+
+const slrep=await page.evaluate(async()=>{
+  goHome();await new Promise(r=>setTimeout(r,340));
+  openPlanReport();await new Promise(r=>setTimeout(r,320));
+  return{heads:[...document.querySelectorAll('#planRepBody .rp-track-hd')].map(e=>e.textContent.trim()),
+    rows:[...document.querySelectorAll('#planRepBody .pl-row')].map(e=>e.textContent.replace(/\s+/g,' ').trim()),
+    tot:(document.querySelector('#planRepBody .rp-total')||{}).textContent||''}});
+ok('Төлөвлөсөн дэрийн жагсаалтад "3-р сум" бүлэг гарна',
+   slrep.heads.indexOf('3-р сум')>=0,JSON.stringify(slrep.heads));
+ok('Мөр нь "Рам зам төмөр · #2 · ТБД" гэж гарна',
+   slrep.rows.some(x=>/Рам зам төмөр #2 ТБД/.test(x)),JSON.stringify(slrep.rows));
+ok('Нийт төлөвлөсөн дэрд тоологдоно',/1 дэр/.test(slrep.tot),slrep.tot);
+
+const sljump=await page.evaluate(async()=>{
+  document.querySelector('#planRepBody .pl-row').click();
+  await new Promise(r=>setTimeout(r,440));
+  return{view:document.querySelector('.view.active').id,tid:swTurnoutId,
+    open:document.getElementById('planRepModal').classList.contains('open')}});
+ok('Мөр дарахад тэр сумын бүртгэл рүү шууд очно',
+   sljump.view==='swRecView'&&sljump.tid==='wh'&&!sljump.open,
+   `${sljump.view} · ${sljump.tid}`);
+
+const sldone=await page.evaluate(async()=>{
+  openSwSl(1);await new Promise(r=>setTimeout(r,220));
+  openSwSlRepl();await new Promise(r=>setTimeout(r,300));
+  await saveRepl('tbd');await new Promise(r=>setTimeout(r,340));
+  const t=swTurnout(),rows=[...document.querySelectorAll('#swLog .drow.dr-rec')];
+  return{plan:!!(t.slPlan&&t.slPlan[1]),repl:!!(t.slRepl&&t.slRepl[1]),
+    n:planTotalCount(),pin:!!rows[1].querySelector('.pl-pin'),
+    out:derOutN(),rows:derOutRows().map(r=>r.grp+'/'+r.name+'='+r.n),st:derStock()}});
+ok('Сольсны дараа төлөвлөгөө, тэмдэг хоёулаа арилна',
+   !sldone.plan&&sldone.repl&&sldone.n===0&&!sldone.pin,
+   `төлөвлөгөө ${sldone.plan} · солилт ${sldone.repl} · тэмдэг ${sldone.pin}`);
+ok('Рам замын солилт ДЭРИЙН зарлагад орж, үлдэгдэл буурна',
+   sldone.out===1&&sldone.rows.some(x=>/Сумын рам зам\/3-р сум=1/.test(x))&&sldone.st===49,
+   JSON.stringify(sldone.rows)+' · үлдэгдэл '+sldone.st);
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
