@@ -629,6 +629,27 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
    Сүүдэр биш ХҮРЭЭ ашигласан нь бөмбөрөгийн "одоо таарсан мөр"-ийн
    гэрэлтэлттэй (.dr-in) зөрчилдөхгүйн тулд. */
 .drow.dr-plan{border-color:var(--blue);border-width:2.5px}
+/* ── Салбар замын нүүр: Зам / Сум хоёр цонх ── */
+.br-tabs{display:flex;gap:8px;margin:2px 0 4px}
+.br-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 8px;border-radius:var(--rm);border:1.5px solid var(--border);
+  background:var(--card);color:var(--ink3);font-family:inherit;cursor:pointer;
+  min-height:48px;transition:border-color .15s,background .15s}
+.br-tab.sel{border-color:var(--purple);background:var(--purple-bg);color:var(--purple)}
+/* Тоо нь ПАСПОРТЫН тоо — доор нь шууд "Паспортууд" гэсэн жагсаалт гарна */
+.br-tab-n{font-size:12px;font-weight:900;line-height:1;min-width:20px;padding:3px 6px;
+  border-radius:7px;background:var(--bg);color:var(--ink3)}
+.br-tab.sel .br-tab-n{background:rgba(255,255,255,.22);color:inherit}
+.br-tab-l{font-size:14px;font-weight:900;letter-spacing:.02em}
+/* Бүртгэсэн дүнгийн нүднүүд — гурав гурваар эвхэгдэнэ */
+.br-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.br-st{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rs);
+  padding:9px 6px;text-align:center;min-width:0}
+.br-st-n{font-size:16px;font-weight:900;line-height:1.15;
+  font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.br-st-l{font-size:9.5px;font-weight:700;color:var(--ink4);margin-top:2px;
+  text-transform:uppercase;letter-spacing:.03em}
+.br-hint{text-align:center;padding:12px;color:var(--ink4);font-size:12px;font-weight:600}
 /* Солихоор төлөвлөсөн — төрлийн ард цэнхэр хадаасны тэмдэг. Эможи биш
    SVG ашигласан нь: эможи утас бүр дээр өөр өнгө, өөр хэмжээтэй
    зурагддаг бол энэ нь хаана ч ЦЭНХЭР, ижил хэмжээтэй гарна. */
@@ -1765,16 +1786,67 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   </div>
   <div class="home-body" style="padding:14px 14px 40px">
     <div class="lp-hint" id="brSwipeHint">← Хажуу тийш шудран Дэр ПУ-5 руу буцна</div>
-    <div class="sec-lbl" style="margin-top:4px">Замын дэр</div>
-    <div id="brDerGrid"></div>
-    <button class="add-track-btn" onclick="openAddFolder(1)" style="margin-top:8px">
-      <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--purple)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Дэрийн паспорт нэмэх
-    </button>
-    <div class="sec-lbl" style="margin-top:18px">Сумын дүнз</div>
-    <div id="brSwGrid"></div>
-    <button class="add-track-btn" onclick="openAddSwFolder(1)" style="margin-top:8px">
-      <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Дүнзний паспорт нэмэх
-    </button>
+    <!-- Хоёр цонх: Зам ба Сум. Салбар замын бүх ажил ЭНД хийгдэнэ —
+         өртөөний нүүр рүү үсрэхгүй. -->
+    <div class="br-tabs">
+      <button class="br-tab sel" id="brTabTr" onclick="brTab('tr')">
+        <span class="br-tab-l">Зам</span><span class="br-tab-n" id="brTabTrN">0</span></button>
+      <button class="br-tab" id="brTabSw" onclick="brTab('sw')">
+        <span class="br-tab-l">Сум</span><span class="br-tab-n" id="brTabSwN">0</span></button>
+    </div>
+
+    <!-- ═══ ЗАМ ═══ -->
+    <div id="brTrPane">
+      <div class="sec-lbl" style="margin-top:4px">Паспортууд</div>
+      <div id="brDerGrid"></div>
+      <button class="add-track-btn" onclick="openAddFolder(1)" style="margin-top:8px">
+        <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--purple)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Дэрийн паспорт нэмэх
+      </button>
+      <div id="brTrStats" style="margin-top:12px"></div>
+      <div id="brTrOpen" style="display:none">
+        <div class="sec-lbl" style="margin-top:18px">Замууд</div>
+        <div class="tracks-grid stagger" id="brTrGrid"></div>
+        <button class="add-track-btn" onclick="openAddTrack()" style="margin-top:8px">
+          <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Зам нэмэх
+        </button>
+        <div class="sec-lbl" style="margin-top:18px">Хавтаснууд</div>
+        <div id="brTrFolders" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="sec-lbl" style="margin-top:18px">Дэрийн агуулах</div>
+        <div id="brDerWrap" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="sec-lbl" style="margin-top:18px">Экспорт</div>
+        <button class="add-track-btn" onclick="exportPu5Book('folder')" style="border-color:var(--g400);color:var(--g700)">
+          <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
+        </button>
+        <button class="add-track-btn" onclick="openThresholdExport()" style="border-color:var(--blue-mid);color:var(--blue);margin-top:8px">
+          <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Excel тайлан
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══ СУМ ═══ -->
+    <div id="brSwPane" style="display:none">
+      <div class="sec-lbl" style="margin-top:4px">Паспортууд</div>
+      <div id="brSwGrid"></div>
+      <button class="add-track-btn" onclick="openAddSwFolder(1)" style="margin-top:8px">
+        <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Дүнзний паспорт нэмэх
+      </button>
+      <div id="brSwStats" style="margin-top:12px"></div>
+      <div id="brSwOpen" style="display:none">
+        <div class="sec-lbl" style="margin-top:18px">Сумууд</div>
+        <div id="brSwTurnouts"></div>
+        <button class="add-track-btn" onclick="openSwTurnout()" style="border-color:#C084FC;color:#7E22CE;margin-top:8px">
+          <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сум нэмэх
+        </button>
+        <div class="sec-lbl" style="margin-top:18px">Хавтаснууд</div>
+        <div id="brSwFolders" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="sec-lbl" style="margin-top:18px">Дүнзний агуулах</div>
+        <div id="brSwWrap" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="sec-lbl" style="margin-top:18px">Экспорт</div>
+        <button class="add-track-btn" onclick="exportSwForms()" style="border-color:var(--g400);color:var(--g700)">
+          <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3522,6 +3594,8 @@ function showView(id,back){
 }
 function goHome(){
   _revLeave();
+  // Салбар замаас орж ирсэн бол өртөөний нүүр рүү биш, тийшээ буцна
+  if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
   _navBack=true;showView('homeView');
   const ts=document.getElementById('tracksSection');
   if(ts)ts.style.display=activeFolderId?'block':'none';
@@ -4929,7 +5003,7 @@ function addTrack(){
     if((DB.tracks||[]).find(t=>t.name===nm)){showToast(nm+' аль хэдийн байна');return}
     // Дэр нь өртөөний замтай ижилхэн бүртгэгдэнэ
     DB.tracks.push({id:uid(),num:(DB.tracks||[]).length+1,kind:'station',name:nm,note,sections:[]});
-    saveDB();closeModal('addTrackModal');renderHome();return
+    saveDB();closeModal('addTrackModal');_derRefresh();return
   }
   // Гол зам нь паспортад биш, тусдаа байрладаг тул энд зөвхөн өртөөний зам
   const num=parseInt(document.getElementById('atNum').value);
@@ -4937,7 +5011,7 @@ function addTrack(){
   if(DB.tracks.find(t=>!isMainTrack(t)&&t.num===num)){showToast(`${num}-р зам аль хэдийн байна`);return}
   const newTrack={id:uid(),num,kind:'station',note,sections:[]};
   DB.tracks.push(newTrack);
-  sortTracks();saveDB();closeModal('addTrackModal');renderHome()
+  sortTracks();saveDB();closeModal('addTrackModal');_derRefresh()
 }
 function sortTracks(){DB.tracks.sort((a,b)=>a.num-b.num)}
 /* ── ЯВАХ ЧИГЛЭЛ ─────────────────────────────────────────────
@@ -5056,7 +5130,9 @@ async function deleteTrack(){
   if(main)DB.main=mainTracks().filter(x=>x.id!==activeTrackId);
   else DB.tracks=DB.tracks.filter(x=>x.id!==activeTrackId);
   activeTrackId=null;saveDB();
-  if(main)openMainKmList();else goHome()
+  if(main){openMainKmList();return}
+  if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
+  goHome()
 }
 
 // ══════════════════════════════════════════════
@@ -7624,9 +7700,13 @@ function addFolder(){
   const yr=document.getElementById('afYear').value||new Date().getFullYear()+'';
   const date=document.getElementById('afDate').value||new Date().toISOString().slice(0,10);
   const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[],sc:_sectionCode||''};
-  if(_brNew)folder.br=1;
+  const br=!!_brNew;
+  if(br)folder.br=1;
   DB.folders.push(folder);saveDB();closeModal('addFolderModal');
-  openFolder(folder.id)
+  // Салбар замынх бол салбарын дэлгэцэн дээрээ нээнэ — өртөө рүү үсрэхгүй
+  if(br||document.getElementById('brHomeView').classList.contains('active'))
+    openBrFolder(folder.id);
+  else openFolder(folder.id)
 }
 function openFolder(fid){
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
@@ -8175,6 +8255,7 @@ function _renderCurrentView(){
   const av=document.querySelector('.view.active');if(!av)return;
   switch(av.id){
     case 'homeView':renderHome();break;
+    case 'brHomeView':renderBrHome();break;
     case 'trackView':renderTrackView();break;
     case 'recordView':renderRecordView();break;
   }
@@ -9735,27 +9816,210 @@ function _brCard(f,onOpen,onDel,col){
       <button class="rb-btn" style="flex-shrink:0;color:var(--red);border-color:rgba(220,60,60,.35)" onclick="event.stopPropagation();${onDel}">Устгах</button>
     </div></div>`
 }
+/* ══════════════════════════════════════════════
+   САЛБАР ЗАМЫН НҮҮР — БҮХ АЖИЛ ЭНД
+
+   Өмнө нь паспорт дээр дарахад өртөөний нүүр рүү, сумын паспорт
+   нэмэхэд СШ-ийн нүүр рүү үсэрч, хэрэглэгч хаана байгаагаа алддаг
+   байв. Одоо салбар зам бүхэлдээ ЭНЭ дэлгэцэнд төвлөрнө: дээрээ
+   "Зам / Сум" хоёр цонх, доор нь паспорт, бүртгэл, дүн, хавтас,
+   агуулах, экспорт бүгд байрлана.
+   ══════════════════════════════════════════════ */
+let _brPane='tr';            // аль цонх нээлттэй вэ
+let _brMode=false;           // салбар замаас орж ирсэн эсэх (буцахад хэрэгтэй)
+function brTab(p){
+  _brPane=p==='sw'?'sw':'tr';hap(6);
+  renderBrHome();
+  const b=document.getElementById('brHomeView');
+  if(b)b.scrollTop=0
+}
+/* Дүнгийн нүднүүд — нэг мөрөнд багтах жижиг хайрцгууд */
+function _brStats(cells){
+  return `<div class="br-stats">`+cells.map(c=>
+    `<div class="br-st"><div class="br-st-n" style="color:${c[2]||'var(--ink)'}">${c[1]}</div>
+      <div class="br-st-l">${c[0]}</div></div>`).join('')+`</div>`
+}
 function renderBrHome(){
   const sub=document.getElementById('brSub');
   if(sub)sub.textContent=(DB.location||'')+' · '+brNames().length+' зам';
-  const dg=document.getElementById('brDerGrid');
-  if(dg){
-    const fl=brFolders();
-    dg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openBrFolder('${f.id}')`,
-      `deleteFolder('${f.id}',event)`,'var(--purple)')).join('')
-      :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>'
-  }
-  const sg=document.getElementById('brSwGrid');
-  if(sg){
-    const fl=brSwFolders();
-    sg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openSwFolderView('${f.id}')`,
-      `delSwFolderById('${f.id}',event)`,'var(--gold-deep)')).join('')
-      :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>'
-  }
+  const trOn=_brPane==='tr';
+  ['brTabTr','brTabSw'].forEach((id,i)=>{
+    const e=document.getElementById(id);
+    if(e)e.classList.toggle('sel',i===0?trOn:!trOn)});
+  const tp=document.getElementById('brTrPane'),sp=document.getElementById('brSwPane');
+  if(tp)tp.style.display=trOn?'block':'none';
+  if(sp)sp.style.display=trOn?'none':'block';
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set('brTabTrN',brFolders().length);
+  set('brTabSwN',brSwFolders().length);
+  const tt=document.getElementById('brTabTr'),ts2=document.getElementById('brTabSw');
+  if(tt)tt.title=brFolders().length+' паспорт';
+  if(ts2)ts2.title=brSwFolders().length+' паспорт';
+  trOn?_brRenderTracks():_brRenderSw()
 }
-/* Салбар замын паспортыг нээхэд ердийн нүүр рүү орно — тэндээс замууд нь
-   ердийн журмаар бүртгэгдэнэ. Зөвхөн зам НЭМЭХ нь нэрийн хүрдтэй. */
-function openBrFolder(fid){showView('homeView');openFolder(fid)}
+/* ── ЗАМ ── */
+function _brRenderTracks(){
+  const dg=document.getElementById('brDerGrid');
+  const fl=brFolders();
+  if(dg)dg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openBrFolder('${f.id}')`,
+      `deleteFolder('${f.id}',event)`,'var(--purple)')).join('')
+    :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';
+  const open=isBrFolder()?(DB.folders||[]).find(x=>x.id===activeFolderId):null;
+  const box=document.getElementById('brTrOpen');
+  if(box)box.style.display=open?'block':'none';
+  const st=document.getElementById('brTrStats');
+  if(!open){
+    if(st)st.innerHTML='<div class="br-hint">Паспорт дээр дарж бүртгэл рүү орно</div>';
+    return}
+  // Бүртгэсэн дүн — зөвхөн нээлттэй паспортынх
+  const trs=(open.tracks||[]).filter(t=>!isMainTrack(t));
+  let tot=0,bad=0,tbd=0,wood=0;
+  trs.forEach(t=>{const a=analyzeTrack(t);
+    tot+=a.total;bad+=a.totalBad;tbd+=a.tbd+a.bad_tbd;wood+=a.normal+a.bad});
+  const pct=tot?bad/tot*100:0;
+  const pc=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
+  if(st)st.innerHTML=_brStats([
+    ['Зам',trs.length],['Нийт дэр',tot],['Тэнцэх',tot-bad,'var(--g700)'],
+    ['Модон',wood],['Бетон',tbd,'var(--red)'],
+    ['Тэнцэхгүй',tot?pct.toFixed(1)+'%':'—',pc]]);
+  // Замын хайрцгууд
+  const g=document.getElementById('brTrGrid');
+  if(g)g.innerHTML=trs.length?trs.map(t=>{
+    const a=analyzeTrack(t),p=a.total?a.totalBad/a.total*100:0;
+    const col=p>=25?'var(--red)':p>=15?'var(--orange)':'var(--g600)';
+    return`<div class="track-card" onclick="hap();openBrTrack('${t.id}')">
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <div class="track-card-num">${t.num}</div><div class="track-card-unit">${trackUnit(t)}</div>
+      </div>
+      ${t.name?`<div class="track-card-note">${esc(t.name)}</div>`:''}
+      <div class="track-card-chips" style="margin-top:8px">
+        <span class="chip" style="background:var(--bg);color:var(--ink3)">Нийт: ${a.total}</span>
+        ${a.totalBad?`<span class="chip" style="background:var(--orange-bg);color:var(--orange)">Тэнцэхгүй: ${a.totalBad}</span>`:''}
+      </div>
+      <div class="track-footer">
+        <span class="track-sec-count">${dataSections(t).length} үе</span>
+        ${p>0?`<span style="font-size:11px;font-weight:900;color:${col}">${p.toFixed(1)}%</span>`:''}
+      </div></div>`}).join('')
+    :'<div style="grid-column:span 2;text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';
+  // Хавтаснууд — өртөөнийхтэй ижил тайлангууд
+  const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCount();
+  const fw=document.getElementById('brTrFolders');
+  if(fw)fw.innerHTML=
+    _brFolderCard('var(--red)','var(--red-bg)','Солигдсон дэр',
+      n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга','openReplReport()')+
+    _brFolderCard('var(--purple)','var(--purple-bg)','Дараалсан цэг',
+      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй','openConsecReport()')+
+    _brFolderCard('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
+      pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга','openPlanReport()');
+  // Дэрийн агуулах — хэсгийн түвшинд ганц тул өртөөнийхтэй нэг
+  const inc=derIncN(),out=derOutN(),stk=derStock();
+  const dw=document.getElementById('brDerWrap');
+  if(dw)dw.innerHTML=
+    _brFolderCard('var(--g700)','var(--g100)','Орлого',
+      inc?`${inc} дэр · үлдэгдэл ${stk}`:'Орлого бүртгээгүй','openDerInc()')+
+    _brFolderCard('var(--orange)','var(--orange-bg)','Зарлага',
+      out?`${out} дэр · сольсноор`:'Зарлага алга','openDerOut()')
+}
+function _brFolderCard(color,bg,name,meta,fn){
+  return `<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
+    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
+      <div class="folder-meta">${meta}</div></div></div>`
+}
+/* ── СУМ ── */
+function _brRenderSw(){
+  const sg=document.getElementById('brSwGrid');
+  const fl=brSwFolders();
+  if(sg)sg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openBrSwFolder('${f.id}')`,
+      `delSwFolderById('${f.id}',event)`,'var(--gold-deep)')).join('')
+    :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';
+  const f=swFolder(),open=f&&f.br?f:null;
+  const box=document.getElementById('brSwOpen');
+  if(box)box.style.display=open?'block':'none';
+  const st=document.getElementById('brSwStats');
+  if(!open){
+    if(st)st.innerHTML='<div class="br-hint">Паспорт дээр дарж сумууд руу орно</div>';
+    return}
+  const ts=(open.turnouts||[]).slice().sort((a,b)=>a.num-b.num);
+  let nD=0,m=0,mB=0,bd=0;
+  ts.forEach(t=>{const a=swTally(t);nD+=a.total;m+=a.m;mB+=a.mBad;bd+=a.bad});
+  const pct=m?mB/m*100:0;
+  const pc=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
+  if(st)st.innerHTML=_brStats([
+    ['Сум',ts.length],['Нийт дүнз',nD],['Тэнцэх',nD-bd,'var(--g700)'],
+    ['Нийт пог/м',swM(m)],['Тэнцэхгүй пог/м',swM(mB),'var(--orange)'],
+    ['Тэнцэхгүй',m?pct.toFixed(1)+'%':'—',pc]]);
+  const g=document.getElementById('brSwTurnouts');
+  if(g)g.innerHTML=ts.length?ts.map(t=>{
+    const a=swTally(t),pl=swPlanned(t),done=(t.it||'').length;
+    const col=!done?'var(--ink4)':a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
+    return`<div class="sw-card" onclick="hap();openBrSwRec('${t.id}')">
+      <div class="sw-card-top">
+        <div style="min-width:0">
+          <div class="sw-card-name">Сум ${t.num}<span class="sw-tag">${esc(t.mak)}</span><span class="sw-tag">${esc(t.mark)}</span></div>
+          <div class="sw-card-sub">${esc(t.station||'—')}</div>
+        </div>
+        <span class="sw-badge">${done}<span style="opacity:.55">/${pl}</span></span>
+      </div>
+      ${done?`<div class="sw-st">
+        <div class="sw-st-c"><div class="sw-st-n">${a.total}</div><div class="sw-st-s">${swM(a.m)} пог/м</div><div class="sw-st-l">Нийт дүнз</div></div>
+        <div class="sw-st-c"><div class="sw-st-n" style="color:var(--orange)">${a.bad}</div><div class="sw-st-s">${swM(a.mBad)} пог/м</div><div class="sw-st-l">Тэнцэхгүй</div></div>
+        <div class="sw-st-c"><div class="sw-st-n" style="color:${col}">${a.m?a.pct.toFixed(1)+'%':'—'}</div><div class="sw-st-s">пог/м-ээр</div><div class="sw-st-l">Эзлэх хувь</div></div>
+      </div>`:'<div class="sw-empty-line">Бүртгэл эхлээгүй — дарж эхэлнэ үү</div>'}
+    </div>`}).join('')
+    :'<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Сум нэмнэ үү</div>';
+  // Хавтаснууд ба агуулах
+  let nRepl=0,mRepl=0,nRun=0;
+  ts.forEach(t=>{const rows=swReplRows(t);
+    nRepl+=rows.length;rows.forEach(r=>mRepl+=r.nom);nRun+=swRuns(t).length});
+  const fw=document.getElementById('brSwFolders');
+  if(fw)fw.innerHTML=
+    _brFolderCard('var(--red)','var(--red-bg)','Сольсон дүнз',
+      nRepl?`${nRepl} ш · ${swM(mRepl)} пог/м`:'Бүртгэл алга','openSwReplRep()')+
+    _brFolderCard('var(--purple)','var(--purple-bg)','Дараалсан дүнз',
+      nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга','openSwRunRep()')+
+    _brFolderCard('var(--blue)','var(--blue-bg)','Дүнзний бодит мэдээлэл',
+      nRepl?`${nRepl} солилт`:'Бүртгэл алга','openSwRealRep()');
+  const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
+    let n=0,mm=0;ks.forEach(L=>{n+=o[L];mm+=o[L]*L});return `${n} ш · ${swM(mm)} пог/м`};
+  const sw=document.getElementById('brSwWrap');
+  if(sw)sw.innerHTML=
+    _brFolderCard('var(--g700)','var(--g100)','Орлого',
+      sum(swIncBy())||'Орлого бүртгээгүй','openSwInc()')+
+    _brFolderCard('var(--orange)','var(--orange-bg)','Зарлага',
+      sum(swOutBy())||'Зарлага алга','openSwOut()')+
+    _brFolderCard('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',
+      sum(swPlanBy())||'Төлөвлөгөө алга','openSwPlanRep()')
+}
+/* Паспорт нээхэд ЭНД л үлдэнэ — өртөөний нүүр рүү үсрэхгүй */
+function openBrFolder(fid){
+  const f=(DB.folders||[]).find(x=>x.id===fid);if(!f)return;
+  _revLeave();
+  if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];renderBrHome();return}
+  activeFolderId=fid;DB.tracks=f.tracks;
+  if(!DB.rpt)DB.rpt={};
+  DB.rpt.season=f.season;DB.rpt.year=f.year;
+  DB.rpt.yr=parseInt(f.year)||new Date().getFullYear();DB.rpt.date=f.date;
+  _brPane='tr';renderBrHome();
+  const box=document.getElementById('brTrOpen');
+  if(box)setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'start'}),120)
+}
+function openBrSwFolder(id){
+  if(swFolderId===id){swFolderId=null;renderBrHome();return}
+  swFolderId=id;_brPane='sw';renderBrHome();
+  const box=document.getElementById('brSwOpen');
+  if(box)setTimeout(()=>box.scrollIntoView({behavior:'smooth',block:'start'}),120)
+}
+/* Бүртгэлийн дэлгэц рүү орохдоо "салбараас ирсэн" гэж тэмдэглэнэ —
+   буцах товч өртөөний нүүр рүү биш, энд буцаана */
+function openBrTrack(id){_brMode=true;openTrack(id,1)}
+function openBrSwRec(id){_brMode=true;openSwRec(id)}
+/* Салбар замын дэлгэцэн дээр байхад өртөө/СШ-ийн НУУГДСАН нүүрийг
+   дүрслэх нь дэмий бөгөөд салбарын дүн шинэчлэгдэхгүй үлдэнэ. Тиймээс
+   зам/сум нэмэх, устгах зэрэгт ИДЭВХТЭЙ нүүрээ л шинэчилнэ. */
+function _onBr(){return (document.querySelector('.view.active')||{}).id==='brHomeView'}
+function _swRefresh(){_onBr()?renderBrHome():renderSwHome()}
+function _derRefresh(){_onBr()?renderBrHome():renderHome()}
 function isBrFolder(){
   const f=(DB.folders||[]).find(x=>x.id===activeFolderId);return !!(f&&f.br)
 }
@@ -9911,6 +10175,9 @@ async function delSwFolderById(id,e){
 // Дэрийн паспорт шиг — дэлгэц солихгүй, нүүрэн дээрээ доор нь задарна
 function openSwFolderView(id){
   swFolderId=id;
+  // Салбар замын дэлгэцэн дээр байвал тэндээ үлдэнэ
+  if(document.getElementById('brHomeView').classList.contains('active')){
+    _brPane='sw';renderBrHome();return}
   if(!document.getElementById('swHomeView').classList.contains('active'))showView('swHomeView');
   renderSwHome();                       // хэсгийг өөрөө нээж, дүнг шинэчилнэ
   const sec=document.getElementById('swTurnoutsSection');
@@ -9993,7 +10260,7 @@ function addSwTurnout(){
     station:(document.getElementById('swtStation').value||'').trim(),
     mak:_swMak,mark:_swMark,proj:_swProj,head:null,it:''};
   (f.turnouts||(f.turnouts=[])).push(t);
-  saveDB();closeModal('swTurnoutModal');renderSwHome();
+  saveDB();closeModal('swTurnoutModal');_swRefresh();
   showToast(`✓ Сум ${num} · ${t.mak} · ${t.mark} нэмэгдлээ`,2600)
 }
 // Устгах товч нь ЗӨВХӨН удаан дарж идэвхжүүлсний дараа ажиллана.
@@ -10016,13 +10283,15 @@ async function confirmDelSwTurnout(id){
   if(!await appConfirm(msg,'Тийм','Үгүй'))return;
   f.turnouts=(f.turnouts||[]).filter(x=>x.id!==id);
   if(swTurnoutId===id)swTurnoutId=null;
-  saveDB();renderSwHome();showToast(`Сум ${t.num} устлаа`)
+  saveDB();_swRefresh();showToast(`Сум ${t.num} устлаа`)
 }
 async function delSwTurnout(){
   const f=swFolder(),t=swTurnout();if(!f||!t)return;
   if(!await appConfirm(`Сум ${t.num}-г устгах уу? Бүртгэл нь хамт устана.`,'Устгах'))return;
   f.turnouts=(f.turnouts||[]).filter(x=>x.id!==t.id);swTurnoutId=null;
-  saveDB();showView('swHomeView',true);renderSwHome()
+  saveDB();
+  if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
+  showView('swHomeView',true);renderSwHome()
 }
 
 // ── Бүртгэл ──
@@ -11364,6 +11633,7 @@ function swGotoDz(tid,i){
 // Дараалсан дүнзний жагсаалтаас ирсэн бол буцахад тийшээ эргэнэ
 function swBackFromRec(){
   if(_swFromRun){_swFromRun=false;showView('swHomeView',true);renderSwHome();openSwRunRep();return}
+  if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
   showView('swHomeView',true);renderSwHome()
 }
 // 3. Дүнзний бодит мэдээлэл — анхны урт → бодит урт
@@ -11516,7 +11786,7 @@ async function addSwSpec(){
   const i=SW_CUSTOM.findIndex(x=>x.mak===mak&&x.mark===mark);
   if(i>=0)SW_CUSTOM[i]=spec;else SW_CUSTOM.push(spec);
   const ok=await saveSwSpecs();
-  closeModal('swSpecModal');renderSwHome();
+  closeModal('swSpecModal');_swRefresh();
   showToast(ok?`✓ ${mak} · ${mark} нэмэгдлээ — бүх хэсэгт хүрнэ`
     :`${mak} · ${mark} нэмэгдлээ (утсанд) — үүлэнд хадгалагдсангүй`,3200)
 }
@@ -11524,7 +11794,7 @@ async function delSwSpec(mak,mark){
   if(!swCanEdit())return;
   if(!await appConfirm(`${mak} · ${mark} загварыг устгах уу?`,'Устгах'))return;
   SW_CUSTOM=SW_CUSTOM.filter(x=>!(x.mak===mak&&x.mark===mark));
-  await saveSwSpecs();renderSwHome();
+  await saveSwSpecs();_swRefresh();
   if(document.getElementById('swSpecModal').classList.contains('open'))renderSwSpecList('spCurList',true);
   showToast('Устлаа')
 }
@@ -12095,7 +12365,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.14·144';
+const APP_BUILD='2026.09.15·145';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
