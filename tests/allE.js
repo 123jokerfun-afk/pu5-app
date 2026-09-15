@@ -3,6 +3,7 @@
 const {execFileSync}=require('child_process');
 let tot=0,bad=0;
 const RUNS=[
+  ['e2e',[]],
   ['deep',[]],
   ['live',[]],
   ['fuzz',['1','150']],
