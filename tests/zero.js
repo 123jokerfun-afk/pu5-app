@@ -16,15 +16,15 @@ await page.evaluate(()=>{
   saveDB();goSwHome()});
 await page.waitForTimeout(1500);
 const g=async()=>await page.evaluate(()=>({
-  v:['swHsT','swHsD','swHsP','swHsM','swHsMB'].map(i=>document.getElementById(i).textContent.trim()),
+  v:['swHsT','swHsD','swHsB','swHsP','swHsM','swHsMB'].map(i=>document.getElementById(i).textContent.trim()),
   meta:document.getElementById('swHeroMeta').textContent.trim()}));
 let s=await g();
-ok('Паспорт хаалттай → бүгд 0',JSON.stringify(s.v)===JSON.stringify(['0','0','—','0','0']),JSON.stringify(s.v));
+ok('Паспорт хаалттай → бүгд 0',JSON.stringify(s.v)===JSON.stringify(['0','0','0','—','0','0']),JSON.stringify(s.v));
 ok('Толгойд "бүх дүн" гэж бичихээ болив',!/бүх дүн/.test(s.meta),s.meta);
 
 await page.evaluate(()=>openSwFolderView('sfA'));await page.waitForTimeout(1500);
 s=await g();
-ok('Паспорт дарахад тэр паспортын дүн',JSON.stringify(s.v)===JSON.stringify(['2','160','7.1%','631,5','45']),JSON.stringify(s.v));
+ok('Паспорт дарахад тэр паспортын дүн',JSON.stringify(s.v)===JSON.stringify(['2','160','12','7.1%','631,5','45']),JSON.stringify(s.v));
 ok('Толгойд паспортын нэр',/Зун 2026/.test(s.meta),s.meta);
 
 // хаах — 0 руу БУУРЧ гүйх эсэх
@@ -33,10 +33,10 @@ const down=await page.evaluate(async()=>{
   for(let i=0;i<30;i++){await new Promise(r=>requestAnimationFrame(r));
     seen.push(document.getElementById('swHsD').textContent)}
   await new Promise(r=>setTimeout(r,900));
-  return {seen:[...new Set(seen)],fin:['swHsT','swHsD','swHsP','swHsM','swHsMB']
+  return {seen:[...new Set(seen)],fin:['swHsT','swHsD','swHsB','swHsP','swHsM','swHsMB']
     .map(i=>document.getElementById(i).textContent.trim())}});
 ok('Хаахад 0 руу буурч гүйнэ',down.seen.length>3&&down.seen[0]!=='0',down.seen.slice(0,6).join(','));
-ok('Хаасны дараа бүгд 0',JSON.stringify(down.fin)===JSON.stringify(['0','0','—','0','0']),JSON.stringify(down.fin));
+ok('Хаасны дараа бүгд 0',JSON.stringify(down.fin)===JSON.stringify(['0','0','0','—','0','0']),JSON.stringify(down.fin));
 
 // нөгөө паспорт
 await page.evaluate(()=>openSwFolderView('sfB'));await page.waitForTimeout(1500);

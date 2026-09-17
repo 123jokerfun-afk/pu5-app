@@ -256,7 +256,7 @@ button{font-family:inherit}
   font-size:12px;cursor:pointer;font-weight:700;backdrop-filter:blur(8px)}
 .hero-stats{display:flex;gap:12px;margin-top:20px;position:relative}
 .hero-stats-2{margin-top:9px}
-.hero-stat{flex:1;background:rgba(255,255,255,.28);border-radius:18px;
+.hero-stat{flex:1;min-width:0;background:rgba(255,255,255,.28);border-radius:18px;
   padding:10px 12px;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(12px);
   box-shadow:0 4px 16px rgba(180,110,30,.15)}
 .hero-stat-n{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;text-shadow:0 1px 8px rgba(150,90,20,.3);
@@ -287,6 +287,12 @@ button{font-family:inherit}
   .sw-st-s{font-size:8.5px;white-space:nowrap}
   .sw-st-c{padding:7px 2px 6px}
   .sw-st{gap:5px;margin-left:4px}
+}
+/* Хамгийн нарийн дэлгэц (Galaxy Fold мэт): гурав гурван нүдтэй хоёр
+   эгнээнд шошго багтахгүй. Таслаж цэглэхээс илүү хоёр мөр болгоно —
+   "ТЭНЦЭХГҮЙ ДҮНЗ" ба "ТЭНЦЭХГҮЙ ПОГ/М" хоёрыг ялгах боломжтой. */
+@media (max-width:320px){
+  #swHomeView .hero-stat-l{white-space:normal;overflow:visible;line-height:1.15}
 }
 .sec-lbl{font-size:11px;font-weight:800;color:var(--ink4);text-transform:uppercase;
   letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
@@ -1216,12 +1222,11 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
     linear-gradient(178deg,#251058 0%,#180B38 34%,#0C0922 66%,#06070F 100%)}
 
 /* Тоо нь булангийн тэмдэг рүү мөргөхгүй — тэмдэгт зай үлдээв */
-[data-theme="dark"] .hero-stats:not(.hero-stats-2) .hero-stat-n{
+[data-theme="dark"] .hero-stats .hero-stat-n{
   font-size:22px;padding-right:26px}
-[data-theme="dark"] .hero-stats-2 .hero-stat-n{padding-right:30px}
 [data-theme="dark"] .hero-stat-l{padding-right:0;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
-[data-theme="dark"] .hero-stats:not(.hero-stats-2) .hero-stat-l{
+[data-theme="dark"] .hero-stats .hero-stat-l{
   font-size:8.5px;letter-spacing:.09em}
 
 /* Мөрөнд бичсэн тод ирмэгүүд шилэн гадаргууг эвдэж байсан — үйлдлийн
@@ -1276,7 +1281,10 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 [data-theme="dark"] .hero-stat-ic{display:flex}
 @media (max-width:369px){
   [data-theme="dark"] .hero-stat-ic{display:none}
-  [data-theme="dark"] .hero-stat-n{font-size:21px}
+  /* Булангийн тэмдэг нуугдсан тул түүнд үлдээсэн зай илүүц —
+     СШ-ийн гурав гурван нүдтэй хоёр эгнээ нарийн дэлгэцэнд
+     баруун тийш халихгүй болно */
+  [data-theme="dark"] .hero-stats .hero-stat-n{font-size:21px;padding-right:0}
 }
 
 /* ── Толгойн дугуй товчнууд ────────────────────────────────── */
@@ -1872,13 +1880,14 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="hero-stats" id="swHeroStats">
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3"/></svg></span><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span><div class="hero-stat-n" id="swHsD">0</div><div class="hero-stat-l">Нийт дүнз</div></div>
-      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.6 20h18.8z"/><path d="M12 9.5v4.5M12 17h.01"/></svg></span><div class="hero-stat-n" id="swHsB">0</div><div class="hero-stat-l">Тэнцэхгүй дүнз</div></div>
     </div>
     <!-- пог/м нь тусдаа бүтэн нүд — дээрх мөртэй ижил бүтэцтэй тул
          шошгууд бүгд нэг шугам дээр таарна -->
     <div class="hero-stats hero-stats-2">
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg></span><div class="hero-stat-n" id="swHsM">0</div><div class="hero-stat-l">Нийт пог/м</div></div>
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span><div class="hero-stat-n" id="swHsMB">0</div><div class="hero-stat-l">Тэнцэхгүй пог/м</div></div>
+      <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><div class="hero-stat-n" id="swHsP">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
     </div>
   </div>
   <div class="home-body">
@@ -9980,7 +9989,7 @@ function _brRenderSw(){
   const pct=m?mB/m*100:0;
   const pc=pct>=25?'var(--red)':pct>=15?'var(--orange)':'var(--g600)';
   if(st)st.innerHTML=_brStats([
-    ['Сум',ts.length],['Нийт дүнз',nD],['Тэнцэх',nD-bd,'var(--g700)'],
+    ['Сум',ts.length],['Нийт дүнз',nD],['Тэнцэхгүй дүнз',bd,'var(--orange)'],
     ['Нийт пог/м',swM(m)],['Тэнцэхгүй пог/м',swM(mB),'var(--orange)'],
     ['Тэнцэхгүй',m?pct.toFixed(1)+'%':'—',pc]]);
   const g=document.getElementById('brSwTurnouts');
@@ -10107,9 +10116,9 @@ function renderSwHome(){
   // паспортынх. Паспорт хаалттай үед бүгд 0 — паспорт дарахад тухайн
   // паспортын тоо руугаа гүйж, хаахад буцаад 0 хүртэл гүйж буурна.
   const src=_sf?[_sf]:[];
-  let nT=0,nD=0,nM=0,nMB=0;
+  let nT=0,nD=0,nB=0,nM=0,nMB=0;
   src.forEach(f=>(f.turnouts||[]).forEach(t=>{
-    nT++;const a=swTally(t);nD+=a.total;nM+=a.m;nMB+=a.mBad}));
+    nT++;const a=swTally(t);nD+=a.total;nB+=a.bad;nM+=a.m;nMB+=a.mBad}));
   const meta=document.getElementById('swHeroMeta');
   const _r=DB.rpt||{};
   if(meta)meta.textContent=_sf?`${_sf.name} · ${_sf.year} ${_sf.season}`
@@ -10122,10 +10131,11 @@ function renderSwHome(){
   const pm=(to)=>(v,done)=>to?(done?swM(to):swM(Math.round(v))):'0';
   countTo(document.getElementById('swHsT'),nT,520);
   countTo(document.getElementById('swHsD'),nD,760,{delay:70});
-  countTo(document.getElementById('swHsP'),nM?nMB/nM*100:0,800,{delay:140,
-    fmt:v=>nM?v.toFixed(1)+'%':'—'});
+  countTo(document.getElementById('swHsB'),nB,780,{delay:140});
   countTo(document.getElementById('swHsM'),nM,760,{delay:210,fmt:pm(nM)});
   countTo(document.getElementById('swHsMB'),nMB,800,{delay:280,fmt:pm(nMB)});
+  countTo(document.getElementById('swHsP'),nM?nMB/nM*100:0,820,{delay:350,
+    fmt:v=>nM?v.toFixed(1)+'%':'—'});
   const _sec=document.getElementById('swTurnoutsSection');
   if(_sec)_sec.style.display=_sf?'block':'none';
   const _inc=document.getElementById('swIncSection');
@@ -12400,7 +12410,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.15·147';
+const APP_BUILD='2026.09.17·148';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
