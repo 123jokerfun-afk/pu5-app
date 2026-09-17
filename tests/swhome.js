@@ -45,11 +45,17 @@ const geo=await page.evaluate(()=>{
     aligned:rows.every(r=>new Set([...r.querySelectorAll('.hero-stat-l')]
       .map(e=>Math.round(e.getBoundingClientRect().top))).size===1),
     vals:[...document.querySelectorAll('#swHomeView .hero-stat-n')].map(e=>e.textContent)}});
-ok('Мөрийн бүтэц 3 + 2 нүд',JSON.stringify(geo.rows)==='[3,2]',JSON.stringify(geo.rows));
+ok('Мөрийн бүтэц 3 + 3 нүд',JSON.stringify(geo.rows)==='[3,3]',JSON.stringify(geo.rows));
 ok('Нүд бүр дэрийнхтэй ижил (тоо + шошго)',geo.shape&&geo.sub===0);
 ok('Шошгууд мөр бүрдээ нэг шугам дээр',geo.aligned);
 ok('Нийт пог/м, тэнцэхгүй пог/м гарав',
-   JSON.stringify(geo.vals)===JSON.stringify(['2','160','7.1%','631,5','45']),JSON.stringify(geo.vals));
+   JSON.stringify(geo.vals)===JSON.stringify(['2','160','12','631,5','45','7.1%']),JSON.stringify(geo.vals));
+// Тэнцэхгүй дүнзний ТОО — swTally-ийн нийлбэртэй яг таарна
+const badN=await page.evaluate(()=>{
+  const f=(DB.sw||[]).find(x=>x.id==='sfA');
+  let b=0;(f.turnouts||[]).forEach(t=>b+=swTally(t).bad);
+  return {calc:b,shown:document.getElementById('swHsB').textContent.trim()}});
+ok('Тэнцэхгүй дүнзний тоо зөв',badN.calc===12&&badN.shown==='12',JSON.stringify(badN));
 // пог/м нь паспортын карт болон сумын карт дээр хэвээр
 const pm=await page.evaluate(()=>({
   folder:/пог\/м/.test(document.querySelector('#swFolders .folder-meta').textContent),

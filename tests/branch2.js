@@ -80,6 +80,7 @@ ok('Сум цонх руу шилжинэ',t4.trPane==='none'&&t4.swPane!=='none
 ok('Сумын паспорт дарахад СШ-ийн нүүр рүү ҮСРЭХГҮЙ',t4.view==='brHomeView',t4.view);
 ok('Сумын дүн гарна',t4.stats.length===6&&/СУМ=1/i.test(t4.stats[0])&&/НИЙТ ДҮНЗ=20/i.test(t4.stats[1]),
    JSON.stringify(t4.stats));
+ok('Тэнцэхгүй дүнзний ТОО гарна',/^ТЭНЦЭХГҮЙ ДҮНЗ=\d+$/i.test(t4.stats[2]),t4.stats[2]);
 ok('Сумууд жагсана',t4.sw.length===1&&/Сум 1/.test(t4.sw[0]),JSON.stringify(t4.sw));
 ok('Дүнзний хавтас, агуулах байна',
    t4.folders.length===3&&t4.wrap.length===3&&/Орлого/.test(t4.wrap[0]),
