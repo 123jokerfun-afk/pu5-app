@@ -21,7 +21,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 
 ```bash
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
-node allB.js     # flow8 flow9 overlap notch swhome
+node allB.js     # flow8 flow9 overlap notch swhome herohome
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto multi
 node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan  (удаан)
 node allE.js     # гүнзгий: e2e deep live fuzz×5  (хамгийн удаан)
@@ -47,6 +47,7 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `overlap.js` | Элемент давхцах, дэлгэцээс халих |
 | `notch.js` | Safe-area (хиртэлт, доод зурвас) |
 | `swhome.js` | СШ нүүрний тоо, бүтэц |
+| `herohome.js` | Дэр ПУ-5 нүүрний толгойн бетон/тэнцэхгүй тоо |
 | `sizeguard.js` | Firestore 1 МиБ хязгаарын хамгаалалт |
 | `parts.js` | Паспортыг тусдаа баримт болгох — хуваалт/нийлүүлэлт |
 | `docid.js` | Firestore-ын баримтын нэрийн дүрэм |
