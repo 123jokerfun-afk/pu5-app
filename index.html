@@ -272,6 +272,22 @@ button{font-family:inherit}
 #swHero .hero-stats-2{margin-top:8px}
 #swHero .hero-stat{padding:8px 12px}
 #swHeroMeta{margin-top:-2px}
+/* Дэрийн нүүрэнд бетон/тэнцэхгүй тоог бүтэн хоёр дахь эгнээ БИШ,
+   нимгэн чипийн эгнээ болгож нэмнэ. Дэрийн толгойн ДООР "Гол зам",
+   "Дэрийн агуулах" гэсэн нэмэлт агуулга байдаг тул СШ шиг бүтэн
+   хоёр дахь эгнээ нэмбэл эхний паспортын карт доод табын самбарын
+   ард нуугдаж, товшиж болохоо болдог байсан (`herohome.js`-ээр
+   илэрсэн) — тул энд зөвхөн ~24px-ийн нимгэн эгнээ. Толгойн доод
+   хөвөөг СШ-тэй адил чангалж, чипийн зайг ч нарийсгаж нөхнө. */
+#homeView .hero{padding-bottom:16px}
+#homeView .hero-stats{margin-top:13px}
+.hero-chips{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.hero-chip{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.3);
+  border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;
+  color:rgba(255,255,255,.9);display:flex;align-items:center;gap:3px;
+  white-space:nowrap;backdrop-filter:blur(8px)}
+.hero-chip b{font-variant-numeric:tabular-nums;font-size:12px}
+[data-theme="dark"] .hero-chip{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.16)}
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -1600,6 +1616,15 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 21V6M20 21V6M4 10h16M4 15h16M9 3h6"/></svg></span><div class="hero-stat-n" id="hsTracks">0</div><div class="hero-stat-l">Замын тоо</div></div>
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg></span><div class="hero-stat-n" id="hsTotal">0</div><div class="hero-stat-l">Нийт дэр</div></div>
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M19 5 5 19"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></span><div class="hero-stat-n" id="hsPct">—</div><div class="hero-stat-l">Тэнцэхгүй %</div></div>
+    </div>
+    <!-- Тэнцэхгүй/бетоны тоог бүтэн хоёр дахь эгнээ БИШ, нимгэн
+         чипийн эгнээгээр нэмнэ — толгойн өндрийг хэвээр үлдээж,
+         доор орших паспортын жагсаалтыг доод табын самбараас
+         чөлөөтэй байлгана (`herohome.js`) -->
+    <div class="hero-chips" id="heroChips">
+      <span class="hero-chip">Тэнцэхгүй <b id="hsBad">0</b></span>
+      <span class="hero-chip">Бетон <b id="hsTbd">0</b></span>
+      <span class="hero-chip">Бетон тэнцэхгүй <b id="hsBadTbd">0</b></span>
     </div>
   </div>
   <div class="home-body">
@@ -3715,15 +3740,20 @@ function renderHome(){
   if(meta)meta.textContent=_af?`${_af.name} · ${r.cls||''}${r.cls?'-р анги':''} ${r.secName||r.sec||''} хэсэг`:`${r.cls||''}${r.cls?'-р анги':''} ${r.secName||r.sec||''} хэсэг · ${r.season||''} ${r.year||''}`;
   // Паспортын дээд дүн = ЗӨВХӨН өртөөний зам.
   // Гол замын дүнг "Гол зам" дотор тусад нь харуулна.
-  let gTotal=0,gBad=0;
+  let gTotal=0,gBad=0,gTbd=0,gBadTbd=0;
   DB.tracks.filter(t=>!isMainTrack(t)).forEach(t=>{
-    const a=analyzeTrack(t);gTotal+=a.total;gBad+=a.totalBad});
+    const a=analyzeTrack(t);gTotal+=a.total;gBad+=a.totalBad;
+    gTbd+=a.tbd+a.bad_tbd;gBadTbd+=a.bad_tbd});
   const _tc=trackCounts(DB.tracks);
   countTo(document.getElementById('hsTracks'),_tc.st,520);
   countTo(document.getElementById('hsTotal'),gTotal,760,{delay:70});
   const gp=gTotal>0?(gBad/gTotal*100):null;
   countTo(document.getElementById('hsPct'),gp===null?0:gp,700,{delay:140,
     fmt:v=>gp===null?'—':v.toFixed(1)+'%'});
+  // Чипийн эгнээ — толгойн үндсэн 3 нүднээс дараа, бага зэрэг хойшлуулж гүйнэ
+  countTo(document.getElementById('hsBad'),gBad,600,{delay:220});
+  countTo(document.getElementById('hsTbd'),gTbd,600,{delay:280});
+  countTo(document.getElementById('hsBadTbd'),gBadTbd,600,{delay:340});
   renderFolders();
   renderMainLineCard();
   renderReplFolder();
@@ -12410,7 +12440,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.17·148';
+const APP_BUILD='2026.09.18·149';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

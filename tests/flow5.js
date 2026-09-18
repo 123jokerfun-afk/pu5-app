@@ -66,6 +66,15 @@ ok('СШ-ээс баруун шудрах → Нүүр',await page.evaluate(()=>
 await page.evaluate(()=>goHome());await page.waitForTimeout(500);
 const fc=await page.$('.folder-card.lp-del');
 if(fc){
+  // Доод табын самбар үргэлж дэлгэц дээр тогтмол хадгалагдаж
+  // (position:fixed) байдаг тул хөтчийн "хамгийн ойрын ирмэг рүү"
+  // гүйлгэх анхны зан (scrollIntoViewIfNeeded) картыг таб самбарын
+  // ард "аль хэдийн үзэгдэж байна" гэж үзээд хангалтгүй бага гүйлгэж
+  // болно — таб самбар DOM-ын хувьд clip хийдэггүй, зөвхөн харагдацаар
+  // л давхцдаг тул. Тиймээс төвд нь гаргаж, гарцаагүй чөлөөтэй болгоно
+  // — жинхэнэ хэрэглэгч нүдээрээ хараад яг үүнийг л хийнэ.
+  await fc.evaluate(el=>el.scrollIntoView({block:'center'}));
+  await page.waitForTimeout(200);
   const bb=await fc.boundingBox();
   // энгийн дарахад устгах товч ажиллахгүй
   const del=await fc.$('.folder-del');
