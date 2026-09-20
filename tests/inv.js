@@ -150,7 +150,7 @@ ok('Нийт зарлага гарна',/1 ш/.test(out.tot)&&/3 пог\/м/.tes
 const cards=await page.evaluate(async()=>{
   goSwHome();await new Promise(r=>setTimeout(r,320));
   // v138: агуулах нь паспортын хавтаснуудаас гарч тусдаа хэсэг болсон
-  return[...document.querySelectorAll('#swIncWrap .folder-card')]
+  return[...document.querySelectorAll('#swIncWrap .pill-item')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim())});
 // v141: төлөвлөгөөний хавтас ч паспортоос гарч, агуулахын доор орсон

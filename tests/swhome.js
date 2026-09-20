@@ -65,7 +65,7 @@ ok('пог/м сумын карт дээр хэвээр',pm.card);
 ok('Паспорт "нээлттэй" гэж тэмдэглэгдэв',await page.evaluate(()=>!!document.querySelector('#swFolders .folder-card.active-folder')));
 const items=await page.evaluate(()=>({
   cards:document.querySelectorAll('#swTurnoutsGrid .sw-card').length,
-  folders:document.querySelectorAll('#swFolderWrap .folder-card').length,
+  folders:document.querySelectorAll('#swFolderWrap .pill-item').length,
   names:[...document.querySelectorAll('#swFolderWrap .folder-name')].map(e=>e.textContent.trim()).join(', '),
   form:!!document.getElementById('swFormBtn'),
   add:[...document.querySelectorAll('#swTurnoutsSection button')].some(b=>/Сум нэмэх/.test(b.textContent))}));
@@ -80,7 +80,7 @@ ok('Орлого/Зарлага/Төлөвлөсөн нь паспортын х�
 const incSec=await page.evaluate(()=>({
   vis:getComputedStyle(document.getElementById('swIncSection')).display,
   lbl:document.querySelector('#swIncSection .sec-lbl').textContent.trim(),
-  cards:[...document.querySelectorAll('#swIncWrap .folder-card .folder-name')]
+  cards:[...document.querySelectorAll('#swIncWrap .pill-item .folder-name')]
     .map(e=>e.textContent.trim()),
   // Паспортуудын жагсаалтаас ДООШ, Сумуудаас ДЭЭШ байрлана
   after:document.getElementById('swFolders').compareDocumentPosition(

@@ -313,7 +313,7 @@ const t8=await page.evaluate(async()=>{
   return{inc,out0,st0,stock,planN,planN2:planTotalCount(),
     out1:derOutN(),st1:derStock(),
     rows:derOutRows().map(r=>r.grp+'/'+r.name+'='+r.n),
-    cards:[...document.querySelectorAll('#derWrap .folder-card .folder-name')]
+    cards:[...document.querySelectorAll('#derWrap .pill-item .folder-name')]
       .map(e=>e.textContent.trim())}});
 ok('Дэрийн орлого — он сар өдөр + тоо л',t8.inc===100,String(t8.inc));
 ok('Зарлага солилтоос гарна, үлдэгдэл = орлого − зарлага',
