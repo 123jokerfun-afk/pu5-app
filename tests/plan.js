@@ -89,7 +89,7 @@ const rep=await page.evaluate(async()=>{
   savePlan('wood');await new Promise(r=>setTimeout(r,280));
   goHome();await new Promise(r=>setTimeout(r,320));
   // v141: төлөвлөгөөний хавтас нь паспортоос гарч, агуулахын доор очсон
-  const cards=[...document.querySelectorAll('#derWrap .folder-card')]
+  const cards=[...document.querySelectorAll('#derWrap .pill-item')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim());
   const inPass=[...document.querySelectorAll('#replFolderWrap .folder-name')]
@@ -151,7 +151,7 @@ ok('Сольсны дараа хадаасны тэмдэг ч арилна',!un
 console.log('\nДэрийн агуулах');
 const der=await page.evaluate(async()=>{
   goHome();await new Promise(r=>setTimeout(r,320));
-  const cards=[...document.querySelectorAll('#derWrap .folder-card')]
+  const cards=[...document.querySelectorAll('#derWrap .pill-item')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim());
   openDerInc();await new Promise(r=>setTimeout(r,260));
@@ -258,7 +258,7 @@ ok('Сул үлдэгдэлгүй уртаар төлөвлөх боломжгү
 
 const srep=await page.evaluate(async()=>{
   goSwHome();await new Promise(r=>setTimeout(r,320));
-  const cards=[...document.querySelectorAll('#swIncWrap .folder-card')]
+  const cards=[...document.querySelectorAll('#swIncWrap .pill-item')]
     .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+
             e.querySelector('.folder-meta').textContent.trim());
   openSwPlanRep();await new Promise(r=>setTimeout(r,320));

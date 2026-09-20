@@ -972,6 +972,50 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
   /* Хуруугаар зөв онох хэмжээ — 40px */
   min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:0}
 
+/* ══════════════════════════════════════════════
+   PILL NAV — "Орлого/Зарлага/Төлөвлөсөн", "Сольсон/Дараалсан цэг"
+   гэх жижиг тайлангийн товчнуудын загвар. Санаа: github.com/Nazia-99/
+   Pill-Shape-Navbar-Animation — шилэн капсул дэвсгэр дотор дарсан
+   зүйл рүү зөөлөн гулсдаг тодруулагч. Эдгээр товч бүр тайлан/цонх
+   нээдэг тул "идэвхтэй" төлөв байнга хадгалагдахгүй — гулсагч зүгээр
+   л СҮҮЛД дарсан газраа тогтоно (дэлгэц дахин зурагдах бүрд эхний
+   товч руу буцна). Агуулга (icon+нэр+тоо) арай олон тул эх сурвалжийн
+   энгийн нэг мөр шошгоос илүү, дотроо босоо баганаар зохион байгуулав. */
+.pill-nav{position:relative;display:flex;gap:6px;padding:7px;
+  border-radius:22px;background:linear-gradient(135deg,var(--card),var(--bg));
+  border:1px solid var(--border);box-shadow:var(--sh-sm)}
+.pill-item{position:relative;z-index:2;flex:1;min-width:0;display:flex;
+  flex-direction:column;align-items:center;text-align:center;gap:3px;
+  padding:10px 4px 9px;border-radius:16px;cursor:pointer;background:none;border:none;
+  font-family:inherit;color:var(--ink);transition:transform .18s}
+.pill-item:active{transform:scale(.96)}
+.pill-icon{width:32px;height:32px;border-radius:11px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;background:rgba(255,255,255,.55)}
+[data-theme="dark"] .pill-icon{background:rgba(255,255,255,.10)}
+.pill-icon svg{width:16px;height:16px}
+/* .folder-name/.folder-meta нэрийг зориудаар хэвээр үлдээв —
+   том паспортын жагсаалтын карттай ижил ангилалын нэр тул хуучин
+   тестүүд (swhome.js г.м.) үргэлжлүүлэн олно, зөвхөн хэмжээ энд
+   өөрчлөгдөнө. */
+.pill-item .folder-name{font-size:11.5px;font-weight:800;letter-spacing:-.1px;line-height:1.2;color:inherit}
+.pill-item .folder-meta{font-size:9.5px;color:var(--ink3);font-weight:600;line-height:1.25;margin-top:0}
+.pill-indicator{position:absolute;z-index:1;border-radius:16px;
+  border:1px solid transparent;
+  transition:left .5s cubic-bezier(.34,1.35,.64,1),top .5s cubic-bezier(.34,1.35,.64,1),
+    width .5s cubic-bezier(.34,1.35,.64,1),height .5s cubic-bezier(.34,1.35,.64,1),
+    background .25s,border-color .25s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 4px 12px rgba(0,0,0,.08)}
+[data-theme="dark"] .pill-indicator{box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.4)}
+/* Хамгийн нарийн дэлгэц (Galaxy Fold мэт): 2-3 багана шахагдаж
+   уншихад хэцүү болдог тул эх сурвалжийн 700px-ийн адилаар босоо
+   жагсаалт руу шилжүүлнэ — товч бүрийг хуучин .folder-card шиг
+   зүүн талд дүрс, баруун талд бичигтэй болгоно. */
+@media(max-width:340px){
+  .pill-nav{flex-direction:column}
+  .pill-item{flex-direction:row;text-align:left;gap:10px;padding:10px 12px}
+  .pill-item .folder-name,.pill-item .folder-meta{text-align:left}
+}
+
 /* ── Цонх хаах × товч. Урьд нь ердөө 11×19px байсан тул хуруугаар онох
       хэцүү байв. Одоо 40×40 талбайтай. ── */
 .x-btn{background:none;border:none;cursor:pointer;color:var(--ink4);
@@ -4196,23 +4240,69 @@ function collectConsec(){
 function consecTotalCount(){
   return collectConsec().reduce((s,t)=>s+t.groups.length,0)
 }
+
+/* ══════════════════════════════════════════════
+   PILL NAV ТУСЛАХ — "Орлого/Зарлага/Төлөвлөсөн", "Сольсон/Дараалсан
+   цэг" зэрэг жижиг тайлангийн товчнуудыг ГАНЦ л газар зурдаг болгов
+   (өмнө нь 4 өөр функц тус бүрдээ ижилхэн card()-ийн хувилбар давтдаг
+   байсан). `items`: [{color,bg,name,meta,fn}] — fn нь энгийн JS
+   код мөр (жиш нь 'openReplReport()'), хуучин onclick="hap();${fn}"
+   загвартай ЯГ адилхан итгэмжлэгдсэн эх сурвалж (аппын өөрийн
+   статик кодоос гардаг тул хэрэглэгчийн оролт хэзээ ч ордоггүй). */
+const _pillGroups={},_pillActive={};
+function renderPillGroup(wrapId,items){
+  const wrap=document.getElementById(wrapId);if(!wrap)return;
+  if(!items||!items.length){wrap.innerHTML='';delete _pillGroups[wrapId];delete _pillActive[wrapId];return}
+  _pillGroups[wrapId]=items;
+  wrap.innerHTML=`<div class="pill-nav" id="${wrapId}Nav">
+    <div class="pill-indicator" id="${wrapId}Ind"></div>
+    ${items.map((it,i)=>`<button type="button" class="pill-item" onclick="_pillTap('${wrapId}',${i})">
+      <span class="pill-icon" style="color:${it.color}"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+      <span class="folder-name">${it.name}</span>
+      <span class="folder-meta">${it.meta}</span>
+    </button>`).join('')}
+  </div>`;
+  _pillMove(wrapId,0)
+}
+function _pillMove(wrapId,i){
+  const nav=document.getElementById(wrapId+'Nav'),ind=document.getElementById(wrapId+'Ind');
+  const items=_pillGroups[wrapId]||[],it=items[i];
+  if(!nav||!ind||!it)return;
+  // indicator нь 0-р хүүхэд тул товч бүр i+1 индекстэй
+  const cell=nav.children[i+1];if(!cell)return;
+  ind.style.left=cell.offsetLeft+'px';ind.style.top=cell.offsetTop+'px';
+  ind.style.width=cell.offsetWidth+'px';ind.style.height=cell.offsetHeight+'px';
+  ind.style.background=it.bg;ind.style.borderColor=it.color;
+  [...nav.querySelectorAll('.pill-item')].forEach((el,k)=>{
+    el.style.color=k===i?it.color:''
+  });
+  _pillActive[wrapId]=i
+}
+function _pillTap(wrapId,i){
+  hap();_pillMove(wrapId,i);
+  const it=(_pillGroups[wrapId]||[])[i];
+  if(it&&it.fn)(new Function(it.fn))()
+}
+// Дэлгэц эргэхэд/хэмжээ өөрчлөгдөхөд СҮҮЛД идэвхжсэн гулсагчийг л
+// шинэ байрлал руу нь дахин зөөнө — 0-рлүү бүү буцаа
+window.addEventListener('resize',()=>{
+  Object.keys(_pillGroups).forEach(id=>{
+    const nav=document.getElementById(id+'Nav');
+    if(nav)_pillMove(id,_pillActive[id]||0)
+  })
+});
+
 function renderReplFolder(){
   const wrap=document.getElementById('replFolderWrap');if(!wrap)return;
   if(!activeFolderId){wrap.innerHTML='';return}
   const n=replTotalCount(),c=consecTotalCount();
   if(!n&&!c){wrap.innerHTML='';return}
-  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
-    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-    <div class="folder-info">
-      <div class="folder-name" style="color:${color}">${name}</div>
-      <div class="folder-meta">${meta}</div>
-    </div>
-  </div>`;
-  wrap.innerHTML=
-    card('var(--red)','var(--red-bg)','Солигдсон дэр',
-      n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',"openReplReport()")+
-    card('var(--purple)','var(--purple-bg)','Дараалсан цэг',
-      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',"openConsecReport()");
+  renderPillGroup('replFolderWrap',[
+    {color:'var(--red)',bg:'var(--red-bg)',name:'Солигдсон дэр',
+      meta:n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',fn:'openReplReport()'},
+    {color:'var(--purple)',bg:'var(--purple-bg)',name:'Дараалсан цэг',
+      meta:c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',fn:'openConsecReport()'}
+  ]);
 }
 
 /* ══════════════════════════════════════════════
@@ -4414,19 +4504,15 @@ function derOutN(){return derOutRows().reduce((s,r)=>s+r.n,0)}
 function derStock(){return derIncN()-derOutN()}
 function renderDerWrap(){
   const wrap=document.getElementById('derWrap');if(!wrap)return;
-  const inc=derIncN(),out=derOutN(),st=derStock();
-  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
-    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
-      <div class="folder-meta">${meta}</div></div></div>`;
-  const pn=planTotalCount();
-  wrap.innerHTML=
-    card('var(--g700)','var(--g100)','Орлого',
-      inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй','openDerInc()')+
-    card('var(--orange)','var(--orange-bg)','Зарлага',
-      out?`${out} дэр · сольсноор`:'Зарлага алга','openDerOut()')+
-    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
-      pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга','openPlanReport()')
+  const inc=derIncN(),out=derOutN(),st=derStock(),pn=planTotalCount();
+  renderPillGroup('derWrap',[
+    {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
+      meta:inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй',fn:'openDerInc()'},
+    {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',
+      meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:'openDerOut()'},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
+      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:'openPlanReport()'}
+  ]);
 }
 function openDerInc(){renderDerInc();openModal('derIncModal')}
 function renderDerInc(){
@@ -9998,28 +10084,22 @@ function _brRenderTracks(){
     :'<div style="grid-column:span 2;text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';
   // Хавтаснууд — өртөөнийхтэй ижил тайлангууд
   const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCount();
-  const fw=document.getElementById('brTrFolders');
-  if(fw)fw.innerHTML=
-    _brFolderCard('var(--red)','var(--red-bg)','Солигдсон дэр',
-      n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга','openReplReport()')+
-    _brFolderCard('var(--purple)','var(--purple-bg)','Дараалсан цэг',
-      c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй','openConsecReport()')+
-    _brFolderCard('var(--blue)','var(--blue-bg)','Төлөвлөсөн дэр',
-      pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга','openPlanReport()');
+  renderPillGroup('brTrFolders',[
+    {color:'var(--red)',bg:'var(--red-bg)',name:'Солигдсон дэр',
+      meta:n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',fn:'openReplReport()'},
+    {color:'var(--purple)',bg:'var(--purple-bg)',name:'Дараалсан цэг',
+      meta:c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',fn:'openConsecReport()'},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
+      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:'openPlanReport()'}
+  ]);
   // Дэрийн агуулах — хэсгийн түвшинд ганц тул өртөөнийхтэй нэг
   const inc=derIncN(),out=derOutN(),stk=derStock();
-  const dw=document.getElementById('brDerWrap');
-  if(dw)dw.innerHTML=
-    _brFolderCard('var(--g700)','var(--g100)','Орлого',
-      inc?`${inc} дэр · үлдэгдэл ${stk}`:'Орлого бүртгээгүй','openDerInc()')+
-    _brFolderCard('var(--orange)','var(--orange-bg)','Зарлага',
-      out?`${out} дэр · сольсноор`:'Зарлага алга','openDerOut()')
-}
-function _brFolderCard(color,bg,name,meta,fn){
-  return `<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
-    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
-      <div class="folder-meta">${meta}</div></div></div>`
+  renderPillGroup('brDerWrap',[
+    {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
+      meta:inc?`${inc} дэр · үлдэгдэл ${stk}`:'Орлого бүртгээгүй',fn:'openDerInc()'},
+    {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',
+      meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:'openDerOut()'}
+  ]);
 }
 /* ── СУМ ── */
 function _brRenderSw(){
@@ -10067,24 +10147,21 @@ function _brRenderSw(){
   let nRepl=0,mRepl=0,nRun=0;
   ts.forEach(t=>{const rows=swReplRows(t);
     nRepl+=rows.length;rows.forEach(r=>mRepl+=r.nom);nRun+=swRuns(t).length});
-  const fw=document.getElementById('brSwFolders');
-  if(fw)fw.innerHTML=
-    _brFolderCard('var(--red)','var(--red-bg)','Сольсон дүнз',
-      nRepl?`${nRepl} ш · ${swM(mRepl)} пог/м`:'Бүртгэл алга','openSwReplRep()')+
-    _brFolderCard('var(--purple)','var(--purple-bg)','Дараалсан дүнз',
-      nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга','openSwRunRep()')+
-    _brFolderCard('var(--blue)','var(--blue-bg)','Дүнзний бодит мэдээлэл',
-      nRepl?`${nRepl} солилт`:'Бүртгэл алга','openSwRealRep()');
+  renderPillGroup('brSwFolders',[
+    {color:'var(--red)',bg:'var(--red-bg)',name:'Сольсон дүнз',
+      meta:nRepl?`${nRepl} ш · ${swM(mRepl)} пог/м`:'Бүртгэл алга',fn:'openSwReplRep()'},
+    {color:'var(--purple)',bg:'var(--purple-bg)',name:'Дараалсан дүнз',
+      meta:nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга',fn:'openSwRunRep()'},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Дүнзний бодит мэдээлэл',
+      meta:nRepl?`${nRepl} солилт`:'Бүртгэл алга',fn:'openSwRealRep()'}
+  ]);
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,mm=0;ks.forEach(L=>{n+=o[L];mm+=o[L]*L});return `${n} ш · ${swM(mm)} пог/м`};
-  const sw=document.getElementById('brSwWrap');
-  if(sw)sw.innerHTML=
-    _brFolderCard('var(--g700)','var(--g100)','Орлого',
-      sum(swIncBy())||'Орлого бүртгээгүй','openSwInc()')+
-    _brFolderCard('var(--orange)','var(--orange-bg)','Зарлага',
-      sum(swOutBy())||'Зарлага алга','openSwOut()')+
-    _brFolderCard('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',
-      sum(swPlanBy())||'Төлөвлөгөө алга','openSwPlanRep()')
+  renderPillGroup('brSwWrap',[
+    {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',meta:sum(swIncBy())||'Орлого бүртгээгүй',fn:'openSwInc()'},
+    {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',meta:sum(swOutBy())||'Зарлага алга',fn:'openSwOut()'},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',meta:sum(swPlanBy())||'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
+  ]);
 }
 /* Паспорт нээхэд ЭНД л үлдэнэ — өртөөний нүүр рүү үсрэхгүй */
 function openBrFolder(fid){
@@ -11433,34 +11510,28 @@ function renderSwFolderCards(){
     nRepl+=rows.length;rows.forEach(r=>{mRepl+=r.nom;if(r.real!==r.nom)nReal++});
     nRun+=swRuns(t).length
   });
-  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
-    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
-      <div class="folder-meta">${meta}</div></div></div>`;
-  wrap.innerHTML=
-    card('var(--red)','var(--red-bg)','Сольсон дүнз',
-      nRepl?`${nRepl} ш · ${swM(mRepl)} пог/м`:'Бүртгэл алга','openSwReplRep()')+
-    card('var(--purple)','var(--purple-bg)','Дараалсан дүнз',
-      nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга','openSwRunRep()')+
-    card('var(--blue)','var(--blue-bg)','Дүнзний бодит мэдээлэл',
-      nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга','openSwRealRep()')
+  renderPillGroup('swFolderWrap',[
+    {color:'var(--red)',bg:'var(--red-bg)',name:'Сольсон дүнз',
+      meta:nRepl?`${nRepl} ш · ${swM(mRepl)} пог/м`:'Бүртгэл алга',fn:'openSwReplRep()'},
+    {color:'var(--purple)',bg:'var(--purple-bg)',name:'Дараалсан дүнз',
+      meta:nRun?`${nRun} цэг · 3 ба түүнээс дээш`:'Дараалсан дүнз алга',fn:'openSwRunRep()'},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Дүнзний бодит мэдээлэл',
+      meta:nRepl?`${nRepl} солилт · ${nReal} нь өөр урттай`:'Бүртгэл алга',fn:'openSwRealRep()'}
+  ]);
 }
 /* Дүнзний агуулах — паспортуудын жагсаалтын доор, дэрийнхтэй ижил байрлалд.
    Агуулах нь паспорт тус бүрийнх (f.inc) тул паспорт нээгээгүй бол хоосон. */
 function renderSwIncCards(){
   const wrap=document.getElementById('swIncWrap');if(!wrap)return;
   if(!swFolder()){wrap.innerHTML='';return}
-  const card=(color,bg,name,meta,fn)=>`<div class="folder-card" style="border-color:${color};background:${bg}" onclick="hap();${fn}">
-    <div class="folder-icon"><svg class="ic" style="font-size:21px;color:${color}" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
-    <div class="folder-info"><div class="folder-name" style="color:${color}">${name}</div>
-      <div class="folder-meta">${meta}</div></div></div>`;
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,m=0;ks.forEach(L=>{n+=o[L];m+=o[L]*L});return `${n} ш · ${swM(m)} пог/м`};
   const i=sum(swIncBy()),u=sum(swOutBy()),pn=sum(swPlanBy());
-  wrap.innerHTML=
-    card('var(--g700)','var(--g100)','Орлого',i||'Орлого бүртгээгүй','openSwInc()')+
-    card('var(--orange)','var(--orange-bg)','Зарлага',u||'Зарлага алга','openSwOut()')+
-    card('var(--blue)','var(--blue-bg)','Төлөвлөсөн дүнз',pn||'Төлөвлөгөө алга','openSwPlanRep()')
+  renderPillGroup('swIncWrap',[
+    {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',meta:i||'Орлого бүртгээгүй',fn:'openSwInc()'},
+    {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',meta:u||'Зарлага алга',fn:'openSwOut()'},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',meta:pn||'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
+  ]);
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
 /* ══════════════════════════════════════════════
@@ -12462,7 +12533,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.20·150';
+const APP_BUILD='2026.09.20·151';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
