@@ -1430,6 +1430,51 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 [data-theme="dark"] .sy-state{
   background:linear-gradient(158deg,rgba(255,255,255,.11),rgba(255,255,255,.04));
   border-color:rgba(255,255,255,.14)}
+
+/* ══════════════════════════════════════════════
+   НЭВТРЭХ ДЭЛГЭЦ — зөөлөн товойлгосон (neumorphic) загвар.
+   Кодон энэ бол зөвхөн ХАРАГДАЦ — Firebase рүү явуулах утга
+   (loginCode, loginPass) хуучин хэвээрээ; доор нь #loginCode/
+   #loginPass гэдэг ЯГ ХУУЧИН id-гаараа л ялгардаг.
+   Токенуудыг #loginView дотор ХЯЗГААРЛАСАН — эс тэгвэл --bg
+   гэдэг апп даяар хэрэглэдэг ерөнхий хувьсагчийг дарж бичих байв. */
+#loginView{
+  --lg-bg:#F1ECE2;--lg-light:#FFFFFF;--lg-dark:#D8CFC0;
+  --lg-text:#3A2E1F;--lg-sub:#8A7B63;--lg-accent:#F07818}
+.lg-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:24px 20px;background:var(--lg-bg)}
+.lg-card{position:relative;width:100%;max-width:360px;background:var(--lg-bg);
+  border-radius:28px;padding:38px 28px 30px;text-align:center;
+  box-shadow:16px 16px 32px rgba(150,130,95,.28),-16px -16px 32px rgba(255,255,255,.95)}
+.lg-lock{width:70px;height:70px;margin:0 auto 18px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:30px;
+  background:var(--lg-bg);
+  box-shadow:inset 6px 6px 12px var(--lg-dark),inset -6px -6px 12px var(--lg-light);
+  animation:lgFloat 2.4s ease-in-out infinite}
+@keyframes lgFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.lg-title{font-size:24px;font-weight:900;color:var(--lg-text);letter-spacing:.01em;
+  text-shadow:1px 1px 2px rgba(150,130,95,.35),-1px -1px 2px rgba(255,255,255,.8)}
+.lg-sub{font-size:12.5px;color:var(--lg-sub);font-weight:600;margin-top:6px;margin-bottom:26px}
+.lg-field{margin-bottom:16px;text-align:left}
+.lg-lbl{display:block;font-size:12.5px;font-weight:800;color:var(--lg-sub);
+  margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.lg-input{width:100%;box-sizing:border-box;border:none;outline:none;padding:15px 18px;
+  border-radius:15px;background:var(--lg-bg);color:var(--lg-text);
+  font-size:17px;font-weight:700;font-family:inherit;
+  box-shadow:inset 5px 5px 10px var(--lg-dark),inset -5px -5px 10px var(--lg-light);
+  transition:box-shadow .2s,transform .2s}
+.lg-input:focus{transform:translateY(-1px);
+  box-shadow:inset 3px 3px 7px var(--lg-dark),inset -3px -3px 7px var(--lg-light),
+    0 0 0 2px rgba(240,120,24,.18)}
+.lg-btn{width:100%;margin-top:6px;padding:16px;border:none;border-radius:16px;
+  background:var(--lg-bg);color:var(--lg-accent);font-family:inherit;
+  font-size:18px;font-weight:900;letter-spacing:.04em;cursor:pointer;
+  box-shadow:7px 7px 14px var(--lg-dark),-7px -7px 14px var(--lg-light);
+  transition:transform .16s,box-shadow .16s}
+.lg-btn:active{transform:translateY(1px);
+  box-shadow:inset 4px 4px 9px var(--lg-dark),inset -4px -4px 9px var(--lg-light)}
+.lg-btn:disabled{opacity:.65;cursor:default}
+#loginErr{box-shadow:inset 4px 4px 9px var(--lg-dark),inset -4px -4px 9px var(--lg-light)}
 </style>
 </head>
 <body>
@@ -1496,61 +1541,38 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 
 <div class="swipe-flash" id="swipeFlash"><div class="flash-pill" id="swipeFlashLabel"></div></div>
 
-<!-- LOGIN -->
+<!-- LOGIN — зөөлөн товойлгосон (neumorphic) карт. loginCode/loginPass/
+     loginBtn/loginErr id-ууд хуучин хэвээр тул doLogin() тохируулах
+     шаардлагагүй — зөвхөн харагдац солигдов. -->
 <div class="view active" id="loginView">
-  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:0;
-    background:url('login_bg.png') center/cover no-repeat,linear-gradient(160deg,#FFC93C 0%,#FF9932 60%,#7EC8E8 115%)">
+  <div class="lg-wrap">
+    <div class="lg-card">
+      <div class="lg-lock">🔒</div>
+      <div class="lg-title">ПУ-5</div>
+      <div class="lg-sub">Дэр/дүнз шалгалтын апп</div>
 
-    <!-- Зурган дээрх гарчгийн доор талбарууд байрлана -->
-    <div style="width:100%;max-width:340px;padding:0 24px;margin-top:33vh">
-
-      <!-- Нэвтрэх нэр -->
-      <div style="margin-bottom:16px">
-        <label style="display:block;font-size:15px;font-weight:800;color:#B5741A;margin-bottom:8px;
-          text-shadow:0 1px 6px rgba(255,255,255,.7);letter-spacing:.01em">Нэвтрэх нэр:</label>
-        <input id="loginCode" type="text" placeholder="" autocomplete="off"
-          style="width:100%;padding:15px 18px;border:2px solid #E8B44A;border-radius:16px;
-          background:rgba(255,252,246,.88);color:#3A2A12;font-size:18px;font-weight:700;outline:none;
-          -webkit-text-fill-color:#3A2A12;box-shadow:0 3px 14px rgba(160,105,25,.18);
-          box-sizing:border-box;transition:border-color .2s,box-shadow .2s"
-          onfocus="this.style.borderColor='#FF9932';this.style.boxShadow='0 3px 20px rgba(255,153,50,.35)'"
-          onblur="this.style.borderColor='#E8B44A';this.style.boxShadow='0 3px 14px rgba(160,105,25,.18)'"
+      <div class="lg-field">
+        <label class="lg-lbl" for="loginCode">Нэвтрэх нэр</label>
+        <input id="loginCode" class="lg-input" type="text" placeholder="" autocomplete="off"
           oninput="this.value=this.value.toUpperCase()"
           onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
       </div>
 
-      <!-- Нууц үг -->
-      <div style="margin-bottom:22px">
-        <label style="display:block;font-size:14px;font-weight:700;color:#B5741A;margin-bottom:8px;
-          text-shadow:0 1px 6px rgba(255,255,255,.7)">Нууц үгээ хийнүүдээ:</label>
-        <input id="loginPass" type="password" placeholder=""
-          style="width:100%;padding:15px 18px;border:2px solid #E8B44A;border-radius:16px;
-          background:rgba(255,252,246,.88);color:#3A2A12;font-size:18px;font-weight:700;outline:none;
-          -webkit-text-fill-color:#3A2A12;box-shadow:0 3px 14px rgba(160,105,25,.18);
-          box-sizing:border-box;transition:border-color .2s,box-shadow .2s"
-          onfocus="this.style.borderColor='#FF9932';this.style.boxShadow='0 3px 20px rgba(255,153,50,.35)'"
-          onblur="this.style.borderColor='#E8B44A';this.style.boxShadow='0 3px 14px rgba(160,105,25,.18)'"
+      <div class="lg-field" style="margin-bottom:22px">
+        <label class="lg-lbl" for="loginPass">Нууц үг</label>
+        <input id="loginPass" class="lg-input" type="password" placeholder=""
           onkeydown="if(event.key==='Enter')doLogin()">
       </div>
 
-      <!-- НЭВТРЭХ товч -->
-      <button onclick="doLogin()" id="loginBtn"
-        style="width:100%;padding:17px;border:2px solid rgba(255,255,255,.5);border-radius:18px;
-        background:linear-gradient(180deg,#FFD34A 0%,#F5A82E 55%,#EE9422 100%);
-        color:#fff;font-size:22px;font-weight:800;letter-spacing:.06em;cursor:pointer;
-        box-shadow:0 6px 22px rgba(200,120,20,.4),inset 0 1px 0 rgba(255,255,255,.5);
-        text-shadow:0 2px 5px rgba(150,85,10,.4);transition:transform .18s ease"
-        ontouchstart="this.style.transform='scale(.97)'"
-        ontouchend="this.style.transform='scale(1)'">НЭВТРЭХ</button>
+      <button onclick="doLogin()" id="loginBtn" class="lg-btn">НЭВТРЭХ</button>
 
-      <div id="loginErr" style="display:none;margin-top:14px;background:rgba(255,250,245,.95);
-        border:1.5px solid #E07A5F;border-radius:14px;padding:11px 15px;
-        color:#B33A22;font-size:13px;font-weight:700;text-align:center;
-        box-shadow:0 4px 16px rgba(160,80,40,.2)"></div>
+      <div id="loginErr" style="display:none;margin-top:14px;background:var(--lg-bg);
+        border-radius:14px;padding:11px 15px;color:#C0392B;font-size:13px;
+        font-weight:700;text-align:center"></div>
 
       <!-- Утсанд суулгах — зөвхөн суулгаагүй үед харагдана -->
       <div id="pwaBox" class="pwa-box" style="display:none"></div>
-      <div id="buildTag" class="build-tag" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:rgba(90,60,20,.5)"></div>
+      <div id="buildTag" class="build-tag" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:var(--lg-sub)"></div>
     </div>
   </div>
 </div>
@@ -12440,7 +12462,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.18·149';
+const APP_BUILD='2026.09.20·150';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
