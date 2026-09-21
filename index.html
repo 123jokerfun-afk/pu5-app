@@ -306,12 +306,18 @@ button{font-family:inherit}
 #homeView .hero{padding-bottom:16px}
 #homeView .hero-stats{margin-top:13px}
 .hero-chips{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
-.hero-chip{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.3);
+/* Цагаан хагас-тунгалаг дэвсгэр нь өнгөлөг/бараан hero дээр байхаар
+   зохиогдсон байсан ч v152-ийн цайвар (неоморф) hero дээр цагаан бичиг
+   бараг харагдахгүй болсныг зассан — гэрэлтэй горимд картын өнгө,
+   бараан бичигтэй, бараан горимд хуучин хагас-тунгалаг байдлаа хэвээр. */
+.hero-chip{background:var(--card);border:none;box-shadow:var(--sh-sm);
   border-radius:999px;padding:3px 8px;font-size:10.5px;font-weight:700;
-  color:rgba(255,255,255,.9);display:flex;align-items:center;gap:3px;
-  white-space:nowrap;backdrop-filter:blur(8px)}
-.hero-chip b{font-variant-numeric:tabular-nums;font-size:12px}
-[data-theme="dark"] .hero-chip{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.16)}
+  color:var(--ink2);display:flex;align-items:center;gap:3px;
+  white-space:nowrap}
+.hero-chip b{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink)}
+[data-theme="dark"] .hero-chip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);
+  box-shadow:none;color:rgba(255,255,255,.9)}
+[data-theme="dark"] .hero-chip b{color:inherit}
 .sw-add-slot{width:88px}
 /* ── Нарийн дэлгэцэнд СШ-ийн толгой шахагдаж бичиг олон мөр болж байсныг зассан ── */
 @media (max-width:369px){
@@ -1737,7 +1743,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </button>
     </div>
     <div class="home-section" style="margin-top:16px">
-      <div class="sec-lbl" style="margin-top:0">Дэрийн агуулах</div>
+      <div class="sec-lbl" style="margin-top:0">Дэрийн агуулах · Гол зам</div>
       <div id="derWrap"></div>
     </div>
     <div class="home-section" style="margin-top:16px">
@@ -1757,6 +1763,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="tracks-grid stagger" id="tracksGrid"></div>
       <div class="lp-hint" id="trackLpHint" style="display:none">Зам дээр удаан дарж устгана</div>
       <div id="replFolderWrap" style="margin-top:10px"></div>
+      <div id="derWrapFolder" style="margin-top:10px"></div>
       <button class="add-track-btn" onclick="openAddTrack()">
         <svg class="ic ic-lg" viewBox="0 0 24 24" style="color:var(--gold-deep)"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg> Зам нэмэх
       </button>
@@ -2040,11 +2047,14 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
     </div>
     <div class="home-section" style="margin-top:18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:28px;box-sizing:border-box;padding:4px 0" onclick="hap(6);_toggleSwSpec()">
         <div class="sec-lbl" style="margin-top:0">Сумын дүнзний загвар</div>
-        <span id="swSpecHint" style="font-size:10.5px;font-weight:700;color:var(--ink4)"></span>
+        <span style="display:flex;align-items:center;gap:7px">
+          <span id="swSpecHint" style="font-size:10.5px;font-weight:700;color:var(--ink4)"></span>
+          <span id="swSpecChev" style="font-size:10px;color:var(--ink4);font-weight:700">▼</span>
+        </span>
       </div>
-      <div id="swSpecList"></div>
+      <div id="swSpecList" style="display:none;margin-top:8px"></div>
     </div>
     <div class="lp-hint" style="margin-top:14px">Баруун тийш шудран Дэр ПУ-5 руу буцна →</div>
     <div class="build-tag" style="text-align:center;padding:18px 0 26px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
@@ -3397,6 +3407,7 @@ function allTracksGlobal(){
 function _findFolderOfTrack(trackId){
   return (DB.folders||[]).find(f=>(f.tracks||[]).some(t=>t.id===trackId))||null
 }
+function getFolder(fid){return (DB.folders||[]).find(x=>x.id===fid)||null}
 // Хэсэг бүрийн өгөгдөл ӨӨРИЙН хаяг дээрээ хадгалагдана:
 //   үүлэнд  sections/<хэсгийн код>
 //   утсанд  sg_der_v3_<хэсгийн код>
@@ -3864,6 +3875,7 @@ function renderHome(){
   renderFolders();
   renderMainLineCard();
   renderReplFolder();
+  renderDerWrapFolder();
   renderDerWrap();
   const grid=document.getElementById('tracksGrid');
   if(!activeFolderId){if(grid)grid.innerHTML='';return}
@@ -4345,6 +4357,23 @@ function renderReplFolder(){
       meta:c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',fn:'openConsecReport()'}
   ]);
 }
+// Идэвхтэй паспортын ӨӨРИЙНХ нь (+ Гол зам/сум нийтлэг) агуулах.
+// renderReplFolder()-ийн адил зөвхөн паспорт нээлттэй үед харагдана —
+// дэрийн агуулах цаашид паспорт бүрт тусдаа (Гол зам үргэлж нийтлэг).
+function renderDerWrapFolder(){
+  const wrap=document.getElementById('derWrapFolder');if(!wrap)return;
+  if(!activeFolderId){wrap.innerHTML='';return}
+  const f=getFolder(activeFolderId);if(!f){wrap.innerHTML='';return}
+  const inc=derIncCombinedN(f),out=derOutNFor(f),st=derStockFor(f),pn=planTotalCountFor(f.id);
+  renderPillGroup('derWrapFolder',[
+    {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
+      meta:inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй',fn:`openDerIncForFolder('${f.id}')`},
+    {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',
+      meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:`openDerOut('${f.id}')`},
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
+      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:`openPlanReport('${f.id}')`}
+  ]);
+}
 
 /* ══════════════════════════════════════════════
    СОЛИХООР ТӨЛӨВЛӨХ — ДЭР
@@ -4419,6 +4448,15 @@ function collectPlan(){
   return out
 }
 function planTotalCount(){return collectPlan().reduce((s,t)=>s+t.n,0)}
+// Тухайн ГАНЦ паспортын өөрийнх нь + нийтлэг (Гол зам, сум) төлөвлөгөө.
+// collectPlan()-ыг дахин явуулахгүй, зөвхөн шүүнэ — давхар алхалт хийхгүй.
+function collectPlanFor(fid){
+  const f=getFolder(fid);
+  const own=new Set((f&&f.tracks||[]).map(t=>t.id));
+  const mainIds=new Set(mainTracks().map(t=>t.id));
+  return collectPlan().filter(t=>t.sw||own.has(t.id)||mainIds.has(t.id))
+}
+function planTotalCountFor(fid){return collectPlanFor(fid).reduce((s,t)=>s+t.n,0)}
 // "12,0% → 8,0%" гэсэн хоёр хувийн шошго. Сольсноор буурахгүй бол
 // сумыг харуулахгүй — хэрэглэгч дэмий эргэлзэхгүй.
 function _pctPair(bad,bad2,total){
@@ -4429,11 +4467,16 @@ function _pctPair(bad,bad2,total){
   return p===q?`<span class="pl-pct">${one(p,col(p))}</span>`
     :`<span class="pl-pct">${one(p,col(p))}<span class="pl-arw">→</span>${one(q,col(q))}</span>`
 }
-/* Төлөвлөх цонх — дээрээ агуулахын үлдэгдлийг харуулна */
+/* Төлөвлөх цонх — дээрээ агуулахын үлдэгдлийг харуулна. Дэрийн (`sec`)
+   төлөвлөгөө идэвхтэй паспорттой үед тухайн паспортынхаа (өөрийнх нь +
+   Гол зам/сум нийтлэг) үлдэгдлийг харуулна; паспортгүй (гол зам дэр)
+   болон сумын рам замын дэр (`swsl`, аль ч дэрийн паспортод
+   харьяалагддаггүй тул) үед НИЙТЛЭГ (Гол зам+сум) үлдэгдлийг харуулна. */
 function _planStockHtml(){
-  const have=derIncN();
+  const f=(_planMode==='sec'&&activeFolderId)?getFolder(activeFolderId):null;
+  const have=derIncCombinedN(f);
   if(!have)return '<span style="color:var(--ink3);font-weight:600">Дэрийн агуулах хөтлөөгүй байна — нүүр хуудасны "Дэрийн агуулах → Орлого"-д бүртгэнэ</span>';
-  const left=derStock(),pl=planTotalCount(),rest=left-pl;
+  const left=derStockFor(f),pl=f?planTotalCountFor(f.id):planTotalCount(),rest=left-pl;
   return `Агуулахад <b>${left}</b> дэр байна · төлөвлөсөн <b>${pl}</b> · `+
     `үлдэх <b style="color:${rest<0?'var(--red)':'var(--g700)'}">${rest}</b>`+
     (rest<0?'<br><span style="color:var(--red);font-weight:800">Төлөвлөсөн нь агуулахынхаас хэтэрсэн байна</span>':'')
@@ -4464,9 +4507,12 @@ function clearPlan(){
   saveDB();closeModal('planModal');renderRecordView(idx);renderHome();
   showToast('Төлөвлөгөө цуцлагдлаа')
 }
-function openPlanReport(){renderPlanReport();openModal('planRepModal')}
-function renderPlanReport(){
-  const data=collectPlan(),body=document.getElementById('planRepBody');if(!body)return;
+// fid өгвөл зөвхөн тухайн паспортын (+ Гол зам/сум нийтлэг) төлөвлөгөө;
+// өгөхгүй бол өмнөх шигээ БҮХ паспортыг хамарсан нэгдсэн тайлан.
+let _planRepFid=null;
+function openPlanReport(fid){_planRepFid=fid||null;renderPlanReport(fid);openModal('planRepModal')}
+function renderPlanReport(fid){
+  const data=fid?collectPlanFor(fid):collectPlan(),body=document.getElementById('planRepBody');if(!body)return;
   if(!data.length){
     body.innerHTML=_swEmpty('Төлөвлөсөн дэр алга — дэр дээрээ "Солихоор төлөвлөх" дарна');
     return}
@@ -4525,24 +4571,34 @@ function backToPlan(){
   _fromPlan=false;
   if(_planPrevFolder!==undefined){_setFolder(_planPrevFolder);_planPrevFolder=undefined}
   if(_planPrevSw!==undefined){swFolderId=_planPrevSw;_planPrevSw=undefined}
-  goHome();renderPlanReport();openModal('planRepModal')
+  goHome();renderPlanReport(_planRepFid);openModal('planRepModal')
 }
 
 /* ══════════════════════════════════════════════
    ДЭРИЙН АГУУЛАХ — ОРЛОГО / ЗАРЛАГА
 
-   Дэр нь гол зам, өртөө, салаалсан, салбар замд ялгаагүй очдог тул
-   агуулах нь ХЭСГИЙН түвшинд ганц: `DB.sinc=[{id,d,n}]`.
-   Зарлага тусад нь бүртгэгддэггүй — дүнзтэй ижил зарчмаар дэр солих
-   бүрт нэг ширхэг гарна. Тоо хоёр газраас гарахгүй.
-   ══════════════════════════════════════════════ */
+   Паспорт бүр (`DB.folders[]`) ӨӨРИЙН орлого/зарлагатай (`f.sinc`,
+   сумын `f.inc`-тэй ижил хэв загвар). Гол зам (`DB.sinc`, хуучин
+   ганц агуулахын үлдэгдэл шилжсэн) болон сумын рам замын дэр ямар ч
+   дэрийн паспортод харьяалагддаггүй тул НИЙТЛЭГ — паспорт бүрийн
+   жагсаалт, үлдэгдэлд үргэлж цуг ордог. `derXxx()` (параметргүй)
+   БҮХ паспортыг НЭГТГЭСЭН (глобал) тоо — өмнөх зан төлөвтэй ижил,
+   зөвхөн Гол замын жагсаалт болон бусад глобал тайланд хэрэглэгдэнэ.
+   `derXxxFor(f)` тухайн ГАНЦ паспортын (өөрийнх нь + нийтлэг) тоо. */
 function derInc(){if(!Array.isArray(DB.sinc))DB.sinc=[];return DB.sinc}
 function derIncN(){return derInc().reduce((s,r)=>s+(+r.n||0),0)}
-/* Зарлага — БҮХ паспортын зам дээрх солилт. Агуулах нь хэсгийн түвшинд
-   ганц тул зарлага нь ч бүх паспортыг хамарна. */
-function derOutRows(){
-  const out=[];
-  const add=(grp,t)=>{
+// f=null → Гол замын нийтлэг сан. f өгвөл тухайн паспортын ӨӨРИЙНХ нь
+// орлого (нийтлэг Гол замынхыг ХАМРАХГҮЙ — тэрийг derIncCombinedN нэмнэ).
+function derIncFor(f){
+  if(!f)return derInc();
+  if(!Array.isArray(f.sinc))f.sinc=[];
+  return f.sinc
+}
+function derIncNFor(f){return derIncFor(f).reduce((s,r)=>s+(+r.n||0),0)}
+// Паспортын өөрийнх нь + Гол замын нийтлэг орлого хамт
+function derIncCombinedN(f){return derIncNFor(f)+(f?derIncN():0)}
+function _derOutWalk(tracks,grp,out){
+  (tracks||[]).forEach(t=>{
     const rows=[];
     (t.sections||[]).forEach(sc=>{
       const rp=sc.repl||{};
@@ -4551,24 +4607,47 @@ function derOutRows(){
     if(rows.length)out.push({grp,name:trackLabel(t),n:rows.length,
       tbd:rows.filter(r=>replMatOf(r)==='tbd').length,
       wood:rows.filter(r=>replMatOf(r)!=='tbd').length})
-  };
-  mainTracks().forEach(t=>add('Гол зам',t));
-  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(t=>add(f.name||'Паспорт',t)));
+  })
+}
+function _derOutSwRows(out){
   // Сумын рам замын дэр ч мөн ижил агуулахаас гардаг — БҮХ сумын
-  // паспортоор (идэвхтэйгээр нь ХЯЗГААРЛАХГҮЙ, дээрх тайлбарын дагуу)
+  // паспортоор (идэвхтэйгээр нь ХЯЗГААРЛАХГҮЙ), учир нь ямар ч дэрийн
+  // паспортод харьяалагддаггүй тул Гол зам шиг нийтлэг.
   swAllTurnoutsGlobal().forEach(tt=>{
     const rp=tt.slRepl||{},rows=Object.keys(rp).map(k=>rp[k]).filter(r=>r&&r.d);
     if(rows.length)out.push({grp:'Сумын рам зам',name:`${tt.num}-р сум`,n:rows.length,
       tbd:rows.filter(r=>replMatOf(r)==='tbd').length,
       wood:rows.filter(r=>replMatOf(r)!=='tbd').length})
-  });
+  })
+}
+/* Зарлага — БҮХ паспортын зам дээрх солилт (глобал, Гол зам жагсаалт
+   болон нэгдсэн тайланд зориулав). */
+function derOutRows(){
+  const out=[];
+  _derOutWalk(mainTracks(),'Гол зам',out);
+  (DB.folders||[]).forEach(f=>_derOutWalk(f.tracks,f.name||'Паспорт',out));
+  _derOutSwRows(out);
   return out
 }
 function derOutN(){return derOutRows().reduce((s,r)=>s+r.n,0)}
 function derStock(){return derIncN()-derOutN()}
+// f=null → Гол зам + сум (нийтлэг), f өгвөл тухайн паспортын өөрийнх нь
+// зам дээрх солилт + нийтлэг хэсэг хамт.
+function derOutRowsFor(f){
+  const out=[];
+  _derOutWalk(mainTracks(),'Гол зам',out);
+  if(f)_derOutWalk(f.tracks,f.name||'Паспорт',out);
+  _derOutSwRows(out);
+  return out
+}
+function derOutNFor(f){return derOutRowsFor(f).reduce((s,r)=>s+r.n,0)}
+function derStockFor(f){return derIncCombinedN(f)-derOutNFor(f)}
+// Гол замын (паспортгүй, үргэлж нийтлэг) агуулах — байнга харагдана,
+// учир нь гол зам ямар ч паспортод "нээгддэггүй". "Төлөвлөсөн дэр" нь
+// БҮХ паспортыг хамарсан нэгдсэн тайлан руу нээгдэнэ (глобал хэвээр).
 function renderDerWrap(){
   const wrap=document.getElementById('derWrap');if(!wrap)return;
-  const inc=derIncN(),out=derOutN(),st=derStock(),pn=planTotalCount();
+  const inc=derIncN(),out=derOutNFor(null),st=derStockFor(null),pn=planTotalCount();
   renderPillGroup('derWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
       meta:inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй',fn:'openDerInc()'},
@@ -4578,28 +4657,42 @@ function renderDerWrap(){
       meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:'openPlanReport()'}
   ]);
 }
-function openDerInc(){renderDerInc();openModal('derIncModal')}
+// null → Гол замын нийтлэг сан, эсвэл тухайн паспортын id — Орлого/Зарлага
+// цонхнуудыг аль сангаас нээснийг санана.
+let _derTargetFid=null;
+function _derTargetFolder(){return _derTargetFid?getFolder(_derTargetFid):null}
+function openDerInc(){_derTargetFid=null;renderDerInc();openModal('derIncModal')}
+function openDerIncForFolder(fid){_derTargetFid=fid;renderDerInc();openModal('derIncModal')}
 function renderDerInc(){
   const b=document.getElementById('derIncBody');if(!b)return;
-  const list=derInc().slice().sort((a,x)=>String(a.d).localeCompare(String(x.d)));
+  const f=_derTargetFolder();
+  // Паспортын өөрийнх нь орлого + Гол замын нийтлэг орлого хамт жагсаана
+  // (тэмдэглэл: Нийт/Үлдэгдэл ч яг эдгээр мөрнөөс бодогдоно, зөрөхгүй).
+  const own=derIncFor(f).map(r=>({...r,own:true}));
+  const shared=f?derInc().map(r=>({...r,own:false})):[];
+  const list=own.concat(shared).sort((a,x)=>String(a.d).localeCompare(String(x.d)));
   let html='';
   list.forEach(r=>{
     html+=`<div class="out-tr der-tr">
-      <span style="flex:1;font-weight:800">${fmtReplDate(r.d)}</span>
+      <span style="flex:1;font-weight:800">${fmtReplDate(r.d)}${r.own?'':' <span class="sc-tag">Гол зам</span>'}</span>
       <span style="font-weight:900">${+r.n||0} дэр</span>
       <button class="rb-btn" style="color:var(--red);border-color:rgba(220,60,60,.35);padding:4px 9px;font-size:11px"
         onclick="event.stopPropagation();delDerInc('${r.id}')">Устгах</button></div>`
   });
-  const st=derStock();
+  const st=derStockFor(f);
   b.innerHTML=(html||_swEmpty('Орлого бүртгээгүй байна'))+
-    (html?`<div class="rp-total"><span>Нийт орлого</span><span>${derIncN()} дэр</span></div>`
-      +`<div class="rp-sub" style="border:0"><span>Зарлага ${derOutN()} дэр</span>`
+    (html?`<div class="rp-total"><span>Нийт орлого</span><span>${derIncCombinedN(f)} дэр</span></div>`
+      +`<div class="rp-sub" style="border:0"><span>Зарлага ${derOutNFor(f)} дэр</span>`
       +`<span style="color:${st<0?'var(--red)':'var(--g700)'}">Үлдэгдэл ${st} дэр</span></div>`:'')
 }
 async function delDerInc(id){
   if(!await appConfirm('Энэ орлогыг устгах уу?'))return;
-  DB.sinc=derInc().filter(r=>r.id!==id);
-  saveDB();renderDerInc();renderDerWrap();showToast('Орлого устлаа')
+  const f=_derTargetFolder();
+  if(f&&(f.sinc||[]).some(r=>r.id===id))f.sinc=f.sinc.filter(r=>r.id!==id);
+  else DB.sinc=derInc().filter(r=>r.id!==id);
+  saveDB();renderDerInc();renderDerWrap();renderDerWrapFolder();
+  if(isBrFolder())renderBrHome();
+  showToast('Орлого устлаа')
 }
 let _derY=2026,_derM=1,_derD=1;
 function openDerIncAdd(){
@@ -4632,19 +4725,23 @@ function _derPrev(){
   const e=document.getElementById('derIncPrev');if(!e)return;
   const n=parseInt(document.getElementById('derIncN').value,10);
   e.innerHTML=(!n||n<=0)?'Дэрийн тоогоо оруулна уу'
-    :`<b>${n}</b> дэр орлогод авна · агуулахад <b>${derStock()+n}</b> дэр болно`
+    :`<b>${n}</b> дэр орлогод авна · агуулахад <b>${derStockFor(_derTargetFolder())+n}</b> дэр болно`
 }
 function saveDerInc(){
   if(!_modalOpen('derIncAddModal'))return;
   const n=parseInt(document.getElementById('derIncN').value,10);
   if(isNaN(n)||n<=0){showToast('Дэрийн тоогоо оруулна уу',2400);return}
   const p=x=>(x<10?'0':'')+x;
-  derInc().push({id:'d-'+uid(),d:_derY+'-'+p(_derM)+'-'+p(_derD),n});
-  saveDB();closeModal('derIncAddModal');renderDerInc();renderDerWrap();
-  showToast(`✓ ${n} дэр орлогод авлаа · үлдэгдэл ${derStock()}`,3000)
+  const f=_derTargetFolder();
+  derIncFor(f).push({id:'d-'+uid(),d:_derY+'-'+p(_derM)+'-'+p(_derD),n});
+  saveDB();closeModal('derIncAddModal');renderDerInc();renderDerWrap();renderDerWrapFolder();
+  if(isBrFolder())renderBrHome();
+  showToast(`✓ ${n} дэр орлогод авлаа · үлдэгдэл ${derStockFor(f)}`,3000)
 }
-function openDerOut(){
-  const rows=derOutRows(),b=document.getElementById('derOutBody');
+// fid өгвөл тухайн паспортын өөрийнх нь + нийтлэг (Гол зам/сум) зарлага;
+// өгөхгүй бол зөвхөн нийтлэг (Гол зам/сум) хэсэг.
+function openDerOut(fid){
+  const rows=derOutRowsFor(fid?getFolder(fid):null),b=document.getElementById('derOutBody');
   if(!b)return;
   let html='',N=0,W=0,T=0,grp='';
   rows.forEach(r=>{
@@ -10147,22 +10244,23 @@ function _brRenderTracks(){
       </div></div>`}).join('')
     :'<div style="grid-column:span 2;text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';
   // Хавтаснууд — өртөөнийхтэй ижил тайлангууд
-  const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCount();
+  const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCountFor(open.id);
   renderPillGroup('brTrFolders',[
     {color:'var(--red)',bg:'var(--red-bg)',name:'Солигдсон дэр',
       meta:n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',fn:'openReplReport()'},
     {color:'var(--purple)',bg:'var(--purple-bg)',name:'Дараалсан цэг',
       meta:c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',fn:'openConsecReport()'},
     {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
-      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:'openPlanReport()'}
+      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:`openPlanReport('${open.id}')`}
   ]);
-  // Дэрийн агуулах — хэсгийн түвшинд ганц тул өртөөнийхтэй нэг
-  const inc=derIncN(),out=derOutN(),stk=derStock();
+  // Дэрийн агуулах — салбарын нээлттэй паспортын өөрийнх нь + нийтлэг
+  // (Гол зам/сум) хэсэг, өртөөнийхтэй ижил зарчмаар.
+  const inc=derIncCombinedN(open),out=derOutNFor(open),stk=derStockFor(open);
   renderPillGroup('brDerWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
-      meta:inc?`${inc} дэр · үлдэгдэл ${stk}`:'Орлого бүртгээгүй',fn:'openDerInc()'},
+      meta:inc?`${inc} дэр · үлдэгдэл ${stk}`:'Орлого бүртгээгүй',fn:`openDerIncForFolder('${open.id}')`},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',
-      meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:'openDerOut()'}
+      meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:`openDerOut('${open.id}')`}
   ]);
 }
 /* ── СУМ ── */
@@ -10342,6 +10440,9 @@ function renderSwHome(){
   const sh=document.getElementById('swSpecHint');
   if(sh)sh.textContent=swCanEdit()?`${swSpecsAll().length} загвар · нэмж болно`
     :`${swSpecsAll().length} загвар`;
+  const sl=document.getElementById('swSpecList'),sc=document.getElementById('swSpecChev');
+  if(sl)sl.style.display=_swSpecOpen?'block':'none';
+  if(sc)sc.textContent=_swSpecOpen?'▲':'▼';
   const g=document.getElementById('swFolders');if(!g)return;
   if(!swFolders().length){
     g.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return}
@@ -11966,6 +12067,10 @@ async function saveSwSpecs(){
   }catch(e){console.error('Сумын загвар хадгалахад:',e);return false}
 }
 // ── Каталогийн жагсаалт (бүх хэсэг харна) ──
+// Сумын нүүрэн дэх дүнзний загварын каталог байнга дэлгэрэнгүй харагдаад
+// зай эзэлдэг байсныг хавтас маягаар нуув — дарж нээх/хаах.
+let _swSpecOpen=false;
+function _toggleSwSpec(){_swSpecOpen=!_swSpecOpen;renderSwHome()}
 function renderSwSpecList(elId,compact){
   const el=document.getElementById(elId);if(!el)return;
   const all=swSpecsAll();
@@ -12617,7 +12722,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.21·153';
+const APP_BUILD='2026.09.21·154';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

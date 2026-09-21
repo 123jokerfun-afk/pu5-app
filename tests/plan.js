@@ -172,17 +172,25 @@ ok('Цонх хаагдаж, жагсаалтад орно',!der.open&&/200 дэ
 ok('Зарлага нь СОЛИЛТООС гарна',der.out===1,String(der.out));
 ok('Үлдэгдэл = орлого − зарлага',der.st===199,String(der.st));
 
+// "3-р зам" идэвхтэй паспортынх (f-test1) тул паспорт бүрт байршсан
+// агуулахын зарчмаар тэр паспортынхаа (openDerOut(fid)) жагсаалтад
+// гардаг болсон — Гол замын (openDerOut() өгөгдөлгүй) жагсаалтад биш.
 const dout=await page.evaluate(async()=>{
   closeModal('derIncModal');await new Promise(r=>setTimeout(r,200));
-  openDerOut();await new Promise(r=>setTimeout(r,280));
+  openDerOut(activeFolderId);await new Promise(r=>setTimeout(r,280));
   const rows=[...document.querySelectorAll('#derOutBody .out-tr')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
   const tot=(document.querySelector('#derOutBody .rp-total')||{}).textContent||'';
   closeModal('derOutModal');
-  return{rows,tot}});
-ok('Зарлага зам тус бүрээр харагдана',
+  openDerOut();await new Promise(r=>setTimeout(r,280));
+  const golRows=[...document.querySelectorAll('#derOutBody .out-tr')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
+  closeModal('derOutModal');
+  return{rows,tot,golRows}});
+ok('Зарлага зам тус бүрээр харагдана (паспортынхаа жагсаалтад)',
    dout.rows.length===1&&/3-р зам/.test(dout.rows[0])&&/1 дэр/.test(dout.rows[0]),
    JSON.stringify(dout.rows));
 ok('Нийт зарлага гарна',/Нийт зарлага/.test(dout.tot)&&/1 дэр/.test(dout.tot),dout.tot);
+ok('Гол замын (нийтлэг) жагсаалтад өөр паспортын зарлага ОРОХГҮЙ',
+   !dout.golRows.some(x=>/3-р зам/.test(x)),JSON.stringify(dout.golRows));
 
 const st2=await page.evaluate(async()=>{
   // Агуулах хөтлөгдсөн тул төлөвлөх цонх одоо ҮЛДЭГДЭЛ харуулна
