@@ -543,6 +543,106 @@ ok('Нэг төлөвлөгөө тавихад тэр зам БҮРЭН тоол
    big.oneLen===1&&big.oneN===1&&big.ueTotal===46&&big.trkTotal===40*46,
    `${big.oneN} төлөвлөгөө · үе ${big.ueTotal} дэр · зам ${big.trkTotal} дэр`);
 
+/* ── 12. Паспорт хооронд тогтвортой тоо, буцах товч ──
+   collectPlan нь агуулахтай харьцуулах тоо тул зөвхөн идэвхтэй паспортоор
+   хязгаарлагдаж БОЛОХГҮЙ — паспорт нээх/хаахаас нийт тоо хамааралгүй
+   байх ёстой (өмнө нь 41 → 40 гэх мэт хэлбэлздэг байсан алдаа). Мөр дээр
+   дарж өөр паспорт руу шилжсэн ч буцах товч хуучин идэвхтэй паспортаа
+   яг хэвээр нь сэргээх ёстой. */
+console.log('\nПаспорт хооронд тогтвортой байдал');
+const stab=await page.evaluate(async()=>{
+  const mk=(id,lab,pat)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+    sleepers:pat.split('').map(c=>({type:c==='b'?'bad':'normal',ts:0}))});
+  DB.folders=[
+    {id:'pA',name:'А паспорт',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'trA',num:1,kind:'station',note:'',sections:[mk('sA','1-р үе','bnnnnnnnnn')]}]},
+    {id:'pB',name:'Б паспорт',season:'намар',year:'2026',date:'2026-09-01',sc:'ПД-6',
+      tracks:[{id:'trB',num:2,kind:'station',note:'',sections:[mk('sB','1-р үе','bnnnnnnnnn')]}]}
+  ];
+  DB.folders[0].tracks[0].sections[0].plan={0:'tbd'};
+  DB.folders[1].tracks[0].sections[0].plan={0:'tbd'};
+  DB.main=[];DB.sw=[];swFolderId=null;
+  activeFolderId=null;DB.tracks=[];saveDB();
+  const closed=planTotalCount();
+  _setFolder('pA');saveDB();
+  const openA=planTotalCount();
+  _setFolder('pB');saveDB();
+  const openB=planTotalCount();
+  _setFolder(null);saveDB();
+  return{closed,openA,openB}});
+ok('Ямар ч паспорт нээлттэй бус үед хоёр паспортын нийлбэр гарна',
+   stab.closed===2,String(stab.closed));
+ok('А паспорт нээхэд нийт тоо ӨӨРЧЛӨГДӨХГҮЙ',stab.openA===2,String(stab.openA));
+ok('Б паспорт нээхэд ч мөн адил хэвээр',stab.openB===2,String(stab.openB));
+
+const jb=await page.evaluate(async()=>{
+  goHome();await new Promise(r=>setTimeout(r,300));
+  openPlanReport();await new Promise(r=>setTimeout(r,300));
+  const beforeFolder=activeFolderId;
+  jumpToPlan('trB','sB',0);await new Promise(r=>setTimeout(r,340));
+  const duringFolder=activeFolderId,view1=document.querySelector('.view.active').id;
+  _appBack();await new Promise(r=>setTimeout(r,340));
+  return{beforeFolder,duringFolder,view1,afterFolder:activeFolderId,
+    view2:document.querySelector('.view.active').id,
+    modalOpen:document.getElementById('planRepModal').classList.contains('open')}});
+ok('Идэвхтэй паспортгүй үед мөр дарахад агуулж буй паспорт руу шилжинэ',
+   jb.beforeFolder===null&&jb.duringFolder==='pB'&&jb.view1==='recordView',
+   `${jb.beforeFolder}→${jb.duringFolder} · ${jb.view1}`);
+ok('Буцахад тайлан руугаа буцаж, идэвхтэй паспорт (алга байсан) хэвээрээ үлдэнэ',
+   jb.afterFolder===null&&jb.modalOpen&&jb.view2==='homeView',
+   `${jb.afterFolder} · ${jb.view2} · modal ${jb.modalOpen}`);
+
+const jb2=await page.evaluate(async()=>{
+  _setFolder('pA');saveDB();
+  goHome();await new Promise(r=>setTimeout(r,300));
+  openPlanReport();await new Promise(r=>setTimeout(r,300));
+  const beforeFolder=activeFolderId;
+  jumpToPlan('trB','sB',0);await new Promise(r=>setTimeout(r,340));
+  const duringFolder=activeFolderId;
+  _appBack();await new Promise(r=>setTimeout(r,340));
+  return{beforeFolder,duringFolder,afterFolder:activeFolderId}});
+ok('А паспорт нээлттэй үед Б-ийн дэр рүү үсэрч, буцаад А-даа зөв сэргэнэ',
+   jb2.beforeFolder==='pA'&&jb2.duringFolder==='pB'&&jb2.afterFolder==='pA',
+   `${jb2.beforeFolder}→${jb2.duringFolder}→${jb2.afterFolder}`);
+
+/* Сумын рам замын дэр — хоёр өөр сумын паспорт хооронд */
+const swStab=await page.evaluate(async()=>{
+  DB.sw=[
+    {id:'swA',name:'Сум А',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      turnouts:[{id:'toA',num:1,mak:'Р-65',mark:'1/9',head:2,it:'bnnnnnn',
+        slPlan:{0:'tbd'},slRepl:{},dRepl:{},dPlan:{}}],inc:[]},
+    {id:'swB',name:'Сум Б',season:'намар',year:'2026',date:'2026-09-01',sc:'ПД-6',
+      turnouts:[{id:'toB',num:2,mak:'Р-65',mark:'1/9',head:2,it:'bnnnnnn',
+        slPlan:{0:'tbd'},slRepl:{},dRepl:{},dPlan:{}}],inc:[]}
+  ];
+  swFolderId='swA';saveDB();
+  const nA=planTotalCount();
+  swFolderId='swB';saveDB();
+  const nB=planTotalCount();
+  swFolderId=null;saveDB();
+  const nNone=planTotalCount();
+  return{nA,nB,nNone}});
+ok('Сумын идэвхтэй паспорт солигдоход/хаагдахад нийт тоо тогтвортой',
+   swStab.nA===swStab.nB&&swStab.nB===swStab.nNone,
+   `${swStab.nA} · ${swStab.nB} · ${swStab.nNone}`);
+
+const swjb=await page.evaluate(async()=>{
+  swFolderId='swA';saveDB();
+  goHome();await new Promise(r=>setTimeout(r,300));
+  openPlanReport();await new Promise(r=>setTimeout(r,300));
+  const beforeSw=swFolderId;
+  jumpToSwPlan('toB',0);await new Promise(r=>setTimeout(r,340));
+  const duringSw=swFolderId,view1=document.querySelector('.view.active').id;
+  _appBack();await new Promise(r=>setTimeout(r,340));
+  return{beforeSw,duringSw,view1,afterSw:swFolderId,
+    view2:document.querySelector('.view.active').id,
+    modalOpen:document.getElementById('planRepModal').classList.contains('open')}});
+ok('Сум А нээлттэй үед Б-ийн рам зам дэр рүү үсэрч, буцаад А-даа сэргэнэ',
+   swjb.beforeSw==='swA'&&swjb.duringSw==='swB'&&swjb.view1==='swRecView'&&swjb.afterSw==='swA',
+   `${swjb.beforeSw}→${swjb.duringSw}→${swjb.afterSw} · ${swjb.view1}`);
+ok('Буцахад тайлан руугаа буцна',swjb.modalOpen&&swjb.view2==='homeView',
+   `${swjb.view2} · modal ${swjb.modalOpen}`);
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
