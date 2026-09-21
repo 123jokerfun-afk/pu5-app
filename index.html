@@ -3385,6 +3385,18 @@ function mainTracks(){if(!Array.isArray(DB.main))DB.main=[];return DB.main}
 function sortMain(){mainTracks().sort((a,b)=>a.num-b.num)}
 // Өртөөний зам (идэвхтэй паспорт) + гол зам — тайлан, экспортод хоёуланг нь
 function allTracks(){return (DB.tracks||[]).concat(mainTracks())}
+// Гол зам + БҮХ паспортын зам (идэвхтэй эсэхээс үл хамаарна). Агуулахын
+// тооцоо (төлөвлөсөн/зарлагдсан дэр) хэсгийн түвшинд ганц тул зөвхөн
+// идэвхтэй паспортоор хязгаарлагдсан allTracks()-ыг ашиглавал паспорт
+// нээх/хаахаас хамаарч тоо хэлбэлзэнэ.
+function allTracksGlobal(){
+  const out=mainTracks().slice();
+  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(t=>out.push(t)));
+  return out
+}
+function _findFolderOfTrack(trackId){
+  return (DB.folders||[]).find(f=>(f.tracks||[]).some(t=>t.id===trackId))||null
+}
 // Хэсэг бүрийн өгөгдөл ӨӨРИЙН хаяг дээрээ хадгалагдана:
 //   үүлэнд  sections/<хэсгийн код>
 //   утсанд  sg_der_v3_<хэсгийн код>
@@ -4348,14 +4360,17 @@ let _planMode='sec';
 function secPlan(sec){if(!sec.plan||typeof sec.plan!=='object')sec.plan={};return sec.plan}
 function planAt(sec,idx){return (sec&&sec.plan&&sec.plan[idx])||null}
 function clearPlanAt(sec,idx){if(sec&&sec.plan)delete sec.plan[idx]}
-// Энэ паспортын (+ гол замын) төлөвлөсөн дэр — зам → үе → дугаараар
+// БҮХ паспортын (+ гол замын) төлөвлөсөн дэр — зам → үе → дугаараар.
+// Агуулахтай харьцуулах тоо тул зөвхөн идэвхтэй паспортоор хязгаарлаж
+// БОЛОХГҮЙ — allTracks()-ыг биш, allTracksGlobal()-ыг ашиглана (эс
+// тэгвэл паспорт нээх/хаахад нийт тоо хэлбэлзэнэ).
 /* Төлөвлөсөн дэрүүд — зам → үе → дугаараар, ҮЕ БА ЗАМ тус бүрд
    "одоо хэдэн хувь → төлөвлөснийг гүйцэтгэвэл хэдэн хувь" болохыг
    хамт тооцно. Төлөвлөсөн дэр нь ТЭНЦЭХГҮЙ байсан үед л хувь буурна:
    хэвийн дэрийг солихоор төлөвлөсөн бол дүн өөрчлөгдөхгүй. */
 function collectPlan(){
   const out=[];
-  allTracks().forEach(t=>{
+  allTracksGlobal().forEach(t=>{
     // Төлөвлөгөөгүй зам дээр дүн бодох шалтгаангүй. Энэ нь renderHome
     // бүрд дуудагддаг тул 100 км × 40 үетэй гол замд үе бүрийг задлахаас
     // сэргийлнэ — төлөвлөгөө хоосон үед (түгээмэл тохиолдол) бараг үнэгүй.
@@ -4384,7 +4399,9 @@ function collectPlan(){
   // Сумын рам замын дэр (2,75 м) нь сумын дүнд ордоггүй ч ДЭР л тул
   // дэрийн төлөвлөгөөнд нэг доор жагсана: "N-р сум · рам зам төмөр #M".
   // Хувь нь сумын дүнзний хувь БИШ — рам замын дэрийн өөрийн хувь.
-  swAllTurnouts().forEach(tt=>{
+  // Мөн БҮХ сумын паспортыг хамарна (swAllTurnouts() биш) — дэрийн
+  // хэсэгтэй адил шалтгаанаар.
+  swAllTurnoutsGlobal().forEach(tt=>{
     const pl=tt.slPlan||{},rows=[];let fix=0;
     Object.keys(pl).forEach(k=>{
       const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
@@ -4484,14 +4501,31 @@ function renderPlanReport(){
   body.innerHTML=html
 }
 // Төлөвлөсөн мөр дээр дарахад тэр зам → үе рүү, тэр дэр дээрээ очно
+// Төлөвлөсөн дэрийн тайлан одоо БҮХ паспортыг хамардаг тул мөрийн зам нь
+// идэвхтэй паспортод биш байж болно — тухайн замыг агуулж буй паспорт руу
+// түр шилжинэ, буцахдаа (backToPlan) хуучин паспортоо сэргээнэ.
+let _fromPlan=false,_planPrevFolder,_planPrevSw;
 function jumpToPlan(trackId,secId,pos){
   hap(8);closeModal('planRepModal');
-  const t=getTrack(trackId);if(!t){showToast('Зам олдсонгүй');return}
+  let t=getTrack(trackId);
+  if(!t){
+    const f=_findFolderOfTrack(trackId);
+    if(f){_planPrevFolder=activeFolderId;_setFolder(f.id);t=getTrack(trackId)}
+  }
+  if(!t){showToast('Зам олдсонгүй');return}
   openTrack(trackId,1);
   const sec=(t.sections||[]).find(x=>x.id===secId);
   if(!sec){showToast('Тухайн үе олдсонгүй');return}
   openSection(secId,Math.max(0,pos));
+  _fromPlan=true;                       // openTrack/openSection-ий дараа тавина
   showToast(`${trackLabel(t)} · ${sec.label} · #${pos+1}`,2200)
+}
+// Жагсаалт руу нь эргэж очно — түр шилжсэн паспортоо сэргээнэ
+function backToPlan(){
+  _fromPlan=false;
+  if(_planPrevFolder!==undefined){_setFolder(_planPrevFolder);_planPrevFolder=undefined}
+  if(_planPrevSw!==undefined){swFolderId=_planPrevSw;_planPrevSw=undefined}
+  goHome();renderPlanReport();openModal('planRepModal')
 }
 
 /* ══════════════════════════════════════════════
@@ -4520,8 +4554,9 @@ function derOutRows(){
   };
   mainTracks().forEach(t=>add('Гол зам',t));
   (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(t=>add(f.name||'Паспорт',t)));
-  // Сумын рам замын дэр ч мөн ижил агуулахаас гардаг
-  swAllTurnouts().forEach(tt=>{
+  // Сумын рам замын дэр ч мөн ижил агуулахаас гардаг — БҮХ сумын
+  // паспортоор (идэвхтэйгээр нь ХЯЗГААРЛАХГҮЙ, дээрх тайлбарын дагуу)
+  swAllTurnoutsGlobal().forEach(tt=>{
     const rp=tt.slRepl||{},rows=Object.keys(rp).map(k=>rp[k]).filter(r=>r&&r.d);
     if(rows.length)out.push({grp:'Сумын рам зам',name:`${tt.num}-р сум`,n:rows.length,
       tbd:rows.filter(r=>replMatOf(r)==='tbd').length,
@@ -5273,7 +5308,7 @@ addEventListener('pagehide',()=>_revLeave());
    солино. noAsk нь хуучин дуудлагуудтай нийцүүлэхийн тулд үлдсэн. */
 function openTrack(id,noAsk){
   _revLeave();                        // өмнөх замд нээлттэй үлдсэн үеийг эргүүлнэ
-  _fromConsec=false;activeTrackId=id;showView('trackView');renderTrackView()
+  _fromConsec=false;_fromPlan=false;activeTrackId=id;showView('trackView');renderTrackView()
 }
 function askWalk(){
   const t=activeTrack();if(!t||isMainTrack(t))return;
@@ -10499,6 +10534,7 @@ async function delSwTurnout(){
 
 // ── Бүртгэл ──
 function openSwRec(id){
+  _fromPlan=false;
   swTurnoutId=id;const t=swTurnout();if(!t)return;
   if(t.head===null||t.head===undefined){   // эхлэхийн өмнө рам замын дэрийн тоог асууна
     document.getElementById('swHeadN').value='';
@@ -10768,9 +10804,14 @@ function clearSwSlPlan(){
 // Төлөвлөсөн жагсаалтаас сумын рам замын дэр рүү шууд очно
 function jumpToSwPlan(tid,i){
   hap(8);closeModal('planRepModal');
+  if(!swFolder()||!(swFolder().turnouts||[]).some(x=>x.id===tid)){
+    const f=_findSwFolderOfTurnout(tid);
+    if(f){_planPrevSw=swFolderId;swFolderId=f.id}
+  }
   swTurnoutId=tid;_swFromRun=false;
   const t=swTurnout();if(!t){showToast('Сум олдсонгүй');return}
   showView('swRecView');renderSwRec(i);
+  _fromPlan=true;
   showToast(`Сум ${t.num} · рам зам төмөр #${i+1}`,2200)
 }
 
@@ -10842,6 +10883,17 @@ function swReplRows(to){
 }
 function swAllTurnouts(){
   const f=swFolder();return f?(f.turnouts||[]).slice().sort((a,b)=>a.num-b.num):[]
+}
+// Идэвхтэй сумын паспортоор хязгаарлагдахгүй — БҮХ паспортын сум.
+// Агуулахын тооцоо (зарлага/төлөвлөгөө) хэсгийн түвшинд ганц тул
+// идэвхтэй паспорт солигдож/хаагдахаас үл хамаарч тогтмол байх ёстой.
+function swAllTurnoutsGlobal(){
+  const out=[];
+  (DB.sw||[]).forEach(f=>(f.turnouts||[]).forEach(t=>out.push(t)));
+  return out
+}
+function _findSwFolderOfTurnout(tid){
+  return (DB.sw||[]).find(f=>(f.turnouts||[]).some(t=>t.id===tid))||null
 }
 
 // ── Дүнз засах цонх ──
@@ -11301,7 +11353,7 @@ async function exportPlanForm(){
 }
 
 function swGotoPlan(tid,i){
-  swTurnoutId=tid;_swFromRun=false;
+  swTurnoutId=tid;_swFromRun=false;_fromPlan=false;
   closeModal('swPlanRepModal');
   showView('swRecView');renderSwRec(i)
 }
@@ -11823,12 +11875,13 @@ function openSwRunRep(){
   openModal('swRunRepModal')
 }
 function swGotoDz(tid,i){
-  swTurnoutId=tid;_swFromRun=true;
+  swTurnoutId=tid;_swFromRun=true;_fromPlan=false;
   closeModal('swRunRepModal');
   showView('swRecView');renderSwRec(i)
 }
 // Дараалсан дүнзний жагсаалтаас ирсэн бол буцахад тийшээ эргэнэ
 function swBackFromRec(){
+  if(_fromPlan){backToPlan();return}
   if(_swFromRun){_swFromRun=false;showView('swHomeView',true);renderSwHome();openSwRunRep();return}
   if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
   showView('swHomeView',true);renderSwHome()
@@ -12537,6 +12590,8 @@ function _appBack(){
     case 'recordView':
       // "Дараалсан цэг"-ээс үсэрч ирсэн бол жагсаалт руугаа буцна
       if(_fromConsec){backToConsec();return true}
+      // "Төлөвлөсөн дэр"-ээс үсэрч ирсэн бол мөн тэр жагсаалт руугаа буцна
+      if(_fromPlan){backToPlan();return true}
       goTrack();return true;
     case 'swHomeView':
       if(swFolderId){closeSwFolder();return true}
@@ -12562,7 +12617,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.21·152';
+const APP_BUILD='2026.09.21·153';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
