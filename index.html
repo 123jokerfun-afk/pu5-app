@@ -66,9 +66,18 @@
   --bg:#FFFAF0;--bg2:#FFF2DC;--card:#FFFFFF;
   --border:#F2E6CE;--border2:#E5D5B6;
   --r:24px;--rm:18px;--rs:12px;--rx:30px;
-  --sh-sm:0 2px 8px rgba(196,150,50,.10),0 0 0 .5px rgba(196,150,50,.05);
-  --sh:0 4px 18px rgba(196,150,50,.13),0 0 0 .5px rgba(196,150,50,.05);
-  --sh-lg:0 12px 40px rgba(196,150,50,.18),0 0 0 .5px rgba(196,150,50,.06);
+  /* Нэвтрэх дэлгэцийн зөөлөн товойлгосон (neumorphic) хэв маягийг
+     гэрэлтэй загварт бүхэлд нь түгээхийн тулд СҮҮДРИЙН ТОКЕНУУДЫГ
+     ХОЁР ЧИГЛЭЛТЭЙ болгов: гэрэл (цайвар highlight, дээш-зүүн тийш)
+     + сүүдэр (бараан, доош-баруун тийш) хосоор — карт бүр "матери-
+     алаасаа сийлсэн" мэт харагдана. Эдгээр токеныг ашигладаг 30 гаруй
+     газар (folder-card, track-card, sec-card, add-track-btn, exp-btn,
+     spc-card…) автоматаар шинэ загварт шилжинэ. Харанхуй загвар
+     ӨӨРИЙН тусдаа "шилэн" тэмдэглэгээтэй (доор [data-theme="dark"]
+     дотор) тул энд ХӨНДӨГДӨӨГҮЙ. */
+  --sh-sm:-4px -4px 8px rgba(255,255,255,.75),4px 4px 10px rgba(196,150,50,.16);
+  --sh:-6px -6px 14px rgba(255,255,255,.8),6px 6px 16px rgba(196,150,50,.18);
+  --sh-lg:-8px -8px 20px rgba(255,255,255,.85),9px 9px 24px rgba(196,150,50,.2);
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
 }
 
@@ -240,30 +249,45 @@ button{font-family:inherit}
   padding:6px 12px;font-size:12px;cursor:pointer;font-weight:700;
   color:var(--ink2);white-space:nowrap;box-shadow:var(--sh-sm)}
 .home-body{padding:0 0 100px;flex:1;overflow-y:auto}
-.hero{border-radius:0 0 30px 30px;background:radial-gradient(ellipse 90% 75% at 12% 0%,rgba(255,240,150,.65),transparent 55%),radial-gradient(ellipse 60% 55% at 96% 90%,rgba(62,198,255,.5),transparent 58%),radial-gradient(ellipse 50% 45% at 70% 110%,rgba(255,77,157,.4),transparent 60%),linear-gradient(148deg,#FFC53D 0%,#FF9636 45%,#FF6B7A 85%,#C86BDB 130%);
+/* Нэвтрэх дэлгэцтэй адилхан зөөлөн товойлгосон (neumorphic) цайвар
+   өнгө — өмнөх тод наран мандах градиентын оронд. Харанхуй загварт
+   доор нь [data-theme="dark"] өөрийн неон градиентаа хэвээр хадгална
+   (энэ дүрэм зөвхөн ГЭРЭЛТЭЙ үед хэрэгжинэ). */
+.hero{border-radius:0 0 30px 30px;background:linear-gradient(160deg,#F1ECE2,#EAE3D5);
   padding:calc(var(--sat) + 20px) 20px 24px;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg width='400' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(255,255,255,.05)' stroke-width='1.5'%3E%3Cline x1='0' y1='100' x2='400' y2='100'/%3E%3Cline x1='0' y1='120' x2='400' y2='120'/%3E%3Cline x1='40' y1='80' x2='40' y2='140'/%3E%3Cline x1='110' y1='80' x2='110' y2='140'/%3E%3Cline x1='180' y1='80' x2='180' y2='140'/%3E%3Cline x1='250' y1='80' x2='250' y2='140'/%3E%3Cline x1='320' y1='80' x2='320' y2='140'/%3E%3Cline x1='390' y1='80' x2='390' y2='140'/%3E%3C/g%3E%3C/svg%3E") center/cover;opacity:.6}
+  background:url("data:image/svg+xml,%3Csvg width='400' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(196,150,50,.06)' stroke-width='1.5'%3E%3Cline x1='0' y1='100' x2='400' y2='100'/%3E%3Cline x1='0' y1='120' x2='400' y2='120'/%3E%3Cline x1='40' y1='80' x2='40' y2='140'/%3E%3Cline x1='110' y1='80' x2='110' y2='140'/%3E%3Cline x1='180' y1='80' x2='180' y2='140'/%3E%3Cline x1='250' y1='80' x2='250' y2='140'/%3E%3Cline x1='320' y1='80' x2='320' y2='140'/%3E%3Cline x1='390' y1='80' x2='390' y2='140'/%3E%3C/g%3E%3C/svg%3E") center/cover;opacity:.6}
 .hero-top{display:flex;align-items:flex-start;justify-content:space-between;position:relative}
 .hero-logo{display:flex;align-items:center;gap:12px}
-.hero-icon{width:48px;height:48px;background:rgba(255,255,255,.12);border-radius:14px;
-  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);
-  border:1px solid rgba(255,255,255,.15)}
-.hero-text-title{font-size:20px;font-weight:900;color:#fff;letter-spacing:-.5px}
-.hero-text-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:500}
-.hero-edit{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
-  color:rgba(255,255,255,.85);border-radius:var(--rs);padding:6px 12px;
-  font-size:12px;cursor:pointer;font-weight:700;backdrop-filter:blur(8px)}
+/* Гэрэлтэй загварт толгой цайвар болсон тул цагаан бичиг/шилэн товч
+   харагдахаа больж, ГЭРЭЛТ ТОВОЙЛГОСОН (neumorphic) — карттай ижил
+   var(--card)/var(--sh-sm) хэрэглэдэг болов. Харанхуй загварт доор
+   [data-theme="dark"] өөрийн шилэн загвараа хэвээр хадгална. */
+.hero-icon{width:48px;height:48px;background:var(--card);border-radius:14px;
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-sm)}
+.hero-text-title{font-size:20px;font-weight:900;color:var(--ink);letter-spacing:-.5px}
+.hero-text-sub{font-size:12px;color:var(--ink3);margin-top:1px;font-weight:500}
+.hero-edit{background:var(--card);border:none;
+  color:var(--ink2);border-radius:var(--rs);padding:9px 12px;
+  /* Хуруугаар онох хамгийн бага хэмжээ (28px) — хүрээ авахад алдсан
+     хоёр пикселийг padding нэмж нөхнө, `sweepC.js`-ээр илэрсэн. */
+  min-height:28px;box-sizing:border-box;
+  font-size:12px;cursor:pointer;font-weight:700;box-shadow:var(--sh-sm);transition:box-shadow .15s}
+.hero-edit:active{box-shadow:inset 3px 3px 7px rgba(196,150,50,.16),inset -3px -3px 7px rgba(255,255,255,.8)}
 .hero-stats{display:flex;gap:12px;margin-top:20px;position:relative}
 .hero-stats-2{margin-top:9px}
-.hero-stat{flex:1;min-width:0;background:rgba(255,255,255,.28);border-radius:18px;
-  padding:10px 12px;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(12px);
-  box-shadow:0 4px 16px rgba(180,110,30,.15)}
-.hero-stat-n{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;text-shadow:0 1px 8px rgba(150,90,20,.3);
+/* Толгойн доторх тоон хавтан ч гэрэлтэй загварт КАРТААС сийлсэн мэт
+   товойлгосон (neumorphic) — өмнөх цайвар шилэн хавтангийн оронд. */
+.hero-stat{flex:1;min-width:0;background:var(--card);border-radius:18px;
+  padding:10px 12px;border:none;box-shadow:var(--sh-sm)}
+.hero-stat-n{font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.5px;
   /* Гүйж байхад орон нэмэгдэхэд бичиг хажуу тийш үсэрдэггүй болгоно */
   font-variant-numeric:tabular-nums;will-change:transform}
-.hero-stat-l{font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-#swHero{background:linear-gradient(135deg,#6D28D9,#9333EA 55%,#C026D3)}
+.hero-stat-l{font-size:10px;color:var(--ink3);margin-top:1px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.hero-meta-text{color:var(--ink3)}
+[data-theme="dark"] .hero-meta-text{color:rgba(255,255,255,.7)}
+#swHero{background:linear-gradient(160deg,#F3EEF9,#ECE4F5)}
+[data-theme="dark"] #swHero{background:linear-gradient(135deg,#6D28D9,#9333EA 55%,#C026D3)}
 /* СШ-ийн толгой нь хоёр эгнээ дүнтэй тул дэрийнхээс өндөр болдог.
    Хөвөөг нь чангалж бүх агуулгыг ~24px дээшлүүлнэ — хамгаалалтын
    зай (--sat) хэвээр тул хиртэлттэй утсанд ч дарагдахгүй. */
@@ -351,7 +375,7 @@ button{font-family:inherit}
   padding:0 0 calc(20px + var(--sab));width:100%;max-height:88vh;overflow-y:auto;
   backdrop-filter:blur(20px);box-shadow:0 -12px 48px rgba(150,95,25,.2)}
 /* ── СШ ПУ-5 ── */
-.sw-nav{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;
+.sw-nav{background:var(--card);border:none;color:#7E22CE;box-shadow:var(--sh-sm);
   border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:800;font-family:inherit;
   cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:transform .15s}
 .sw-nav:active{transform:scale(.95)}
@@ -556,16 +580,21 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .ff input:focus,.ff select:focus{border-color:var(--g500);background:#fff}
 .ff-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-btns{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:16px}
-.btn-cancel{padding:14px;border:1.5px solid var(--border);border-radius:99px;
+/* Модалын хоёр товч — нэвтрэх дэлгэцийн товойлгосон (neumorphic)
+   хэв маягтай нийцүүлэв: Болих нь картаас сийлсэн мэт (var(--sh-sm)),
+   Тийм/OK нь өнгөтэйгээ хэвээр (аль ч темд тод CTA хэвээр байх ёстой)
+   боловч дарахад дотогшоо СУУДАГ (inset) мэдрэмж нэмэв. */
+.btn-cancel{padding:14px;border:none;border-radius:99px;
   background:var(--card);font-size:15px;cursor:pointer;font-weight:700;color:var(--ink2);
-  transition:transform .18s ease}
-.btn-cancel:active{transform:scale(.96)}
+  box-shadow:var(--sh-sm);transition:transform .18s ease,box-shadow .18s ease}
+.btn-cancel:active{transform:scale(.98);box-shadow:inset 3px 3px 7px rgba(196,150,50,.16),inset -3px -3px 7px rgba(255,255,255,.8)}
 .btn-ok{padding:14px;border:none;border-radius:99px;
   background:linear-gradient(135deg,#FFD23F,#FF8E3C);
   color:#fff;font-size:15px;font-weight:800;cursor:pointer;
-  box-shadow:0 5px 20px rgba(255,153,50,.4);text-shadow:0 1px 3px rgba(140,90,20,.25);
-  transition:transform .18s ease}
-.btn-ok:active{transform:scale(.96)}
+  box-shadow:0 5px 20px rgba(255,153,50,.4),inset 0 1px 0 rgba(255,255,255,.5);
+  text-shadow:0 1px 3px rgba(140,90,20,.25);
+  transition:transform .18s ease,box-shadow .18s ease}
+.btn-ok:active{transform:scale(.97);box-shadow:0 2px 8px rgba(255,153,50,.35),inset 2px 2px 6px rgba(140,80,10,.35)}
 .info-pill{font-size:12px;color:var(--purple);background:var(--purple-bg);
   padding:8px 12px;border-radius:var(--rs);margin-bottom:10px;font-weight:600;
   border:1px solid rgba(109,40,217,.15)}
@@ -1655,11 +1684,11 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="hero-logo">
         <div class="hero-icon">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect x="2" y="11" width="24" height="4" rx="2" fill="rgba(255,255,255,.9)"/>
-            <rect x="2" y="15" width="24" height="4" rx="2" fill="rgba(255,255,255,.9)"/>
-            <rect x="5" y="7" width="3" height="14" rx="1.5" fill="rgba(255,255,255,.7)"/>
-            <rect x="10" y="7" width="3" height="14" rx="1.5" fill="rgba(255,255,255,.7)"/>
-            <rect x="15" y="7" width="3" height="14" rx="1.5" fill="rgba(255,255,255,.7)"/>
+            <rect x="2" y="11" width="24" height="4" rx="2" fill="var(--gold-deep)"/>
+            <rect x="2" y="15" width="24" height="4" rx="2" fill="var(--gold-deep)"/>
+            <rect x="5" y="7" width="3" height="14" rx="1.5" fill="var(--ink3)"/>
+            <rect x="10" y="7" width="3" height="14" rx="1.5" fill="var(--ink3)"/>
+            <rect x="15" y="7" width="3" height="14" rx="1.5" fill="var(--ink3)"/>
             <rect x="20" y="7" width="3" height="14" rx="1.5" fill="#FF6B6B"/>
           </svg>
         </div>
@@ -1676,7 +1705,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </div>
     </div>
     <div style="position:relative;margin-top:8px;margin-bottom:4px">
-      <div id="heroMeta" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600"></div>
+      <div id="heroMeta" class="hero-meta-text" style="font-size:11px;font-weight:600"></div>
     </div>
     <div class="hero-stats" id="heroStats">
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 21V6M20 21V6M4 10h16M4 15h16M9 3h6"/></svg></span><div class="hero-stat-n" id="hsTracks">0</div><div class="hero-stat-l">Замын тоо</div></div>
@@ -1966,7 +1995,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </div>
     </div>
     <div style="position:relative;margin-top:8px;margin-bottom:4px">
-      <div id="swHeroMeta" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600"></div>
+      <div id="swHeroMeta" class="hero-meta-text" style="font-size:11px;font-weight:600"></div>
     </div>
     <div class="hero-stats" id="swHeroStats">
       <div class="hero-stat"><span class="hero-stat-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3"/></svg></span><div class="hero-stat-n" id="swHsT">0</div><div class="hero-stat-l">Сумын тоо</div></div>
@@ -12533,7 +12562,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.20·151';
+const APP_BUILD='2026.09.21·152';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
