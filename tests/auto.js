@@ -88,6 +88,60 @@ const gone=await page.evaluate(()=>['_partsOn','_partsRead','_partsOnly','probeP
   .filter(f=>typeof window[f]==='function'));
 ok('Унтраалгын функцууд устсан',gone.length===0,JSON.stringify(gone));
 
+/* 9-12. Өөр утаснаас бодит цагт ирсэн өөрчлөлт (_applyRemote) — өмнө нь
+   зөвхөн "илгээгдээгүй тэмдэг байгаа эсэх"-ээр шийддэг байсан тул
+   сүлжээ сул үед богино зуур тэмдэг идэвхтэй байхад ч өөр утасны
+   ЖИНХЭНЭ шинэ өөрчлөлтийг чимээгүйхэн орхигдуулдаг байв.
+   cloudReload()-той адил _canOverwriteLocal()-оор цаг тэмдгээр
+   харьцуулдаг болсныг батална. */
+console.log('\nБодит цагийн синхрончлол — өөр утаснаас ирсэн өөрчлөлт');
+
+const live=await page.evaluate(()=>{
+  const mk=loc=>({location:loc,v:3,folders:[],main:[{id:'m1',num:1,kind:'main',sections:[]}],sw:[],rpt:{}});
+  localStorage.removeItem(_dirtyKey());
+  _cloudHadData=true;
+  DB=mk('ХУУЧИН');
+  const remote=_packDB(mk('ШИНЭ'));
+  _applyRemote(remote,Date.now());
+  return {loc:DB.location}
+});
+ok('Тэмдэггүй үед алсын шинэ өгөгдөл шууд хэрэгждэг (регресс шалгалт)',
+   live.loc==='ШИНЭ',JSON.stringify(live));
+
+const near=await page.evaluate(()=>{
+  const mk=loc=>({location:loc,v:3,folders:[],main:[{id:'m1',num:1,kind:'main',sections:[]}],sw:[],rpt:{}});
+  const dt=Date.now()-500;
+  localStorage.setItem(_dirtyKey(),String(dt));
+  _cloudHadData=true;
+  DB=mk('УТАСНЫХ');
+  const remote=_packDB(mk('ҮҮЛНИЙХ'));
+  _applyRemote(remote,dt+500);        // dt+500 ≤ dt+2000 → ялгаа тодорхойгүй, false
+  return {loc:DB.location}
+});
+ok('Ялгаа тодорхойгүй үед утсан дахийг ХАМГААЛНА, дарж бичихгүй',
+   near.loc==='УТАСНЫХ',JSON.stringify(near));
+
+const conflict=await page.evaluate(()=>{
+  const mk=loc=>({location:loc,v:3,folders:[],main:[{id:'m1',num:1,kind:'main',sections:[]}],sw:[],rpt:{}});
+  const b=document.getElementById('errBanner');if(b)b.remove();
+  const dt=Date.now()-5000;
+  localStorage.setItem(_dirtyKey(),String(dt));
+  _cloudHadData=true;
+  DB=mk('УТАСНЫХ2');
+  const remote=_packDB(mk('ҮҮЛНИЙХ2'));
+  _applyRemote(remote,dt+5000);        // dt+5000 > dt+2000 → жинхэнэ зөрчил, null
+  const banner=document.getElementById('errBanner');
+  const r={loc:DB.location,bannerShown:!!banner,bannerText:banner?banner.textContent.slice(0,50):''};
+  if(banner)banner.remove();
+  localStorage.removeItem(_dirtyKey());
+  return r
+});
+ok('Жинхэнэ зөрчилтэй үед хэрэглэгчид МЭДЭГДЭНЭ (өмнө нь чимээгүй орхигддог байсан алдаа)',
+   conflict.loc==='УТАСНЫХ2'&&conflict.bannerShown,JSON.stringify(conflict));
+
+const wire=await page.evaluate(()=>startRealtimeSync.toString().includes('_applyRemote(p.db,p.ms)'));
+ok('startRealtimeSync() нь цаг тэмдгийг (p.ms) _applyRemote рүү дамжуулдаг',wire,String(wire));
+
 console.log('\nERRORS:',JSON.stringify(errs.filter(e=>!/ERR_REQUEST_RANGE/.test(e)).slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);
 await br.close();process.exit(R.every(Boolean)?0:1);

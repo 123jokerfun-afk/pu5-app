@@ -8573,15 +8573,22 @@ function startRealtimeSync(){
     if(_localWriting)return;
     if(snap.metadata&&snap.metadata.hasPendingWrites)return;
     const p=_partsFromSnap(snap);
-    if(p)_applyRemote(p.db);
+    if(p)_applyRemote(p.db,p.ms);
   },err=>console.error('Sync err:',err))
 }
-/* Алсаас ирсэн (шахсан) өгөгдлийг хэрэглэх — хоёр сонсогчид нийтлэг */
-function _applyRemote(remote){
+/* Алсаас (өөр утаснаас) ирсэн шахсан өгөгдлийг хэрэглэх.
+   Илгээгдээгүй өөрийн тэмдэг байгаа эсэхийг ЗӨВХӨН шалгаад биш —
+   cloudReload()-ийн адил _canOverwriteLocal()-оор ЖИНХЭНЭ ялгаа/цаг
+   тэмдгийг харьцуулна. Өмнө нь энд зөвхөн "тэмдэг байгаа эсэх"-ийг л
+   шалгадаг байсан тул сүлжээ сул үед богино зуур л илгээгдээгүй
+   тэмдэг идэвхтэй байсан ч өөр утасны ЖИНХЭНЭ шинэ өөрчлөлтийг бүр
+   мөсөн, ямар ч мэдэгдэлгүйгээр орхигдуулдаг байв. */
+function _applyRemote(remote,cloudMs){
       const _r=_unpackDB(remote);
       if(_cloudHadData&&!_dbHasData(_r))return;   // хоосон шинэчлэлт үл тоомсорлоно
-      // Илгээгдээгүй ажил байхад алсын өгөгдлөөр дарж бичихгүй
-      if(_dirtyAt()&&_dbHasData(DB)){flushSave(true);return}
+      const _ok=_canOverwriteLocal(cloudMs);
+      if(_ok===false){flushSave(true);return}         // утсан дахь нь шинэ — илгээнэ
+      if(_ok===null){_unsentBanner(cloudMs);return}   // хоёулаа шинэ — хэрэглэгчээс асууна
       DB=_r;
       _migrateDB();   // өөр төхөөрөмжөөс паспорт дотор ирсэн км-ийг гол зам руу гаргана
       if(_dbHasData(DB)){_cloudHadData=true;_cloudLoaded=true;_autoTry=0;clearTimeout(_autoTimer);
@@ -12804,7 +12811,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.22·155';
+const APP_BUILD='2026.09.22·156';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
