@@ -1473,7 +1473,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
 [data-theme="dark"] .pf-row .pf-ic{
   background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.16)}
-.pf-hd{display:flex;align-items:center;gap:13px;padding:4px 2px 16px}
+.pf-hd{display:flex;align-items:center;gap:13px;padding:4px 2px 16px;justify-content:space-between}
 .pf-hd .pf-av{width:52px;height:52px;border-radius:18px;flex:0 0 52px;
   display:flex;align-items:center;justify-content:center;
   background:linear-gradient(150deg,#8B5CF6,#C026D3);color:#fff;
@@ -1482,6 +1482,24 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 .pf-hd .pf-nm{font-size:17px;font-weight:800;letter-spacing:-.3px}
 .pf-hd .pf-em{font-size:11.5px;color:var(--ink3);font-weight:600;margin-top:2px;
   word-break:break-all}
+/* Хэсгийн нэрийн БАРУУН талын оны шудрах цонх — жижигхэн, ганц мөр
+   харагдах wheel (админы жилийн дугуйтай ижил _WH_IH=42px тул нийтлэг
+   _wheelFill/_wheelBind-ийг өөрчлөлтгүй ашиглана, зөвхөн харагдах
+   цонхыг 1 мөр хэмжээнд багасгав). Шудрахад шууд шүүхгүй — Батлах
+   товч дарсны дараа л жагсаалт шүүгдэнэ. */
+.pf-yr{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.pf-yr-wrap{position:relative;width:58px;height:42px;overflow:hidden;
+  border-radius:12px;background:var(--bg);border:1.5px solid var(--border)}
+.pf-yr-wrap .wheel{height:42px;overflow-y:auto;scroll-snap-type:y mandatory;
+  -webkit-overflow-scrolling:touch}
+.pf-yr-wrap .wheel::-webkit-scrollbar{display:none}
+.pf-yr-wrap .wheel{scrollbar-width:none}
+.pf-yr-wrap .wh-item{height:42px;display:flex;align-items:center;justify-content:center;
+  scroll-snap-align:center;font-size:12px;font-weight:700;color:var(--ink4)}
+.pf-yr-wrap .wh-item.wh-sel{color:var(--ink);font-size:13.5px;font-weight:900}
+.pf-yr-ok{width:32px;height:32px;border-radius:50%;border:none;flex-shrink:0;
+  background:var(--g600);color:#fff;font-size:15px;font-weight:900;cursor:pointer;
+  display:flex;align-items:center;justify-content:center}
 .sy-state{display:flex;align-items:center;gap:11px;padding:15px;border-radius:18px;
   margin-bottom:12px;border:1px solid var(--border);background:var(--card)}
 .sy-state .sy-dot{width:10px;height:10px;border-radius:50%;flex:0 0 10px}
@@ -3251,6 +3269,20 @@ function hasBranch(code){
    үүл, шахалт, бүртгэл, маягт бүгд хуучин замаараа ажиллана. */
 function derFolders(){return (DB.folders||[]).filter(f=>!f.br)}
 function brFolders(){return (DB.folders||[]).filter(f=>!!f.br)}
+/* Профайл цэсний оны шүүлтүүр — зөвхөн ХАРАГДАЦ дээр нөлөөлнө (жагсаалтад
+   гарах паспортын хавтас), огноогоор ухарч хайдаг resolveReplMap/
+   swResolveDRepl зэрэг бизнес логикт ХЭРЭГЛЭГДЭХГҮЙ — тэдгээр нь
+   DB.folders/swFolders()-ийг шууд, шүүлтгүйгээр уншина. Admin-ийн
+   _admYear-тэй адил зөвхөн модулийн хувьсагч — localStorage-д
+   ХАДГАЛАГДАХГҮЙ, дахин ачаалахад тэглэгдэнэ. */
+let _yearFilter=null;
+function _folderYearOk(f){return !_yearFilter||String(f.year)===_yearFilter}
+function _foldersYears(){
+  const set=new Set([String(new Date().getFullYear())]);
+  (DB.folders||[]).forEach(f=>{if(f&&f.year)set.add(String(f.year))});
+  (DB.sw||[]).forEach(f=>{if(f&&f.year)set.add(String(f.year))});
+  return [...set].sort()
+}
 const BRANCH_MAIN=['ПД-11','ПД-12'];
 function isBranchSection(code){
   const c=String(code===undefined?_sectionCode:code||'').trim().toUpperCase();
@@ -8046,9 +8078,11 @@ async function deleteFolder(fid,e){
 }
 function renderFolders(){
   const grid=document.getElementById('foldersGrid');if(!grid)return;
-  const _fl=derFolders();
+  const all=derFolders(),_fl=all.filter(_folderYearOk);
   if(!_fl.length){
-    grid.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return
+    grid.innerHTML=all.length
+      ?'<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Сонгосон онд паспорт алга</div>'
+      :'<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return
   }
   grid.innerHTML=_fl.map(f=>{
     const isActive=f.id===activeFolderId;
@@ -8539,15 +8573,22 @@ function startRealtimeSync(){
     if(_localWriting)return;
     if(snap.metadata&&snap.metadata.hasPendingWrites)return;
     const p=_partsFromSnap(snap);
-    if(p)_applyRemote(p.db);
+    if(p)_applyRemote(p.db,p.ms);
   },err=>console.error('Sync err:',err))
 }
-/* Алсаас ирсэн (шахсан) өгөгдлийг хэрэглэх — хоёр сонсогчид нийтлэг */
-function _applyRemote(remote){
+/* Алсаас (өөр утаснаас) ирсэн шахсан өгөгдлийг хэрэглэх.
+   Илгээгдээгүй өөрийн тэмдэг байгаа эсэхийг ЗӨВХӨН шалгаад биш —
+   cloudReload()-ийн адил _canOverwriteLocal()-оор ЖИНХЭНЭ ялгаа/цаг
+   тэмдгийг харьцуулна. Өмнө нь энд зөвхөн "тэмдэг байгаа эсэх"-ийг л
+   шалгадаг байсан тул сүлжээ сул үед богино зуур л илгээгдээгүй
+   тэмдэг идэвхтэй байсан ч өөр утасны ЖИНХЭНЭ шинэ өөрчлөлтийг бүр
+   мөсөн, ямар ч мэдэгдэлгүйгээр орхигдуулдаг байв. */
+function _applyRemote(remote,cloudMs){
       const _r=_unpackDB(remote);
       if(_cloudHadData&&!_dbHasData(_r))return;   // хоосон шинэчлэлт үл тоомсорлоно
-      // Илгээгдээгүй ажил байхад алсын өгөгдлөөр дарж бичихгүй
-      if(_dirtyAt()&&_dbHasData(DB)){flushSave(true);return}
+      const _ok=_canOverwriteLocal(cloudMs);
+      if(_ok===false){flushSave(true);return}         // утсан дахь нь шинэ — илгээнэ
+      if(_ok===null){_unsentBanner(cloudMs);return}   // хоёулаа шинэ — хэрэглэгчээс асууна
       DB=_r;
       _migrateDB();   // өөр төхөөрөмжөөс паспорт дотор ирсэн км-ийг гол зам руу гаргана
       if(_dbHasData(DB)){_cloudHadData=true;_cloudLoaded=true;_autoTry=0;clearTimeout(_autoTimer);
@@ -10202,10 +10243,12 @@ function renderBrHome(){
 /* ── ЗАМ ── */
 function _brRenderTracks(){
   const dg=document.getElementById('brDerGrid');
-  const fl=brFolders();
+  const _brAll=brFolders(),fl=_brAll.filter(_folderYearOk);
   if(dg)dg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openBrFolder('${f.id}')`,
       `deleteFolder('${f.id}',event)`,'var(--purple)')).join('')
-    :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';
+    :(_brAll.length
+      ?'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Сонгосон онд паспорт алга</div>'
+      :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>');
   const open=isBrFolder()?(DB.folders||[]).find(x=>x.id===activeFolderId):null;
   const box=document.getElementById('brTrOpen');
   if(box)box.style.display=open?'block':'none';
@@ -10266,10 +10309,12 @@ function _brRenderTracks(){
 /* ── СУМ ── */
 function _brRenderSw(){
   const sg=document.getElementById('brSwGrid');
-  const fl=brSwFolders();
+  const _brSwAll=brSwFolders(),fl=_brSwAll.filter(_folderYearOk);
   if(sg)sg.innerHTML=fl.length?fl.map(f=>_brCard(f,`openBrSwFolder('${f.id}')`,
       `delSwFolderById('${f.id}',event)`,'var(--gold-deep)')).join('')
-    :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';
+    :(_brSwAll.length
+      ?'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Сонгосон онд паспорт алга</div>'
+      :'<div style="text-align:center;padding:14px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>');
   const f=swFolder(),open=f&&f.br?f:null;
   const box=document.getElementById('brSwOpen');
   if(box)box.style.display=open?'block':'none';
@@ -10444,9 +10489,12 @@ function renderSwHome(){
   if(sl)sl.style.display=_swSpecOpen?'block':'none';
   if(sc)sc.textContent=_swSpecOpen?'▲':'▼';
   const g=document.getElementById('swFolders');if(!g)return;
-  if(!swFolders().length){
-    g.innerHTML='<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return}
-  g.innerHTML=swFolders().map(f=>{
+  const _swAll=swFolders(),_swFl=_swAll.filter(_folderYearOk);
+  if(!_swFl.length){
+    g.innerHTML=_swAll.length
+      ?'<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Сонгосон онд паспорт алга</div>'
+      :'<div style="text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Паспорт нэмнэ үү</div>';return}
+  g.innerHTML=_swFl.map(f=>{
     const ts=(f.turnouts||[]);
     let d=0,m=0,mb=0;ts.forEach(t=>{const a=swTally(t);d+=a.total;m+=a.m;mb+=a.mBad});
     const foreign=f.sc&&_sectionCode&&f.sc!==_sectionCode;
@@ -12533,12 +12581,16 @@ function renderProfSheet(){
   const out=row(I.out,'var(--red)','Гарах','',"closeModal('profSheet');doLogout()");
   const tag=`<div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
       font-weight:600;color:var(--ink5)"></div>`;
-  const hd=(nm,sub)=>`<div class="pf-hd">
+  const hd=(nm,sub,showYear)=>`<div class="pf-hd">
       <span class="pf-av">${esc((nm[0]||'П').toUpperCase())}</span>
-      <div style="min-width:0">
+      <div style="min-width:0;flex:1">
         <div class="pf-nm">${esc(nm)}</div>
         <div class="pf-em">${esc(sub)}</div>
       </div>
+      ${showYear?`<div class="pf-yr">
+        <div class="pf-yr-wrap"><div class="wheel" id="pfYearWheel"></div></div>
+        <button type="button" class="pf-yr-ok" onclick="confirmYearFilter()" aria-label="Батлах">✓</button>
+      </div>`:''}
     </div>`;
 
   /* Админ дэр, дүнз бүртгэдэггүй — хэсгүүдийн үзлэгийг хянаж, нэгтгэж,
@@ -12556,7 +12608,7 @@ function renderProfSheet(){
       theme+out+tag;
   } else {
     const nm=DB.location||'ПУ-5';
-    b.innerHTML=hd(nm,em||('Хэсэг: '+(_sectionCode||'—')))+
+    b.innerHTML=hd(nm,em||('Хэсэг: '+(_sectionCode||'—')),true)+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
         'var(--purple)','Нэгдсэн дүн','Бүх замын нийлбэр тайлан',"closeModal('profSheet');showSummaryAll()")+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>',
@@ -12579,6 +12631,43 @@ function renderProfSheet(){
   }
   const bt=b.querySelector('.build-tag');
   if(bt)bt.textContent='Хувилбар '+appVer();
+  if(!_isAdmin)_profYearWheel();
+}
+// Хэсгийн нэрийн баруун талын оны шудрах цонх — зөвхөн бодит паспорттой
+// (+ энэ жил) онуудыг жагсаана. "Бүгд" эхэнд нь — шүүлтүүрийг цуцлана.
+// Шудрахад шууд шүүхгүй, Батлах товч дарсны дараа л _yearFilter шинэчлэгдэнэ.
+function _profYearOptions(){return ['Бүгд',..._foldersYears()]}
+let _pfYearPending=null;
+// Жижигхэн ганц мөр харагдах цонх тул нийтлэг _wheelFill()-ийн (150px
+// харагдацад зориулсан 54px тэнцвэржүүлэгч зайг) ашиглахгүй — цонх
+// нь яг 1 мөрийн өндөртэй тул зай ХЭРЭГГҮЙ (scrollTop=i*_WH_IH шууд
+// тохирно). _wheelIdx/_wheelMark/_wheelBind нь зайгаас үл хамааран
+// ажилладаг тул өөрчлөлтгүй хэвээрээ ашиглана.
+function _pfYearFill(el,values,sel){
+  el.innerHTML=values.map(v=>'<div class="wh-item">'+v+'</div>').join('');
+  _wheelMark(el,sel)
+}
+function _profYearWheel(){
+  const el=document.getElementById('pfYearWheel');if(!el)return;
+  const opts=_profYearOptions();
+  let cur=_yearFilter||String(new Date().getFullYear());
+  let i=opts.indexOf(cur);if(i<0)i=opts.length-1,cur=opts[i];
+  _pfYearPending=cur;
+  _pfYearFill(el,opts,i);el.scrollTop=i*_WH_IH;
+  if(!el._bound){
+    el._bound=true;
+    _wheelBind(el,()=>_profYearOptions().length,j=>{
+      const os=_profYearOptions();
+      if(os[j]!==undefined)_pfYearPending=os[j]
+    })
+  }
+}
+function confirmYearFilter(){
+  hap();
+  _yearFilter=(_pfYearPending==='Бүгд')?null:_pfYearPending;
+  closeModal('profSheet');
+  renderFolders();renderSwHome();renderBrHome();
+  showToast(_yearFilter?`${_yearFilter} оны паспортууд`:'Бүх оны паспортууд',2200)
 }
 
 function _dirtyKey(){return 'sg_der_dirty_'+(_sectionCode||'')}
@@ -12722,7 +12811,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.21·154';
+const APP_BUILD='2026.09.22·156';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
