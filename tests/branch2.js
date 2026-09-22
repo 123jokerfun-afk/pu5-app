@@ -56,6 +56,25 @@ ok('Хавтаснууд байна',t2.folders.length===3&&/Солигдсон 
    JSON.stringify(t2.folders));
 ok('Дэрийн агуулах байна',t2.der.length===2&&/Орлого/.test(t2.der[0]),JSON.stringify(t2.der));
 
+/* Салбарын паспорт бүр ч мөн адил тусдаа орлоготой байх ёстой */
+const t2b=await page.evaluate(async()=>{
+  DB.folders.push({id:'BF2',br:1,name:'Намар салбар',season:'намар',year:'2026',date:'2026-09-01',sc:'ПД-11',
+    tracks:[{id:'BT3',num:3,kind:'station',name:'Хоёр дахь',sections:[]}]});saveDB();
+  openDerIncForFolder('BF');openDerIncAdd();await new Promise(r=>setTimeout(r,220));
+  setDerIncN(20);saveDerInc();await new Promise(r=>setTimeout(r,260));
+  closeModal('derIncAddModal');closeModal('derIncModal');
+  const bfCard=[...document.querySelectorAll('#brDerWrap .pill-item')]
+    .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+e.querySelector('.folder-meta').textContent.trim());
+  openBrFolder('BF2');await new Promise(r=>setTimeout(r,300));
+  const bf2Card=[...document.querySelectorAll('#brDerWrap .pill-item')]
+    .map(e=>e.querySelector('.folder-name').textContent.trim()+'|'+e.querySelector('.folder-meta').textContent.trim());
+  openBrFolder('BF');await new Promise(r=>setTimeout(r,260)); // доорх шалгалтуудад BF идэвхтэй байх учиртай
+  return{bfCard,bf2Card}});
+ok('BF-д орсон орлого зөвхөн ТҮҮНД нь харагдана',
+   /20 дэр/.test(t2b.bfCard[0]),JSON.stringify(t2b.bfCard));
+ok('BF2 нээхэд BF-ийн орлого харагдахгүй',
+   t2b.bf2Card[0]==='Орлого|Орлого бүртгээгүй',JSON.stringify(t2b.bf2Card));
+
 const t3=await page.evaluate(async()=>{
   openBrTrack('BT1');await new Promise(r=>setTimeout(r,360));
   const v1=(document.querySelector('.view.active')||{}).id;
