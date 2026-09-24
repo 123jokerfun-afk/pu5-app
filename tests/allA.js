@@ -1,7 +1,7 @@
 const {execFileSync}=require('child_process');
 const fs=require('fs');
 let tot=0,bad=0;
-for(const f of ['boot','zero','theme','flow1','flow2','flow4','flow5','flow6','flow7']){
+for(const f of ['boot','zero','theme','flow1','flow2','flow4','flow5','flow6','flow7','replwindow']){
   let out='';
   try{out=execFileSync('node',[f+'.js'],{encoding:'utf8',timeout:180000,stdio:['ignore','pipe','pipe']})}
   catch(e){out=(e.stdout||'')+'\nFATAL '+(e.message||'').split('\n')[0]}
