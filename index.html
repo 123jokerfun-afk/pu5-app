@@ -1998,6 +1998,9 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <button class="add-track-btn" onclick="exportSwForms()" style="border-color:var(--g400);color:var(--g700)">
           <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах
         </button>
+        <button class="add-track-btn" onclick="exportSwPu5Book()" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
+          <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 маягт татах
+        </button>
       </div>
     </div>
   </div>
@@ -2058,6 +2061,9 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
       <button class="add-track-btn" id="swFormBtn" onclick="hap();exportSwForms()" style="border-color:var(--g400);color:var(--g700);margin-top:10px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах
+      </button>
+      <button class="add-track-btn" onclick="hap();exportSwPu5Book()" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
+        <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 маягт татах
       </button>
       <button class="add-track-btn" onclick="openSwTurnout()" style="border-color:#C084FC;color:#7E22CE;margin-top:8px">
         <svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сум нэмэх
@@ -7625,14 +7631,19 @@ async function exportPu5Book(scope){
       else if(sl.type==='bad_tbd'){mark='ТТБД';bg='FFD6E4FF';fg='FF1A4BC4'}
       const bad=isBadSleeper(sl.type);
       const rp=bad?replAt(sec.id,pos):null;
-      const top=rp?shortYm(rp.d):'';
+      // Хараахан сольгоогүй ч төлөвлөгдсөн бол огнооны оронд '?'.
+      // Сольсны дараа төлөвлөгөө автоматаар цэвэрлэгддэг тул хамт гарахгүй,
+      // харин аюулгүйн үүднээс rp-г давуу эрхтэй болгоно.
+      const planned=!rp&&bad&&!!planAt(sec,pos);
+      const top=rp?shortYm(rp.d):(planned?'?':'');
       // Үсэг зөвхөн СОЛИГДСОН дэр дээр. С = сийрэгжилт (дараалсан цэгийн
       // дэрийг сольсон), У = бусад солигдсон дэр. Тэнцэхгүй хэвээр байгаа
       // дэр дээр үсэг байхгүй — зөвхөн зураас нь үлдэнэ.
       const bot=rp?(rp.s?'С':'У'):'';
       const mfg=hi?'FF7A5000':fg;
       const rt=[];
-      if(top)rt.push({font:{name:'Arial',size:7,bold:true,color:{argb:'FF1A4BC4'}},text:top+'\n'});
+      if(rp)rt.push({font:{name:'Arial',size:7,bold:true,color:{argb:'FF1A4BC4'}},text:top+'\n'});
+      else if(planned)rt.push({font:{name:'Arial',size:10,bold:true,color:{argb:'FF1A73E8'}},text:top+'\n'});
       rt.push({font:{name:'Arial',size:sz,bold:true,color:{argb:mfg}},text:mark});
       if(bot)rt.push({font:{name:'Arial',size:8,bold:true,
         color:{argb:bot==='С'?'FF0D6E46':'FF1A4BC4'}},text:'\n'+bot});
@@ -11546,6 +11557,234 @@ function swRunBuckets(to){
   return b
 }
 
+// ══════════════════════════════════════════════
+// ДҮНЗНИЙ ПУ-5 МАЯГТ — дэрийн exportPu5Book-той адил хээрийн дэвтэр
+// матриц, гэхдээ багана нь "үе" биш УРТ АНГИЛАЛ (Дэр, 3, 3,25 … пог/м).
+// Хамрах хүрээ: нээлттэй сумын паспорт (exportSwForms-той адил,
+// параметргүй — swFolder()-оор олдоно, branch/энгийн аль алинд ажиллана).
+// ══════════════════════════════════════════════
+async function exportSwPu5Book(){
+  const f=swFolder();
+  if(!f){showToast('Паспорт нээгээгүй байна',2600);return}
+  const ts=swAllTurnouts().filter(t=>(t.it||'').length);
+  if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
+  if(!await appConfirm('Дүнзний ПУ-5 маягт татах уу?','Татах'))return;
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
+
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  const W='FFFFFFFF';
+  const bdr=c=>{c.border={top:{style:'thin',color:{argb:'FFCCD0D8'}},bottom:{style:'thin',color:{argb:'FFCCD0D8'}},
+    left:{style:'thin',color:{argb:'FFCCD0D8'}},right:{style:'thin',color:{argb:'FFCCD0D8'}}}};
+  const safeName=s=>s.replace(/[\\/*?:\[\]]/g,'').slice(0,31);
+  const shortYm=d=>{const m=String(d||'').match(/^(\d{2})(\d{2})-(\d{2})/);return m?`${m[2]}/${+m[3]}`:''};
+  // Сольхоос ӨМНӨХ (эх) төлөв — дэр ба дүнзийг нэг дор сэргээнэ.
+  // swOrigIt()-той ижил логик, зөвхөн slRepl-ийг мөн хамруулна.
+  const fullOrigIt=to=>{
+    const it=(to.it||'').split('');
+    const apply=rp=>Object.keys(rp||{}).forEach(k=>{if(rp[k]&&rp[k].o&&it[+k])it[+k]='b'});
+    apply(to.slRepl);apply(to.dRepl);
+    return it.join('')
+  };
+  const runsInRange=(it,lo,hi)=>{
+    const out=[];let run=[];
+    for(let i=lo;i<hi;i++){
+      if(it[i]==='b')run.push(i);else{if(run.length>=3)out.push(run.slice());run=[]}
+    }
+    if(run.length>=3)out.push(run.slice());
+    return out
+  };
+  // swTally()-ээс ялгаатай нь — АМЬД it биш, ЭХ (сольхоос өмнөх) төлөвөөр
+  // тооцно. ПУ-5 дэвтэр бол үзлэгийн баримт тул солигдсон ч тухайн
+  // үзлэгээр илэрсэн тэнцэхгүйгээр нь тоологдсон хэвээр байх ёстой —
+  // дэрийн Sheet1 origSections()-ийг ашигладагтай яг адил зарчим.
+  const tallyOrig=to=>{
+    const it=fullOrigIt(to),head=to.head||0;
+    const r={sl:0,slBad:0,total:0,bad:0,m:0,mBad:0};
+    for(let i=0;i<it.length;i++){
+      const bd=it[i]==='b';
+      if(i<head){r.sl++;if(bd)r.slBad++}
+      else{const len=swSlot(to,i).len;r.total++;r.m+=len;if(bd){r.bad++;r.mBad+=len}}
+    }
+    r.pct=r.m?r.mBad/r.m*100:0;
+    return r
+  };
+  // Тухайн сумын бодит бүртгэлээр (статик хуваарь биш) ангилал бүрдүүлнэ
+  const groupsOf=to=>{
+    const map={},groups=[];
+    for(let i=0;i<(to.it||'').length;i++){
+      const s=swSlot(to,i),key=s.kind==='дэр'?'head':s.len;
+      if(!map[key]){map[key]={kind:s.kind,len:s.len,idx:[]};groups.push(map[key])}
+      map[key].idx.push(i)
+    }
+    groups.sort((a,b)=>a.kind==='дэр'?-1:b.kind==='дэр'?1:a.len-b.len);
+    return groups
+  };
+  // Нэг эсийг бөглөнө (fillCell-тэй ижил дизайн, дэр/дүнзийн мап тус тусад нь)
+  const fillTurnoutCell=(cell,to,i,hi,orig)=>{
+    if(orig[i]!=='b'){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:W}};return 1}
+    const isHead=i<(to.head||0);
+    const rp=isHead?(to.slRepl&&to.slRepl[i]):swDzRepl(to,i);
+    const plannedRaw=isHead?swSlPlan(to,i):swDzPlan(to,i);
+    const planned=!rp&&!!plannedRaw;
+    const top=rp?shortYm(rp.d):(planned?'?':'');
+    const bot=rp?(hi?'С':'У'):'';
+    const mark='—',sz=13,bg='FFFDEAEA',fg='FFC00000';
+    const mfg=hi?'FF7A5000':fg;
+    const rt=[];
+    if(rp)rt.push({font:{name:'Arial',size:7,bold:true,color:{argb:'FF1A4BC4'}},text:top+'\n'});
+    else if(planned)rt.push({font:{name:'Arial',size:10,bold:true,color:{argb:'FF1A73E8'}},text:top+'\n'});
+    rt.push({font:{name:'Arial',size:sz,bold:true,color:{argb:mfg}},text:mark});
+    if(bot)rt.push({font:{name:'Arial',size:8,bold:true,
+      color:{argb:bot==='С'?'FF0D6E46':'FF1A4BC4'}},text:'\n'+bot});
+    cell.value=rt.length>1?{richText:rt}:mark;
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hi?'FFFFFF99':bg}};
+    cell.font={bold:true,color:{argb:mfg},name:'Arial',size:sz};
+    cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+    if(hi){const c='FFFF9800';cell.border={top:{style:'medium',color:{argb:c}},bottom:{style:'medium',color:{argb:c}},
+      left:{style:'medium',color:{argb:c}},right:{style:'medium',color:{argb:c}}}}
+    return (top?1:0)+1+(bot?1:0)
+  };
+
+  function makeTurnoutSheet(to){
+    const groups=groupsOf(to);if(!groups.length)return;
+    const head=to.head||0,orig=fullOrigIt(to);
+    const hRunSet=new Set([].concat(...runsInRange(orig,0,head)));
+    const dRunSet=new Set([].concat(...runsInRange(orig,head,orig.length)));
+    const inRun=i=>i<head?hRunSet.has(i):dRunSet.has(i);
+    const maxRows=groups.reduce((mx,g)=>Math.max(mx,g.idx.length),0);
+    const totCol=groups.length+2;
+    const ws=wb.addWorksheet(safeName(`${to.num}-р сум`));
+    const cols=[{width:5}];groups.forEach(()=>cols.push({width:11}));cols.push({width:11});
+    ws.columns=cols;
+
+    ws.mergeCells(1,1,1,totCol);
+    const mt=ws.getCell(1,1);
+    mt.value=`${f.name||DB.location||''} · ${to.num}-р сум (${to.mak||''} ${to.mark||''}) · ПУ-5 маягт · ${new Date().toLocaleDateString('mn-MN')}`;
+    mt.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E4D3B'}};
+    mt.font={bold:true,color:{argb:W},name:'Arial',size:11};
+    mt.alignment={horizontal:'center',vertical:'middle'};ws.getRow(1).height=24;
+
+    ws.mergeCells(2,1,2,totCol);
+    const leg=ws.getCell(2,1);
+    leg.value="Хоосон=Хэвийн | —=Тэнцэхгүй | ?=Төлөвлөсөн солилт | ДЭЭР=он/сар эсвэл '?', ДООР: С=дараалсан(3+), У=ганц | 🟡 Шар=3+ дараалсан";
+    leg.font={italic:true,color:{argb:'FF566172'},name:'Arial',size:9};
+    leg.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+    leg.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFDE7'}};ws.getRow(2).height=16;
+
+    const hr=ws.getRow(3);
+    const h0=hr.getCell(1);h0.value='№';
+    h0.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E4D3B'}};
+    h0.font={bold:true,color:{argb:W},name:'Arial',size:9};h0.alignment={horizontal:'center',vertical:'middle'};bdr(h0);
+    groups.forEach((g,i)=>{
+      const c=hr.getCell(i+2);c.value=swKindLbl(g);
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2D6E52'}};
+      c.font={bold:true,color:{argb:W},name:'Arial',size:9};c.alignment={horizontal:'center',vertical:'middle',wrapText:true};bdr(c)
+    });
+    const ht=hr.getCell(totCol);ht.value='НИЙТ';
+    ht.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1A3A6E'}};
+    ht.font={bold:true,color:{argb:W},name:'Arial',size:9};ht.alignment={horizontal:'center',vertical:'middle'};bdr(ht);
+    hr.height=20;
+
+    for(let pos=0;pos<maxRows;pos++){
+      const dr=ws.getRow(pos+4);
+      const pc=dr.getCell(1);pc.value=pos+1;
+      pc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2D6E52'}};
+      pc.font={bold:true,color:{argb:W},name:'Arial',size:9};pc.alignment={horizontal:'center',vertical:'middle'};bdr(pc);
+      let mxLn=1;
+      groups.forEach((g,gi)=>{
+        const cell=dr.getCell(gi+2);cell.alignment={horizontal:'center',vertical:'middle'};bdr(cell);
+        if(pos>=g.idx.length){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2C2C2C'}};return}
+        const idx=g.idx[pos];
+        mxLn=Math.max(mxLn,fillTurnoutCell(cell,to,idx,inRun(idx),orig))
+      });
+      const tc=dr.getCell(totCol);tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2C2C2C'}};bdr(tc);
+      dr.height=mxLn>=3?38:mxLn===2?27:16
+    }
+
+    // Багана бүрийн бодит утга (дэр ба дүнзийг тус тусад нь; НИЙТ баганад
+    // ЗӨВХӨН ДҮНЗ ордог — CLAUDE.md-ийн "сумын тэнцэх/тэнцэхгүйд зөвхөн
+    // дүнз ордог" дүрмийг дагана, рам замын дэр тусдаа үлдэнэ)
+    let totN=0,totM=0,totBad=0,totBadM=0;
+    const perGroup=groups.map(g=>{
+      const n=g.idx.length,bad=g.idx.filter(i=>orig[i]==='b').length,isHead=g.kind==='дэр';
+      if(!isHead){totN+=n;totM+=n*g.len;totBad+=bad;totBadM+=bad*g.len}
+      return{n,bad,isHead,len:g.len}
+    });
+    const labels=['Д/Д','Пог/м','Тэнцэхгүй /ш','Тэнцэхгүй пог/м'];
+    const baseRow=maxRows+4;
+    labels.forEach((lbl,li)=>{
+      const row=ws.getRow(baseRow+li);
+      const lc=row.getCell(1);lc.value=lbl;
+      lc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E4D3B'}};
+      lc.font={bold:true,color:{argb:W},name:'Arial',size:8};
+      lc.alignment={horizontal:'center',vertical:'middle',wrapText:true};bdr(lc);
+      groups.forEach((g,gi)=>{
+        const pg=perGroup[gi],c=row.getCell(gi+2);
+        let v='';
+        if(li===0)v=pg.n?`1-${pg.n}`:'';
+        else if(li===1)v=(!pg.isHead&&pg.n)?swM(pg.n*pg.len):'';
+        else if(li===2)v=pg.bad||'';
+        else if(li===3)v=(!pg.isHead&&pg.bad)?swM(pg.bad*pg.len):'';
+        c.value=v;
+        c.fill={type:'pattern',pattern:'solid',fgColor:{argb:pg.bad?'FFFEE2E2':'FFE8F8F1'}};
+        c.font={bold:true,name:'Arial',size:9,color:{argb:pg.bad?'FFC00000':'FF0D5E44'}};
+        c.alignment={horizontal:'center',vertical:'middle'};bdr(c)
+      });
+      const tc=row.getCell(totCol);
+      let tv='';
+      if(li===0)tv=totN||'';else if(li===1)tv=totM?swM(totM):'';
+      else if(li===2)tv=totBad||'';else if(li===3)tv=totBadM?swM(totBadM):'';
+      tc.value=tv;
+      tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF2FF'}};
+      tc.font={bold:true,name:'Arial',size:9,color:{argb:'FF1A3A6E'}};
+      tc.alignment={horizontal:'center',vertical:'middle'};bdr(tc);
+      row.height=18
+    })
+  }
+
+  // Sheet 1: Нийт дүн — паспортын бүх сумыг мөр мөрөөр
+  (function(){
+    const ws=wb.addWorksheet('Нийт дүн');
+    ws.columns=[{width:8},{width:14},{width:8},{width:11},{width:9},{width:10},{width:10},{width:12},{width:9}];
+    ws.mergeCells('A1:I1');
+    const tc=ws.getCell('A1');
+    tc.value=`${f.name||DB.location||''} — Дүнз ПУ-5 · Нийт дүн · ${new Date().toLocaleDateString('mn-MN')}`;
+    tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E4D3B'}};
+    tc.font={bold:true,color:{argb:W},name:'Arial',size:12};
+    tc.alignment={horizontal:'center',vertical:'middle'};ws.getRow(1).height=26;
+    const hdrs=['Сум№','Маяг/Марк','Дэр (ш)','Дэр тэнцэхгүй','Дүнз (ш)','Дүнз (пог/м)','Тэнцэхгүй (ш)','Тэнцэхгүй (пог/м)','Хувь %'];
+    const hr=ws.getRow(2);
+    hdrs.forEach((h,i)=>{const c=hr.getCell(i+1);c.value=h;
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2D6E52'}};
+      c.font={bold:true,color:{argb:W},name:'Arial',size:10};
+      c.alignment={horizontal:'center',vertical:'middle',wrapText:true};bdr(c)});
+    hr.height=22;
+    let r=3;
+    ts.forEach(to=>{
+      const a=tallyOrig(to),row=ws.getRow(r++);
+      const rf=a.pct>=35?'FFFEE2E2':a.pct>=25?'FFFEF3C7':'FFE8F8F1';
+      [to.num,`${to.mak||''} ${to.mark||''}`,a.sl,a.slBad,a.total,swM(a.m),a.bad,swM(a.mBad),a.total?a.pct/100:null].forEach((v,i)=>{
+        const cell=row.getCell(i+1);cell.value=v;
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:i>=6?rf:W}};
+        cell.font={name:'Arial',size:10,bold:i<2};
+        cell.alignment={horizontal:i<2?'left':'center',vertical:'middle'};bdr(cell);
+        if(i===8&&a.total)cell.numFmt='0.0%'
+      });
+      row.height=18
+    })
+  })();
+
+  ts.forEach(to=>makeTurnoutSheet(to));
+
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const td=mnToday(),p=x=>(x<10?'0':'')+x;
+    dlBlob(blob,`Дүнз_ПУ-5_${td.y}-${p(td.m)}-${p(td.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ${ts.length} сум татагдлаа`,2600)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+
 async function exportSwForms(){
   const ts=swAllTurnouts().filter(t=>(t.it||'').length);
   if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
@@ -12811,7 +13050,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.22·156';
+const APP_BUILD='2026.09.24·157';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
