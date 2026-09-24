@@ -259,6 +259,41 @@ console.log('\nМаягт-1');
   ok('Гол замын мөр: км 12, 46 дэр, 3 тэнцэхгүй',mr&&mr[1]===12&&mr[2]===46&&mr[5]===3,JSON.stringify(mr&&mr.slice(0,9)));
 }
 
+/* ══ 3.5. Маягт-1 Хавсралт-2 (25%+ тэнцэхгүй, СОЛИЛТГҮЙ) ═══════
+   "Сольсон дэрийн тоо" (H) баганыг `d.reps.length||''`-ээр бичсэн
+   байсан тул СОЛИЛТГҮЙ (reps.length===0) үед '' (текст) бичигдэж,
+   "солих дэрийн тоо" (I) баганын томьёо H-г хасахдаа Excel дээр
+   #VALUE! алдаа өгдөг байв. Энд яг тэр тохиолдлыг (30% тэнцэхгүй,
+   0 солилт) дуурайж, H нь ТОО (0) бичигдэж байгааг батална. */
+console.log('\nМаягт-1 Хавсралт-2 (25%+, солилтгүй) — #VALUE! регресс');
+{
+  await page.evaluate(()=>{
+    const mkSec=(id,n,bad)=>({id,type:'normal',label:id+' үе',note:'',date:'2026-05-01',
+      sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
+    DB.folders=[{id:'fv',name:'25%+',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'tv',num:8,kind:'station',sections:[mkSec('v1',10,[0,1,2])]}]}];  // 3/10=30%
+    activeFolderId='fv';DB.tracks=DB.folders[0].tracks;DB.main=[];DB.sw=[];
+    saveDB();
+  });
+  const {wb}=await grab('exportColoredExcel()');
+  const ws=wb.getWorksheet('маягт1-2');
+  ok('маягт1-2 хуудас байна',!!ws,wb.worksheets.map(w=>w.name).join(' | '));
+  if(ws){
+    let row=null;
+    ws.eachRow((rw,i)=>{if(i>=7&&row===null){const v=V(rw);if(v[6]===3)row=i}});
+    ok('30% тэнцэхгүй мөр олдов',!!row,String(row));
+    if(row){
+      const h=ws.getCell('H'+row);
+      ok('H (Сольсон дэрийн тоо, солилтгүй) нь ТОО 0 — текст "" биш',
+         typeof h.value==='number'&&h.value===0,JSON.stringify({value:h.value,type:h.type}));
+      const iF=ws.getCell('I'+row).value;
+      ok('I (солих дэрийн тоо) томьёо H рүү заана',
+         iF&&iF.formula&&new RegExp('H'+row).test(iF.formula),JSON.stringify(iF));
+    }
+  }
+  await seedMain();
+}
+
 /* ══ 4. Маягт-2 (сумын дүнз) ═══════════════════════════════ */
 console.log('\nМаягт-2 (дүнз)');
 {
