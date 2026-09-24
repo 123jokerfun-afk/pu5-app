@@ -7691,6 +7691,17 @@ async function exportPu5Book(scope){
       }
     }
 
+    // Замын БҮХ (энгийн + холбох) үений нийт тэнцэхгүй — хамгийн сүүлийн
+    // хуудсан дээр л нэг удаа харуулна. "Нийт дүн" шийтийн track-НИЙТ
+    // мөртэй яг ижил тооцоотой (турникетийг эс тооцно).
+    const trackTot=oSecs.reduce((r,sec)=>{const a=analyzeSection(sec);
+      r.bad+=a.totalBad;r.total+=a.total;return r},{bad:0,total:0});
+    // Зөвхөн Холбох хэсгүүдийн өөрийн дэд нийлбэр — тэдгээр нь доор
+    // тусдаа "Холбох" шийтэд байгааг сануулж, тэр шийт рүү шилжихгүйгээр
+    // энд шууд харуулна.
+    const connTot=connSecs.reduce((r,sec)=>{const a=analyzeSection(sec);
+      r.bad+=a.totalBad;r.total+=a.total;return r},{bad:0,total:0});
+
     const SEC_GROUP=10;
     for(let gi=0;gi<normalSecs.length;gi+=SEC_GROUP){
       const sg=normalSecs.slice(gi,gi+SEC_GROUP);
@@ -7790,6 +7801,33 @@ async function exportPu5Book(scope){
       tv.font={bold:true,color:C.white,name:'Arial',size:10};
       tv.alignment={horizontal:'center',vertical:'middle'};
       wsM.getRow(totRowN).height=22
+
+      // Хамгийн сүүлийн (энэ замын сүүлчийн үе байрласан) хуудсан дээр
+      // — Холбох хэсгийн дэд нийлбэр (байвал) БА тухайн ЗАМЫН
+      // (энгийн+холбох) нийт тэнцэхгүй дэрийн тоог нэмж харуулна.
+      if(toNum===normalSecs.length){
+        let nextRow=totRowN+1;
+        if(connSecs.length>0){
+          const cRowN=nextRow++;
+          wsM.mergeCells(cRowN,1,cRowN,sg.length+1);
+          const cv=wsM.getCell(cRowN,1);
+          cv.value=connTot.total?
+            `Холбох хэсэг (доорх "${t.num}${isMain?'км':'з'} · Холбох" хуудсанд дэлгэрэнгүй): ${connTot.bad}/${connTot.total} (${(connTot.bad/connTot.total*100).toFixed(1)}%)`:'';
+          cv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF5B2FA8'}};
+          cv.font={bold:true,color:C.white,name:'Arial',size:10};
+          cv.alignment={horizontal:'center',vertical:'middle'};
+          wsM.getRow(cRowN).height=22
+        }
+        const gRowN=nextRow;
+        wsM.mergeCells(gRowN,1,gRowN,sg.length+1);
+        const gv=wsM.getCell(gRowN,1);
+        gv.value=trackTot.total?
+          `${trackLabel(t)} НИЙТ тэнцэхгүй дэр (холбох хэсгийг оролцуулав): ${trackTot.bad}/${trackTot.total} (${(trackTot.bad/trackTot.total*100).toFixed(1)}%)`:'';
+        gv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E4D3B'}};
+        gv.font={bold:true,color:C.white,name:'Arial',size:10};
+        gv.alignment={horizontal:'center',vertical:'middle'};
+        wsM.getRow(gRowN).height=22
+      }
     }
 
     // ── ★ ХОЛБОХ ХЭСГҮҮДИЙН ТУСДАА МАТРИЦ ШИЙТ ──
@@ -13080,7 +13118,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.24·160';
+const APP_BUILD='2026.09.24·161';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

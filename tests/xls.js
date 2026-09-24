@@ -184,8 +184,60 @@ console.log('\nХуудас дамнасан дараалсан цэг (10/11-р
     ok('11-р үений эхний 2 дэрийн хүрээ ягаан',
        cB0.border.top.color.argb==='FF9C27B0'&&cB1.border.top.color.argb==='FF9C27B0',
        JSON.stringify([cB0.border.top,cB1.border.top]));
+
+    // Хуудасны нийт мөр — p1 (сүүлийн хуудас БИШ): 10 үе × 5 дэр = 50,
+    // b10-с 1 тэнцэхгүй → 1/50 (2,0%)
+    const p1Tot=p1.getCell(10,1).value;
+    ok('1-10 хуудсанд хуудасны нийт мөр: 1/50 (2,0%)',
+       /^1-10-р үений нийт тэнцэхгүй: 1\/50 \(2\.0%\)$/.test(String(p1Tot||'')),String(p1Tot));
+    ok('1-10 (сүүлийн хуудас БИШ) дээр ЗАМЫН нийт мөр гарахгүй',
+       !p1.getCell(11,1).value,String(p1.getCell(11,1).value));
+
+    // p2 (сүүлийн үе байрласан хуудас): хуудасны нийт (зөвхөн 11-р үе:
+    // 2/5) БА ЗАМЫН нийт (бүх 11 үе: 3/55) хоёулаа гарна
+    const p2Tot=p2.getCell(10,1).value,p2Track=p2.getCell(11,1).value;
+    ok('11-11 хуудсанд хуудасны нийт мөр: 2/5 (40,0%)',
+       /^11-11-р үений нийт тэнцэхгүй: 2\/5 \(40\.0%\)$/.test(String(p2Tot||'')),String(p2Tot));
+    ok('11-11 (сүүлийн) хуудсанд ЗАМЫН нийт мөр: 3/55 (5,5%)',
+       /^7-р зам НИЙТ тэнцэхгүй дэр.*: 3\/55 \(5\.5%\)$/.test(String(p2Track||'')),String(p2Track));
+    ok('Холбох хэсэггүй тул холбохын дэд мөр гарахгүй (шууд ЗАМЫН мөр)',
+       !/Холбох хэсэг/.test(String(p2Track||'')),String(p2Track));
   }
   await seedMain();   // доорх шалгалтуудад анхны өгөгдлийг сэргээнэ
+}
+
+/* ══ 2.6. Холбох хэсэгтэй зам — сүүлийн хуудсан дээр 3 мөр ═════
+   (хуудасны нийт → Холбох дэд нийт → ЗАМЫН [холбохыг оролцуулсан]
+   нийт), холбох хэсэг "Холбох" тусдаа шийтэд байгааг сануулна. */
+console.log('\nХолбох хэсэгтэй зам — сүүлийн хуудасны 3 мөр');
+{
+  await page.evaluate(()=>{
+    const mkSec=(id,n,bad,type)=>({id,type:type||'normal',label:id+' үе',note:'',date:'2026-05-01',
+      sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
+    const secs=[mkSec('h1',10,[0,1]),mkSec('h2',10,[5]),mkSec('h3',10,[0,1,2],'connecting')];
+    DB.folders=[{id:'fh',name:'Холбохтой',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'th',num:9,kind:'station',sections:secs}]}];
+    activeFolderId='fh';DB.tracks=DB.folders[0].tracks;DB.main=[];DB.sw=[];
+    saveDB();
+  });
+  const {wb}=await grab("exportPu5Book('folder')");
+  const p=wb.worksheets.find(w=>/^9з · 1-2р үе$/.test(w.name));
+  const conn=wb.worksheets.find(w=>/^9з · Холбох$/.test(w.name));
+  ok('Үндсэн (1-2) ба Холбох хуудас хоёулаа гарсан',!!p&&!!conn,
+     wb.worksheets.map(w=>w.name).join(' | '));
+  if(p){
+    // mxSl=10 → Дүн мөр=14, хуудасны нийт=15, холбох дэд нийт=16, ЗАМЫН нийт=17
+    const rTot=p.getCell(15,1).value,rConn=p.getCell(16,1).value,rTrack=p.getCell(17,1).value;
+    ok('Хуудасны нийт: h1+h2 = 3/20 (15,0%)',
+       /^1-2-р үений нийт тэнцэхгүй: 3\/20 \(15\.0%\)$/.test(String(rTot||'')),String(rTot));
+    ok('Холбох дэд нийт: h3 = 3/10 (30,0%), "Холбох" хуудсыг иш татна',
+       /^Холбох хэсэг \(доорх "9з · Холбох" хуудсанд дэлгэрэнгүй\): 3\/10 \(30\.0%\)$/.test(String(rConn||'')),
+       String(rConn));
+    ok('ЗАМЫН нийт (холбохыг оролцуулсан): h1+h2+h3 = 6/30 (20,0%)',
+       /^9-р зам НИЙТ тэнцэхгүй дэр \(холбох хэсгийг оролцуулав\): 6\/30 \(20\.0%\)$/.test(String(rTrack||'')),
+       String(rTrack));
+  }
+  await seedMain();
 }
 
 /* ══ 3. Маягт-1 (өнгөт Excel) ══════════════════════════════ */
