@@ -11657,21 +11657,6 @@ async function exportSwPu5Book(){
     if(run.length>=3)out.push(run.slice());
     return out
   };
-  // swTally()-ээс ялгаатай нь — АМЬД it биш, ЭХ (сольхоос өмнөх) төлөвөөр
-  // тооцно. ПУ-5 дэвтэр бол үзлэгийн баримт тул солигдсон ч тухайн
-  // үзлэгээр илэрсэн тэнцэхгүйгээр нь тоологдсон хэвээр байх ёстой —
-  // дэрийн Sheet1 origSections()-ийг ашигладагтай яг адил зарчим.
-  const tallyOrig=to=>{
-    const it=fullOrigIt(to),head=to.head||0;
-    const r={sl:0,slBad:0,total:0,bad:0,m:0,mBad:0};
-    for(let i=0;i<it.length;i++){
-      const bd=it[i]==='b';
-      if(i<head){r.sl++;if(bd)r.slBad++}
-      else{const len=swSlot(to,i).len;r.total++;r.m+=len;if(bd){r.bad++;r.mBad+=len}}
-    }
-    r.pct=r.m?r.mBad/r.m*100:0;
-    return r
-  };
   // Тухайн сумын бодит бүртгэлээр (статик хуваарь биш) ангилал бүрдүүлнэ
   const groupsOf=to=>{
     const map={},groups=[];
@@ -11771,9 +11756,13 @@ async function exportSwPu5Book(){
     // Д/Д: Дэр өөрийн дугаарлалттай (1-head), харин ДҮНЗ бүх ангиллаараа
     // ЗАЛГАА дугаарлана (1-19, 20-29, 30-37 …) — "#i-head+1 дүнз" гэсэн
     // аппын бусад газар хэрэглэдэг дугаарлалттай яг тохирно.
+    // Тэнцэхгүй тоо — АМЬД (to.it) төлөвөөр: сольсноор апп-ын лайв
+    // тоотой яг таарна (эсийн зураас+огноо+үсэг харин ЭХ (orig) төлөвөөр
+    // хэвээрээ — түүхэн тэмдэглэл болгож үлдээнэ, зөвхөн тоолол өөрчлөв).
+    const liveIt=to.it||'';
     let totN=0,totM=0,totBad=0,totBadM=0,dCum=0;
     const perGroup=groups.map(g=>{
-      const n=g.idx.length,bad=g.idx.filter(i=>orig[i]==='b').length,isHead=g.kind==='дэр';
+      const n=g.idx.length,bad=g.idx.filter(i=>liveIt[i]==='b').length,isHead=g.kind==='дэр';
       let ddLbl='';
       if(isHead){ddLbl=n?(n===1?'1':`1-${n}`):''}
       else if(n){const from=dCum+1;dCum+=n;ddLbl=n===1?String(from):`${from}-${dCum}`}
@@ -11831,7 +11820,7 @@ async function exportSwPu5Book(){
     hr.height=22;
     let r=3;
     ts.forEach(to=>{
-      const a=tallyOrig(to),row=ws.getRow(r++);
+      const a=swTally(to),row=ws.getRow(r++);
       const rf=a.pct>=35?'FFFEE2E2':a.pct>=25?'FFFEF3C7':'FFE8F8F1';
       [to.num,`${to.mak||''} ${to.mark||''}`,a.sl,a.slBad,a.total,swM(a.m),a.bad,swM(a.mBad),a.total?a.pct/100:null].forEach((v,i)=>{
         const cell=row.getCell(i+1);cell.value=v;
@@ -13120,7 +13109,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.24·162';
+const APP_BUILD='2026.09.24·163';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
