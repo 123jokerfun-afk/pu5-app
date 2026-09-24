@@ -11704,11 +11704,17 @@ async function exportSwPu5Book(){
     // Багана бүрийн бодит утга (дэр ба дүнзийг тус тусад нь; НИЙТ баганад
     // ЗӨВХӨН ДҮНЗ ордог — CLAUDE.md-ийн "сумын тэнцэх/тэнцэхгүйд зөвхөн
     // дүнз ордог" дүрмийг дагана, рам замын дэр тусдаа үлдэнэ)
-    let totN=0,totM=0,totBad=0,totBadM=0;
+    // Д/Д: Дэр өөрийн дугаарлалттай (1-head), харин ДҮНЗ бүх ангиллаараа
+    // ЗАЛГАА дугаарлана (1-19, 20-29, 30-37 …) — "#i-head+1 дүнз" гэсэн
+    // аппын бусад газар хэрэглэдэг дугаарлалттай яг тохирно.
+    let totN=0,totM=0,totBad=0,totBadM=0,dCum=0;
     const perGroup=groups.map(g=>{
       const n=g.idx.length,bad=g.idx.filter(i=>orig[i]==='b').length,isHead=g.kind==='дэр';
+      let ddLbl='';
+      if(isHead){ddLbl=n?(n===1?'1':`1-${n}`):''}
+      else if(n){const from=dCum+1;dCum+=n;ddLbl=n===1?String(from):`${from}-${dCum}`}
       if(!isHead){totN+=n;totM+=n*g.len;totBad+=bad;totBadM+=bad*g.len}
-      return{n,bad,isHead,len:g.len}
+      return{n,bad,isHead,len:g.len,ddLbl}
     });
     const labels=['Д/Д','Пог/м','Тэнцэхгүй /ш','Тэнцэхгүй пог/м'];
     const baseRow=maxRows+4;
@@ -11721,7 +11727,7 @@ async function exportSwPu5Book(){
       groups.forEach((g,gi)=>{
         const pg=perGroup[gi],c=row.getCell(gi+2);
         let v='';
-        if(li===0)v=pg.n?`1-${pg.n}`:'';
+        if(li===0)v=pg.ddLbl;
         else if(li===1)v=(!pg.isHead&&pg.n)?swM(pg.n*pg.len):'';
         else if(li===2)v=pg.bad||'';
         else if(li===3)v=(!pg.isHead&&pg.bad)?swM(pg.bad*pg.len):'';
@@ -11732,7 +11738,7 @@ async function exportSwPu5Book(){
       });
       const tc=row.getCell(totCol);
       let tv='';
-      if(li===0)tv=totN||'';else if(li===1)tv=totM?swM(totM):'';
+      if(li===0)tv=totN?(totN===1?'1':`1-${totN}`):'';else if(li===1)tv=totM?swM(totM):'';
       else if(li===2)tv=totBad||'';else if(li===3)tv=totBadM?swM(totBadM):'';
       tc.value=tv;
       tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEEF2FF'}};
@@ -13050,7 +13056,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.24·157';
+const APP_BUILD='2026.09.24·158';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
