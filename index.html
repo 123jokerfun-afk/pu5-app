@@ -7663,6 +7663,34 @@ async function exportPu5Book(scope){
     const normalSecs=oSecs.filter(s=>s.type!=='connecting');
     const connSecs=oSecs.filter(s=>s.type==='connecting');
 
+    // ★ Үе дамнасан дараалал — БҮХ замын хэмжээнд, 10 үений хуудасны
+    // хуваарилалтаас ҮЛ ХАМААРАН тооцно. Өмнө нь зөвхөн тухайн хуудсан
+    // дахь (sg) зэргэлдээ хосыг шалгадаг байсан тул жишээ нь 40-р үе
+    // (хуудас "31-40") ба 41-р үе (хуудас "41-50") өөр хуудсанд унавал
+    // хоорондын дараалал огт илрэхгүй, шарлуулагдахгүй байв.
+    const crossBoundary=new Map();               // secId → Set(positions)
+    const addCross=(secId,pos)=>{
+      if(!crossBoundary.has(secId))crossBoundary.set(secId,new Set());
+      crossBoundary.get(secId).add(pos)
+    };
+    for(let si=0;si<normalSecs.length-1;si++){
+      const secA=normalSecs[si],secB=normalSecs[si+1];
+      // secA-н ард хэдэн тэнцэхгүй байна вэ?
+      let tailA=0;
+      for(let i=secA.sleepers.length-1;i>=0;i--){
+        if(isBadSleeper(secA.sleepers[i].type))tailA++;else break
+      }
+      // secB-н эхэнд хэдэн тэнцэхгүй байна вэ?
+      let headB=0;
+      for(let i=0;i<secB.sleepers.length;i++){
+        if(isBadSleeper(secB.sleepers[i].type))headB++;else break
+      }
+      if(tailA+headB>=3){
+        for(let i=secA.sleepers.length-tailA;i<secA.sleepers.length;i++)addCross(secA.id,i);
+        for(let i=0;i<headB;i++)addCross(secB.id,i)
+      }
+    }
+
     const SEC_GROUP=10;
     for(let gi=0;gi<normalSecs.length;gi+=SEC_GROUP){
       const sg=normalSecs.slice(gi,gi+SEC_GROUP);
@@ -7682,29 +7710,10 @@ async function exportPu5Book(scope){
         return set
       });
 
-      // ★ Мөн үе дамнасан дараалалыг тодруулна
-      // Энэ матрицийн хүрээнд (sg) дамнасан дараалалуудыг тооцно
-      const crossSets=sg.map(()=>new Set());
-      // sg-н дотор дараалсан буюу хамгийн сүүлд sg[i]-н сүүл тэнцэхгүй + sg[i+1]-н эхлэл тэнцэхгүй
-      for(let si=0;si<sg.length-1;si++){
-        const secA=sg[si],secB=sg[si+1];
-        // secA-н ард хэдэн тэнцэхгүй байна вэ?
-        let tailA=0;
-        for(let i=secA.sleepers.length-1;i>=0;i--){
-          if(isBadSleeper(secA.sleepers[i].type))tailA++;else break
-        }
-        // secB-н эхэнд хэдэн тэнцэхгүй байна вэ?
-        let headB=0;
-        for(let i=0;i<secB.sleepers.length;i++){
-          if(isBadSleeper(secB.sleepers[i].type))headB++;else break
-        }
-        if(tailA+headB>=3){
-          // secA-н сүүлийн tailA дэрийг тэмдэглэнэ
-          for(let i=secA.sleepers.length-tailA;i<secA.sleepers.length;i++)crossSets[si].add(i);
-          // secB-н эхний headB дэрийг тэмдэглэнэ
-          for(let i=0;i<headB;i++)crossSets[si+1].add(i);
-        }
-      }
+      // ★ Мөн үе дамнасан дараалалыг тодруулна — дээр тооцсон
+      // track-ийн хэмжээний crossBoundary-аас тухайн хуудасны
+      // үеүүдэд хамаарах хэсгийг нь л шүүнэ
+      const crossSets=sg.map(s=>crossBoundary.get(s.id)||new Set());
 
       // Гарчиг
       wsM.mergeCells(1,1,1,sg.length+1);
@@ -13071,7 +13080,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.24·159';
+const APP_BUILD='2026.09.24·160';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

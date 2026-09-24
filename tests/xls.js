@@ -36,23 +36,26 @@ await page.evaluate(()=>{
 // 2-р зам: s3 46 дэр, 5 тэнцэхгүй (1..5 дараалсан)
 // Гол зам: км 12, 46 дэр, 3 тэнцэхгүй
 // Сум 1, 3: 84 үүрнээс 4 нь рам зам → 80 дүнз, 5 тэнцэхгүй (3 м тус бүр)
-await page.evaluate(()=>{
-  const mkSec=(id,n,bad)=>({id,type:'normal',label:id+' үе',note:'',date:'2026-05-01',
-    sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
-  DB.location='Шивээговь';
-  DB.rpt={cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:'2026',date:'2026-04-01'};
-  DB.folders=[{id:'fx',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
-    tracks:[
-      {id:'t1',num:1,kind:'station',sections:[mkSec('s1',46,[3,4,5,20]),mkSec('s2',46,[10,11,12])]},
-      {id:'t2',num:2,kind:'station',sections:[mkSec('s3',46,[1,2,3,4,5])]}]}];
-  activeFolderId='fx';DB.tracks=DB.folders[0].tracks;
-  DB.main=[{id:'km12',num:12,kind:'main',mat:'tbd',fast:'CZ',sections:[mkSec('m1',46,[7,8,9])]}];
-  let it='';for(let i=0;i<84;i++)it+=[5,6,7,20,21].includes(i)?'b':'n';
-  DB.sw=[{id:'sf',name:'Зун 2026',season:'зун',year:'2026',date:'2026-06-01',sc:'ПД-6',
-    turnouts:[{id:'w1',num:1,station:'Шивээговь',mak:'Р-65',mark:'1/11',proj:'2764',head:4,it},
-              {id:'w2',num:3,station:'Шивээговь',mak:'Р-65',mark:'1/11',proj:'2764',head:4,it}]}];
-  swFolderId='sf';saveDB();
-});
+async function seedMain(){
+  await page.evaluate(()=>{
+    const mkSec=(id,n,bad)=>({id,type:'normal',label:id+' үе',note:'',date:'2026-05-01',
+      sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
+    DB.location='Шивээговь';
+    DB.rpt={cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:'2026',date:'2026-04-01'};
+    DB.folders=[{id:'fx',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[
+        {id:'t1',num:1,kind:'station',sections:[mkSec('s1',46,[3,4,5,20]),mkSec('s2',46,[10,11,12])]},
+        {id:'t2',num:2,kind:'station',sections:[mkSec('s3',46,[1,2,3,4,5])]}]}];
+    activeFolderId='fx';DB.tracks=DB.folders[0].tracks;
+    DB.main=[{id:'km12',num:12,kind:'main',mat:'tbd',fast:'CZ',sections:[mkSec('m1',46,[7,8,9])]}];
+    let it='';for(let i=0;i<84;i++)it+=[5,6,7,20,21].includes(i)?'b':'n';
+    DB.sw=[{id:'sf',name:'Зун 2026',season:'зун',year:'2026',date:'2026-06-01',sc:'ПД-6',
+      turnouts:[{id:'w1',num:1,station:'Шивээговь',mak:'Р-65',mark:'1/11',proj:'2764',head:4,it},
+                {id:'w2',num:3,station:'Шивээговь',mak:'Р-65',mark:'1/11',proj:'2764',head:4,it}]}];
+    swFolderId='sf';saveDB();
+  });
+}
+await seedMain();
 
 async function grab(call){
   await page.evaluate(async s=>{window.__b64=null;await new Function('return ('+s+')')()},call);
@@ -136,6 +139,53 @@ console.log('\nПУ-5 дэвтэр (гол зам)');
   ok('Гол замын км: 46 дэр, 3 тэнцэхгүй',hit&&hit[2]===46&&hit[5]===3&&hit[8]===3,JSON.stringify(hit));
   ok('Гол замд өртөөний зам ОРООГҮЙ',
      !wb.worksheets.some(w=>/^(1|2)-р зам$/.test(w.name)),wb.worksheets.map(w=>w.name).join(' | '));
+}
+
+/* ══ 2.5. Хуудас дамнасан (10/11-р үе) дараалсан цэг ═══════════
+   SEC_GROUP=10 тул 10-р үе "1-10" хуудсанд, 11-р үе "11-20" (эсвэл
+   цөөвтэр бол өөрийн) шинэ хуудсанд унана — 2 ӨӨР Excel хуудас.
+   Хуучин код зөвхөн НЭГ хуудасны дотор зэргэлдээ хосыг шалгадаг
+   байсан тул ийм хуудас дамнасан дараалал огт шарлуулагдаагүй алдаа
+   байсныг энд шууд батална. */
+console.log('\nХуудас дамнасан дараалсан цэг (10/11-р үе)');
+{
+  await page.evaluate(()=>{
+    const mkSec=(id,n,bad)=>({id,type:'normal',label:id+' үе',note:'',date:'2026-05-01',
+      sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
+    const secs=[];
+    for(let i=1;i<=9;i++)secs.push(mkSec('b'+i,5,[]));           // 1-9-р үе: цэвэр
+    secs.push(mkSec('b10',5,[4]));                                 // 10-р үе: сүүлч тэнцэхгүй
+    secs.push(mkSec('b11',5,[0,1]));                               // 11-р үе: эхний 2 тэнцэхгүй
+    DB.folders=[{id:'fb',name:'Хуудас дамнасан',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'tb',num:7,kind:'station',sections:secs}]}];
+    activeFolderId='fb';DB.tracks=DB.folders[0].tracks;DB.main=[];DB.sw=[];
+    saveDB();
+  });
+  const {wb}=await grab("exportPu5Book('folder')");
+  const p1=wb.worksheets.find(w=>/^7з · 1-10р үе$/.test(w.name));
+  const p2=wb.worksheets.find(w=>/^7з · 11-11р үе$/.test(w.name));
+  ok('Хоёр тусдаа хуудас гарсан (1-10 · 11-11)',!!p1&&!!p2,
+     wb.worksheets.map(w=>w.name).join(' | '));
+  if(p1&&p2){
+    // p1: 10-р үе баганы 5-р мөр (idx4) — cross highlight (шар дэвсгэр,
+    // ягаан хүрээ) байх ёстой
+    const cA=p1.getCell(4+4,11);   // мөр=pos(4)+4, багана=10-р үе(10-р багана,index2+9=11)
+    ok('10-р үений сүүлч дэр шарлуулсан (FFFFFF99 дэвсгэр)',
+       cA.fill&&cA.fill.fgColor&&cA.fill.fgColor.argb==='FFFFFF99',
+       JSON.stringify(cA.fill));
+    ok('10-р үений сүүлч дэрийн хүрээ ягаан (FF9C27B0)',
+       cA.border&&cA.border.top&&cA.border.top.color&&cA.border.top.color.argb==='FF9C27B0',
+       JSON.stringify(cA.border&&cA.border.top));
+    // p2: 11-р үе — эхний хуудасны цорын ганц багана (col2), мөр 1,2 (idx0,1)
+    const cB0=p2.getCell(4,2),cB1=p2.getCell(5,2);
+    ok('11-р үений эхний 2 дэр шарлуулсан',
+       cB0.fill.fgColor.argb==='FFFFFF99'&&cB1.fill.fgColor.argb==='FFFFFF99',
+       JSON.stringify([cB0.fill.fgColor,cB1.fill.fgColor]));
+    ok('11-р үений эхний 2 дэрийн хүрээ ягаан',
+       cB0.border.top.color.argb==='FF9C27B0'&&cB1.border.top.color.argb==='FF9C27B0',
+       JSON.stringify([cB0.border.top,cB1.border.top]));
+  }
+  await seedMain();   // доорх шалгалтуудад анхны өгөгдлийг сэргээнэ
 }
 
 /* ══ 3. Маягт-1 (өнгөт Excel) ══════════════════════════════ */
