@@ -7766,6 +7766,21 @@ async function exportPu5Book(scope){
         if(consecGrps.length)sr.height=28
       });
       if(sr.height!==28)sr.height=18
+
+      // Хуудасны нийт мөр — Дүн мөрний ДООР. ЗӨВХӨН энэ хуудсанд байгаа
+      // (sg) үеүүдийн нийлбэр — track-ийн БҮХ үеийн нийт биш (тэр нь
+      // "Нийт дүн" шийтэд аль хэдийн бий, энд зөвхөн харагдаж буй
+      // 10 (буюу цөөн) үеийн хэмжээнд хязгаарлана).
+      let pgBad=0,pgTot=0;
+      sg.forEach(s=>{const sa=analyzeSection(s);pgBad+=sa.totalBad;pgTot+=sa.total});
+      const totRowN=mxSl+5;
+      wsM.mergeCells(totRowN,1,totRowN,sg.length+1);
+      const tv=wsM.getCell(totRowN,1);
+      tv.value=pgTot?`${fromNum}-${toNum}-р үений нийт тэнцэхгүй: ${pgBad}/${pgTot} (${(pgBad/pgTot*100).toFixed(1)}%)`:'';
+      tv.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1A3A6E'}};
+      tv.font={bold:true,color:C.white,name:'Arial',size:10};
+      tv.alignment={horizontal:'center',vertical:'middle'};
+      wsM.getRow(totRowN).height=22
     }
 
     // ── ★ ХОЛБОХ ХЭСГҮҮДИЙН ТУСДАА МАТРИЦ ШИЙТ ──
@@ -13056,7 +13071,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.24·158';
+const APP_BUILD='2026.09.24·159';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
