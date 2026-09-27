@@ -8213,11 +8213,18 @@ function startVerification(){
   if(!_verifTargets.length){showToast('Дор хаяж нэг зүйл сонгоно уу');return}
   _verifMode=true;_verifLog=[];_verifCursor=0; // #1-с эхлэнэ
   closeModal('verifModal');
+  // Ухрах горимд ЯВАХ дарааллаар эргүүлж нээхгүй бол #1 гэдэг нь
+  // жинхэнэ #1-тэй биш, ХОЛ талын дэртэй таарч, шалгах бүрд "зөрж
+  // байна" гэсэн ХУДАЛ анхааруулга гарч, зассан ч буруу байрлалд
+  // бичигдэж байсан — openSection()-той яг ижил дараалал баримтална.
+  if(activeSectionId!==_verifSecId)_revLeave();
   activeSectionId=_verifSecId;
   const t=activeTrack();const sec=t&&t.sections.find(s=>s.id===_verifSecId);if(!sec)return;
   document.getElementById('rvTitle').textContent=sec.label+' · Баталгаажуулах';
   document.getElementById('rvSub').textContent=`${t.num}-р зам · ${_verifTargets.join(', ')}`;
-  showView('recordView');renderVerifView()
+  showView('recordView');
+  _revEnter(sec);                 // дэлгэц солигдсоны ДАРАА эргүүлнэ
+  renderVerifView()
 }
 function renderVerifView(){
   const sec=activeSec();if(!sec)return;
@@ -13111,7 +13118,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.24·164';
+const APP_BUILD='2026.09.27·165';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
