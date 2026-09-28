@@ -10829,14 +10829,15 @@ function renderSwRec(focus){
   let html='';
   // Дугаарлалт: рам замын дэр 1-ээс, дүнз эхлэхэд ДАХИН 1-ээс эхэлнэ
   const no=i=>(i<head?i+1:i-head+1);
-  const dMap=swResolveDRepl(t);      // өмнөх паспортоос уламжилсныг оруулаад
+  const dMap=swResolveDRepl(t);       // өмнөх паспортоос уламжилсныг оруулаад
+  const slMap=swResolveSlRepl(t);     // рам замын дэрт ч мөн адил
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),bad=t.it[i]==='b';
     const isSl=sl.kind==='дэр';
     const pln=isSl?swSlPlan(t,i):swDzPlan(t,i);   // солихоор төлөвлөсөн
     const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')+(pln?' dr-plan':'');
-    const dr=isSl?null:dMap[i];
-    const rp=isSl?(t.slRepl||{})[i]:(dr?dr.rec:null);
+    const dr=isSl?slMap[i]:dMap[i];
+    const rp=dr?dr.rec:null;
     const prev=!!(dr&&!dr.own);       // өмнөх паспортынх — зөвхөн тэмдэглэгээ
     html+=`<div class="drow dr-rec ${cls}" data-i="${i}" data-rec="1">
       <span class="dr-num">#${no(i)}</span>
@@ -10965,8 +10966,12 @@ function openSwSl(i){
     `#${i+1} дэр · ${swLen(SW_HEAD_LEN)} м`;
   document.getElementById('swSlBn').classList.toggle('sel',t.it[i]==='n');
   document.getElementById('swSlBb').classList.toggle('sel',t.it[i]==='b');
-  const rp=(t.slRepl||{})[i],b=document.getElementById('swSlReplBtn');
-  if(b)b.lastChild.textContent=rp?` Сольсон: ${fmtReplDate(rp.d)} — засах`:' Энэ дэрийг сольсон';
+  // Өөрийн эсвэл өмнөх (хамгийн ихдээ 2) паспортоос уламжилсан сольсон
+  // тэмдэглэгээг мөн харуулна — дэрийн openEditSleeper()-той адил зарчим
+  const rp=swResolveSlRepl(t)[i],b=document.getElementById('swSlReplBtn');
+  if(b)b.lastChild.textContent=!rp?' Энэ дэрийг сольсон'
+    :rp.own?` Сольсон: ${fmtReplDate(rp.rec.d)} — засах`
+           :` Өмнө сольсон: ${fmtReplDate(rp.rec.d)} — дахин солих`;
   const pl=swSlPlan(t,i),pb=document.getElementById('swSlPlanBtn');
   if(pb)pb.lastChild.textContent=pl?` Төлөвлөсөн: ${matLabel(pl)} — засах`:' Солихоор төлөвлөх';
   openModal('swSlModal')
@@ -11086,6 +11091,26 @@ function swResolveDRepl(to){
       x.num===to.num&&x.mak===to.mak&&x.mark===to.mark);
     if(!pt||!pt.dRepl)continue;
     Object.keys(pt.dRepl).forEach(k=>{if(!(k in out))out[k]={rec:pt.dRepl[k],own:false}})
+  }
+  return out
+}
+// Рам замын дэрийн (сумын урд/head дэр) ХҮЧИНТЭЙ солилт — swResolveDRepl-
+// тэй яг ижил 2 паспортын хязгаартай. Өмнө нь энэ функц байхгүй байсан
+// тул рам замын дэрийн сольсон тэмдэглэгээ дараагийн паспортад ОГТ
+// уламжлагддаггүй байв (өртөө/гол замын дэр, мөн ижил сумын дүнз аль
+// аль нь 2 паспорт уламжилдаг байтал).
+function swResolveSlRepl(to){
+  const out={};
+  const own=to.slRepl||{};
+  Object.keys(own).forEach(k=>{out[k]={rec:own[k],own:true}});
+  const all=swFoldersByDate();
+  const cur=all.findIndex(f=>f.id===swFolderId);
+  if(cur<0)return out;
+  for(let i=cur-1;i>=0&&i>=cur-2;i--){
+    const pt=(all[i].turnouts||[]).find(x=>
+      x.num===to.num&&x.mak===to.mak&&x.mark===to.mark);
+    if(!pt||!pt.slRepl)continue;
+    Object.keys(pt.slRepl).forEach(k=>{if(!(k in out))out[k]={rec:pt.slRepl[k],own:false}})
   }
   return out
 }
@@ -13118,7 +13143,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.27·165';
+const APP_BUILD='2026.09.28·166';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
