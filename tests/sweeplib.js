@@ -40,6 +40,7 @@ const MODALS=[
   ['СШ загвар нэмэх', ()=>{goSwHome();openSwSpecAdd()}],
   ['Рам дэр',         ()=>{goSwHome();openSwFolderView('sf1');openSwRec('sw1');openSwSl(1)}],
   ['Профайл',         ()=>{goHome();openProfSheet()}],
+  ['Хогийн сав',      ()=>{goHome();(DB.folders.find(f=>f.id==='f-test1')||{}).trashedAt=new Date().toISOString();openTrashModal()}],
   ['Мэдэгдэл',        ()=>{goHome();openSyncSheet()}],
   ['Суулгах заавар',  ()=>{goHome();pwaHowTo()}],
 ];

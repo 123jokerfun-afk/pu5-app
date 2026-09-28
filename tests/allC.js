@@ -2,7 +2,7 @@
 // уншилтын шилжилт, Firestore-ын нэрийн дүрэм, олон утас
 const {execFileSync}=require('child_process');
 let tot=0,bad=0;
-for(const f of ['sizeguard','docid','parts','auto','multi']){
+for(const f of ['sizeguard','docid','parts','auto','deletesync','multi']){
   let out='';
   try{out=execFileSync('node',[f+'.js'],{encoding:'utf8',timeout:300000,stdio:['ignore','pipe','pipe']})}
   catch(e){out=(e.stdout||'')+'\nFATAL '+(e.message||'').split('\n')[0]}
