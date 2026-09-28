@@ -1636,6 +1636,19 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   </div></div>
 </div>
 
+<!-- ХОГИЙН САВ: устгасан паспорт (дэр ба сум), 30 хоногийн дотор сэргээж болно -->
+<div class="overlay" id="trashModal">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="sheet-title" style="margin:0">🗑 Хогийн сав</div>
+      <button onclick="closeModal('trashModal')" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Устгасан паспорт 30 хоногийн дотор өгөгдлийн хамт нь сэргээгдэх боломжтой. Хугацаа өнгөрвөл автоматаар бүр мөсөн устна.</div>
+    <div id="trashBody"></div>
+    <div style="height:calc(18px + var(--sab))"></div>
+  </div></div>
+</div>
+
 <div class="swipe-flash" id="swipeFlash"><div class="flash-pill" id="swipeFlashLabel"></div></div>
 
 <!-- LOGIN — зөөлөн товойлгосон (neumorphic) карт. loginCode/loginPass/
@@ -3307,8 +3320,8 @@ function hasBranch(code){
 }
 /* Салбар замын паспорт нь энгийнхээс `br` тэмдгээр л ялгарна — ингэснээр
    үүл, шахалт, бүртгэл, маягт бүгд хуучин замаараа ажиллана. */
-function derFolders(){return (DB.folders||[]).filter(f=>!f.br)}
-function brFolders(){return (DB.folders||[]).filter(f=>!!f.br)}
+function derFolders(){return (DB.folders||[]).filter(f=>!f.br&&!f.trashedAt)}
+function brFolders(){return (DB.folders||[]).filter(f=>!!f.br&&!f.trashedAt)}
 /* Профайл цэсний оны шүүлтүүр — зөвхөн ХАРАГДАЦ дээр нөлөөлнө (жагсаалтад
    гарах паспортын хавтас), огноогоор ухарч хайдаг resolveReplMap/
    swResolveDRepl зэрэг бизнес логикт ХЭРЭГЛЭГДЭХГҮЙ — тэдгээр нь
@@ -3319,8 +3332,8 @@ let _yearFilter=null;
 function _folderYearOk(f){return !_yearFilter||String(f.year)===_yearFilter}
 function _foldersYears(){
   const set=new Set([String(new Date().getFullYear())]);
-  (DB.folders||[]).forEach(f=>{if(f&&f.year)set.add(String(f.year))});
-  (DB.sw||[]).forEach(f=>{if(f&&f.year)set.add(String(f.year))});
+  (DB.folders||[]).forEach(f=>{if(f&&f.year&&!f.trashedAt)set.add(String(f.year))});
+  (DB.sw||[]).forEach(f=>{if(f&&f.year&&!f.trashedAt)set.add(String(f.year))});
   return [...set].sort()
 }
 const BRANCH_MAIN=['ПД-11','ПД-12'];
@@ -3473,11 +3486,11 @@ function allTracks(){return (DB.tracks||[]).concat(mainTracks())}
 // нээх/хаахаас хамаарч тоо хэлбэлзэнэ.
 function allTracksGlobal(){
   const out=mainTracks().slice();
-  (DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(t=>out.push(t)));
+  (DB.folders||[]).forEach(f=>{if(!f.trashedAt)(f.tracks||[]).forEach(t=>out.push(t))});
   return out
 }
 function _findFolderOfTrack(trackId){
-  return (DB.folders||[]).find(f=>(f.tracks||[]).some(t=>t.id===trackId))||null
+  return (DB.folders||[]).find(f=>!f.trashedAt&&(f.tracks||[]).some(t=>t.id===trackId))||null
 }
 function getFolder(fid){return (DB.folders||[]).find(x=>x.id===fid)||null}
 // Хэсэг бүрийн өгөгдөл ӨӨРИЙН хаяг дээрээ хадгалагдана:
@@ -3611,7 +3624,7 @@ function foldersByDate(){
   // Салбар замын паспорт энгийнхтэйгээ холилдвол солигдсон огноо буруу
   // уламжлагдана — тиймээс ижил төрлийнхийг л харна
   const _cf=(DB.folders||[]).find(f=>f.id===activeFolderId),_br=!!(_cf&&_cf.br);
-  return (DB.folders||[]).filter(f=>!!f.br===_br).slice().sort((a,b)=>
+  return (DB.folders||[]).filter(f=>!!f.br===_br&&!f.trashedAt).slice().sort((a,b)=>
     String(a.date||a.year||'').localeCompare(String(b.date||b.year||'')))
 }
 // Тухайн үеийн дэр бүрийн ХҮЧИНТЭЙ сольсон тэмдэглэгээг гаргана.
@@ -8180,8 +8193,8 @@ function closeFolder(){
 async function deleteFolder(fid,e){
   if(e)e.stopPropagation();
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
-  if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх замын өгөгдөл устана.`))return;
-  DB.folders=DB.folders.filter(x=>x.id!==fid);
+  if(!await appConfirm(`"${f.name}" паспортыг Хогийн сав руу шилжүүлэх үү? 30 хоногийн дотор сэргээж болно.`))return;
+  f.trashedAt=new Date().toISOString();
   if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
   saveDB();
   if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
@@ -8549,6 +8562,7 @@ async function _afterLoginInner(){
   if(_eb&&_eb.textContent.indexOf('татаж байна')>=0)_eb.remove();
   _migrateDB();
   if(!DB.folders)DB.folders=[];
+  _purgeOldTrash();          // 30 хоногоос хуучин трэшийг бүр мөсөн устгана
   const ts=document.getElementById('tracksSection');if(ts)ts.style.display='none';
   activeFolderId=null;DB.tracks=[];
   renderHome();
@@ -8757,7 +8771,7 @@ let _admYear=null,_admSeason=null,_admOpen={};
 /* Тухайн хэсгийн бүх паспортыг огноогоор нь эрэмбэлнэ (resolveReplMap-ийн
    глобал хувилбартай ижил дараалал) */
 function _admFolders(db){
-  return (db.folders||[]).slice().sort((a,b)=>
+  return (db.folders||[]).filter(f=>!f.trashedAt).slice().sort((a,b)=>
     String(a.date||a.year||'').localeCompare(String(b.date||b.year||'')))
 }
 /* Солигдсон дэрийн тэмдэглэгээ — өөрийн паспортынх, байхгүй бол өмнөх
@@ -8876,7 +8890,7 @@ function admSetSeason(sn){
 function _admYears(sections){
   const set=new Set([String(new Date().getFullYear())]);
   (sections||[]).forEach(({db})=>(db.folders||[]).forEach(f=>{
-    if(f&&f.year)set.add(String(f.year))}));
+    if(f&&f.year&&!f.trashedAt)set.add(String(f.year))}));
   return [...set].sort()
 }
 function _admBuildYearWheel(sections){
@@ -8918,7 +8932,7 @@ function renderAdminSections(sections){
   const hit=[];
   _adminData.forEach(({code,db})=>{
     (db.folders||[]).forEach(f=>{
-      if(String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
+      if(!f.trashedAt&&String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
         hit.push({code,db,folder:f})
     })
   });
@@ -9170,13 +9184,14 @@ async function adminExportExcel(){
     th(ws0,2,['Хэсэг','Паспорт','Зам тоо','Нийт дэр','Хэвийн','Тэнцэхгүй','ТБД','Хувь %']);
     let r0=3,gT=0,gB=0;
     allSections.forEach(({code,db})=>{
-      const tracks=db.folders?db.folders.flatMap(f=>f.tracks||[]):(db.tracks||[]);
+      const liveFolders=(db.folders||[]).filter(f=>!f.trashedAt);
+      const tracks=db.folders?liveFolders.flatMap(f=>f.tracks||[]):(db.tracks||[]);
       let sT=0,sB=0,sTbd=0,sN=0;
       tracks.forEach(t=>(t.sections||[]).forEach(s=>{
         const a=analyzeSection(s);sT+=a.total;sB+=a.totalBad;sTbd+=a.tbd+a.bad_tbd;sN+=a.normal
       }));
       const p=sT>0?(sB/sT*100):0;gT+=sT;gB+=sB;
-      td(ws0,r0,[code.toUpperCase(),(db.folders||[]).length,tracks.length,sT,sN,sB,sTbd,p.toFixed(1)+'%'],{fill:pctFill(p)});
+      td(ws0,r0,[code.toUpperCase(),liveFolders.length,tracks.length,sT,sN,sB,sTbd,p.toFixed(1)+'%'],{fill:pctFill(p)});
       r0++
     });
     td(ws0,r0,['НИЙТ','','',gT,'',gB,'',(gT>0?(gB/gT*100):0).toFixed(1)+'%'],{bold:true,fill:{argb:'FFE8F0EC'}});
@@ -9189,7 +9204,8 @@ async function adminExportExcel(){
       let r=1;
       hs(ws,r,1,10,code.toUpperCase()+' — Нэгтгэсэн тайлан',HD);r+=2;
 
-      const folders=db.folders&&db.folders.length?db.folders:[{name:'(паспортгүй)',tracks:db.tracks||[]}];
+      const _liveFolders2=(db.folders||[]).filter(f=>!f.trashedAt);
+      const folders=_liveFolders2.length?_liveFolders2:[{name:'(паспортгүй)',tracks:db.tracks||[]}];
 
       // Блок 1: Замуудын нэгтгэл
       hs(ws,r,1,10,'ЗАМУУДЫН НЭГТГЭЛ',HB2);r++;
@@ -9746,13 +9762,13 @@ function _shTurnouts(){return swAllTurnouts().filter(t=>(t.it||'').length)}
    Өөр улирлын тоог маягтад чимээгүй оруулахгүй байх нь чухал. */
 function _shSwFolder(db,folder,br){
   const y=String((folder&&folder.year)||''),se=String((folder&&folder.season)||'');
-  return ((db&&db.sw)||[]).find(f=>!!f.br===!!br&&
+  return ((db&&db.sw)||[]).find(f=>!!f.br===!!br&&!f.trashedAt&&
     String(f.year||'')===y&&String(f.season||'')===se)||null
 }
 /* Салбар замын ДЭРИЙН паспорт — ижил он/улирлаар */
 function _shBrFolder(db,folder){
   const y=String((folder&&folder.year)||''),se=String((folder&&folder.season)||'');
-  return ((db&&db.folders)||[]).find(f=>!!f.br&&
+  return ((db&&db.folders)||[]).find(f=>!!f.br&&!f.trashedAt&&
     String(f.year||'')===y&&String(f.season||'')===se)||null
 }
 
@@ -9969,7 +9985,7 @@ function _shHit(){
   const hit=[];
   (_adminData||[]).forEach(({code,db})=>{
     (db.folders||[]).forEach(f=>{
-      if(String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
+      if(!f.trashedAt&&String(f.year||'')===String(_admYear)&&String(f.season||'')===String(_admSeason))
         hit.push({code,db,folder:f})
     })
   });
@@ -10255,8 +10271,8 @@ function swTally(to){
 // Пог/м-ийг цэвэрхэн бичих: 6 → "6", 6.25 → "6,25"
 function swM(v){return (Math.round(v*100)/100).toString().replace('.',',')}
 function swPlanned(to){const sp=swSpec(to.mak,to.mark);return(to.head||0)+swSchTotal(sp)}
-function swFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw.filter(f=>!f.br)}
-function brSwFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw.filter(f=>!!f.br)}
+function swFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw.filter(f=>!f.br&&!f.trashedAt)}
+function brSwFolders(){if(!Array.isArray(DB.sw))DB.sw=[];return DB.sw.filter(f=>!!f.br&&!f.trashedAt)}
 let swFolderId=null,swTurnoutId=null;
 // Идэвхтэй паспортыг горимоос үл хамааран олно
 function swFolder(){return (DB.sw||[]).find(f=>f.id===swFolderId)||null}
@@ -10666,8 +10682,8 @@ function addSwFolder(){
 async function delSwFolderById(id,e){
   if(e)e.stopPropagation();
   const f=(DB.sw||[]).find(x=>x.id===id);if(!f)return;
-  if(!await appConfirm(`"${f.name}" паспортыг устгах уу? Бүх сумын бүртгэл устана.`,'Устгах'))return;
-  DB.sw=(DB.sw||[]).filter(x=>x.id!==id);
+  if(!await appConfirm(`"${f.name}" паспортыг Хогийн сав руу шилжүүлэх үү? 30 хоногийн дотор сэргээж болно.`,'Устгах'))return;
+  f.trashedAt=new Date().toISOString();
   if(swFolderId===id)swFolderId=null;
   saveDB();
   if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
@@ -11237,11 +11253,11 @@ function swAllTurnouts(){
 // идэвхтэй паспорт солигдож/хаагдахаас үл хамаарч тогтмол байх ёстой.
 function swAllTurnoutsGlobal(){
   const out=[];
-  (DB.sw||[]).forEach(f=>(f.turnouts||[]).forEach(t=>out.push(t)));
+  (DB.sw||[]).forEach(f=>{if(!f.trashedAt)(f.turnouts||[]).forEach(t=>out.push(t))});
   return out
 }
 function _findSwFolderOfTurnout(tid){
-  return (DB.sw||[]).find(f=>(f.turnouts||[]).some(t=>t.id===tid))||null
+  return (DB.sw||[]).find(f=>!f.trashedAt&&(f.turnouts||[]).some(t=>t.id===tid))||null
 }
 
 // ── Дүнз засах цонх ──
@@ -12711,6 +12727,9 @@ function _tooBig(n){
    ══════════════════════════════════════════════════════════════ */
 const PARTS_COL='parts';
 let _partsErr='',_partsAt=0,_partsWrote=0,_partsBytes=0;
+// Сервэрээс ЖИНХЭНЭ сүүлд уншсан хэсгүүдийн ID (устгал илрүүлэлтэд
+// ашиглана — _writeParts-ын дээрх тайлбарыг үз)
+let _knownPartIds=null;
 
 /* Firestore-ын баримтын нэр. Өмнө нь буруу тэмдэгтийг ЧИМЭЭГҮЙ хасдаг
    байсан тул "ф-1" ба "х-1" хоёр ижил нэр рүү буурч, нэг нь нөгөөгөө
@@ -12769,12 +12788,23 @@ function _cmpKey(o){
   return JSON.stringify(c)
 }
 
-/* Зөвхөн ӨӨРЧЛӨГДСӨН хэсгийг бичнэ. Алга болсныг устгана. */
+/* Зөвхөн ӨӨРЧЛӨГДСӨН хэсгийг бичнэ. Алга болсныг устгана.
+
+   Устгалыг илрүүлэхдээ ЗӨВХӨН localStorage-ийн _loadPartHashes()
+   (энэ ТӨХӨӨРӨМЖ өөрөө өмнө нь юу бичсэн бэ) дээр тулгуурладаг байсан
+   нь буруу байв: өөр төхөөрөмж (эсвэл кэш цэвэрлэгдсэн ижил төхөөрөмж)
+   үүсгэсэн паспортыг устгахад, устгагч төхөөрөмжийн кэшид тэр ID огт
+   байдаггүй тул batch.delete() ХЭЗЭЭ Ч дуудагдахгүй — Firestore дээр
+   мөнхөд үлдэж, дараагийн НЭВТРЭЛТ бүрд дахин уншигдаж "сэргэдэг" байв.
+   Иймд _knownPartIds (сервэрээс ЖИНХЭНЭ сүүлд уншсан ID-нууд,
+   _partsFromSnap-д шинэчлэгддэг) -ийг ХАМТ нь "өмнө байсан" гэж үзнэ. */
 function _writeParts(packed){
   if(!fbDb||!_sectionCode)return Promise.resolve(0);
   let parts;
   try{parts=_splitDB(packed)}catch(e){return Promise.resolve(0)}
-  const prev=_loadPartHashes(), now={}, col=fbDb.collection('sections')
+  const prev=Object.assign({},_loadPartHashes());
+  if(_knownPartIds)_knownPartIds.forEach(id=>{if(!(id in prev))prev[id]=null});
+  const now={}, col=fbDb.collection('sections')
     .doc(_sectionCode).collection(PARTS_COL);
   const batch=fbDb.batch(); let n=0,bytes=0;
   Object.keys(parts).forEach(id=>{
@@ -12788,7 +12818,8 @@ function _writeParts(packed){
   Object.keys(prev).forEach(id=>{if(!(id in now)){batch.delete(col.doc(id));n++}});
   if(!n)return Promise.resolve(0);
   return batch.commit().then(()=>{
-    _savePartHashes(now);_partsErr='';_partsAt=Date.now();
+    _savePartHashes(now);_knownPartIds=Object.keys(now);
+    _partsErr='';_partsAt=Date.now();
     _partsWrote=n;_partsBytes=bytes;return n});
 }
 /* Хос бичилт — хуучин баримт амжилттай бичигдсэний ДАРАА. Алдаа гарсан ч
@@ -12822,6 +12853,9 @@ function _partsFromSnap(snap){
     parts[d.id]=v; n++;
     try{const u=v.u; if(u&&u.toMillis)ms=Math.max(ms,u.toMillis())}catch(e){}
   });
+  // Сервэрээс ЖИНХЭНЭ уншсан ID-нуудыг тэмдэглэнэ — бүрэн бус ч гэсэн
+  // одоо ЯГ ЮУ байгааг үнэн зөв мэдэх нь устгал илрүүлэлтэд чухал
+  _knownPartIds=Object.keys(parts);
   if(!n||!parts.meta)return null;            // бүрэн бус
   return {db:_joinParts(parts),ms:ms,n:n};
 }
@@ -12979,6 +13013,78 @@ function syncNow(){
   }).catch(()=>showToast('Илгээж чадсангүй — сүлжээгээ шалгана уу',2400))
 }
 
+/* ══════════════════════════════════════════════
+   ХОГИЙН САВ — устгасан паспорт (дэр ба сум)
+
+   Устгах = DB.folders/DB.sw-ААС ХАСАХГҮЙ, зөвхөн f.trashedAt тэмдэглэнэ
+   (deleteFolder/delSwFolderById-г үз). Тиймээс _splitDB-ийн парт бичилт
+   хэвээрээ явагдаж, тракууд/дэр/сум бүх өгөгдөл хадгалагдсаар байна —
+   сэргээхэд юу ч алдагдахгүй. 30 хоногийн дараа _purgeOldTrash() өөрөө
+   массиваас ЖИНХЭНЭ хасна (тэр үед л Firestore-ын хэсэг устгагдана).
+   ══════════════════════════════════════════════ */
+function trashedItems(){
+  const der=(DB.folders||[]).filter(f=>f.trashedAt).map(f=>({folder:f,kind:'der'}));
+  const sw=(DB.sw||[]).filter(f=>f.trashedAt).map(f=>({folder:f,kind:'sw'}));
+  return der.concat(sw).sort((a,b)=>
+    String(b.folder.trashedAt||'').localeCompare(String(a.folder.trashedAt||'')))
+}
+function trashCount(){return trashedItems().length}
+const TRASH_DAYS=30;
+function trashDaysLeft(trashedAt){
+  const el=Date.now()-Date.parse(trashedAt);
+  return Math.max(0,TRASH_DAYS-Math.floor(el/86400000))
+}
+// 30 хоногоос хуучин трэшийг ЖИНХЭНЭ устгана — нэвтэрсэн болгонд шалгана
+function _purgeOldTrash(){
+  const cutoff=Date.now()-TRASH_DAYS*86400000;
+  const old=f=>f.trashedAt&&Date.parse(f.trashedAt)<cutoff;
+  const before=(DB.folders||[]).length+(DB.sw||[]).length;
+  DB.folders=(DB.folders||[]).filter(f=>!old(f));
+  DB.sw=(DB.sw||[]).filter(f=>!old(f));
+  if((DB.folders.length+(DB.sw||[]).length)!==before)saveDB()
+}
+function openTrashModal(){renderTrash();openModal('trashModal')}
+function renderTrash(){
+  const b=document.getElementById('trashBody');if(!b)return;
+  const items=trashedItems();
+  if(!items.length){
+    b.innerHTML='<div style="text-align:center;padding:24px;color:var(--ink4);font-size:13px;font-weight:600">Хогийн сав хоосон байна</div>';
+    return
+  }
+  b.innerHTML=items.map(({folder:f,kind})=>{
+    const dl=trashDaysLeft(f.trashedAt);
+    const tag=kind==='der'?'Дэр':'Сум';
+    return `<div class="folder-card" style="cursor:default">
+      <div class="folder-icon"><span class="sc-tag">${tag}</span></div>
+      <div class="folder-info">
+        <div class="folder-name">${esc(f.name||'')}</div>
+        <div class="folder-meta">${esc(f.year||'')} · ${esc(f.season||'')} · ${dl} хоногийн дараа бүр мөсөн устна</div>
+      </div>
+      <div class="folder-actions">
+        <button class="fc-close" style="color:var(--g600)" onclick="restoreTrashItem('${f.id}','${kind}')">Сэргээх</button>
+        <button class="folder-del" aria-label="Бүр мөсөн устгах" onclick="purgeTrashItem('${f.id}','${kind}',event)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>`
+  }).join('')
+}
+function restoreTrashItem(id,kind){
+  const arr=kind==='der'?(DB.folders||[]):(DB.sw||[]);
+  const f=arr.find(x=>x.id===id);if(!f)return;
+  delete f.trashedAt;saveDB();renderTrash();
+  showToast(`✓ "${f.name}" сэргээгдлээ`,2400);
+  if((document.querySelector('.view.active')||{}).id==='swHomeView')renderSwHome();
+  else if((document.querySelector('.view.active')||{}).id==='homeView')renderHome()
+}
+async function purgeTrashItem(id,kind,e){
+  if(e)e.stopPropagation();
+  const arr=kind==='der'?(DB.folders||[]):(DB.sw||[]);
+  const f=arr.find(x=>x.id===id);if(!f)return;
+  if(!await appConfirm(`"${f.name}"-г БҮР МӨСӨН устгах уу? Энэ үйлдлийг буцаах боломжгүй.`,'Устгах'))return;
+  if(kind==='der')DB.folders=(DB.folders||[]).filter(x=>x.id!==id);
+  else DB.sw=(DB.sw||[]).filter(x=>x.id!==id);
+  saveDB();renderTrash();showToast('Бүр мөсөн устгагдлаа')
+}
+
 /* ── Профайл: хэсэг, тохиргоо, гарах ─────────────────────── */
 function openProfSheet(){renderProfSheet();openModal('profSheet');_syncTabs('prof')}
 function renderProfSheet(){
@@ -13037,6 +13143,8 @@ function renderProfSheet(){
         'var(--blue)','Хэсгийн нэр засах',esc(nm),"closeModal('profSheet');editLocation()")+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg>',
         'var(--g600)','Тайлангийн тохиргоо','Гарчиг, албан тушаалтан',"closeModal('profSheet');openReportSettings()")+
+      row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>',
+        'var(--red)','Хогийн сав',trashCount()?`${trashCount()} устгасан паспорт`:'Хоосон',"closeModal('profSheet');openTrashModal()")+
       theme+
       (()=>{docBytes();const n=_lastPartMax,pc=n/DOC_LIMIT*100;
         const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g600)';
@@ -13233,7 +13341,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.28·167';
+const APP_BUILD='2026.09.28·168';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
