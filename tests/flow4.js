@@ -35,6 +35,9 @@ await page.waitForTimeout(400);
 ok('Рам замын дэрийн тоо асуув',await page.isVisible('#swHeadModal'));
 await page.evaluate(()=>{document.getElementById('swHeadN').value='4';saveSwHead()});
 await page.waitForTimeout(500);
+ok('Схем сонго цонх (толгойн дэрийн ТБД бэхэлгээ)',await page.isVisible('#swSchemeModal'));
+await page.evaluate(()=>pickSwScheme('CZ'));
+await page.waitForTimeout(400);
 ok('Бүртгэлийн дэлгэц',await page.evaluate(()=>document.getElementById('swRecView').classList.contains('active')));
 
 const jb=await T.center(page,'#swJoyBtn');

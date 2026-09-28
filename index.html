@@ -2117,6 +2117,8 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="joystick-wrap">
       <div class="joy-ring"></div>
       <div class="joy-hint jh-top">↑ Тэнцэхгүй</div>
+      <div class="joy-hint jh-right" id="swJhRight" style="display:none">CZ →</div>
+      <div class="joy-hint jh-left" id="swJhLeft" style="display:none">← Тэнц.CZ</div>
       <div class="joy-btn" id="swJoyBtn">
         <div class="joy-icon" id="swJoyIcon">●</div>
         <div class="joy-lbl" id="swJoyLbl">Хэвийн</div>
@@ -2930,12 +2932,31 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Рам зам төмрийн эхний дэр — сумын дүнд ордоггүй</div>
     <div class="edit-grid">
-      <button class="etb etb-n" id="swSlBn" onclick="setSwSl('n')"><span class="etb-icon">✓</span>Хэвийн</button>
-      <button class="etb etb-b" id="swSlBb" onclick="setSwSl('b')"><span class="etb-icon">~</span>Тэнцэхгүй</button>
+      <button class="etb etb-n" id="swSlBn" onclick="setSwSl('n')"><span class="etb-icon">✓</span>Хэвийн мод</button>
+      <button class="etb etb-b" id="swSlBb" onclick="setSwSl('b')"><span class="etb-icon">~</span>Тэнцэхгүй мод</button>
+      <button class="etb etb-t" id="swSlBt" onclick="setSwSl('t')"><span class="etb-icon">■</span>Тэнцэх <span id="swSlFastT">CZ</span></button>
+      <button class="etb etb-bt" id="swSlBx" onclick="setSwSl('x')"><span class="etb-icon">✕</span>Тэнцэхгүй <span id="swSlFastX">CZ</span></button>
     </div>
     <button class="etb" id="swSlPlanBtn" onclick="openSwSlPlan()" style="width:100%;margin-top:6px;padding:14px;background:var(--blue-bg);color:var(--blue);border-color:var(--blue-mid)"><svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Солихоор төлөвлөх</button>
     <button class="etb" id="swSlReplBtn" onclick="openSwSlRepl()" style="width:100%;margin-top:6px;padding:14px;background:var(--red-bg);color:var(--red);border-color:var(--red)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0115.5-6.2M21 12a9 9 0 01-15.5 6.2M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Энэ дэрийг сольсон</button>
     <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeModal('swSlModal')">Буцах</button>
+  </div></div>
+</div>
+
+<!-- СШ ПУ-5: рам замын урд дэрийн ТБД-ийн схем (бэхэлгээ) сонгох -->
+<div class="overlay" id="swSchemeModal" style="z-index:435">
+  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0">Схем сонго</div>
+      <button onclick="closeSwSchemeModal()" class="x-btn" aria-label="Хаах">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:8px;font-weight:600">Энэ сумын урд дэрийг (рам зам төмөр) ТБД гэж бүртгэхэд ямар бэхэлгээгээр тэмдэглэх вэ?</div>
+    <div class="edit-grid" style="margin:0">
+      <button type="button" class="etb" id="swSchB_CZ" onclick="pickSwScheme('CZ')">ТБД CZ</button>
+      <button type="button" class="etb" id="swSchB_APC" onclick="pickSwScheme('APC')">ТБД APC</button>
+    </div>
+    <div style="font-size:11px;color:var(--ink4);font-weight:600;margin-top:8px">Аль ч схемээр модон дэр хэвээрээ бүртгэгдэнэ. Дараа нь энд буцаж өөрчилж болно.</div>
+    <button class="btn-cancel" style="width:100%;margin-top:10px" onclick="closeSwSchemeModal()">Болих</button>
   </div></div>
 </div>
 
@@ -3150,6 +3171,19 @@ const TYPE_COLORS={normal:'linear-gradient(145deg,var(--g500),var(--g600))',
   bad:'linear-gradient(145deg,var(--orange-mid),var(--orange))',
   tbd:'linear-gradient(145deg,var(--red-mid),var(--red))',
   bad_tbd:'linear-gradient(145deg,#C0392B,var(--dred))'};
+
+// Сумын урд дэр (рам зам төмрийн эхний дэр): ТБД гэж бүртгэхэд ямар
+// бэхэлгээгээр тэмдэглэхийг СУМ БҮРЭЭР нэг удаа сонгоно (CZ эсвэл APC) —
+// гол зам шиг дэр бүрээр биш, учир нь нэг сумын бүх толгой дэр ижил
+// схемтэй байдаг. Схемгүй (хуучин) сум CZ гэж тооцогдоно.
+const SW_HEAD_FASTS=['CZ','APC'];
+function swSlFast(to){return (to&&to.slFast)||'CZ'}
+// Толгойн дэрийн нүд: 'b' (модон тэнцэхгүй) БА 'x' (ТБД тэнцэхгүй) хоёул
+// "тэнцэхгүй" гэж тооцогдоно.
+function isBadCh(ch){return ch==='b'||ch==='x'}
+function swItemStateLbl(ch,fast){
+  return {n:'Хэвийн',b:'Тэнцэхгүй',t:'Тэнцэх '+fast,x:'Тэнцэхгүй '+fast}[ch]||'Хэвийн'
+}
 
 // ── Зам төрөл: өртөө / гол зам ──
 // Гол замын дэр ихэвчлэн төмөр бетон (ТБД) бөгөөд бэхэлгээний төрөлтэй.
@@ -4474,7 +4508,7 @@ function collectPlan(){
     const pl=tt.slPlan||{},rows=[];let fix=0;
     Object.keys(pl).forEach(k=>{
       const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
-      const bd=(tt.it||'')[i]==='b';if(bd)fix++;
+      const bd=isBadCh((tt.it||'')[i]);if(bd)fix++;
       rows.push({sw:true,tid:tt.id,sec:'Рам зам төмөр',pos:i,idx:i+1,m:pl[k],
         now:bd?'bad':'normal'})
     });
@@ -10190,7 +10224,7 @@ function swSlotLabel(to,i){return swKindLbl(swSlot(to,i))}
 /* Рам замын ТЭНЦЭХГҮЙ дэрийн тоо — Маягт-2 Хавсралт-1-ийн 2,75 багана */
 function swHeadBad(to){
   const it=to.it||'',head=to.head||0;let n=0;
-  for(let i=0;i<Math.min(head,it.length);i++)if(it[i]==='b')n++;
+  for(let i=0;i<Math.min(head,it.length);i++)if(isBadCh(it[i]))n++;
   return n
 }
 // Тухайн сумын бүртгэлийн дүн.
@@ -10201,17 +10235,17 @@ function swTally(to){
   const it=to.it||'',head=to.head||0;
   const r={total:0,bad:0,pass:0,m:0,mBad:0,sl:0,slBad:0,slRuns:0,slRepl:0};
   for(let i=0;i<it.length;i++){
-    const bad=it[i]==='b';
     if(i>=head){
+      const bad=it[i]==='b';
       const len=swSlot(to,i).len;
       r.total++;r.m+=len;
       if(bad){r.bad++;r.mBad+=len}else r.pass++
-    } else {r.sl++;if(bad)r.slBad++}
+    } else {r.sl++;if(isBadCh(it[i]))r.slBad++}
   }
   // Рам замын дэрүүдэд 3 ба түүнээс дээш дараалсан цэг байна уу
   let run=0;
   for(let i=0;i<Math.min(head,it.length);i++){
-    if(it[i]==='b'){run++;if(run===3)r.slRuns++}else run=0
+    if(isBadCh(it[i])){run++;if(run===3)r.slRuns++}else run=0
   }
   r.slRepl=Object.keys(to.slRepl||{}).length;
   r.dRepl=Object.keys(to.dRepl||{}).length;
@@ -10780,8 +10814,34 @@ function saveSwHead(){
   const n=parseInt(document.getElementById('swHeadN').value,10);
   if(isNaN(n)||n<0){showToast('Дэрийн тоог оруулна уу');return}
   t.head=n;saveDB();closeModal('swHeadModal');
+  if(n>0){                    // рам замын дэртэй бол ТБД-ийн схемийг мөн асууна
+    showToast(`Эхний ${n} мөр — дэр`,2600);
+    openSwSchemeModal(true);return
+  }
   showView('swRecView');renderSwRec();
-  showToast(n?`Эхний ${n} мөр — дэр`:'Дэргүй, шууд дүнзээр эхэлнэ',2600)
+  showToast('Дэргүй, шууд дүнзээр эхэлнэ',2600)
+}
+// ── Рам замын дэрийн ТБД-ийн схем (CZ/APC) — сум бүрээр нэг удаа
+//    сонгоно, шинэ сум үүсгэхэд автоматаар асууна, дараа нь ч
+//    (Схем: ... ⚙ товчоор) өөрчилж болно ──
+let _swSchemeAuto=false;
+function openSwSchemeModal(auto){
+  const t=swTurnout();if(!t)return;
+  _swSchemeAuto=!!auto;
+  const cur=swSlFast(t);
+  document.getElementById('swSchB_CZ').classList.toggle('sel',cur==='CZ');
+  document.getElementById('swSchB_APC').classList.toggle('sel',cur==='APC');
+  openModal('swSchemeModal')
+}
+function pickSwScheme(fast){
+  const t=swTurnout();if(!t)return;
+  t.slFast=fast;saveDB();closeModal('swSchemeModal');
+  showToast(`Схем: ТБД ${fast}`,2200);
+  _swSchemeAuto=false;showView('swRecView');renderSwRec()
+}
+function closeSwSchemeModal(){
+  closeModal('swSchemeModal');
+  if(_swSchemeAuto){_swSchemeAuto=false;showView('swRecView');renderSwRec()}
 }
 function renderSwRec(focus){
   const f=swFolder(),t=swTurnout();
@@ -10790,6 +10850,7 @@ function renderSwRec(focus){
   document.getElementById('swRecSub').textContent=
     `${t.station||f.name}${t.proj?' · төсөл '+t.proj:''} · эхэнд ${t.head} дэр`;
   const a=swTally(t),pl=swPlanned(t),n=(t.it||'').length,head=t.head||0;
+  const fast=swSlFast(t);
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   set('sw-total',a.total);set('sw-pass',a.pass);set('sw-fail',a.bad);
   set('sw-pct',a.m?a.pct.toFixed(1)+'%':'—');
@@ -10805,7 +10866,8 @@ function renderSwRec(focus){
     else{
       sp.style.display='';
       const pct=a.sl?(a.slBad/a.sl*100):0;
-      sp.innerHTML=`<div class="ssp-h">Рам замын дэр — сумын дүнд ороогүй</div>
+      sp.innerHTML=`<div class="ssp-h">Рам замын дэр — сумын дүнд ороогүй
+          <button type="button" onclick="openSwSchemeModal(false)" style="float:right;font-size:10px;font-weight:800;color:var(--blue);background:none;border:0;padding:7px 4px;margin:-7px -4px;min-height:28px;cursor:pointer">Схем: ТБД ${fast} ⚙</button></div>
         <div class="ssp-g">
           <div class="ssp-c"><div class="ssp-n">${a.sl}/${head}</div><div class="ssp-l">Бүртгэсэн</div></div>
           <div class="ssp-c"><div class="ssp-n" style="color:var(--orange)">${a.slBad}</div><div class="ssp-l">Тэнцэхгүй</div></div>
@@ -10824,6 +10886,12 @@ function renderSwRec(focus){
     ?`Хуваарь дүүрсэн — цаашид <b>5,5 пог/м</b> дүнз бүртгэнэ  ·  дараах дүнз #${nno}`
     :`Дараах ${s.kind==='дэр'?'<b>дэр</b>':'<b>дүнз</b>'} #${nno} — <b>${swKindLbl(s)}</b>`
       +`  ·  ${n<head?`рам зам ${n}/${head}`:`дүнз ${n-head}/${pl-head}`}`;
+  // Дараагийн мөр РАМ ЗАМЫН ДЭР үед л 4 чиглэлтэй жойстик — баруун/зүүн
+  // шудрахад ТБД (сумын схемийн бэхэлгээгээр) бүртгэнэ, дүнзэнд 2 хэвээр
+  const nextIsHead=n<head;
+  const jhR=document.getElementById('swJhRight'),jhL=document.getElementById('swJhLeft');
+  if(jhR){jhR.style.display=nextIsHead?'':'none';jhR.textContent=fast+' →'}
+  if(jhL){jhL.style.display=nextIsHead?'':'none';jhL.textContent='← Тэнц.'+fast}
   // Мөрүүд
   const wrap=document.getElementById('swLog');
   let html='';
@@ -10832,7 +10900,7 @@ function renderSwRec(focus){
   const dMap=swResolveDRepl(t);       // өмнөх паспортоос уламжилсныг оруулаад
   const slMap=swResolveSlRepl(t);     // рам замын дэрт ч мөн адил
   for(let i=0;i<n;i++){
-    const sl=swSlot(t,i),bad=t.it[i]==='b';
+    const sl=swSlot(t,i),ch=t.it[i],bad=isBadCh(ch);
     const isSl=sl.kind==='дэр';
     const pln=isSl?swSlPlan(t,i):swDzPlan(t,i);   // солихоор төлөвлөсөн
     const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')+(pln?' dr-plan':'');
@@ -10842,7 +10910,7 @@ function renderSwRec(focus){
     html+=`<div class="drow dr-rec ${cls}" data-i="${i}" data-rec="1">
       <span class="dr-num">#${no(i)}</span>
       <span class="sw-kind">${swKindLbl(sl)}</span>
-      <span class="sw-state">${bad?'Тэнцэхгүй':'Хэвийн'}</span>
+      <span class="sw-state">${swItemStateLbl(ch,fast)}</span>
       ${pln?PIN_HTML:''}
       ${rp?`<span class="repl-date${prev?' rd-prev':''}">${fmtReplDate(rp.d)}</span>`:''}
       <span class="dr-edit">${ic('edit',12)}</span></div>`
@@ -10889,12 +10957,13 @@ function swWrite(t,i,ch){
    бүртгэдэг байлаа. Одоо тааруулсан мөр дээрээ бүртгэнэ. */
 async function swPut(ch){
   const t=swTurnout();if(!t)return;
-  hap(ch==='b'?18:8);
+  hap(isBadCh(ch)?18:8);
   const n=(t.it||'').length, cur=drumCursor();
   const head=t.head||0;
+  const fast=swSlFast(t);
   const no=i=>(i<head?i+1:i-head+1);
   const kindOf=i=>(swSlot(t,i).kind==='дэр'?'дэрийг':'дүнзийг');
-  const stOf=c=>(c==='b'?'Тэнцэхгүй':'Хэвийн');
+  const stOf=c=>swItemStateLbl(c,fast);
 
   // ── Аль хэдийн бүртгэсэн мөр дээр таарсан бол түүнийг дарж бичнэ ──
   if(cur<n){
@@ -10933,16 +11002,32 @@ function swUndo(){
   if(t.slPlan)delete t.slPlan[i];   // төлөвлөгөө нь ч мөн адил
   saveDB();renderSwRec()
 }
-// ── Бөөрөнхий удирдлага: дарвал Хэвийн, доош шудрахад Тэнцэхгүй ──
+// ── Бөөрөнхий удирдлага: дарвал Хэвийн, доош шудрахад Тэнцэхгүй.
+//    Рам замын дэр дээр байвал (баруун/зүүн) ТБД схемийн бэхэлгээгээр
+//    тэнцэх/тэнцэхгүй ч мөн бүртгэнэ — дүнз хэвээрээ 2 чиглэлтэй ──
 (function(){
   const btn=document.getElementById('swJoyBtn');if(!btn)return;
   const lbl=document.getElementById('swJoyLbl'),icn=document.getElementById('swJoyIcon');
   let st=null;
-  // Дарвал Хэвийн, ДЭЭШ шудрахад Тэнцэхгүй (дэр бүртгэлтэй ижил чиглэл)
-  const kind=(dx,dy)=>(Math.sqrt(dx*dx+dy*dy)<16?'n':(dy<0&&-dy>Math.abs(dx)?'b':null));
+  const isHeadNow=()=>{const t=swTurnout();return !!t&&drumCursor()<(t.head||0)};
+  // Дарвал Хэвийн, ДЭЭШ шудрахад Тэнцэхгүй (дэр бүртгэлтэй ижил чиглэл),
+  // рам замын дэр дээр БАРУУН/ЗҮҮН шудрахад ТБД тэнцэх/тэнцэхгүй
+  const kind=(dx,dy)=>{
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<16)return'n';
+    if(isHeadNow()&&Math.abs(dx)>Math.abs(dy))return dx>0?'t':'x';
+    if(dy<0&&-dy>Math.abs(dx))return'b';
+    return null
+  };
   const show=k=>{
-    btn.style.background=k==='b'?'linear-gradient(145deg,#FFB86B,#F59E0B)':'';
-    lbl.textContent=k==='b'?'Тэнцэхгүй':'Хэвийн';icn.textContent=k==='b'?'~':'●'
+    const fast=swSlFast(swTurnout());
+    const info={
+      n:{bg:'',lbl:'Хэвийн',icon:'●'},
+      b:{bg:'linear-gradient(145deg,#FFB86B,#F59E0B)',lbl:'Тэнцэхгүй',icon:'~'},
+      t:{bg:TYPE_COLORS.tbd,lbl:'Тэнцэх '+fast,icon:'■'},
+      x:{bg:TYPE_COLORS.bad_tbd,lbl:'Тэнцэхгүй '+fast,icon:'✕'}
+    }[k]||{bg:'',lbl:'Хэвийн',icon:'●'};
+    btn.style.background=info.bg;lbl.textContent=info.lbl;icn.textContent=info.icon
   };
   const reset=()=>{clearTimeout(btn._t);btn._t=setTimeout(()=>show('n'),380)};
   const start=(x,y)=>{st={x,y}};
@@ -10962,10 +11047,15 @@ let _swSlIdx=-1;
 function openSwSl(i){
   const t=swTurnout();if(!t||i>=(t.it||'').length)return;
   _swSlIdx=i;
+  const fast=swSlFast(t),ch=t.it[i];
   document.getElementById('swSlTitle').textContent=
     `#${i+1} дэр · ${swLen(SW_HEAD_LEN)} м`;
-  document.getElementById('swSlBn').classList.toggle('sel',t.it[i]==='n');
-  document.getElementById('swSlBb').classList.toggle('sel',t.it[i]==='b');
+  document.getElementById('swSlBn').classList.toggle('sel',ch==='n');
+  document.getElementById('swSlBb').classList.toggle('sel',ch==='b');
+  document.getElementById('swSlBt').classList.toggle('sel',ch==='t');
+  document.getElementById('swSlBx').classList.toggle('sel',ch==='x');
+  document.getElementById('swSlFastT').textContent=fast;
+  document.getElementById('swSlFastX').textContent=fast;
   // Өөрийн эсвэл өмнөх (хамгийн ихдээ 2) паспортоос уламжилсан сольсон
   // тэмдэглэгээг мөн харуулна — дэрийн openEditSleeper()-той адил зарчим
   const rp=swResolveSlRepl(t)[i],b=document.getElementById('swSlReplBtn');
@@ -10979,7 +11069,7 @@ function openSwSl(i){
 function setSwSl(ch){
   const t=swTurnout();if(!t||_swSlIdx<0)return;
   swWrite(t,_swSlIdx,ch);saveDB();closeModal('swSlModal');
-  renderSwRec(_swSlIdx);showToast(`#${_swSlIdx+1} → ${ch==='b'?'Тэнцэхгүй':'Хэвийн'}`,1500)
+  renderSwRec(_swSlIdx);showToast(`#${_swSlIdx+1} → ${swItemStateLbl(ch,swSlFast(t))}`,1500)
 }
 // Огноог дэр бүртгэлийн адил дугуй гүйлгэгчээр сонгоно (нэг цонхыг хуваан ашиглана)
 function openSwSlRepl(){
@@ -11000,7 +11090,7 @@ function saveSwSlRepl(newType){
   const t=swTurnout();if(!t||_swSlIdx<0)return;
   const p=n=>(n<10?'0':'')+n;
   const date=_replY+'-'+p(_replM)+'-'+p(_replD);
-  const i=_swSlIdx,wasBad=t.it[i]==='b';
+  const i=_swSlIdx,wasBad=isBadCh(t.it[i]);
   swWrite(t,i,'n');                       // сольсон дэр хэвийн болно
   if(!t.slRepl)t.slRepl={};
   t.slRepl[i]={d:date,t:newType,m:newType==='tbd'?'tbd':'wood',o:wasBad?1:0};
@@ -11686,7 +11776,7 @@ async function exportSwPu5Book(){
   const runsInRange=(it,lo,hi)=>{
     const out=[];let run=[];
     for(let i=lo;i<hi;i++){
-      if(it[i]==='b')run.push(i);else{if(run.length>=3)out.push(run.slice());run=[]}
+      if(isBadCh(it[i]))run.push(i);else{if(run.length>=3)out.push(run.slice());run=[]}
     }
     if(run.length>=3)out.push(run.slice());
     return out
@@ -11704,7 +11794,7 @@ async function exportSwPu5Book(){
   };
   // Нэг эсийг бөглөнө (fillCell-тэй ижил дизайн, дэр/дүнзийн мап тус тусад нь)
   const fillTurnoutCell=(cell,to,i,hi,orig)=>{
-    if(orig[i]!=='b'){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:W}};return 1}
+    if(!isBadCh(orig[i])){cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:W}};return 1}
     const isHead=i<(to.head||0);
     const rp=isHead?(to.slRepl&&to.slRepl[i]):swDzRepl(to,i);
     const plannedRaw=isHead?swSlPlan(to,i):swDzPlan(to,i);
@@ -11796,7 +11886,7 @@ async function exportSwPu5Book(){
     const liveIt=to.it||'';
     let totN=0,totM=0,totBad=0,totBadM=0,dCum=0;
     const perGroup=groups.map(g=>{
-      const n=g.idx.length,bad=g.idx.filter(i=>liveIt[i]==='b').length,isHead=g.kind==='дэр';
+      const n=g.idx.length,bad=g.idx.filter(i=>isBadCh(liveIt[i])).length,isHead=g.kind==='дэр';
       let ddLbl='';
       if(isHead){ddLbl=n?(n===1?'1':`1-${n}`):''}
       else if(n){const from=dCum+1;dCum+=n;ddLbl=n===1?String(from):`${from}-${dCum}`}
@@ -13143,7 +13233,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.28·166';
+const APP_BUILD='2026.09.28·167';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
