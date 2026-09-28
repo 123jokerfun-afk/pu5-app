@@ -87,6 +87,43 @@ ok('sr4 (дараагийн 3) — ЭНД АЛГА БОЛНО',
    (await checkSw('sr4'))===null,
    JSON.stringify(await checkSw('sr4')));
 
+// ── Рам замын дэр (сумын урд/head дэр): swResolveSlRepl мөн адил
+//    2 паспортын хязгаартай — өмнө нь энэ функц ОГТ байгаагүй тул
+//    рам замын дэрийн сольсон тэмдэглэгээ ямар ч дараагийн паспортад
+//    уламжлагддаггүй (0 паспорт) байсныг эндээс баталгаажуулна ──
+await page.evaluate(()=>{
+  const mkTo=()=>({id:'w1',num:1,mak:'Р-65',mark:'1/11',head:2,it:'nnnnn'});
+  const mkFolder=(id,date,season)=>({id,name:id,season,year:'2026',date,sc:'ПД-6',turnouts:[mkTo()]});
+  DB.sw=[
+    mkFolder('hr1','2026-01-01','хавар'),
+    mkFolder('hr2','2026-04-01','намар'),
+    mkFolder('hr3','2026-07-01','хавар'),
+    mkFolder('hr4','2026-10-01','намар')
+  ];
+  DB.sw[0].turnouts[0].slRepl={0:{d:'2026-01-01',t:'normal',m:'wood',o:1}};
+  swFolderId='hr1';
+  saveDB();
+});
+const checkSl=async(fid)=>page.evaluate(fid=>{
+  swFolderId=fid;
+  const to=DB.sw.find(f=>f.id===fid).turnouts[0];
+  const m=swResolveSlRepl(to);
+  return m[0]?{own:m[0].own,d:m[0].rec.d}:null
+},fid);
+
+ok('hr1 (сольсон паспорт өөрөө): own=true',
+   JSON.stringify(await checkSl('hr1'))==='{"own":true,"d":"2026-01-01"}',
+   JSON.stringify(await checkSl('hr1')));
+ok('hr2 (дараагийн 1): уламжлагдсан',
+   JSON.stringify(await checkSl('hr2'))==='{"own":false,"d":"2026-01-01"}',
+   JSON.stringify(await checkSl('hr2')));
+ok('hr3 (дараагийн 2): уламжлагдсан',
+   JSON.stringify(await checkSl('hr3'))==='{"own":false,"d":"2026-01-01"}',
+   JSON.stringify(await checkSl('hr3')));
+ok('hr4 (дараагийн 3) — ЭНД АЛГА БОЛНО',
+   (await checkSl('hr4'))===null,
+   JSON.stringify(await checkSl('hr4')));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('\nSUMMARY '+R.filter(Boolean).length+'/'+R.length);
