@@ -2477,6 +2477,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="sheet-title" style="margin:0">Солигдсон дэр</div>
       <button onclick="closeModal('replReportModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
+    <button class="btn-ok" onclick="exportReplForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
     <div id="replReportBody"></div>
   </div></div>
 </div>
@@ -2855,6 +2856,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('swReplRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сольсон дүнзийг ҮРГЭЛЖ анхны уртаар нь тооцно — өөр уртаар сольсон ч сумын нийт пог/м өөрчлөгдөхгүй.</div>
+    <button class="btn-ok" onclick="exportSwReplForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
     <div id="swReplRepBody"></div>
   </div></div>
 </div>
@@ -11716,6 +11718,117 @@ async function exportPlanForm(){
   }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
 }
 
+/* Солигдсон ДЭРИЙН жагсаалт — идэвхтэй паспорт (+ Гол зам)-оор,
+   collectRepl()-той яг ижил хамрах хүрээ (openReplReport()-той тохирно) */
+function buildReplSheet(wb){
+  const data=collectRepl();
+  const ws=wb.addWorksheet('Дэр',{pageSetup:{orientation:'portrait',scale:90,
+    margins:{left:.7,right:.7,top:.75,bottom:.75,header:.3,footer:.3}}});
+  ws.columns=[{width:4.33},{width:16},{width:14},{width:12},{width:10},{width:12},{width:11}];
+  const {AR,box,put}=_plXls(ws);
+  _plHead(ws,'G','СОЛИГДСОН ДЭРИЙН ЖАГСААЛТ','/ өртөө, гол зам, салбар зам /');
+  [['A5:A6','Д/д'],['B5:B6','Зам'],['C5:C6','Үе'],['D5:D6','Дэрийн дугаар'],
+   ['E5:E6','Материал'],['F5:F6','Огноо'],['G5:G6','Сийрэгжилт']
+  ].forEach(([rng,txt])=>{ws.mergeCells(rng);put(rng.split(':')[0],txt,{align:{wrapText:true}})});
+  ws.getRow(5).height=19.5;ws.getRow(6).height=19.5;
+  let rn=7,no=0,wood=0,tbd=0,carve=0;
+  data.forEach(tr=>{
+    tr.rows.forEach(r=>{
+      no++;if(r.mat==='tbd')tbd++;else wood++;if(r.carve)carve++;
+      put('A'+rn,no);
+      put('B'+rn,tr.name,{font:AR(9),align:{wrapText:true}});
+      put('C'+rn,r.sec,{font:AR(9),align:{wrapText:true}});
+      put('D'+rn,r.idx);
+      put('E'+rn,matLabel(r.mat),{font:AR(9,true)});
+      put('F'+rn,fmtReplDate(r.date),{font:AR(9)});
+      put('G'+rn,r.carve?'🔧 тийм':'',{font:AR(9,true)});
+      rn++
+    })
+  });
+  if(!no){ws.mergeCells('A7:G7');put('A7','Солигдсон дэр алга',{font:AR(10)});rn=8}
+  else{
+    ws.mergeCells(`A${rn}:E${rn}`);
+    put('A'+rn,`НИЙТ — модон ${wood} ш, ТБД ${tbd} ш, сийрэгжилт ${carve} ш`,
+      {font:AR(10,true),align:{horizontal:'right'}});
+    ws.mergeCells(`F${rn}:G${rn}`);
+    put('F'+rn,no+' дэр',{font:AR(11,true)});
+    rn++
+  }
+  _plSign(ws,rn,'D');
+  return no
+}
+async function exportReplForm(){
+  const n=replTotalCount();
+  if(!n){showToast('Солигдсон дэр алга байна',2800);return}
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  buildReplSheet(wb);
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const t=mnToday(),p=x=>(x<10?'0':'')+x;
+    dlBlob(blob,`Солигдсон_дэр_${t.y}-${p(t.m)}-${p(t.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ${n} дэр татагдлаа`,2800)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+
+/* Сольсон ДҮНЗНИЙ жагсаалт — идэвхтэй сумын паспортоор,
+   swReplRows()-той яг ижил хамрах хүрээ (openSwReplRep()-той тохирно) */
+function buildSwReplSheet(wb){
+  const ts=swAllTurnouts();
+  const ws=wb.addWorksheet('Дүнз',{pageSetup:{orientation:'portrait',scale:90,
+    margins:{left:.7,right:.7,top:.75,bottom:.75,header:.3,footer:.3}}});
+  ws.columns=[{width:4.33},{width:8},{width:10},{width:8},{width:10},
+              {width:12},{width:12},{width:11}];
+  const {AR,box,put}=_plXls(ws);
+  _plHead(ws,'H','СОЛИГДСОН ДҮНЗНИЙ ЖАГСААЛТ','/ идэвхтэй сумын паспорт /');
+  [['A5:A6','Д/д'],['B5:B6','Сум №'],['C5:C6','Сумын маяг'],['D5:D6','Марк'],
+   ['E5:E6','Дүнзний дугаар'],['F5:F6','Одоогийн урт, пог/м'],
+   ['G5:G6','Сольсон урт, пог/м'],['H5:H6','Огноо']
+  ].forEach(([rng,txt])=>{ws.mergeCells(rng);put(rng.split(':')[0],txt,{align:{wrapText:true}})});
+  ws.getRow(5).height=19.5;ws.getRow(6).height=30;
+  let rn=7,no=0,M=0;
+  ts.forEach(t=>{
+    swReplRows(t).forEach(r=>{
+      no++;M+=r.nom;
+      put('A'+rn,no);
+      put('B'+rn,t.num);
+      put('C'+rn,t.mak||'',{font:AR(9)});
+      put('D'+rn,t.mark||'',{font:AR(9)});
+      put('E'+rn,r.no);
+      put('F'+rn,r.nom,{fmt:'0.00'});
+      put('G'+rn,r.real,{fmt:'0.00',font:AR(10,true)});
+      put('H'+rn,fmtReplDate(r.d),{font:AR(9)});
+      rn++
+    })
+  });
+  if(!no){ws.mergeCells('A7:H7');put('A7','Солигдсон дүнз алга',{font:AR(10)});rn=8}
+  else{
+    ws.mergeCells(`A${rn}:F${rn}`);
+    put('A'+rn,'НИЙТ (анхны уртаар)',{font:AR(10,true),align:{horizontal:'right'}});
+    ws.mergeCells(`G${rn}:H${rn}`);
+    put('G'+rn,no+' ш · '+swM(M)+' пог/м',{font:AR(11,true)});
+    rn++
+  }
+  _plSign(ws,rn,'D');
+  return no
+}
+async function exportSwReplForm(){
+  const ts=swAllTurnouts();
+  const n=ts.reduce((s,t)=>s+swReplRows(t).length,0);
+  if(!n){showToast('Солигдсон дүнз алга байна',2800);return}
+  if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
+  const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
+  buildSwReplSheet(wb);
+  try{
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const t=mnToday(),p=x=>(x<10?'0':'')+x;
+    dlBlob(blob,`Солигдсон_дүнз_${t.y}-${p(t.m)}-${p(t.d)}.xlsx`);
+    if(!isIOS())showToast(`✓ ${n} дүнз татагдлаа`,2800)
+  }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
+}
+
 function swGotoPlan(tid,i){
   swTurnoutId=tid;_swFromRun=false;_fromPlan=false;
   closeModal('swPlanRepModal');
@@ -13341,7 +13454,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.28·168';
+const APP_BUILD='2026.09.29·169';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
