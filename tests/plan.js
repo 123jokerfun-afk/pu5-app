@@ -2,8 +2,14 @@
    СОЛИХООР ТӨЛӨВЛӨХ + ДЭРИЙН АГУУЛАХ
 
    Төлөвлөгөө бол "энэ тэнцэхгүй дэр/дүнзийг ийм зүйлээр солино"
-   гэсэн санамж. Үнэхээр солиход төлөвлөгөө нь ӨӨРӨӨ арилах ёстой —
-   эс тэгвэл нэг дэр төлөвлөгөө болон солилт хоёулангид тоологдоно.
+   гэсэн санамж. Үнэхээр солиход төлөвлөгөө ЖАГСААЛТААС АЛГА БОЛОХГҮЙ
+   (sec.plan/t.slPlan/t.dPlan хэвээр үлдэнэ) — харин collectPlan()/
+   collectSwPlan() getRepl()-ээр "хэрэгжсэн" гэж тэмдэглэж, тоонд
+   ОРОХГҮЙ (нэг дэр хоёр газар тоологдохгүй), жагсаалтад бүдгэрүүлж
+   сольсон огноотойгоо харагдана. Бичилтийн мөрөн дээрх хадаас/хүрээ
+   (dr-plan/pl-pin) нь харин хэрэгжсэний дараа арилна — тэр мөр аль
+   хэдийн сольсон огноогоор харагдаж байгаа тул "төлөвлөсөн" гэх
+   шаардлагагүй.
 
    Дэрийн агуулах нь ХЭСГИЙН түвшинд ганц: гол зам, өртөө, салаалсан,
    салбар зам бүгд түүнээс дэр авна. Зарлага нь солилтоос гарна.
@@ -131,21 +137,35 @@ ok('Төлөвлөсөн мөр дарахад дэрийн жагсаалт р�
    `${jump.view} · ${jump.trk}-р зам · ${jump.sec}`);
 ok('Жагсаалтын цонх хаагдана',!jump.open,String(jump.open));
 
-/* ── 4. Үнэхээр солиход төлөвлөгөө нь арилна ── */
+/* ── 4. Үнэхээр солиход төлөвлөгөө ЖАГСААЛТААС алга болохгүй ── */
 const done=await page.evaluate(async()=>{
   openEditSleeper(2);await new Promise(r=>setTimeout(r,220));
   openReplModal();await new Promise(r=>setTimeout(r,260));
   await saveRepl('normal');await new Promise(r=>setTimeout(r,340));
   const sec=activeSec();
   return{plan:!!(sec.plan&&sec.plan[2]),repl:!!(sec.repl&&sec.repl[2]),n:planTotalCount()}});
-ok('Сольсны дараа төлөвлөгөө нь өөрөө арилна',
-   !done.plan&&done.repl&&done.n===1,`төлөвлөгөө ${done.plan} · солилт ${done.repl}`);
+ok('Сольсны дараа ч sec.plan ХЭВЭЭР үлдэнэ (алга болохгүй)',
+   done.plan&&done.repl,`төлөвлөгөө ${done.plan} · солилт ${done.repl}`);
+ok('Харин тоолол дахин ОРОХГҮЙ (нэг дэр хоёр газар тоологдохгүй)',
+   done.n===1,'n='+done.n);
 const unmark=await page.evaluate(async()=>{
   renderRecordView(2);await new Promise(r=>setTimeout(r,300));
   const r=[...document.querySelectorAll('#rvLog .drow.dr-rec')][2];
   return{cls:r.className,pin:!!r.querySelector('.pl-pin')}});
 ok('Сольсны дараа цэнхэр хүрээ нь арилна',!/dr-plan/.test(unmark.cls),unmark.cls);
 ok('Сольсны дараа хадаасны тэмдэг ч арилна',!unmark.pin,String(unmark.pin));
+
+/* ── 4б. Харин ТӨЛӨВЛӨСӨН ЖАГСААЛТАД бүдгэрүүлж, огноотойгоо хэвээр ── */
+const doneRep=await page.evaluate(async()=>{
+  openPlanReport();await new Promise(r=>setTimeout(r,320));
+  const rows=[...document.querySelectorAll('#planRepBody .pl-row')];
+  const done=rows.find(r=>r.classList.contains('pl-done'));
+  return{count:rows.length,doneCls:done?done.className:null,
+    doneDate:done?(done.querySelector('.repl-date')||{}).textContent:null}});
+ok('Хэрэгжсэн мөр ЖАГСААЛТААС алга болоогүй',doneRep.count===2,'мөр тоо='+doneRep.count);
+ok('Хэрэгжсэн мөр бүдгэрсэн (pl-done)',!!doneRep.doneCls,String(doneRep.doneCls));
+ok('Хэрэгжсэн мөрний ард сольсон огноо гарна',!!doneRep.doneDate,String(doneRep.doneDate));
+await page.evaluate(()=>closeModal('planRepModal'));
 
 /* ── 5. ДЭРИЙН АГУУЛАХ ── */
 console.log('\nДэрийн агуулах');
@@ -298,8 +318,18 @@ const sdone=await page.evaluate(async()=>{
   _swDzL=3.5;saveSwDzRepl();await new Promise(r=>setTimeout(r,320));
   const t=swTurnout();
   return{plan:!!(t.dPlan&&t.dPlan[2]),repl:!!(t.dRepl&&t.dRepl[2]),n:swPlanTotal()}});
-ok('Дүнз сольсны дараа төлөвлөгөө нь өөрөө арилна',
-   !sdone.plan&&sdone.repl&&sdone.n===0,`төлөвлөгөө ${sdone.plan} · солилт ${sdone.repl}`);
+ok('Дүнз сольсны дараа ч t.dPlan ХЭВЭЭР үлдэнэ, тоолол орохгүй',
+   sdone.plan&&sdone.repl&&sdone.n===0,
+   `төлөвлөгөө ${sdone.plan} · солилт ${sdone.repl} · n=${sdone.n}`);
+const sdoneRep=await page.evaluate(async()=>{
+  openSwPlanRep();await new Promise(r=>setTimeout(r,320));
+  const rows=[...document.querySelectorAll('#swPlanRepBody .pl-row')];
+  const done=rows.find(r=>r.classList.contains('pl-done'));
+  return{doneCls:done?done.className:null,
+    doneDate:done?(done.querySelector('.repl-date')||{}).textContent:null}});
+ok('Дүнзний жагсаалтад хэрэгжсэн мөр бүдгэрч, огноотойгоо хэвээр',
+   !!sdoneRep.doneCls&&!!sdoneRep.doneDate,JSON.stringify(sdoneRep));
+await page.evaluate(()=>closeModal('swPlanRepModal'));
 
 /* ── 7. Шахалт/задаргаа, үүлний хэсэг ── */
 const pk=await page.evaluate(()=>{
@@ -446,9 +476,9 @@ const sldone=await page.evaluate(async()=>{
   return{plan:!!(t.slPlan&&t.slPlan[1]),repl:!!(t.slRepl&&t.slRepl[1]),
     n:planTotalCount(),pin:!!rows[1].querySelector('.pl-pin'),
     out:derOutN(),rows:derOutRows().map(r=>r.grp+'/'+r.name+'='+r.n),st:derStock()}});
-ok('Сольсны дараа төлөвлөгөө, тэмдэг хоёулаа арилна',
-   !sldone.plan&&sldone.repl&&sldone.n===0&&!sldone.pin,
-   `төлөвлөгөө ${sldone.plan} · солилт ${sldone.repl} · тэмдэг ${sldone.pin}`);
+ok('Сольсны дараа ч t.slPlan ХЭВЭЭР үлдэнэ, харин мөрний тэмдэг арилна',
+   sldone.plan&&sldone.repl&&sldone.n===0&&!sldone.pin,
+   `төлөвлөгөө ${sldone.plan} · солилт ${sldone.repl} · n=${sldone.n} · тэмдэг ${sldone.pin}`);
 ok('Рам замын солилт ДЭРИЙН зарлагад орж, үлдэгдэл буурна',
    sldone.out===1&&sldone.rows.some(x=>/Сумын рам зам\/3-р сум=1/.test(x))&&sldone.st===49,
    JSON.stringify(sldone.rows)+' · үлдэгдэл '+sldone.st);
