@@ -523,6 +523,8 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 /* Төлөвлөсөн мөр — дарж очих боломжтойг мэдэгдэнэ */
 .pl-row{cursor:pointer;-webkit-tap-highlight-color:transparent}
 .pl-row:active{background:var(--blue-bg)}
+/* Төлөвлөсөн дэр/дүнз аль хэдийн сольсон — алга болохгүй, бүдгэрнэ */
+.pl-row.pl-done{opacity:.5}
 /* Зарлагын мөр: сум · урт · ш · пог/м · % */
 .out-tr{display:grid;grid-template-columns:54px 60px 46px 1fr 56px;align-items:center;gap:5px;
   padding:9px 10px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800}
@@ -4497,22 +4499,27 @@ function collectPlan(){
     (t.sections||[]).forEach(sc=>{
       const a=analyzeSection(sc);
       tot+=a.total;bad+=a.totalBad;
-      const pl=sc.plan||{},rows=[];let fix=0;
+      const pl=sc.plan||{},rows=[];let fix=0,pend=0;
       Object.keys(pl).forEach(k=>{
         const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
         const now=((sc.sleepers||[])[i]||{}).type||'';
+        // Төлөвлөсөн дэрийг аль хэдийн сольсон бол (getRepl-ээр мэднэ) —
+        // жагсаалтаас УСТГАХГҮЙ, бүдгэрүүлж, ард нь сольсон огноог харуулна
+        const rp=getRepl(sc,i),fulfilled=!!(rp&&rp.d);
         if(isBadSleeper(now))fix++;
-        rows.push({secId:sc.id,sec:sc.label||'—',pos:i,idx:i+1,m:pl[k],now})
+        if(!fulfilled)pend++;
+        rows.push({secId:sc.id,sec:sc.label||'—',pos:i,idx:i+1,m:pl[k],now,
+          fulfilled,replDate:fulfilled?rp.d:null})
       });
       const b2=Math.max(0,a.totalBad-fix);
       bad2+=b2;
       if(!rows.length)return;
       rows.sort((x,y)=>x.idx-y.idx);
-      n+=rows.length;
+      n+=pend;
       secs.push({id:sc.id,label:sc.label||'—',rows,
         total:a.total,bad:a.totalBad,bad2:b2})
     });
-    if(n)out.push({id:t.id,name:trackLabel(t),secs,n,total:tot,bad,bad2})
+    if(secs.length)out.push({id:t.id,name:trackLabel(t),secs,n,total:tot,bad,bad2})
   });
   // Сумын рам замын дэр (2,75 м) нь сумын дүнд ордоггүй ч ДЭР л тул
   // дэрийн төлөвлөгөөнд нэг доор жагсана: "N-р сум · рам зам төмөр #M".
@@ -4520,17 +4527,19 @@ function collectPlan(){
   // Мөн БҮХ сумын паспортыг хамарна (swAllTurnouts() биш) — дэрийн
   // хэсэгтэй адил шалтгаанаар.
   swAllTurnoutsGlobal().forEach(tt=>{
-    const pl=tt.slPlan||{},rows=[];let fix=0;
+    const pl=tt.slPlan||{},rows=[];let fix=0,pend=0;
     Object.keys(pl).forEach(k=>{
       const i=parseInt(k,10);if(!pl[k]||isNaN(i))return;
       const bd=isBadCh((tt.it||'')[i]);if(bd)fix++;
+      const rp=(tt.slRepl||{})[i],fulfilled=!!(rp&&rp.d);
+      if(!fulfilled)pend++;
       rows.push({sw:true,tid:tt.id,sec:'Рам зам төмөр',pos:i,idx:i+1,m:pl[k],
-        now:bd?'bad':'normal'})
+        now:bd?'bad':'normal',fulfilled,replDate:fulfilled?rp.d:null})
     });
     if(!rows.length)return;
     rows.sort((x,y)=>x.idx-y.idx);
     const a=swTally(tt),b2=Math.max(0,a.slBad-fix);
-    out.push({id:'sw:'+tt.id,sw:true,name:`${tt.num}-р сум`,n:rows.length,
+    out.push({id:'sw:'+tt.id,sw:true,name:`${tt.num}-р сум`,n:pend,
       secs:[{id:'sl',label:'Рам зам төмөр',rows,total:a.sl,bad:a.slBad,bad2:b2}],
       total:a.sl,bad:a.slBad,bad2:b2})
   });
@@ -4614,17 +4623,18 @@ function renderPlanReport(fid){
       html+=`<div class="pl-ue"><span>${esc(sc.label)}</span>
         ${_pctPair(sc.bad,sc.bad2,sc.total)}</div>`;
       sc.rows.forEach(r=>{
-        N++;if(r.m==='tbd')T++;else W++;
+        if(!r.fulfilled){N++;if(r.m==='tbd')T++;else W++}
         const go=r.sw?`jumpToSwPlan('${r.tid}',${r.pos})`
                     :`jumpToPlan('${t.id}','${r.secId}',${r.pos})`;
         // Үеийн нэр нь дээрх мөрөнд аль хэдийн байгаа тул давтахгүй.
         // Оронд нь дэрийн ОДООГИЙН төрлийг харуулна: "#6 Тэнцэхгүй → ТБД"
         const nw=TYPES[r.now]?TYPES[r.now].label:'';
-        html+=`<div class="rp-row pl-row" onclick="hap();${go}">
+        html+=`<div class="rp-row pl-row${r.fulfilled?' pl-done':''}" onclick="hap();${go}">
           <span style="font-weight:800;color:var(--ink);min-width:44px">#${r.idx}</span>
           <span style="flex:1;font-weight:700;color:var(--ink3)">${nw}</span>
           <span class="pl-arw">→</span>
           <span class="mat-tag">${matLabel(r.m)}</span>
+          ${r.fulfilled?`<span class="repl-date rd-prev">${fmtReplDate(r.replDate)}</span>`:''}
           <span style="font-weight:900;color:var(--blue)">›</span>
         </div>`
       })
@@ -6137,7 +6147,11 @@ function renderRecordLog(sec,focusIdx){
       const ft=showFastFor(sec,t,sl.type,i)?'<span class="fast-tag">'+fastOf(sec,i,t)+'</span>':'';
       const rno=runNo[sec.id+'#'+(i+1)];
       const rn=rno?'<span class="dr-run">'+rno+'</span>':'';
-      const pl=planAt(sec,i);                // солихоор төлөвлөсөн
+      // Сольсон (rp харагдаж буй) бол төлөвлөгөө ХЭРЭГЖСЭН гэсэн үг —
+      // жагсаалтад хэвээр үлдэх ч энэ мөрөнд хадаас/хүрээ дахин харуулахгүй
+      // (хэдийнэ сольсон гэж огноотойгоо харагдаж байхад "төлөвлөсөн" гэх
+      // шаардлагагүй)
+      const pl=planAt(sec,i)&&!rp;            // солихоор төлөвлөсөн, хараахан хэрэгжээгүй
       const pc=pl?' dr-plan':'';
       html+='<div class="drow dr-rec '+tc+pc+'" data-i="'+i+'" data-rec="1">'+
         '<span class="dr-num">#'+(i+1)+'</span>'+
@@ -6564,7 +6578,9 @@ async function saveRepl(newType){
     sec.sleepers[idx].type=newType
   }
   setReplAt(sec,idx,date,newType,newType==='tbd'?'tbd':'wood',0,wasBad);
-  clearPlanAt(sec,idx);           // төлөвлөгөө хэрэгжлээ — хоёр газар тоологдохгүй
+  // Төлөвлөгөөг УСТГАХГҮЙ — collectPlan() одоо сольсон эсэхийг getRepl-ээр
+  // мэдэж, аль хэдийн хэрэгжсэн бол тоололд оролцуулахгүй, зөвхөн
+  // жагсаалтад бүдгэрүүлж, сольсон огноотойгоо хэвээр үлдээнэ
   // Дараалсан цэгт (3 ба түүнээс дээш) хамаарч байсан дэр бол явцын сүүлд
   // асууна: энэ сийрэгжилтээр солигдож байгаа дэр мөн үү?
   //   Тийм → сийрэгжилтэд бүртгэнэ (s:1)
@@ -10920,11 +10936,13 @@ function renderSwRec(focus){
   for(let i=0;i<n;i++){
     const sl=swSlot(t,i),ch=t.it[i],bad=isBadCh(ch);
     const isSl=sl.kind==='дэр';
-    const pln=isSl?swSlPlan(t,i):swDzPlan(t,i);   // солихоор төлөвлөсөн
-    const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')+(pln?' dr-plan':'');
     const dr=isSl?slMap[i]:dMap[i];
     const rp=dr?dr.rec:null;
     const prev=!!(dr&&!dr.own);       // өмнөх паспортынх — зөвхөн тэмдэглэгээ
+    // Сольсон (rp харагдаж буй) бол төлөвлөгөө ХЭРЭГЖСЭН — мөрөн дээр
+    // хадаас/хүрээ дахин харуулахгүй, зөвхөн сольсон огноогоор харагдана
+    const pln=(isSl?swSlPlan(t,i):swDzPlan(t,i))&&!rp;   // солихоор төлөвлөсөн, хараахан хэрэгжээгүй
+    const cls=(isSl?'sw-r-sl':bad?'sw-r-bad':'sw-r-ok')+(pln?' dr-plan':'');
     html+=`<div class="drow dr-rec ${cls}" data-i="${i}" data-rec="1">
       <span class="dr-num">#${no(i)}</span>
       <span class="sw-kind">${swKindLbl(sl)}</span>
@@ -11112,7 +11130,7 @@ function saveSwSlRepl(newType){
   swWrite(t,i,'n');                       // сольсон дэр хэвийн болно
   if(!t.slRepl)t.slRepl={};
   t.slRepl[i]={d:date,t:newType,m:newType==='tbd'?'tbd':'wood',o:wasBad?1:0};
-  if(t.slPlan)delete t.slPlan[i];         // төлөвлөгөө хэрэгжлээ
+  // Төлөвлөгөөг УСТГАХГҮЙ — collectPlan() slRepl-ээр мэдэж бүдгэрүүлнэ
   _replMode='sec';
   saveDB();closeModal('replModal');renderSwRec(i);
   showToast(`#${i+1} дэр сольсон · ${fmtReplDate(date)}`,2600)
@@ -11388,7 +11406,7 @@ function saveSwDzRepl(){
   swWrite(t,i,'n');                      // сольсон дүнз хэвийн болно
   if(!t.dRepl)t.dRepl={};
   t.dRepl[i]={d:date,L:_swDzL,o:wasBad?1:0};
-  if(t.dPlan)delete t.dPlan[i];          // төлөвлөгөө хэрэгжлээ
+  // Төлөвлөгөөг УСТГАХГҮЙ — collectSwPlan() dRepl-ээр мэдэж бүдгэрүүлнэ
   saveDB();closeModal('swDzReplModal');
   renderSwRec(i);                        // тухайн дүнз дээрээ үлдэнэ
   const nom=swSlot(t,i).len;
@@ -11496,7 +11514,10 @@ function collectSwPlan(){
       // ҮРГЭЛЖ анхны уртаараа тооцогддог. Тиймээс тэнцэхгүй пог/м-ээс
       // яг анхны урт нь хасагдана — нийт пог/м өөрчлөгдөхгүй.
       if((t.it||'')[i]==='b')fixM+=nom;
-      rows.push({i,no:i-(t.head||0)+1,nom,L})
+      // Сольсон дүнзийг (t.dRepl) жагсаалтаас УСТГАХГҮЙ, бүдгэрүүлж,
+      // ард нь сольсон огноог харуулна
+      const rp=(t.dRepl||{})[i],fulfilled=!!(rp&&rp.d);
+      rows.push({i,no:i-(t.head||0)+1,nom,L,fulfilled,replDate:fulfilled?rp.d:null})
     });
     rows.sort((a,b)=>a.no-b.no);
     if(!rows.length)return;
@@ -11506,7 +11527,7 @@ function collectSwPlan(){
   });
   return out
 }
-function swPlanTotal(){return collectSwPlan().reduce((s,t)=>s+t.rows.length,0)}
+function swPlanTotal(){return collectSwPlan().reduce((s,t)=>s+t.rows.filter(r=>!r.fulfilled).length,0)}
 function openSwPlanRep(){
   const data=collectSwPlan(),b=document.getElementById('swPlanRepBody');
   if(!b)return;
@@ -11520,14 +11541,16 @@ function openSwPlanRep(){
         ${_pctPair(t.mBad,t.mBad2,t.m)}</div>`
       +`<div class="sw-tr sw-tr-h"><span class="sw-c1">Дүнз</span><span class="sw-c2">Одоо</span>
          <span class="sw-c34">Төлөвлөсөн</span></div>`;
+    let tn=0;
     t.rows.forEach(r=>{
-      by[r.L]=(by[r.L]||0)+1;N++;M+=r.L;
-      html+=`<div class="sw-tr pl-row" onclick="hap();swGotoPlan('${t.id}',${r.i})">
+      if(!r.fulfilled){by[r.L]=(by[r.L]||0)+1;N++;M+=r.L;tn++}
+      html+=`<div class="sw-tr pl-row${r.fulfilled?' pl-done':''}" onclick="hap();swGotoPlan('${t.id}',${r.i})">
         <span class="sw-c1">#${r.no}</span>
         <span class="sw-c2">${swLen(r.nom)} м</span>
-        <span class="sw-c34" style="color:var(--blue);font-weight:900">${swLen(r.L)} м ›</span></div>`
+        <span class="sw-c34" style="color:var(--blue);font-weight:900">${swLen(r.L)} м ›</span>
+        ${r.fulfilled?`<span class="repl-date rd-prev" style="grid-column:1 / -1;margin-top:2px">${fmtReplDate(r.replDate)}</span>`:''}</div>`
     });
-    html+=`<div class="rp-sub"><span>Сум ${t.num} · ${t.rows.length} дүнз</span>
+    html+=`<div class="rp-sub"><span>Сум ${t.num} · ${tn} дүнз</span>
       <span>${swM(t.mBad)} → ${swM(t.mBad2)} тэнцэхгүй пог/м</span></div></div>`
   });
   // Уртаар нь: ш · урт (м) · нийт пог.м
@@ -11605,7 +11628,9 @@ function buildPlanSleeperSheet(wb){
   const pc=(b,t)=>t?Math.round(b/t*1000)/10:0;
   data.forEach(tr=>{
     tr.secs.forEach(sc=>{
-      sc.rows.forEach(r=>{
+      // Аль хэдийн сольсон (бүдгэрүүлсэн) мөрийг энэ АЖЛЫН жагсаалтад
+      // оруулахгүй — зөвхөн ХЭРЭГЖИХ ёстойг л хэвлэнэ
+      sc.rows.filter(r=>!r.fulfilled).forEach(r=>{
         no++;if(r.m==='tbd')T++;else W++;
         put('A'+rn,no);
         put('B'+rn,tr.name,{font:AR(9),align:{wrapText:true}});
@@ -11654,7 +11679,9 @@ function buildPlanTimberSheet(wb){
   let rn=7,no=0,M=0;const by={};
   const pc=(b,t)=>t?Math.round(b/t*1000)/10:0;
   data.forEach(t=>{
-    t.rows.forEach(r=>{
+    // Аль хэдийн сольсон (бүдгэрүүлсэн) мөрийг энэ АЖЛЫН жагсаалтад
+    // оруулахгүй — зөвхөн ХЭРЭГЖИХ ёстойг л хэвлэнэ
+    t.rows.filter(r=>!r.fulfilled).forEach(r=>{
       no++;M+=r.L;by[r.L]=(by[r.L]||0)+1;
       put('A'+rn,no);
       put('B'+rn,t.num);
@@ -12370,16 +12397,18 @@ function renderSwInc(){
         <button class="rb-btn" style="color:var(--red);border-color:rgba(220,60,60,.35);padding:4px 9px;font-size:11px"
           onclick="event.stopPropagation();delSwInc('${r.id}')">Устгах</button></div></div>`
   });
-  // Үлдэгдэл — урт тус бүрээр
+  // Үлдэгдэл — урт тус бүрээр, доор нь НИЙТ (хөл дүн)
   const ks=Object.keys(st).map(Number).sort((a,x)=>a-x);
   let rest='';
   if(ks.length){
+    const stN=ks.reduce((s,L)=>s+st[L],0),stM=ks.reduce((s,L)=>s+Math.max(0,st[L])*L,0);
     rest=_swHd('Үлдэгдэл')+
       `<div class="sw-tr sw-tr-h"><span class="sw-c1">Урт</span><span class="sw-c2">Үлдсэн</span>
         <span class="sw-c34">пог/м</span></div>`+
       ks.map(L=>`<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
         <span class="sw-c2" style="color:${st[L]>0?'var(--g700)':'var(--red)'}">${st[L]} ш</span>
-        <span class="sw-c34">${swM(Math.max(0,st[L])*L)} пог/м</span></div>`).join('')+'</div>'
+        <span class="sw-c34">${swM(Math.max(0,st[L])*L)} пог/м</span></div>`).join('')+
+      `<div class="rp-sub" style="border:0"><span>НИЙТ ${stN} ш</span><span>${swM(stM)} пог/м</span></div></div>`
   }
   b.innerHTML=(html||_swEmpty('Орлого бүртгээгүй байна'))+
     (html?`<div class="rp-total"><span>Нийт орлого</span><span>${N} ш · ${swM(M)} пог/м</span></div>`:'')+
@@ -13454,7 +13483,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.09.29·169';
+const APP_BUILD='2026.10.03·170';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

@@ -71,6 +71,14 @@ ok('Урт тус бүрийн орлого',
 ok('Солилт хийгээгүй тул үлдэгдэл = орлого',
    inc.st['3']===10&&inc.st['3.25']===4,JSON.stringify(inc.st));
 
+/* Орлогын цонхны "Үлдэгдэл" задаргааны доор НИЙТ (хөл дүн) мөр гарна */
+const foot=await page.evaluate(async()=>{
+  openSwInc();await new Promise(r=>setTimeout(r,250));
+  const body=document.getElementById('swIncBody').textContent;
+  return{text:body}});
+ok('Үлдэгдлийн доор НИЙТ хөл дүн гарна (14 ш · 43 пог/м)',
+   /НИЙТ\s*14\s*ш/.test(foot.text)&&/43\s*пог\/м/.test(foot.text),foot.text.slice(-120));
+
 /* "Нэмэх" дарахаа мартсан ч хүрдэн дээрх сонголт нь алдагдахгүй */
 const bad0=await page.evaluate(async()=>{
   openSwIncAdd();await new Promise(r=>setTimeout(r,220));
