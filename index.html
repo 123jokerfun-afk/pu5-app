@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#FF9932">
 <meta name="description" content="Төмөр замын дэр шалгалт бүртгэх систем">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23FF9932'/%3E%3Crect x='60' y='220' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='60' y='256' width='392' height='36' rx='10' fill='%2318A36A'/%3E%3Crect x='100' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='172' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='244' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='316' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='388' y='180' width='28' height='152' rx='8' fill='%23E8F5E9'/%3E%3Crect x='244' y='180' width='28' height='152' rx='8' fill='%23FF6B6B' opacity='.9'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon-192.png">
 <!-- ══ АЛДААНЫ ХАРУУЛАГЧ ══
      Бүх скриптээс ӨМНӨ. Хэрэв аппын JS унавал өмнө нь ХАР ДЭЛГЭЦ гарч,
      хэрэглэгч ч, бид ч шалтгааныг мэдэхгүй байсан (v87, v95). Одоо алдаа
@@ -1722,14 +1722,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="hero-top">
       <div class="hero-logo">
         <div class="hero-icon">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect x="2" y="11" width="24" height="4" rx="2" fill="var(--gold-deep)"/>
-            <rect x="2" y="15" width="24" height="4" rx="2" fill="var(--gold-deep)"/>
-            <rect x="5" y="7" width="3" height="14" rx="1.5" fill="var(--ink3)"/>
-            <rect x="10" y="7" width="3" height="14" rx="1.5" fill="var(--ink3)"/>
-            <rect x="15" y="7" width="3" height="14" rx="1.5" fill="var(--ink3)"/>
-            <rect x="20" y="7" width="3" height="14" rx="1.5" fill="#FF6B6B"/>
-          </svg>
+          <img src="icon-192.png" alt="" width="48" height="48" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
         </div>
         <div>
           <div class="hero-text-title" id="locName">ПУ-5</div>
@@ -13483,7 +13476,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.03·170';
+const APP_BUILD='2026.10.10·171';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
