@@ -494,6 +494,17 @@ body.track-mode #sendFly{bottom:calc(var(--sab) + 82px)}
 body.has-tabbar:not(.deep-view) #delFly{bottom:calc(var(--sab) + 74px)}
 body.rec-mode #delFly{bottom:calc(var(--sab) + 178px)}
 body.track-mode #delFly{bottom:calc(var(--sab) + 82px)}
+/* Excel/CSV татахад — dlBlob() бодит файлыг өгөхийн өмнө тоглуулна.
+   Экспортын товч олон, тараагдмал (зарим нь appConfirm-той) тул
+   үзэгдлийг тэдгээр дээр биш, файл БЭЛЭН болсны дараах ганц
+   цэг болох dlBlob()-д холбосон — товч бүрийг хөндөхгүй */
+#dlFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
+  bottom:calc(12px + var(--sab));width:min(280px,calc(100vw - 32px));height:110px;
+  transform:translateX(-50%);border-radius:18px;background:var(--card);box-shadow:var(--sh-lg)}
+#dlFly.on{display:block}
+body.has-tabbar:not(.deep-view) #dlFly{bottom:calc(var(--sab) + 74px)}
+body.rec-mode #dlFly{bottom:calc(var(--sab) + 178px)}
+body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 
 /* Устгах товч — удаан дарж идэвхжих хүртэл бүдэг, идэвхгүй харагдана */
 .lp-del .folder-del{opacity:.28;filter:grayscale(1);transition:opacity .18s,filter .18s,transform .18s}
@@ -1675,6 +1686,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <div id="toast"></div>
 <div id="sendFly" aria-hidden="true"></div>
 <div id="delFly" aria-hidden="true"></div>
+<div id="dlFly" aria-hidden="true"></div>
 <!-- ══ ДООД ТАБ — үндсэн шилжилт ══ -->
 <nav id="tabbar" aria-label="Үндсэн цэс">
   <button class="tab-b" id="tabHome" onclick="goTab('home')" aria-current="true">
@@ -7356,7 +7368,15 @@ function backFromSummary(){
 // CSV
 // ══════════════════════════════════════════════
 function isIOS(){return/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream}
-function dlBlob(blob,name){
+async function dlBlob(blob,name){
+  // Файл бэлэн боллоо — хайрцаг нүх рүү орох үзэгдэл тоглоод, яг
+  // дуусахад нь файлыг өгнө (sbBusy завгүй бол — ж: send/del
+  // тоглож байвал — алгасаад шууд өгнө)
+  const fly=document.getElementById('dlFly');
+  if(fly&&!sbBusy){
+    sbBusy=true;fly.classList.add('on');
+    try{await sbPlay(fly,SB_DL)}finally{fly.classList.remove('on');sbBusy=false}
+  }
   // APK дотор ажиллаж байвал — Downloads руу шууд хадгална
   if(navigator.userAgent.indexOf('PU5App')>=0&&window.PU5&&window.PU5.saveFile){
     const fr=new FileReader();
@@ -9104,6 +9124,93 @@ async function runDelFly(fn){
   try{await sbPlay(fly,SB_DEL)}finally{fly.classList.remove('on');sbBusy=false}
   fn()
 }
+
+/* ── Татах үзэгдэл: хайрцгийг нүх рүү түлхээд, өөрөө ч үсрэн орно ──
+   Экспортын товч PU-5-д маш олон, тараагдмал (зарим нь appConfirm,
+   зарим нь модал дотроос) тул dlBlob()-д холбосон — файл БҮРЭН
+   бэлэн болсны дараах цорын ганц нийтлэг цэг. Тиймээс товч бүрийг
+   тусад нь холбох шаардлагагүй, бас баталгаажуулалт үзэгдлийн
+   ард биш ӨМНӨ нь аль хэдийн шийдэгдсэн байна. */
+const SB_DL_STRIDE=22;
+const SB_DL={
+  view:'0 0 230 90',ms:3500,speed:1.15,
+  svg:`<defs>
+<linearGradient id="g__U__"><stop stop-color="#b7b8ba" stop-opacity="0"/><stop offset=".2" stop-color="#b7b8ba" stop-opacity=".65"/><stop offset=".85" stop-color="#a9afb8" stop-opacity=".75"/><stop offset="1" stop-color="#b7b8ba" stop-opacity="0"/></linearGradient>
+<linearGradient id="c__U__" x2="1" y2="1"><stop stop-color="#d9a45d"/><stop offset="1" stop-color="#c58c40"/></linearGradient>
+<radialGradient id="p__U__"><stop stop-color="#36bed3" stop-opacity=".7"/><stop offset=".55" stop-color="#3bbbd2" stop-opacity=".28"/><stop offset="1" stop-color="#45c1d8" stop-opacity="0"/></radialGradient>
+<filter id="h__U__" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="1.6" flood-color="#26cbdf" flood-opacity=".6"/></filter>
+<filter id="b__U__" x="-50%" y="-50%" width="200%" height="220%"><feDropShadow dx="1" dy="1.5" stdDeviation="1.4" flood-color="#9b8291" flood-opacity=".35"/></filter>
+<clipPath id="a__U__"><rect x="-30" y="-60" width="300" height="135"/></clipPath>
+</defs>
+<path d="M16 75H214" stroke="url(#g__U__)" stroke-width="1.6"/>
+<g class="sb-portal"><ellipse cx="182" cy="73" rx="30" ry="15" fill="url(#p__U__)"/><ellipse cx="182" cy="76" rx="22" ry="4.2" fill="#071c34"/><ellipse cx="182" cy="75.3" rx="20" ry="2.6" fill="#051327"/></g>
+<g clip-path="url(#a__U__)">
+<g class="sb-box" filter="url(#b__U__)"><g transform="scale(1.35)">
+  <rect x="-12" y="-24" width="24" height="24" rx=".6" fill="url(#c__U__)" stroke="#bd8d55" stroke-width=".55"/>
+  <path d="M-12-24H12V-18H-12Z" fill="#dfb376"/><path d="M-2.2-24H2.2V0H-2.2Z" fill="#e9cc94"/>
+  <path d="M-12-13H12V-10H-12Z" fill="#e6c18a"/>
+  <path d="M-12-18H12M-12-1H12" stroke="#b1824d" stroke-width=".7" opacity=".6"/>
+  <path d="M-10-22H-4" stroke="#ecd2aa" stroke-width="1" opacity=".8"/>
+</g></g>
+<g class="sb-human">
+  <path class="sb-legs" fill="none" stroke="#394a58" stroke-width="3.15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="sb-body" fill="none" stroke="#394a58" stroke-width="3.6" stroke-linecap="round"/>
+  <path class="sb-arms" fill="none" stroke="#394a58" stroke-width="2.85" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sb-head"><circle r="6.3" fill="#24c7d8" filter="url(#h__U__)"/><circle cx="2.4" cy="-.9" r=".98" fill="#c2fbff"/></g>
+</g>
+</g>`,
+  draw(sb,t){
+    sb.stage.style.opacity=sbP(t,0,180)*(1-sbP(t,3350,3500));
+    let x=60,y=74,walk=false,push=0,crouch=0,jump=0,look=0;
+    let hScale=1,personA=sbP(t,150,320);
+    let bx=138,by=75,boxScale=1,boxA=sbP(t,120,300),portal=sbEase(sbP(t,200,480));
+    if(t<1000){x=60+44*sbP(t,200,1000);walk=t>=200}
+    else if(t<1950){
+      const u=sbP(t,1150,1950);
+      x=104+44*u;bx=138+44*u;
+      push=sbEase(sbP(t,1000,1150));walk=t>=1150
+    }else{x=148;bx=182;push=1-sbEase(sbP(t,1950,2120))}
+    const phase=(x-60)/SB_DL_STRIDE*SB_TAU;
+    if(t>=1930){const f=sbEase(sbP(t,1930,2350));by=75+24*f;boxScale=1-.25*f;boxA=1-sbP(t,2300,2360)}
+    if(t>=2400&&t<2900)look=sbEase(sbP(t,2400,2560));
+    if(t>=2700&&t<2900){look=1;crouch=.3*Math.sin(sbP(t,2700,2900)*Math.PI)}
+    if(t>=2900){
+      const leap=sbP(t,2900,3300);
+      x=sbMix(148,182,sbEase(sbP(t,2900,3120)));
+      const rise=sbP(t,2900,3080),fall=sbP(t,3080,3300);
+      y=t<3080?74-30*Math.sin(rise*Math.PI/2):44+31*fall*fall;
+      hScale=1-.96*sbEase(fall);
+      jump=Math.sin(leap*Math.PI);personA=1-sbP(t,3250,3310)
+    }
+    portal*=1-sbEase(sbP(t,3300,3450));
+    sb.q('.sb-portal').setAttribute('transform',`translate(182 76) scale(${portal.toFixed(3)}) translate(-182 -76)`);
+    const box=sb.q('.sb-box');
+    box.setAttribute('transform',`translate(${bx.toFixed(2)} ${by.toFixed(2)}) scale(${boxScale.toFixed(3)})`);
+    box.style.opacity=boxA;
+    const human=sb.q('.sb-human');
+    human.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${hScale.toFixed(3)})`);
+    human.style.opacity=personA;
+    const bob=walk?Math.cos(phase*2)*.52:0;
+    const hipY=-16.5+crouch*6;
+    const shX=push*9+look*3.3,shY=-34.5+push*7.5+look*1.8+crouch*6+bob;
+    let legPath=walk?sbLegs(phase,SB_DL_STRIDE,hipY,1,-bob,2.4):sbStand(hipY,-bob,1.8);
+    if(crouch)legPath=`M0 ${hipY.toFixed(2)}L-6 -4.5L-3 0M0 ${hipY.toFixed(2)}L6 -4.5L3 0`;
+    if(jump>.1)legPath=`M0 ${hipY.toFixed(2)}L-7.5 -7.5L-12 -12M0 ${hipY.toFixed(2)}L6 -7.5L9 0`;
+    sb.q('.sb-legs').setAttribute('d',legPath);
+    sb.q('.sb-body').setAttribute('d',`M0 ${hipY.toFixed(2)}L${shX.toFixed(2)} ${shY.toFixed(2)}`);
+    sb.q('.sb-head').setAttribute('transform',`translate(${(shX+push*1.5+look*1.8).toFixed(2)} ${(shY-7.5+look*1.2).toFixed(2)})`);
+    let arms;
+    if(push>.01){
+      arms=`M${shX.toFixed(2)} ${(shY+1.5).toFixed(2)}L18 -27L24 -25.5M${(shX-1.5).toFixed(2)} ${(shY+3).toFixed(2)}L1.5 -19.5L-3 -13.5`
+    }else if(jump>.05)arms=`M0 ${(shY+3).toFixed(2)}L9 -37.5L16.5 -45M0 ${(shY+3).toFixed(2)}L-6 -25.5L-12 -21`;
+    else if(look)arms=`M${shX.toFixed(2)} ${(shY+3).toFixed(2)}L3 -22.5L4.5 -18M${(shX-1.5).toFixed(2)} ${(shY+4.5).toFixed(2)}L0 -22.5L0 -18`;
+    else{
+      const sw=walk?Math.cos(phase)*4.5:0;
+      arms=`M0 ${(shY+3).toFixed(2)}L${(-3+sw).toFixed(2)} -24L${(-4.5+sw).toFixed(2)} -18M0 ${(shY+3).toFixed(2)}L${(3-sw).toFixed(2)} -24L${(4.5-sw).toFixed(2)} -18`
+    }
+    sb.q('.sb-arms').setAttribute('d',arms)
+  }
+};
 
 // ══════════════════════════════════════════════
 // AUTH
@@ -14260,7 +14367,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·179';
+const APP_BUILD='2026.10.11·180';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
