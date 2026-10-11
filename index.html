@@ -485,6 +485,15 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 body.has-tabbar:not(.deep-view) #sendFly{bottom:calc(var(--sab) + 74px)}
 body.rec-mode #sendFly{bottom:calc(var(--sab) + 178px)}
 body.track-mode #sendFly{bottom:calc(var(--sab) + 82px)}
+/* Паспорт устгахыг баталсны дараа — "Илгээгдээгүй" тэмдэг шиг
+   бус, устгах нь тусдаа товчгүй тул өөрийн хөвөгч самбартай */
+#delFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
+  bottom:calc(12px + var(--sab));width:min(280px,calc(100vw - 32px));height:104px;
+  transform:translateX(-50%);border-radius:18px;background:var(--card);box-shadow:var(--sh-lg)}
+#delFly.on{display:block}
+body.has-tabbar:not(.deep-view) #delFly{bottom:calc(var(--sab) + 74px)}
+body.rec-mode #delFly{bottom:calc(var(--sab) + 178px)}
+body.track-mode #delFly{bottom:calc(var(--sab) + 82px)}
 
 /* Устгах товч — удаан дарж идэвхжих хүртэл бүдэг, идэвхгүй харагдана */
 .lp-del .folder-del{opacity:.28;filter:grayscale(1);transition:opacity .18s,filter .18s,transform .18s}
@@ -1665,6 +1674,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 </div>
 <div id="toast"></div>
 <div id="sendFly" aria-hidden="true"></div>
+<div id="delFly" aria-hidden="true"></div>
 <!-- ══ ДООД ТАБ — үндсэн шилжилт ══ -->
 <nav id="tabbar" aria-label="Үндсэн цэс">
   <button class="tab-b" id="tabHome" onclick="goTab('home')" aria-current="true">
@@ -8362,11 +8372,13 @@ async function deleteFolder(fid,e){
   if(e)e.stopPropagation();
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
   if(!await appConfirm(`"${f.name}" паспортыг Хогийн сав руу шилжүүлэх үү? 30 хоногийн дотор сэргээж болно.`))return;
-  f.trashedAt=new Date().toISOString();
-  if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
-  saveDB();
-  if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
-  else renderHome()
+  await runDelFly(()=>{
+    f.trashedAt=new Date().toISOString();
+    if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
+    saveDB();
+    if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
+    else renderHome()
+  })
 }
 function renderFolders(){
   const grid=document.getElementById('foldersGrid');if(!grid)return;
@@ -9006,6 +9018,91 @@ async function runSend(btn,fn){
   try{await anim}catch(e){}
   sbBusy=false;
   _renderSaveBadge()
+}
+
+/* ── Устгах үзэгдэл: цүнхийг өргөж, хогийн сав руу хийгээд явна ──
+   Эх бичлэгийн зохиомжийг хадгалсан боловч хэмжээсийг дахин бодсон:
+   хүн нэг циклд SB_DEL_STRIDE нэгжийг л туулж чадна (хөлний урт нь
+   үүнийг тогтооно), тиймээс явах зайг богиносгож, хүнийг томсгосон. */
+const SB_DEL_STRIDE=20;
+const SB_DEL={
+  view:'0 0 230 85',ms:4260,speed:1.35,
+  svg:`<defs>
+<linearGradient id="g__U__"><stop stop-color="#b0baca" stop-opacity="0"/><stop offset=".2" stop-color="#b0baca"/><stop offset=".8" stop-color="#b0baca"/><stop offset="1" stop-color="#b0baca" stop-opacity="0"/></linearGradient>
+<linearGradient id="f__U__"><stop stop-color="#f1f5f8"/><stop offset=".5" stop-color="#dce3eb"/><stop offset="1" stop-color="#edf2f6"/></linearGradient>
+<filter id="s__U__" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="1.4" dy="1.5" stdDeviation="1.4" flood-color="#8492a6" flood-opacity=".35"/></filter>
+</defs>
+<path d="M16 70H214" stroke="url(#g__U__)" stroke-width="1.6"/>
+<g class="sb-bin" filter="url(#s__U__)">
+  <g class="sb-lid"><path d="M46.4 37.5H77.6" stroke="#38414f" stroke-width="5.2" stroke-linecap="round"/><path d="M56.8 36.2V32.3H67.2V36.2" fill="#38414f"/></g>
+  <path d="M47.7 42.7L50.3 70H73.7L76.3 42.7Z" fill="url(#f__U__)" stroke="#f6faff" stroke-width="1.8"/>
+  <path d="M55.5 46.6V64.8M62 46.6V64.8M68.5 46.6V64.8" stroke="#a7b3c3" stroke-width="1.8" opacity=".8"/>
+</g>
+<g class="sb-bag" filter="url(#s__U__)"><g transform="scale(1.6)">
+  <path d="M-3-8L0-11L3-8L1-6C9-4 8 7 3 8H-3C-9 6-8-4-1-6Z" fill="#343d4a"/>
+  <path d="M-2-8H2" stroke="#df2856" stroke-width="2"/>
+  <path d="M-3-2Q-5 1-3 4" fill="none" stroke="#58616e" stroke-width="1"/>
+</g></g>
+<g class="sb-person">
+  <path class="sb-legs" fill="none" stroke="#3f4856" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="sb-upper">
+    <path d="M0-32V-14.4" stroke="#3f4856" stroke-width="4.3" stroke-linecap="round"/>
+    <path class="sb-arm" fill="none" stroke="#3f4856" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="0" cy="-40" r="6.6" fill="#e12656"/>
+    <circle cx="-2.9" cy="-40.6" r=".96" fill="#f99ab1"/>
+  </g>
+</g>`,
+  draw(sb,t){
+    sb.stage.style.opacity=sbP(t,0,160)*(1-sbP(t,4000,4260));
+    let x=170,walk=false,bend=0,arm=0,face=-1;
+    if(t<200)x=180;
+    else if(t<1000){x=180-40*sbP(t,200,1000);walk=true}
+    else if(t<1500){x=140;bend=62*Math.sin(sbP(t,1000,1500)*Math.PI)}
+    else if(t<2300){x=140-40*sbP(t,1500,2300);walk=true}
+    else if(t<3060){x=100;arm=sbP(t,2500,2560)*(1-sbP(t,2900,3000))}
+    else{face=1;const w=sbP(t,3060,4260);x=100+60*w;walk=w<1}
+    const phase=(face<0?(180-x):(x-100))/SB_DEL_STRIDE*SB_TAU;
+    const bob=walk?Math.cos(phase*2)*.56:0;
+    sb.q('.sb-person').setAttribute('transform',`translate(${x.toFixed(2)} ${(69+bob).toFixed(2)})`);
+    sb.q('.sb-legs').setAttribute('d',walk
+      ?sbLegs(phase,SB_DEL_STRIDE,-16,face,-bob,2.4)
+      :sbStand(-16,-bob,2.2));
+    sb.q('.sb-upper').setAttribute('transform',`rotate(${-bend} 0 -14.4)`);
+    const hx=arm?-19.2:(walk?Math.cos(phase)*4-4.8:-8),hy=arm?-40:-19.2;
+    sb.q('.sb-arm').setAttribute('d',
+      `M0-32L${(hx*.55).toFixed(2)} -27.2L${hx.toFixed(2)} ${hy}M0-30.4L${(face*4.8).toFixed(1)} -22.4`);
+    let bx=124,by=57.2,ang=0,bagA=sbP(t,120,300);
+    if(t>=1350&&t<1500)by=sbMix(57.2,46,sbEase(sbP(t,1350,1500)));
+    else if(t>=1500&&t<2560){bx=x-16;by=46+(walk?Math.sin(phase)*.8:0);ang=walk?Math.sin(phase)*8:0}
+    else if(t>=2560&&t<2960){
+      const u=sbP(t,2560,2860);
+      bx=sbMix(84,62,u);by=sbMix(46,44,u)-30*4*u*(1-u);
+      ang=-230*u;bagA=1-sbP(t,2860,2960)
+    }else if(t>=2960)bagA=0;
+    const bag=sb.q('.sb-bag');
+    bag.setAttribute('transform',`translate(${bx.toFixed(2)} ${by.toFixed(2)}) rotate(${ang.toFixed(1)})`);
+    bag.style.opacity=bagA;
+    const binIn=sbEase(sbP(t,180,420)),binOut=sbEase(sbP(t,3060,3260));
+    const bin=sb.q('.sb-bin');
+    bin.style.opacity=binIn*(1-binOut);
+    bin.setAttribute('transform',`translate(0 ${(11*(1-binIn)+14*binOut).toFixed(2)})`);
+    const open=sbEase(sbP(t,2350,2520))*(1-sbEase(sbP(t,2900,3060)));
+    sb.q('.sb-lid').setAttribute('transform',
+      `translate(${(-2.5*open).toFixed(2)} ${(-1.5*open).toFixed(2)}) rotate(${(-55*open).toFixed(1)} 47.7 37.5)`)
+  }
+};
+/* Устгах баталгаажуулалт тусдаа товчгүй (appConfirm бол бусад олон
+   зүйлд ч хэрэглэгддэг нийтлэг модал) тул батлагдсаны дараа
+   дэлгэцийн доорх тусдаа хөвөгч самбар дээр тоглуулна, дараа нь
+   жинхэнэ устгалт (trashedAt тэмдэглэл) хийгдэнэ. SB_DEL-д hold
+   байхгүй тул үргэлж бүтнээрээ тоглоод дуусна. */
+async function runDelFly(fn){
+  const fly=document.getElementById('delFly');
+  if(!fly||sbBusy){fn();return}
+  sbBusy=true;
+  fly.classList.add('on');
+  try{await sbPlay(fly,SB_DEL)}finally{fly.classList.remove('on');sbBusy=false}
+  fn()
 }
 
 // ══════════════════════════════════════════════
@@ -11377,11 +11474,13 @@ async function delSwFolderById(id,e){
   if(e)e.stopPropagation();
   const f=(DB.sw||[]).find(x=>x.id===id);if(!f)return;
   if(!await appConfirm(`"${f.name}" паспортыг Хогийн сав руу шилжүүлэх үү? 30 хоногийн дотор сэргээж болно.`,'Устгах'))return;
-  f.trashedAt=new Date().toISOString();
-  if(swFolderId===id)swFolderId=null;
-  saveDB();
-  if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
-  else renderSwHome()
+  await runDelFly(()=>{
+    f.trashedAt=new Date().toISOString();
+    if(swFolderId===id)swFolderId=null;
+    saveDB();
+    if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
+    else renderSwHome()
+  })
 }
 // ── Паспорт доторх сумын жагсаалт ──
 // Дэрийн паспорт шиг — дэлгэц солихгүй, нүүрэн дээрээ доор нь задарна
@@ -14161,7 +14260,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·178';
+const APP_BUILD='2026.10.11·179';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
