@@ -1,9 +1,10 @@
 /* ══════════════════════════════════════════════════════════════
-   ТАТАХ ҮЗЭГДЭЛ — Excel/CSV файл бэлэн болоод dlBlob()-д хүрэхэд
-   хайрцаг нүх рүү орох үзэгдэл #dlFly дээр тоглоод, ДАРАА НЬ файл
-   жинхэнэ өгөгдөнө (санаа: uulzwar_zai сиб апп). PU-5-д экспортын
-   товч маш олон, тараагдмал тул dlBlob()-д л холбосон — товч бүрийг
-   шалгахгүй, зөвхөн dlBlob()-ийн шинэ зан төлвийг шалгана.
+   ТАТАХ ҮЗЭГДЭЛ — товч ДАРСАН тэр дор (runDlFly) эхэлж, Excel/CSV-ээ
+   ЗЭРЭГЦЭЭ бэлдэнэ. dlBlob()-д хүрэхэд sbGate()-ээр хориглогдож, яг
+   үзэгдэл дуусахад нь файл өгөгдөнө (санаа: uulzwar_zai сиб апп).
+   Өмнө нь dlBlob() өөрөө эхлүүлдэг байсан тул Excel бэлдэх хугацаанд
+   (ensureExcel, их тайлан) үзэгдэл ХОЖИМДОЖ эхэлж, товч дарсны дараа
+   түр "юу ч болохгүй байна" мэт харагддаг асуудлыг засав.
 
    iOS-ийн window.open салбарт орохгүйн тулд Android төхөөрөмж
    ашиглана (popup blocked асуудлаас зайлсхийнэ).
@@ -25,46 +26,68 @@ const init=await page.evaluate(()=>{
 });
 ok('#dlFly самбар бэлэн, анхандаа нуугдмал',init.flyExists&&!init.flyOn,JSON.stringify(init));
 
-// ── 2. dlBlob() дуудахад үзэгдэл тоглоод, дараа нь дуусна ──
+// ── 2. runDlFly(fn) ДАРСАН тэр дор (sbPlay-ийн эхний frame дотор)
+//    үзэгдэл тоглож эхэлнэ — fn өөрөө хэдий хугацаа авсан ч хамаагүй ──
 await page.evaluate(()=>{
-  window.__p=dlBlob(new Blob(['a,b\n1,2'],{type:'text/csv'}),'test.csv')
+  window.__delivered=false;
+  window.__p=runDlFly(async()=>{
+    await new Promise(r=>setTimeout(r,80));     // "Excel бэлдэх" дуурайлга
+    await dlBlob(new Blob(['a,b\n1,2'],{type:'text/csv'}),'test.csv');
+    window.__delivered=true
+  })
 });
-await page.waitForTimeout(250);
+await page.waitForTimeout(40);   // fn-ийн 80мс дуусахаас өмнө — үзэгдэл АЛЬ ХЭДИЙН тоглож байх ёстой
+const early=await page.evaluate(()=>({
+  flyOn:document.getElementById('dlFly').classList.contains('on'),
+  delivered:window.__delivered
+}));
+ok('fn дуусахаас ӨМНӨ (40мс) үзэгдэл аль хэдийн тоглож эхэлсэн',early.flyOn,JSON.stringify(early));
+
+await page.waitForTimeout(300);   // fn-ийн 80мс аль хэдийн өнгөрсөн, гэвч үзэгдэл ~2.6с үргэлжилнэ
 const mid=await page.evaluate(()=>({
   flyOn:document.getElementById('dlFly').classList.contains('on'),
-  sbBusy:typeof sbBusy!=='undefined'?sbBusy:null
+  delivered:window.__delivered
 }));
-ok('dlBlob дуудахад #dlFly тоглож эхэлнэ',mid.flyOn,JSON.stringify(mid));
-ok('sbBusy асав (өөр үзэгдэл давхацахгүй)',mid.sbBusy===true,JSON.stringify(mid));
+ok('fn бэлэн болсон ч dlBlob() үзэгдэл дуустал ХҮЛЭЭНЭ, файл ОГТ ӨГӨГДӨӨГҮЙ',
+   mid.flyOn&&!mid.delivered,JSON.stringify(mid));
 
 await page.waitForFunction(()=>!document.getElementById('dlFly').classList.contains('on'),
   {timeout:8000});
-let dlErr=null;
-try{await page.evaluate(()=>window.__p)}catch(e){dlErr=String(e)}
+await page.evaluate(()=>window.__p);
 const after=await page.evaluate(()=>({
   flyOn:document.getElementById('dlFly').classList.contains('on'),
-  sbBusy:sbBusy
+  delivered:window.__delivered
 }));
-ok('Үзэгдэл дуусаад dlBlob() алдаагүй гүйцэтгэв',!dlErr,String(dlErr));
-ok('Дуусаад #dlFly нуугдаж, sbBusy суллагдав',!after.flyOn&&after.sbBusy===false,JSON.stringify(after));
+ok('Үзэгдэл дуусаад л файл өгөгдөв',after.delivered&&!after.flyOn,JSON.stringify(after));
 
-// ── 3. sbBusy аль хэдийн завгүй үед — үзэгдэл алгасаад шууд өгнө ──
+// ── 3. dlBlob()-г ШУУД (runDlFly-гүй) дуудвал — анимаци огт тоглохгүй,
+//    sbGate() шууд өнгөрнө (сэргээгдсэн зан төлөв, хуучин зан биш) ──
+const direct=await page.evaluate(async()=>{
+  const t0=Date.now();
+  await dlBlob(new Blob(['x'],{type:'text/csv'}),'direct.csv');
+  return {ms:Date.now()-t0,flyOn:document.getElementById('dlFly').classList.contains('on')}
+});
+ok('dlBlob() шууд дуудахад (runDlFly-гүй) анимаци тоглохгүй, шууд өнгөрнө',
+   direct.ms<300&&!direct.flyOn,JSON.stringify(direct));
+
+// ── 4. sbBusy аль хэдийн завгүй үед runDlFly шууд fn-ээ гүйцэтгэнэ ──
 const busyRes=await page.evaluate(async()=>{
   sbBusy=true;
   const t0=Date.now();
-  await dlBlob(new Blob(['x'],{type:'text/csv'}),'test2.csv');
+  let ran=false;
+  await runDlFly(()=>{ran=true});
   const ms=Date.now()-t0;
   sbBusy=false;
-  return {ms,flyOn:document.getElementById('dlFly').classList.contains('on')}
+  return {ms,ran,flyOn:document.getElementById('dlFly').classList.contains('on')}
 });
-ok('Өөр үзэгдэл (sbBusy) тоглож байхад шууд алгасна (<300мс)',
-   busyRes.ms<300,busyRes.ms+'мс');
+ok('Өөр үзэгдэл (sbBusy) тоглож байхад шууд алгасаад fn ажиллана (<300мс)',
+   busyRes.ms<300&&busyRes.ran,JSON.stringify(busyRes));
 ok('Алгассан ч #dlFly тоглоогүй',!busyRes.flyOn);
 
-// ── 4. prefers-reduced-motion: reduce үед шууд гүйцэтгэнэ ──
+// ── 5. prefers-reduced-motion: reduce үед шууд гүйцэтгэнэ ──
 await page.emulateMedia({reducedMotion:'reduce'});
 const calmStart=Date.now();
-await page.evaluate(()=>dlBlob(new Blob(['y'],{type:'text/csv'}),'test3.csv'));
+await page.evaluate(()=>runDlFly(()=>dlBlob(new Blob(['y'],{type:'text/csv'}),'test3.csv')));
 const calmMs=Date.now()-calmStart;
 ok('Хөдөлгөөн хязгаарласан горимд шууд дуусна (<400мс)',calmMs<400,calmMs+'мс');
 await page.emulateMedia({reducedMotion:'no-preference'});
