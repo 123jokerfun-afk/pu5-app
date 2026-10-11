@@ -78,6 +78,12 @@
   --sh-sm:-4px -4px 8px rgba(255,255,255,.75),4px 4px 10px rgba(196,150,50,.16);
   --sh:-6px -6px 14px rgba(255,255,255,.8),6px 6px 16px rgba(196,150,50,.18);
   --sh-lg:-8px -8px 20px rgba(255,255,255,.85),9px 9px 24px rgba(196,150,50,.2);
+  /* Дарахад СУУДАГ (inset) мэдрэмж — icon-btn/hero-edit/exp-btn/btn-cancel
+     дээр аль хэдийн гараар бичигдсэн байсан жорыг токен болгов.
+     track-card/sw-card/sec-card/folder-card урьд нь дарахад сүүдрээ
+     бүрэн алддаг (box-shadow:none) байсан нь "материалаасаа сийлсэн"
+     мэдрэмжийг тэр мөчид тасалдаг байв. */
+  --sh-sm-in:inset 3px 3px 7px rgba(196,150,50,.16),inset -3px -3px 7px rgba(255,255,255,.8);
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
 }
 
@@ -107,6 +113,7 @@
   --sh-sm:-3px -3px 7px rgba(110,130,190,.07),4px 4px 11px rgba(0,0,0,.42);
   --sh:-5px -5px 13px rgba(110,130,190,.08),6px 6px 18px rgba(0,0,0,.48);
   --sh-lg:-7px -7px 20px rgba(110,130,190,.09),10px 10px 26px rgba(0,0,0,.55);
+  --sh-sm-in:inset 3px 3px 7px rgba(0,0,0,.4),inset -3px -3px 7px rgba(110,130,190,.06);
   color-scheme:dark;
 }
 /* Дэвсгэр — гүн саармаг харанхуй, өнгөт манангүй (`.view::before`
@@ -324,7 +331,7 @@ button{font-family:inherit}
   background:radial-gradient(circle at 85% 8%,rgba(255,201,60,.12),transparent 55%);pointer-events:none}
 .track-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
   background:linear-gradient(90deg,#FFD23F,#FF8E3C);border-radius:var(--r) var(--r) 0 0}
-.track-card:active{transform:scale(.97);box-shadow:none}
+.track-card:active{transform:scale(.97);box-shadow:var(--sh-sm-in)}
 .track-card-num{font-size:30px;font-weight:900;letter-spacing:-1.5px;color:var(--ink);line-height:1}
 .track-card-unit{font-size:13px;font-weight:600;color:var(--ink3)}
 .track-card-note{font-size:10px;color:var(--ink3);font-weight:600;margin-top:2px}
@@ -431,7 +438,7 @@ button{font-family:inherit}
   overflow:hidden;cursor:pointer;transition:transform .14s,box-shadow .14s}
 .sw-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;
   background:linear-gradient(180deg,#A855F7,#6D28D9)}
-.sw-card:active{transform:scale(.99);box-shadow:none}
+.sw-card:active{transform:scale(.99);box-shadow:var(--sh-sm-in)}
 .sw-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding-left:6px}
 .sw-card-name{font-size:15.5px;font-weight:900;letter-spacing:-.3px;color:var(--ink);
   display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -706,7 +713,7 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .sec-card.type-connecting::before{background:linear-gradient(180deg,var(--purple),#9333EA)}
 .sec-card.type-turnout::before{background:linear-gradient(180deg,var(--blue),#1D4ED8)}
 .sec-card.type-turnout{border-style:dashed}
-.sec-card:active{transform:scale(.99);box-shadow:none}
+.sec-card:active{transform:scale(.99);box-shadow:var(--sh-sm-in)}
 .sec-card-top{display:flex;align-items:center;justify-content:space-between;padding-left:4px}
 .sec-card-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
 .sec-badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700}
@@ -1074,7 +1081,7 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   display:flex;align-items:center;gap:12px;position:relative;overflow:hidden}
 .folder-card.active-folder::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
   background:linear-gradient(180deg,#FFC93C,#FF9932)}
-.folder-card:active{transform:scale(.98);box-shadow:none}
+.folder-card:active{transform:scale(.98);box-shadow:var(--sh-sm-in)}
 .folder-card.active-folder{border-color:var(--g500);background:var(--g50)}
 /* СШ ПУ-5 нь ягаан өнгийн сэдэвтэй тул нээлттэй паспорт нь мөн ягаанаар */
 #swFolders .folder-card.active-folder{border-color:#A855F7!important;background:#FAF5FF}
@@ -14557,7 +14564,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·183';
+const APP_BUILD='2026.10.11·184';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
