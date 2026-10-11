@@ -725,8 +725,7 @@ ok('Өөрчлөлтгүй бол дэлгэцийг дахин зурахгүй
 const lo=await page.evaluate(async()=>{
   localStorage.setItem(SH_AUTO_KEY,'1');shAutoStart();
   const had=_shTimer!==null;
-  window.appConfirm=()=>Promise.resolve(true);
-  await doLogout();
+  await _doLogoutCore();   // doLogout()-ийн баталгаажуулах цонх/анимацигүйгээр шууд гарна
   localStorage.removeItem(SH_AUTO_KEY);
   return {had,after:_shTimer===null,view:(document.querySelector('.view.active')||{}).id}});
 ok('Гарахад автомат цаг зогсоно',lo.had&&lo.after&&lo.view==='loginView',JSON.stringify(lo));

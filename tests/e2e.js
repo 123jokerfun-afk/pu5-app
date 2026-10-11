@@ -416,7 +416,7 @@ ok('Агуулах, төлөвлөгөө, гол зам бүгд бүтэн',
 
 /* ── 12. Салаалсан гол зам (ПД-11) ── */
 console.log('\n12. Салаалсан гол зам — ПД-11');
-await page.evaluate(()=>doLogout());
+await page.evaluate(()=>_doLogoutCore());   // doLogout()-ийн UX (цонх/анимаци)-гүйгээр шууд гарна
 await w(420);
 await B.login(page,'ПД-11');
 await quiet();
@@ -442,7 +442,7 @@ ok('"Нийт дэр оруулах" салаалсан гол замд нууг
 
 /* ── 13. Ухарч бүртгэх — гүн булангууд ── */
 console.log('\n13. Ухарч бүртгэх — гүн');
-await page.evaluate(()=>doLogout());
+await page.evaluate(()=>_doLogoutCore());   // doLogout()-ийн UX (цонх/анимаци)-гүйгээр шууд гарна
 await w(420);
 await B.login(page,'ПД-7');
 await quiet();

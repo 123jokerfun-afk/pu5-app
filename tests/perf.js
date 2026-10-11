@@ -77,7 +77,9 @@ const home=await page.evaluate(async()=>{
     heroBtns:[...hero.querySelectorAll('button')].map(b=>b.getAttribute('aria-label')||b.textContent.trim().slice(0,12))}});
 ok('Нүүрэн дээр гарах товч алга',home.heroLogout===0,JSON.stringify(home.heroBtns));
 
-/* ── 5. Профайлын гарах товч Тийм/Үгүй-гээр асууна ── */
+/* ── 5. Профайлын гарах товч ТУСДАА цонх (Тийм, гарах/Үгүй)-гоор асууна ──
+   v183: appConfirmModal биш, өөрийн гэсэн #logoutModal — үзэгдлийн
+   туршид нээлттэй үлддэг тул ("Тийм, гарах" товч дотроо тоглоно) ── */
 const q=await page.evaluate(async()=>{
   openProfSheet();await new Promise(r=>setTimeout(r,350));
   const row=[...document.querySelectorAll('#profBody .pf-row')]
@@ -85,30 +87,30 @@ const q=await page.evaluate(async()=>{
   if(!row)return {err:'Профайл дээр гарах товч алга'};
   row.click();
   await new Promise(r=>setTimeout(r,450));
-  const m=document.getElementById('appConfirmModal');
+  const m=document.getElementById('logoutModal');
   return {open:m.classList.contains('open'),
-    msg:document.getElementById('appConfirmMsg').textContent,
-    ok:document.getElementById('appConfirmOkBtn').textContent,
-    cancel:document.getElementById('appConfirmCancelBtn').textContent}});
-ok('Гарах дарахад асуух самбар гарна',q.open===true,JSON.stringify(q));
-ok('Товчнууд "Тийм" / "Үгүй"',q.ok==='Тийм'&&q.cancel==='Үгүй',
-   JSON.stringify([q.ok,q.cancel]));
+    no:document.getElementById('logoutNoBtn').textContent,
+    yes:document.querySelector('#logoutYesBtn .lo-label').textContent}});
+ok('Гарах дарахад тусдаа асуух цонх гарна',q.open===true,JSON.stringify(q));
+ok('Товчнууд "Тийм, гарах" / "Үгүй"',q.yes==='Тийм, гарах'&&q.no==='Үгүй',
+   JSON.stringify([q.yes,q.no]));
 
 /* ── 6. "Үгүй" дарвал ГАРАХГҮЙ ── */
 const no=await page.evaluate(async()=>{
-  document.getElementById('appConfirmCancelBtn').click();
+  document.getElementById('logoutNoBtn').click();
   await new Promise(r=>setTimeout(r,500));
   return {view:(document.querySelector('.view.active')||{}).id,code:_sectionCode}});
 ok('"Үгүй" дарвал нэвтэрсэн хэвээр',no.view!=='loginView'&&!!no.code,JSON.stringify(no));
 
-/* ── 7. "Тийм" дарвал ГАРНА ── */
+/* ── 7. "Тийм, гарах" дарвал: цонх нээлттэй хэвээр үзэгдэл тогложоод,
+   БҮРЭН дууссаны дараа л (~2.6с) ГАРНА ── */
 const yes=await page.evaluate(async()=>{
   doLogout();
   await new Promise(r=>setTimeout(r,400));
-  document.getElementById('appConfirmOkBtn').click();
-  await new Promise(r=>setTimeout(r,700));
+  document.getElementById('logoutYesBtn').click();
+  await new Promise(r=>setTimeout(r,2800));
   return {view:(document.querySelector('.view.active')||{}).id,code:_sectionCode}});
-ok('"Тийм" дарвал нэвтрэх дэлгэц рүү гарна',
+ok('"Тийм, гарах" дарвал үзэгдэл дуусаад нэвтрэх дэлгэц рүү гарна',
    yes.view==='loginView'&&!yes.code,JSON.stringify(yes));
 
 /* ── 8. Service worker жинхэнээсээ ажиллаж, офлайн болгож байна уу ──

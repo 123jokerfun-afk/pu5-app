@@ -564,7 +564,7 @@ const outSt=await page.evaluate(async()=>{
   pickWalk(true);await new Promise(r=>setTimeout(r,220));
   openSection('r1');await new Promise(r=>setTimeout(r,300));
   let t=null;(DB.folders||[]).forEach(f=>(f.tracks||[]).forEach(x=>{if(x.id==='tr')t=x}));
-  doLogout();await new Promise(r=>setTimeout(r,420));
+  _doLogoutCore();await new Promise(r=>setTimeout(r,420));   // doLogout()-ийн цонх/анимацигүйгээр шууд гарна
   return (t.sections||[]).map(s=>s.label+'='+s.sleepers.map(x=>x.type==='bad'?'b':'n').join('')
     +(s.rw?'[rw]':'')).join(' | ')});
 ok('Гарц: Аппаас гарах',outSt===TRUE_ORDER,outSt);

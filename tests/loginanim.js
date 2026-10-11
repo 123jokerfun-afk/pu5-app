@@ -68,10 +68,9 @@ ok('Үзэгдэл дуусаад л homeView гарч ирнэ',!afterHome.play
 // ── 4. Татгалзсан нэвтрэлт: auth-г дарж бичээд алдаа оруулна.
 //    Хаалга улаанаар гэрэлтэж, хүн ухарч, эцэст нь loginView хэвээр
 //    үлдэх ёстой (homeView рүү шилжихгүй). ──
-// logout баталгаажуулах цонхыг алгасаад шууд гарна
+// doLogout()-ийн баталгаажуулах цонх/анимацигүйгээр шууд гарна
 await page.evaluate(async()=>{
-  window.appConfirm=async()=>true;
-  await doLogout();
+  await _doLogoutCore();
 });
 await page.waitForTimeout(300);
 ok('Гарсны дараа loginView идэвхтэй',
