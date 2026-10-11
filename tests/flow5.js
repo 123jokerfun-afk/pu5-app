@@ -17,6 +17,33 @@ if(h){await T.swipe(page,h.x,h.y,0,150,10);await page.waitForTimeout(500);
   ok('Бариулаас доош шудрах → хаагдав',await page.evaluate(()=>!document.getElementById('editSleeperModal').classList.contains('open')));}
 else ok('sheet-handle олдсонгүй',false);
 
+// ── 1б. Sheet: зөвхөн бариул биш, АГУУЛГЫН хэсгээс доош шудрахад ч
+//    хаагдана (дээд цэгтээ байгаа тул) — бариулаас гадна хаа ч ──
+await page.evaluate(()=>openEditSleeper(5));
+await page.waitForTimeout(500);
+let cb=await T.box(page,'#editSleeperModal .sheet');
+await T.swipe(page,cb.x+cb.width/2,cb.y+cb.height/2,0,200,10);
+await page.waitForTimeout(500);
+ok('Агуулгын хэсгээс доош шудрах → хаагдав',await page.evaluate(()=>!document.getElementById('editSleeperModal').classList.contains('open')));
+
+// ── 1в. Профайл (урт, scroll-той) цонх: дунд цэгээс богино шудрахад
+//    ХААГДАХГҮЙ (зүгээр scroll хийгдэнэ), дээд цэгтээ хүрмэгц л хаана ──
+await page.evaluate(()=>openProfSheet());
+await page.waitForTimeout(500);
+await page.evaluate(()=>{document.querySelector('#profSheet .sheet').scrollTop=100});
+await page.waitForTimeout(150);
+const pSt0=await page.evaluate(()=>document.querySelector('#profSheet .sheet').scrollTop);
+let pb=await T.box(page,'#profSheet .sheet');
+await T.swipe(page,pb.x+pb.width/2,pb.y+150,0,20,4);
+await page.waitForTimeout(300);
+ok('Профайл: дунд цэгээс богино шудрахад хаагдахгүй',
+  pSt0>0&&await page.evaluate(()=>document.getElementById('profSheet').classList.contains('open')),
+  'scrollTop='+pSt0);
+await T.swipe(page,pb.x+pb.width/2,pb.y+150,0,250,14);
+await page.waitForTimeout(500);
+ok('Профайл: дээд цэгт хүрээд үргэлжлүүлж татахад хаагдана',
+  !(await page.evaluate(()=>document.getElementById('profSheet')?.classList.contains('open'))));
+
 // ── 2. Sheet: ард дарах ──
 await page.evaluate(()=>openEditSleeper(5));
 await page.waitForTimeout(500);
