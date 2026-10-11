@@ -340,7 +340,11 @@ button{font-family:inherit}
 .overlay.open{display:flex}
 .sheet{background:rgba(252,252,250,.97);border-radius:32px 32px 0 0;
   padding:0 0 calc(20px + var(--sab));width:100%;max-height:88vh;overflow-y:auto;
-  backdrop-filter:blur(20px);box-shadow:0 -12px 48px rgba(150,95,25,.2)}
+  backdrop-filter:blur(20px);box-shadow:0 -12px 48px rgba(150,95,25,.2);
+  /* Дээд цэгт хүрээд ч доош үргэлжлүүлэн татахад native "уян" секс
+     (bounce) гарахгүй байх — initSheetGestures()-ийн доош татаж хаах
+     дохио түүнийг зөөлөн тасралтгүй орлоно */
+  overscroll-behavior:contain}
 /* ── СШ ПУ-5 ── */
 .sw-nav{background:var(--card);border:none;color:#7E22CE;box-shadow:var(--sh-sm);
   border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:800;font-family:inherit;
@@ -3856,39 +3860,68 @@ function initSheetGestures(){
     ov.addEventListener('click',e=>{
       if(e.target===ov&&downBd){downBd=false;hap(6);dismissOverlay(ov)}
     });
-    // ── 2. Дээрх жижиг зураасаар доош шудрах → мөн адил буцна ──
+    // ── 2. Доош татаж хаах нийтлэг механизм. Зураасаар бол ЯМАРЧ үед
+    //    эхэлнэ; харин цонхны АГУУЛГААР бол зөвхөн дээд цэгтээ хүрсэн
+    //    (scrollTop=0) үед л — эс тэгвэл жагсаалт доош гүйлгэх энгийн
+    //    үйлдэл санамсаргүй хаагддаг болно. Нэг физик хуруугаар эхлээд
+    //    агуулгаа дээшлүүлж, дараа нь дээд цэгт хүрмэгц цонхыг өөрийг
+    //    нь дагуулдаг болгосноор мэдрэмж тасрахгүй (Gmail/iOS хэв). ──
     const h=ov.querySelector('.sheet-handle');
     if(!sheet||!h)return;
-    let y0=null,dy=0,pid=null;
-    const reset=()=>{sheet.style.transition='';sheet.style.transform=''};
-    h.addEventListener('pointerdown',e=>{
-      y0=e.clientY;dy=0;pid=e.pointerId;
-      sheet.style.transition='none';
-      try{h.setPointerCapture(pid)}catch(_){}
-    });
-    h.addEventListener('pointermove',e=>{
-      if(y0===null)return;
-      dy=e.clientY-y0;
+    let dragging=false,y0=0,dy=0;
+    const apply=(clientY,e)=>{
+      dy=clientY-y0;
       // Дээш чирэхийг бага зэрэг л мэдрүүлнэ (уян хатан мэдрэмж)
       const off=dy>0?dy:dy/4;
       sheet.style.transform='translateY('+off+'px)';
       if(e.cancelable)e.preventDefault()
-    });
-    const end=()=>{
-      if(y0===null)return;
-      y0=null;
-      try{h.releasePointerCapture(pid)}catch(_){}
+    };
+    const finish=()=>{
+      if(!dragging)return;
+      dragging=false;
       sheet.style.transition='transform .2s ease';
       if(dy>70){                       // хангалттай шударсан — хаана
         sheet.style.transform='translateY(110%)';
         hap(6);
-        setTimeout(()=>{reset();dismissOverlay(ov)},170)
+        setTimeout(()=>{sheet.style.transition='';sheet.style.transform='';dismissOverlay(ov)},170)
       } else sheet.style.transform=''  // хүрэлцээгүй — буцаж наалдана
     };
-    h.addEventListener('pointerup',end);
-    h.addEventListener('pointercancel',end);
+    // 2а. Зураас — touch-action:none тул pointer эвент найдвартай
+    //     тасралтгүй ирнэ (өөрөө scroll-гүй тул энэ асуудалгүй).
+    let hPid=null;
+    h.addEventListener('pointerdown',e=>{
+      dragging=true;y0=e.clientY;dy=0;hPid=e.pointerId;
+      sheet.style.transition='none';
+      try{h.setPointerCapture(hPid)}catch(_){}
+    });
+    h.addEventListener('pointermove',e=>{if(dragging&&e.pointerId===hPid)apply(e.clientY,e)});
+    const hEnd=e=>{if(dragging&&e.pointerId===hPid){try{h.releasePointerCapture(hPid)}catch(_){}finish()}};
+    h.addEventListener('pointerup',hEnd);
+    h.addEventListener('pointercancel',hEnd);
+    // 2б. Цонхны бусад хэсэг — ЭНД ЗАВАЛ ШУУД touch эвент ашиглана
+    //     (pointer биш): .sheet нь pan-y (scroll) зөвшөөрдөг тул
+    //     pointermove эхний хөдөлгөөнийхөө дараа л native гүйлгэлтэд
+    //     "авталгдаад" цаашид ирэхээ болидог — зөвхөн чинхэнэ touch
+    //     эвент тасралтгүй ирсээр байдгийг шалгаж баталгаажуулсан.
+    //     Дотроо өөрийн гулсагчтай жижиг виджет (жилийн дугуй,
+    //     spc-scroll жагсаалт) дотроос эхэлсэн бол огт хөндөхгүй.
+    let watchY=null,watchId=null;
+    sheet.addEventListener('touchstart',e=>{
+      if(dragging||h.contains(e.target)||e.target.closest('.wheel,.spc-scroll'))return;
+      const t=e.touches[0];watchY=t.clientY;watchId=t.identifier
+    },{passive:true});
+    sheet.addEventListener('touchmove',e=>{
+      let t=null;
+      for(let i=0;i<e.touches.length;i++)if(e.touches[i].identifier===watchId){t=e.touches[i];break}
+      if(dragging){if(t)apply(t.clientY,e);return}
+      if(watchY===null||!t)return;
+      if(sheet.scrollTop<=0&&t.clientY-watchY>4){dragging=true;y0=t.clientY;dy=0;sheet.style.transition='none'}
+    },{passive:false});
+    const cEnd=()=>{watchY=null;watchId=null;finish()};
+    sheet.addEventListener('touchend',cEnd,{passive:true});
+    sheet.addEventListener('touchcancel',cEnd,{passive:true});
     // Цонх дахин нээгдэхэд өмнөх шилжилт үлдэхгүй байх
-    ov.addEventListener('transitionend',()=>{if(y0===null)sheet.style.transition=''})
+    ov.addEventListener('transitionend',()=>{if(!dragging)sheet.style.transition=''})
   })
 }
 
@@ -13440,7 +13473,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·173';
+const APP_BUILD='2026.10.11·174';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
