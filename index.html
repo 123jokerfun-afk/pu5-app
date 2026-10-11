@@ -1561,6 +1561,71 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   box-shadow:inset 4px 4px 9px var(--lg-dark),inset -4px -4px 9px var(--lg-light)}
 .lg-btn:disabled{opacity:.65;cursor:default}
 #loginErr{box-shadow:inset 4px 4px 9px var(--lg-dark),inset -4px -4px 9px var(--lg-light)}
+
+/* ══════════════════════════════════════════════════════════════
+   НЭВТРЭХ ТОВЧНЫ ҮЗЭГДЭЛ — үнэмлэхээ барьсан хүн хаалга руу алхаж,
+   сервер хариулахыг хүлээгээд орох/буцах. Хүнийг JS нь кадр бүрд
+   урвуу кинематикаар зурна (хөл газар дээр гулсахгүй).
+   Санаа: uulzwar_zai/index.html (өөрийн сиб апп) — тэндээс зохицуулж
+   PU-5-ийн --lg-* өнгөний системд тааруулав (хөх/цэнхэрийн оронд
+   брэндийн improve улбар шар). ══════════════════════════════════ */
+.lg-btn{position:relative;overflow:hidden;isolation:isolate}
+.lg-btn .lp-text{position:relative;z-index:3;transition:opacity .22s ease}
+.lg-btn.playing .lp-text{opacity:0}
+.lp-stage{position:absolute;left:50%;top:50%;width:210px;height:92px;
+  transform:translate(-50%,-50%);z-index:2;opacity:0;pointer-events:none}
+.lp-floor{position:absolute;bottom:9px;left:16px;right:16px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--lg-dark) 25%,var(--lg-dark) 75%,transparent);
+  box-shadow:0 1px 1px var(--lg-light)}
+.lp-door{position:absolute;left:80px;top:17px;width:50px;height:65px;
+  border:3px solid var(--lg-light);border-radius:4px;background:var(--lg-dark);
+  box-shadow:3px 3px 5px rgba(120,90,40,.3),-3px -3px 5px var(--lg-light);
+  perspective:160px;z-index:2}
+.lp-hole{position:absolute;inset:0;
+  background:radial-gradient(ellipse,rgba(240,120,24,.4),transparent 75%),
+    linear-gradient(120deg,var(--lg-dark),var(--lg-bg));
+  box-shadow:inset 2px 2px 5px rgba(120,90,40,.25)}
+.lp-leaf{position:absolute;top:0;bottom:0;width:50%;background:var(--lg-bg);
+  border:1px solid var(--lg-light);
+  box-shadow:inset 1px 1px 2px var(--lg-light),inset -1px -1px 2px var(--lg-dark);z-index:3}
+.lp-leaf.l{left:0;transform-origin:left}
+.lp-leaf.r{right:0;transform-origin:right}
+.lp-leaf::after{content:'';position:absolute;width:3px;height:3px;top:29px;
+  border-radius:50%;background:var(--lg-accent);box-shadow:0 0 4px var(--lg-accent)}
+.lp-leaf.l::after{right:3px}
+.lp-leaf.r::after{left:3px}
+/* Хаалганы гэрэлтэлт — зөвшөөрвөл улбар шар (брэнд), татгалзвал улаан */
+.lp-door::before{content:'';position:absolute;inset:-5px;border-radius:6px;
+  box-shadow:0 0 9px 3px var(--lp-glow-color,var(--lg-accent));opacity:var(--lp-glow,0)}
+.lp-thresh{position:absolute;bottom:-5px;left:-5px;right:-5px;height:4px;
+  border-radius:2px;background:var(--lg-bg);box-shadow:1px 2px 3px rgba(120,90,40,.25)}
+.lp-actor{position:absolute;left:0;top:37.8px;width:21.6px;height:46.8px;z-index:4;
+  transform-origin:50% 100%;will-change:transform,opacity}
+.lp-actor svg{display:block;width:21.6px;height:46.8px;overflow:visible}
+@media (prefers-reduced-motion:reduce){
+  .lg-btn.playing .lp-text{opacity:1}
+  .lg-btn.playing .lp-stage{display:none}
+}
+
+/* ── Талбар дээрх бяцхан зөөгч — нэвтрэх нэр/нууц үг рүү дарахад
+   үнэмлэхээ барьсан хүн гүйж ирнэ ── */
+.in-wrap{position:relative}
+#loginCode,#loginPass{padding-right:46px}
+.fld-clip{position:absolute;top:0;bottom:0;right:0;width:46px;
+  overflow:hidden;border-radius:0 15px 15px 0;pointer-events:none;z-index:2}
+.fp-person{position:absolute;right:9px;top:50%;margin-top:-17px;
+  width:19px;height:34px;pointer-events:none;
+  filter:drop-shadow(0 1px 1px rgba(120,90,40,.25))}
+.fp-person svg{display:block;width:19px;height:34px;overflow:visible}
+.fp-body{transform-origin:10px 31px;animation:fpBreathe 2s ease-in-out infinite}
+.fp-person.in-transit .fp-body{animation:none}
+.fp-person.typing .fp-wave{animation:fpWave .28s ease-in-out 2 alternate;transform-origin:10px 13px}
+@keyframes fpBreathe{50%{transform:translateY(-.45px) rotate(.7deg)}}
+@keyframes fpWave{to{transform:rotate(-17deg)}}
+@media (prefers-reduced-motion:reduce){
+  .fp-body{animation:none!important}
+  .fp-person.typing .fp-wave{animation:none!important}
+}
 </style>
 </head>
 <body>
@@ -1652,18 +1717,53 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 
       <div class="lg-field">
         <label class="lg-lbl" for="loginCode">Нэвтрэх нэр</label>
-        <input id="loginCode" class="lg-input" type="text" placeholder="" autocomplete="off"
-          oninput="this.value=this.value.toUpperCase()"
-          onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+        <div class="in-wrap">
+          <input id="loginCode" class="lg-input" type="text" placeholder="" autocomplete="off"
+            oninput="this.value=this.value.toUpperCase()"
+            onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+        </div>
       </div>
 
       <div class="lg-field" style="margin-bottom:22px">
         <label class="lg-lbl" for="loginPass">Нууц үг</label>
-        <input id="loginPass" class="lg-input" type="password" placeholder=""
-          onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="in-wrap">
+          <input id="loginPass" class="lg-input" type="password" placeholder=""
+            onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
       </div>
 
-      <button onclick="doLogin()" id="loginBtn" class="lg-btn">НЭВТРЭХ</button>
+      <button onclick="doLogin()" id="loginBtn" class="lg-btn">
+        <span class="lp-text">НЭВТРЭХ</span>
+        <span class="lp-stage" id="lpStage" aria-hidden="true">
+          <span class="lp-floor"></span>
+          <span class="lp-door" id="lpDoor">
+            <span class="lp-hole"></span>
+            <span class="lp-leaf l"></span>
+            <span class="lp-leaf r"></span>
+            <span class="lp-thresh"></span>
+          </span>
+          <span class="lp-actor" id="lpActor">
+            <svg viewBox="0 0 18 39" fill="none" stroke-linecap="round">
+              <ellipse id="lpShadow" cx="9" cy="37" rx="5" ry="1" fill="#8a7b63" opacity=".2" stroke="none"/>
+              <g id="lpCard" stroke-linejoin="round">
+                <rect x="-2.7" y="18" width="7.3" height="9.4" rx=".8" fill="#eef9fb" stroke="#4ab5c4" stroke-width="1.15"/>
+                <circle cx="-.5" cy="21" r=".8" fill="#62bccc" stroke="none"/>
+                <path d="M1 20.8H3M-1 24H2.8" stroke="#74c5d1" stroke-width=".7"/>
+              </g>
+              <path id="lpArmB" stroke="#8a7b63" stroke-width="1.65"/>
+              <path id="lpLegB" stroke="#7a6c56" stroke-width="1.85"/>
+              <path id="lpTorso" stroke="#5a4e3b" stroke-width="2.1"/>
+              <path id="lpLegA" stroke="#564a38" stroke-width="2"/>
+              <path id="lpArmA" stroke="#6b5d47" stroke-width="1.8"/>
+              <g id="lpHead">
+                <circle cx="9" cy="5.4" r="3.9" fill="#F07818" stroke="#FFA94D" stroke-width=".8"/>
+                <path d="M6.5 3.9Q7.1 2.7 8.5 2.8" stroke="#FFE0B8" stroke-width=".7"/>
+                <g id="lpEyes" fill="#FFF4E8" stroke="none"><circle cx="7.7" cy="5.1" r=".68"/><circle cx="10.4" cy="5.1" r=".68"/></g>
+              </g>
+            </svg>
+          </span>
+        </span>
+      </button>
 
       <div id="loginErr" style="display:none;margin-top:14px;background:var(--lg-bg);
         border-radius:14px;padding:11px 15px;color:#C0392B;font-size:13px;
@@ -1672,6 +1772,24 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <!-- Утсанд суулгах — зөвхөн суулгаагүй үед харагдана -->
       <div id="pwaBox" class="pwa-box" style="display:none"></div>
       <div id="buildTag" class="build-tag" style="text-align:center;margin-top:14px;font-size:10px;font-weight:600;color:var(--lg-sub)"></div>
+
+      <!-- Талбар дээрх бяцхан зөөгч — JS (fpInit) нь үүнийг DOM-оос
+           гаргаж тухайн үед идэвхтэй талбарын .fld-clip дотор зөөдөг
+           тул энд зүгээр нэг газарт байрлуулсан нь хамаагүй -->
+      <span class="fp-person" id="fpPerson" aria-hidden="true">
+        <svg viewBox="0 0 20 38" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <g class="fp-body" id="fpBody">
+            <path id="fpLegs" d="M10 22L7 34M10 22L13 34" stroke="#7a6c56" stroke-width="2"/>
+            <path d="M10 10L10 22" stroke="#6b5d47" stroke-width="2.2"/>
+            <path d="M10 13L7 17L3 18" stroke="#8a7b63" stroke-width="1.6"/>
+            <g class="fp-wave"><path d="M10 13L13 17L15 18" stroke="#7a6c56" stroke-width="1.6"/></g>
+            <rect x=".3" y="16" width="6.4" height="8.5" rx="1" fill="#eef9fb" stroke="#4ab5c4" stroke-width="1" transform="rotate(-6 3 20)"/>
+            <path d="M2 19H4.7M2 21H4" stroke="#8bcbd6" stroke-width=".6"/>
+            <circle cx="10" cy="6" r="4" fill="#F07818" stroke="#FFA94D" stroke-width=".6"/>
+            <circle cx="8.6" cy="5.7" r=".75" fill="white"/><circle cx="11.3" cy="5.7" r=".75" fill="white"/>
+          </g>
+        </svg>
+      </span>
     </div>
   </div>
 </div>
@@ -8349,6 +8467,262 @@ function endVerification(){
 }
 
 // ══════════════════════════════════════════════
+// НЭВТРЭХ ТОВЧНЫ ҮЗЭГДЭЛ — үнэмлэхээ барьсан хүн хаалга руу алхаж,
+// сервер хариулахыг хүлээгээд орох/буцах (санаа: uulzwar_zai сиб апп).
+// Хүний үе мөчийг урвуу кинематикаар бодож кадр бүрд зурдаг тул ямар
+// ч хурдад хөл газар дээр гулсахгүй.
+// ══════════════════════════════════════════════
+const LP_TAU = Math.PI * 2;
+const LP_SPEED = 2.9;        /* эх хэмнэлийг богиносгоно (1 = анхны хурд) */
+/* ── Алхмын хэмжээс ──
+   Гишгэсэн хөл нэг циклд viewBox-ийн 12 нэгж хойш явдаг тул бие ЯГ
+   төдий зайг туулах ёстой — эс тэгвээс хөл газар дээр гулсана. */
+const LP_K = 46.8 / 39;          /* viewBox нэгж → px */
+const LP_SWING = 5.5;            /* хөл хазайх далайц, нэгж (±) */
+const LP_STANCE = .6;            /* хөл газар дээр байх хугацаа, циклийн хувь */
+const LP_STRIDE = (2 * LP_SWING / LP_STANCE) * LP_K;   /* нэг циклд туулах зай, px */
+const LP_X0 = 2, LP_XD = 58;     /* эхлэх ба хаалганы өмнөх байрлал */
+const LP_IN = 21.7;              /* хаалга руу орох зай — мөн ижил хурдаар */
+const LP_BACK = 51;              /* татгалзсаны дараа ухарч алхах зай */
+const LP_HOLD_A = 4540;      /* хариу хүлээх давталтын эхлэл */
+const LP_HOLD_B = 4940;      /* … төгсгөл (яг 2 найгалт — заадас мэдэгдэхгүй) */
+const LP_END_OK = 7600;      /* хүн хаалганд шингэмэгц апп руу шилжинэ */
+const LP_END_NO = 10550;
+const LP_WAIT_MAX = 15000;   /* сүлжээ хэт удвал үзэгдлийг дуусгана */
+
+let LP = null, lpDir = 1, lpVerdict = null, lpTok = 0;
+let signInAnim = null;
+
+function lpInit(){
+  if(LP)return LP;
+  const btn=document.getElementById('loginBtn');
+  if(!btn)return null;
+  const ids=['lpShadow','lpCard','lpArmB','lpLegB','lpTorso','lpLegA','lpArmA','lpHead','lpEyes'];
+  LP={btn,stage:document.getElementById('lpStage'),door:document.getElementById('lpDoor'),
+      actor:document.getElementById('lpActor'),
+      leaf:[btn.querySelector('.lp-leaf.l'),btn.querySelector('.lp-leaf.r')]};
+  ids.forEach(id=>{LP[id]=document.getElementById(id)});
+  if(!LP.stage||!LP.actor||!LP.lpTorso){LP=null;return null}
+  const fit=()=>{
+    const w=LP.btn.clientWidth||210;
+    LP.stage.style.transform=`translate(-50%,-50%) scale(${Math.min(1,w/210)})`
+  };
+  if(window.ResizeObserver)new ResizeObserver(fit).observe(LP.btn);else window.addEventListener('resize',fit);
+  fit();
+  lpFigure(0,false);
+  return LP
+}
+/* Хоёр холбоосын хооронд тохой/өвдгийг олно (урвуу кинематик) */
+function lpJoint(a,b,l1,l2,bend){
+  const dx=b.x-a.x,dy=b.y-a.y;
+  const d=Math.max(.01,Math.min(Math.hypot(dx,dy),l1+l2-.01));
+  const along=(l1*l1-l2*l2+d*d)/(2*d);
+  const side=Math.sqrt(Math.max(0,l1*l1-along*along));
+  const len=Math.hypot(dx,dy)||1;
+  return {x:a.x+along*dx/len+bend*side*dy/len,y:a.y+along*dy/len-bend*side*dx/len}
+}
+function lpPath(id,a,b,c){LP[id].setAttribute('d',`M${a.x} ${a.y}L${b.x} ${b.y}L${c.x} ${c.y}`)}
+function lpFigure(t,walking,reach){
+  reach=reach||0;
+  const bob=walking?Math.cos(t*2)*.32:Math.sin(t)*.16;
+  const hip={x:9+lpDir*.4,y:23+bob};
+  const sh={x:9+lpDir*(walking?.45:0),y:11.8+bob};
+  LP.lpTorso.setAttribute('d',`M${sh.x} ${sh.y}Q${9+lpDir*.8} ${18+bob} ${hip.x} ${hip.y}`);
+  for(let i=0;i<2;i++){
+    const cycle=((t/LP_TAU+i*.5)%1+1)%1;
+    const stance=cycle<LP_STANCE;
+    const u=stance?cycle/LP_STANCE:(cycle-LP_STANCE)/(1-LP_STANCE);
+    const x=walking?(stance?LP_SWING-2*LP_SWING*u
+                            :-LP_SWING+2*LP_SWING*(u*u*(3-2*u)))
+                   :(i?2.8:-2.8);
+    const lift=walking&&!stance?Math.sin(Math.PI*u)*2.6:0;
+    const foot={x:9+lpDir*x,y:36-lift};
+    const knee=lpJoint(hip,foot,7.1,7.3,lpDir);
+    const leg=i?'lpLegA':'lpLegB';
+    lpPath(leg,hip,knee,foot);
+    LP[leg].setAttribute('d',LP[leg].getAttribute('d')+`l${lpDir*1.25} .15`);
+    const swing=walking?Math.cos(t+i*Math.PI)*3.2:(i?.6:-.6);
+    const wrist={x:sh.x-lpDir*swing,y:22+bob-Math.abs(swing)*.28};
+    if(i){wrist.x+=(17-wrist.x)*reach;wrist.y+=(17-wrist.y)*reach}
+    else{wrist.x=3+Math.sin(t)*.45;wrist.y=19.4+bob}   /* хойд гар үнэмлэхээ барина */
+    const elbow=lpJoint(sh,wrist,5.2,5.1,-lpDir);
+    lpPath(i?'lpArmA':'lpArmB',sh,elbow,wrist)
+  }
+  LP.lpHead.setAttribute('transform',`translate(${sh.x-9} ${bob}) rotate(${walking?lpDir*3:0} 9 9)`);
+  LP.lpEyes.setAttribute('transform',`translate(${lpDir<0?-.5:.3} 0)`);
+  LP.lpCard.setAttribute('transform',`translate(0 ${bob}) rotate(${walking?Math.sin(t)*7:-6} 3 19)`);
+  LP.lpShadow.setAttribute('rx',String(5-Math.max(0,-bob)*.7))
+}
+const lpClamp=x=>Math.max(0,Math.min(1,x));
+const lpProg=(t,a,b)=>lpClamp((t-a)/(b-a));
+const lpSmooth=x=>x*x*(3-2*x);
+const lpBetween=(t,a,b)=>t>=a&&t<b;
+/* Нэг цагийн шугам бүх зүйлийг удирдана. Хугацаа нь миллисекунд. */
+function lpScene(t,rejected){
+  let x,alpha=1,size=1,walking=false,phase=0,reach=0,opening=0,glow=0;
+  let sceneAlpha=lpProg(t,180,480)*(1-lpProg(t,7800,8150));
+  const walk=lpProg(t,650,3950);
+  x=LP_X0+(LP_XD-LP_X0)*walk;walking=lpBetween(t,650,3950);
+  phase=(x-LP_X0)/LP_STRIDE*LP_TAU;
+  alpha=lpProg(t,500,750);
+  reach=lpSmooth(lpProg(t,4100,4350))*(1-lpSmooth(lpProg(t,4980,5200)));
+  if(lpBetween(t,4350,4950))reach*=.72+.28*(.5-.5*Math.cos((t-4350)/200*LP_TAU));
+  glow=lpSmooth(lpProg(t,4330,4520))*(1-lpSmooth(lpProg(t,4940,5250)));
+  opening=lpSmooth(lpProg(t,5650,6080))*(1-lpSmooth(lpProg(t,7240,7640)));
+  if(t>=6270){
+    const enter=lpProg(t,6270,7550);x=LP_XD+LP_IN*enter;
+    walking=enter<1;phase=(LP_XD-LP_X0+LP_IN*enter)/LP_STRIDE*LP_TAU;
+    size=1-.19*lpSmooth(enter);alpha=1-lpSmooth(lpProg(enter,.38,1))
+  }
+  let jump=0,squash=1,shake=0;
+  lpDir=1;
+  if(rejected){
+    opening=0;
+    sceneAlpha=lpProg(t,180,480)*(1-lpProg(t,10200,10550));
+    glow=Math.max(1-lpSmooth(lpProg(t,4940,5060)),
+                  lpSmooth(lpProg(t,5050,5230))*(1-lpSmooth(lpProg(t,6750,7100))));
+    if(lpBetween(t,5050,5500))shake=Math.sin((t-5050)/60*Math.PI)*1.2*(1-lpProg(t,5050,5500));
+    if(t>=5200){x=LP_XD;alpha=1;size=1;walking=false;reach=0}
+    if(lpBetween(t,5410,5610))squash=1-.13*Math.sin(lpProg(t,5410,5610)*Math.PI);
+    for(const start of [5610,6070]){
+      const p=lpProg(t,start,start+340);
+      if(p>0&&p<1){jump=-10*4*p*(1-p);squash=1+.05*Math.sin(p*Math.PI)}
+      const land=lpProg(t,start+340,start+460);
+      if(land>0&&land<1)squash=1-.15*Math.sin(land*Math.PI)
+    }
+    if(t>=6820){
+      lpDir=-1;const back=lpProg(t,7000,10000);
+      x=LP_XD-LP_BACK*back;walking=lpBetween(t,7000,10000);
+      phase=LP_BACK*back/LP_STRIDE*LP_TAU;
+      alpha=1-lpSmooth(lpProg(t,9720,10070))
+    }
+  }
+  lpFigure(phase,walking,reach);
+  LP.stage.style.opacity=sceneAlpha;
+  LP.actor.style.transform=`translate(${x}px,${jump}px) scale(${size*(2-squash)},${size*squash})`;
+  LP.actor.style.opacity=alpha;
+  LP.door.style.setProperty('--lp-glow',glow);
+  LP.door.style.setProperty('--lp-glow-color',rejected&&t>=5000?'var(--red)':'var(--lg-accent)');
+  LP.door.style.transform=`translateX(${shake}px)`;
+  LP.leaf[0].style.transform=`rotateY(${-opening*100}deg)`;
+  LP.leaf[1].style.transform=`rotateY(${opening*100}deg)`;
+  LP.actor.style.zIndex=(!rejected&&t>6700)?'2':'4'
+}
+function lpCalm(){
+  return !!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+}
+/* Нэвтрэх товчны үзэгдлийг эхлүүлнэ. Сүлжээний хүсэлттэй ЗЭРЭГ тоглоно. */
+function playSignInAnim(){
+  const lp=lpInit();
+  if(!lp||lpCalm()){signInAnim=null;return Promise.resolve()}
+  const tok=++lpTok;
+  lpVerdict=null;
+  lp.btn.classList.add('playing');
+  signInAnim=new Promise(resolve=>{
+    let t=0,last=performance.now(),waited=0;
+    (function frame(now){
+      if(tok!==lpTok)return resolve();
+      const dt=Math.min(now-last,50);last=now;
+      if(lpVerdict===null&&t>=LP_HOLD_B){
+        waited+=dt;
+        t=LP_HOLD_A+(t-LP_HOLD_A+dt*LP_SPEED)%(LP_HOLD_B-LP_HOLD_A);
+        if(waited>LP_WAIT_MAX)lpVerdict=false
+      }else{
+        t+=dt*LP_SPEED
+      }
+      const rejected=lpVerdict===false;
+      const end=rejected?LP_END_NO:LP_END_OK;
+      lpScene(Math.min(t,end),rejected);
+      if(lpVerdict===null||t<end)requestAnimationFrame(frame);
+      else{lpFinish(tok);resolve()}
+    })(last)
+  });
+  return signInAnim
+}
+function lpSetVerdict(ok){if(lpVerdict===null)lpVerdict=!!ok}
+function lpFinish(tok){
+  if(LP&&tok===lpTok){LP.btn.classList.remove('playing');LP.stage.style.opacity=0}
+}
+function resetSignInAnim(){
+  lpTok++;
+  if(LP){LP.btn.classList.remove('playing');LP.stage.style.opacity=0;LP.door.style.setProperty('--lp-glow',0);
+    LP.btn.disabled=false}
+  lpVerdict=null;signInAnim=null
+}
+/* ── Талбарын бяцхан зөөгч ──
+   Нэвтрэх нэр эсвэл нууц үг рүү дарахад үнэмлэх барьсан хүн гүйж ирнэ.
+   Зөөгч ганцхан — хуучин талбараасаа бүрэн гарч байж нөгөө рүү шилжинэ. */
+let FP=null;
+function fpInit(){
+  if(FP)return FP;
+  const person=document.getElementById('fpPerson');
+  const em=document.getElementById('loginCode'),pw=document.getElementById('loginPass');
+  if(!person||!em||!pw)return null;
+  person.remove();
+  const inputs=[em,pw];
+  const clips=inputs.map(input=>{
+    const c=document.createElement('span');
+    c.className='fld-clip';c.setAttribute('aria-hidden','true');
+    input.parentElement.appendChild(c);
+    return c
+  });
+  FP={person,inputs,clips,body:person.querySelector('#fpBody'),
+      legs:person.querySelector('#fpLegs'),cur:null,want:null,task:null};
+  inputs.forEach(input=>{
+    input.addEventListener('focus',()=>{if(!document.getElementById('loginBtn').disabled)fpRequest(input)});
+    input.addEventListener('blur',()=>queueMicrotask(()=>{
+      const a=document.activeElement;
+      fpRequest(!document.getElementById('loginBtn').disabled&&inputs.includes(a)?a:null)
+    }));
+    input.addEventListener('input',()=>{
+      if(FP.cur!==input||lpCalm())return;
+      person.classList.remove('typing');void person.offsetWidth;person.classList.add('typing')
+    })
+  });
+  return FP
+}
+function fpWalk(enter){
+  const dur=lpCalm()?0:640;
+  FP.person.classList.add('in-transit');
+  return new Promise(resolve=>{
+    let el=0,last=performance.now();
+    (function frame(now){
+      el+=Math.min(now-last,50);last=now;
+      const p=dur?Math.min(1,el/dur):1;
+      const x=38*(enter?1-p:p),ph=p*Math.PI*4;
+      FP.person.style.transform=`translateX(${x}px)`;
+      const stride=Math.sin(ph)*3.5,bob=Math.sin(ph*2)*.28;
+      FP.body.setAttribute('transform',`translate(0 ${bob})`);
+      FP.legs.setAttribute('d',`M10 22L${10+stride*.4} 28L${10+stride} 34M10 22L${10-stride*.4} 28L${10-stride} 34`);
+      if(p<1)requestAnimationFrame(frame);
+      else{
+        FP.body.removeAttribute('transform');
+        FP.legs.setAttribute('d','M10 22L7 34M10 22L13 34');
+        FP.person.classList.remove('in-transit');resolve()
+      }
+    })(last)
+  })
+}
+function fpRequest(target){
+  if(!fpInit())return Promise.resolve();
+  FP.want=target;
+  if(FP.task)return FP.task;
+  FP.task=(async()=>{
+    while(FP.cur!==FP.want){
+      if(FP.cur!==null){await fpWalk(false);FP.person.remove();FP.cur=null}
+      if(FP.want!==null){
+        FP.cur=FP.want;
+        FP.clips[FP.inputs.indexOf(FP.cur)].appendChild(FP.person);
+        FP.person.style.transform='translateX(38px)';
+        await fpWalk(true)
+      }
+    }
+  })().finally(()=>{FP.task=null});
+  return FP.task
+}
+lpInit();fpInit();
+
+// ══════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════
 async function doLogin(){
@@ -8359,7 +8733,8 @@ async function doLogin(){
     const e=document.getElementById('loginErr');
     if(e){e.textContent=msg;e.style.display='block'}
     const b=document.getElementById('loginBtn');
-    if(b){b.textContent='Нэвтрэх';b.disabled=false}
+    if(b)b.disabled=false;
+    lpSetVerdict(false);     // анимаци тоглож байвал татгалзсан төгсгөлөө тоглоно
   }
 
   if(!code){showErr('Нэр кодоо оруулна уу');return}
@@ -8367,8 +8742,10 @@ async function doLogin(){
 
   const b=document.getElementById('loginBtn');
   const e=document.getElementById('loginErr');
-  if(b){b.textContent='⏳ ...';b.disabled=true}
+  if(b)b.disabled=true;
   if(e)e.style.display='none';
+  fpRequest(null);           // талбарын зөөгч холдоно
+  playSignInAnim();          // хаалганы үзэгдэл сүлжээний хүсэлттэй ЗЭРЭГ тоглоно
 
   // Firebase ачаалагдаагүй бол
   if(typeof firebase==='undefined'){
@@ -8403,7 +8780,7 @@ async function doLogin(){
     _sectionCode=code;
     _partsErr='';_partsAt=0;
     _isAdmin=(code===ADMIN_CODE);
-    if(b){b.textContent='✓';b.disabled=false}
+    lpSetVerdict(true);      // хаалга нээгдэнэ
     await _afterLogin();
   }catch(err){
     let msg='Нэвтрэх нэр эсвэл нууц үг буруу';
@@ -8522,6 +8899,9 @@ async function _afterLogin(){
   try{await _afterLoginInner()}finally{_afterBusy=false}
 }
 async function _afterLoginInner(){
+  // Нэвтрэх товчны үзэгдэл тоглож байвал дуустал нь хүлээнэ — хаалгаар
+  // орох мэдрэмж дундуур нь тасалдахгүй, апп шууд "үсэрч" гарч ирэхгүй
+  if(signInAnim){try{await signInAnim}catch(e){}signInAnim=null}
   if(_isAdmin){showView('adminView');await loadAdminView();return}
   showView('homeView');
   _errBanner('⏳ Үүлнээс өгөгдөл татаж байна...','Хүлээнэ үү');
@@ -8717,6 +9097,7 @@ async function doLogout(){
   _revLeave();_revTrk={};_revAsked={};_hubReset();_brMode=false;
   _currentUser=null;_sectionCode=null;_isAdmin=false;
   activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
+  resetSignInAnim();        // дараагийн нэвтрэхэд хуучин үзэгдлийн төлөв үлдэхгүй
   showView('loginView')
 }
 
@@ -13492,7 +13873,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·176';
+const APP_BUILD='2026.10.11·177';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
