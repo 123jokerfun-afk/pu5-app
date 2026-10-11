@@ -515,20 +515,23 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 #logoutFly{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);
   align-items:center;justify-content:center}
 #logoutFly.on{display:flex}
-#logoutFly .lo-stage{position:relative;width:140px;height:56px;
+#logoutFly .lo-stage{position:relative;width:336px;height:134px;
   --door-t:rotateY(18deg);--door-d:.2s;--door-delay:0s;
   --person-t:none;--person-d:.1s;--body-d:.1s;
   --arm1:none;--arm2:none;--leg1:none;--leg2:none}
-#logoutFly .mo-text{position:absolute;top:-36px;left:50%;transform:translateX(-50%);
-  white-space:nowrap;font-size:15px;font-weight:800;color:var(--ink2)}
+#logoutFly .mo-text{position:absolute;top:-44px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;font-size:17px;font-weight:800;color:var(--ink2)}
 #logoutFly svg{display:block;position:absolute}
-#logoutFly .mo-frame{width:34px;z-index:3;right:16px;bottom:11px;fill:#aeb7c2}
+/* Жижиг (34px) хэмжээгээрээ бүтэн дэлгэцийн халхлагч дээр гээгдсэн
+   шиг харагдаж байсан тул 2.4x томруулав — товч дотор биш, бүтэн
+   дэлгэц дээр тоглодог болсон тул */
+#logoutFly .mo-frame{width:82px;z-index:3;right:38px;bottom:26px;fill:#aeb7c2}
 #logoutFly .mo-flash{opacity:0;fill:#e8a33d}
-#logoutFly .mo-door{width:34px;z-index:5;right:16px;bottom:11px;transform-origin:100% 50%;
-  transform:perspective(110px) var(--door-t);transition:var(--door-d) ease var(--door-delay)}
+#logoutFly .mo-door{width:82px;z-index:5;right:38px;bottom:26px;transform-origin:100% 50%;
+  transform:perspective(260px) var(--door-t);transition:var(--door-d) ease var(--door-delay)}
 #logoutFly .mo-door path{fill:#39424e;stroke:#39424e;stroke-width:4}
 #logoutFly .mo-door circle{fill:#aeb7c2}
-#logoutFly .mo-person{z-index:4;width:31px;right:30px;bottom:14px;fill:#2b333c;
+#logoutFly .mo-person{z-index:4;width:74px;right:72px;bottom:34px;fill:#2b333c;
   transform:var(--person-t);transition:var(--person-d) cubic-bezier(.2,.1,.8,.9)}
 #logoutFly .mo-person .a1,#logoutFly .mo-person .a2,
 #logoutFly .mo-person .l1,#logoutFly .mo-person .l2{transition:var(--body-d) ease-in-out}
@@ -1928,7 +1931,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
          доор нь тэнцүү өргөнтэйгөөр буулгав -->
     <div class="adm-acts">
       <button class="icon-btn" onclick="openSheetCfg()" style="color:#0F8A4C;border-color:#7BD3A0;background:#EDFBF3"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M3 15h18M9 3v18" stroke="currentColor" stroke-width="1.6"/></svg> Sheets</button>
-      <button class="icon-btn" onclick="adminExportExcel()" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel</button>
+      <button class="icon-btn" onclick="runDlFly(adminExportExcel)" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel</button>
       <button class="icon-btn" onclick="doLogout()" style="color:var(--red);border-color:rgba(220,60,60,.35)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg> Гарах</button>
     </div>
   </div>
@@ -2037,7 +2040,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </div>
       <div class="export-grid">
         <button class="exp-btn exp-xl" onclick="openThresholdExport()"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Excel</button>
-        <button class="exp-btn exp-csv" onclick="exportAllCSV()"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV</button>
+        <button class="exp-btn exp-csv" onclick="runDlFly(exportAllCSV)"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV</button>
       </div>
     </div>
     </div><!-- /tracksSection -->
@@ -2422,7 +2425,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('planRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зам, үе, дэрийн дугаараар. Сумын рам замын дэр ч энд орно. Мөр дээр дарвал тэр жагсаалт руу шууд очно.</div>
-    <button class="btn-ok" onclick="exportPlanForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportPlanForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
     <div id="planRepBody"></div>
   </div></div>
 </div>
@@ -2508,7 +2511,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('swPlanRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сум, дүнзний дугаараар. Мөр дээр дарвал тэр сумын дүнзний жагсаалт руу шууд очно.</div>
-    <button class="btn-ok" onclick="exportPlanForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportPlanForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
     <div id="swPlanRepBody"></div>
   </div></div>
 </div>
@@ -2680,7 +2683,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">
       3 ба түүнээс дээш дараалсан цэгт хамаарч байсан дэрүүдээс сольсон нь. Хэдэн ч дэрийг, ямар ч өдөр сольсон бай энд бүртгэгдэнэ. Эдгээр нь "Солигдсон дэр" жагсаалтад ч цэнхэрээр орсон байна.
     </div>
-    <button class="btn-ok" id="carveXlsBtn" onclick="exportCarveForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сийрэгжилт татах (Маягт-1 Хавсралт-4)</button>
+    <button class="btn-ok" id="carveXlsBtn" onclick="runDlFly(exportCarveForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сийрэгжилт татах (Маягт-1 Хавсралт-4)</button>
     <div id="carveReportBody"></div>
   </div></div>
 </div>
@@ -2701,7 +2704,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="sheet-title" style="margin:0">Солигдсон дэр</div>
       <button onclick="closeModal('replReportModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
-    <button class="btn-ok" onclick="exportReplForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportReplForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
     <div id="replReportBody"></div>
   </div></div>
 </div>
@@ -2819,7 +2822,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('threshModal')">Болих</button>
-      <button class="btn-ok" onclick="saveRptAndExport()"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel татах</button>
+      <button class="btn-ok" onclick="runDlFly(saveRptAndExport)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel татах</button>
     </div>
   </div></div>
 </div>
@@ -3080,7 +3083,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('swReplRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сольсон дүнзийг ҮРГЭЛЖ анхны уртаар нь тооцно — өөр уртаар сольсон ч сумын нийт пог/м өөрчлөгдөхгүй.</div>
-    <button class="btn-ok" onclick="exportSwReplForm()" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportSwReplForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
     <div id="swReplRepBody"></div>
   </div></div>
 </div>
@@ -7387,7 +7390,7 @@ function showSummaryAll(){
   html+=`<div class="sum-block"><div class="sum-block-title">Экспорт</div>
     <div class="export-grid">
       <button class="exp-btn exp-xl" onclick="openThresholdExport()"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10M10 19V5M16 19v-6M4 19h16"/></svg> Excel</button>
-      <button class="exp-btn exp-csv" onclick="exportAllCSV()">${ic("download",16)} CSV</button>
+      <button class="exp-btn exp-csv" onclick="runDlFly(exportAllCSV)">${ic("download",16)} CSV</button>
     </div></div>`;
   let consecAll='';
   _all.forEach(t=>{
@@ -7433,7 +7436,7 @@ function renderTrackSummaryHTML(t){
   <div class="sum-block"><div class="sum-block-title">Экспорт</div>
     <div class="export-grid">
       <button class="exp-btn exp-xl" onclick="openThresholdExport('${t.id}')"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10M10 19V5M16 19v-6M4 19h16"/></svg> Excel</button>
-      <button class="exp-btn exp-csv" onclick="exportTrackCSV('${t.id}')">${ic("download",16)} CSV</button>
+      <button class="exp-btn exp-csv" onclick="runDlFly(()=>exportTrackCSV('${t.id}'))">${ic("download",16)} CSV</button>
     </div></div>`
 }
 function backFromSummary(){
@@ -7448,14 +7451,13 @@ function backFromSummary(){
 // ══════════════════════════════════════════════
 function isIOS(){return/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream}
 async function dlBlob(blob,name){
-  // Файл бэлэн боллоо — хайрцаг нүх рүү орох үзэгдэл тоглоод, яг
-  // дуусахад нь файлыг өгнө (sbBusy завгүй бол — ж: send/del
-  // тоглож байвал — алгасаад шууд өгнө)
-  const fly=document.getElementById('dlFly');
-  if(fly&&!sbBusy){
-    sbBusy=true;fly.classList.add('on');
-    try{await sbPlay(fly,SB_DL)}finally{fly.classList.remove('on');sbBusy=false}
-  }
+  // Товч дарсан тэр дор л үзэгдэл (runDlFly) эхэлдэг — энд зөвхөн
+  // ХҮЛЭЭНЭ, өөрөө эхлүүлэхгүй. Өмнө нь энд эхлүүлдэг байсан — Excel
+  // бэлдэх хугацаанд (ensureExcel, их өгөгдөлтэй тайлан) үзэгдэл
+  // ХОЖИМДОЖ эхэлж, товч дарсны дараа түр "юу ч болохгүй байна" мэт
+  // харагддаг байв. runDlFly холбоогүй үед (ямар нэг шалтгаанаар
+  // шууд dlBlob дуудагдвал) sbGate() шууд өнгөрнө.
+  await sbGate();
   // APK дотор ажиллаж байвал — Downloads руу шууд хадгална
   if(navigator.userAgent.indexOf('PU5App')>=0&&window.PU5&&window.PU5.saveFile){
     const fr=new FileReader();
@@ -7854,6 +7856,9 @@ async function exportColoredExcel(){
 // ══════════════════════════════════════════════
 async function exportPu5Book(scope){
   if(!await appConfirm('ПУ-5 дэвтэр загварыг татах уу?','Татах'))return;
+  await runDlFly(()=>_exportPu5BookCore(scope))
+}
+async function _exportPu5BookCore(scope){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
   const isMain=scope==='main';
   // Паспортыг id-гаар нь шууд авна — нээлттэй биш паспортоос ч татаж болно
@@ -8638,8 +8643,11 @@ function lpInit(){
   ids.forEach(id=>{LP[id]=document.getElementById(id)});
   if(!LP.stage||!LP.actor||!LP.lpTorso){LP=null;return null}
   const fit=()=>{
-    const w=LP.btn.clientWidth||210;
-    LP.stage.style.transform=`translate(-50%,-50%) scale(${Math.min(1,w/210)})`
+    // Зөвхөн өргөнөөр нь scale тооцвол тайз (92px өндөр) богино товчны
+    // (жишээ нь 53px) хилээс гарч, толгой/хөл тасарч харагддаг байв —
+    // өндрийг нь ч хязгаарлана
+    const w=LP.btn.clientWidth||210,h=LP.btn.clientHeight||92;
+    LP.stage.style.transform=`translate(-50%,-50%) scale(${Math.min(1,w/210,h/92)})`
   };
   if(window.ResizeObserver)new ResizeObserver(fit).observe(LP.btn);else window.addEventListener('resize',fit);
   fit();
@@ -8869,6 +8877,10 @@ const sbEase=x=>x*x*(3-2*x);
 const sbMix=(a,b,x)=>a+(b-a)*x;
 let sbBusy=false;
 let sbSeq=0;
+/* Татах үед файлыг үзэгдлийн ТӨГСГӨЛД өгнө — эс тэгвээс хайрцаг нүх
+   рүү орох хөдөлгөөн дуустал хүрэлцэхгүй, файл эрт унана */
+let sbGatePromise=null;
+function sbGate(){return sbGatePromise||Promise.resolve()}
 
 /* Алхаж буй хоёр хөл. Гишгэсэн хөл циклийн 60%-д газар дээр байх
    тул бие нэг циклд яг `stride` нэгжийг туулна — хөл гулсахгүй. */
@@ -9205,11 +9217,10 @@ async function runDelFly(fn){
 }
 
 /* ── Татах үзэгдэл: хайрцгийг нүх рүү түлхээд, өөрөө ч үсрэн орно ──
-   Экспортын товч PU-5-д маш олон, тараагдмал (зарим нь appConfirm,
-   зарим нь модал дотроос) тул dlBlob()-д холбосон — файл БҮРЭН
-   бэлэн болсны дараах цорын ганц нийтлэг цэг. Тиймээс товч бүрийг
-   тусад нь холбох шаардлагагүй, бас баталгаажуулалт үзэгдлийн
-   ард биш ӨМНӨ нь аль хэдийн шийдэгдсэн байна. */
+   Товч ДАРСАН тэр дор эхэлж, Excel/CSV-ээ ЗЭРЭГЦЭЭ бэлдэнэ (sbGate-
+   ээр dlBlob()-той холбогдоно) — эс тэгвээс ExcelJS татах/их
+   өгөгдөлтэй тайлан бэлдэх хугацаанд үзэгдэл хожимдож эхэлж, товч
+   дарсны дараа түр "юу ч болохгүй байна" мэт харагддаг байв. */
 const SB_DL_STRIDE=22;
 const SB_DL={
   view:'0 0 230 90',ms:3500,speed:1.15,
@@ -9290,6 +9301,19 @@ const SB_DL={
     sb.q('.sb-arms').setAttribute('d',arms)
   }
 };
+/* Товч дарсан тэр дор л эхэлнэ (fn-ийг ХҮЛЭЭХГҮЙ) — файл бэлдэх
+   (ensureExcel, ExcelJS) ба үзэгдэл ЗЭРЭГЦЭЭ явна. dlBlob()-д хүрэх
+   үед sbGate()-ээр хориглогдож, яг үзэгдэл дуусахад нь файл өгөгдөнө.
+   fn алдвал ч үзэгдэл тасрахгүй (Promise.allSettled). */
+async function runDlFly(fn){
+  const fly=document.getElementById('dlFly');
+  if(!fly||sbBusy)return fn();
+  sbBusy=true;fly.classList.add('on');
+  const anim=sbPlay(fly,SB_DL);
+  sbGatePromise=anim;
+  try{await Promise.allSettled([Promise.resolve().then(fn),anim])}
+  finally{fly.classList.remove('on');sbGatePromise=null;sbBusy=false}
+}
 
 // ══════════════════════════════════════════════
 // AUTH
@@ -13123,6 +13147,9 @@ async function exportSwForms(){
   const ts=swAllTurnouts().filter(t=>(t.it||'').length);
   if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
   if(!await appConfirm('Дүнзний маягт татах уу?','Татах'))return;
+  await runDlFly(_exportSwFormsCore)
+}
+async function _exportSwFormsCore(){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
 
   const f=swFolder()||{};
@@ -14480,7 +14507,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·181';
+const APP_BUILD='2026.10.11·182';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
