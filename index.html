@@ -464,6 +464,28 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .save-badge .sb-go{background:rgba(255,255,255,.9);color:#8A5009;border-radius:99px;
   padding:2px 8px;font-size:10.5px;font-weight:900}
 @keyframes sbPulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ══════════════════════════════════════════════════════════════
+   ХӨДӨЛГӨӨНТ ТОВЧ — илгээх үзэгдэл (ачигч мотоцикльд ачаагаа ачаад
+   явна). Тайзыг JS нь товч дотор үүсгэнэ; энд зөвхөн байрлал, өнгө.
+   Санаа: uulzwar_zai сиб апп.
+   ══════════════════════════════════════════════════════════════ */
+.sb{position:relative;overflow:hidden;isolation:isolate}
+.sb-label{position:relative;z-index:2;display:block;transition:opacity .2s ease}
+.sb.sb-on .sb-label{opacity:0}
+.sb-stage{position:absolute;inset:0;z-index:1;opacity:0;pointer-events:none}
+.sb-stage svg{display:block;width:100%;height:100%}
+.sb.sb-on:disabled,.sb.sb-on[disabled]{opacity:1!important}
+/* "Илгээгдээгүй" тэмдэг жижиг тул үзэгдлийг дэлгэцийн доор хөвөгч
+   самбар дээр тоглуулна — тэмдгийг түр нуугаад орлуулна */
+#sendFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
+  bottom:calc(12px + var(--sab));width:min(280px,calc(100vw - 32px));height:84px;
+  transform:translateX(-50%);border-radius:18px;background:var(--card);box-shadow:var(--sh-lg)}
+#sendFly.on{display:block}
+body.has-tabbar:not(.deep-view) #sendFly{bottom:calc(var(--sab) + 74px)}
+body.rec-mode #sendFly{bottom:calc(var(--sab) + 178px)}
+body.track-mode #sendFly{bottom:calc(var(--sab) + 82px)}
+
 /* Устгах товч — удаан дарж идэвхжих хүртэл бүдэг, идэвхгүй харагдана */
 .lp-del .folder-del{opacity:.28;filter:grayscale(1);transition:opacity .18s,filter .18s,transform .18s}
 .lp-del.del-armed .folder-del{opacity:1;filter:none;background:var(--red-bg);
@@ -1642,6 +1664,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     font-family:-apple-system,sans-serif">Дэлгэц дарж алгасах</div>
 </div>
 <div id="toast"></div>
+<div id="sendFly" aria-hidden="true"></div>
 <!-- ══ ДООД ТАБ — үндсэн шилжилт ══ -->
 <nav id="tabbar" aria-label="Үндсэн цэс">
   <button class="tab-b" id="tabHome" onclick="goTab('home')" aria-current="true">
@@ -8723,6 +8746,269 @@ function fpRequest(target){
 lpInit();fpInit();
 
 // ══════════════════════════════════════════════
+// ИЛГЭЭХ ТОВЧНЫ ҮЗЭГДЭЛ — ачигч мотоцикльд ачаагаа ачаад жолооч
+// замдаа гарна (санаа: uulzwar_zai сиб апп). Хүний алхааг
+// гишгэлт/дүүжлэлтээр бодож, LP системийн lpJoint-ийг дахин
+// ашигласан тул хөл газар дээр гулсахгүй.
+// ══════════════════════════════════════════════
+const SB_TAU=Math.PI*2;
+const sbClamp=x=>Math.max(0,Math.min(1,x));
+const sbP=(t,a,b)=>sbClamp((t-a)/(b-a));
+const sbEase=x=>x*x*(3-2*x);
+const sbMix=(a,b,x)=>a+(b-a)*x;
+let sbBusy=false;
+let sbSeq=0;
+
+/* Алхаж буй хоёр хөл. Гишгэсэн хөл циклийн 60%-д газар дээр байх
+   тул бие нэг циклд яг `stride` нэгжийг туулна — хөл гулсахгүй. */
+function sbLegs(phase,stride,hipY,dir,footY,lift){
+  const STANCE=.6,sw=stride*STANCE/2;
+  const drop=footY-hipY;
+  const total=Math.max(Math.hypot(sw,drop),drop)*1.07;
+  const l1=total*.49,l2=total*.51;
+  const hip={x:0,y:hipY};
+  let d='';
+  for(let i=0;i<2;i++){
+    const c=((phase/SB_TAU+i*.5)%1+1)%1;
+    const st=c<STANCE,u=st?c/STANCE:(c-STANCE)/(1-STANCE);
+    const fx=st?sw-2*sw*u:-sw+2*sw*(u*u*(3-2*u));
+    const fy=footY-(st?0:Math.sin(Math.PI*u)*(lift==null?1.5:lift));
+    const foot={x:dir*fx,y:fy};
+    const k=lpJoint(hip,foot,l1,l2,dir);
+    d+=`M0 ${hipY.toFixed(2)}L${k.x.toFixed(2)} ${k.y.toFixed(2)}L${foot.x.toFixed(2)} ${foot.y.toFixed(2)}`;
+  }
+  return d
+}
+/* Зогсож буй хоёр хөл */
+function sbStand(hipY,footY,spread){
+  const s=spread==null?1.5:spread,m=(hipY+footY)/2;
+  return `M0 ${hipY}L${s*.5} ${m}L${s} ${footY}M0 ${hipY}L${-s*.5} ${m}L${-s} ${footY}`
+}
+/* Товчийг тайзтай болгоно. Тайз болгон өөрийн defs-тэй тул id давхцахгүй. */
+function sbMount(btn,scene){
+  if(btn.__sb)return btn.__sb;
+  const label=document.createElement('span');
+  label.className='sb-label';
+  while(btn.firstChild)label.appendChild(btn.firstChild);
+  btn.appendChild(label);
+  const stage=document.createElement('span');
+  stage.className='sb-stage';
+  stage.setAttribute('aria-hidden','true');
+  const u='sb'+(++sbSeq);
+  stage.innerHTML=`<svg viewBox="${scene.view}" preserveAspectRatio="xMidYMid meet">`
+    +scene.svg.replace(/__U__/g,u)+'</svg>';
+  btn.appendChild(stage);
+  btn.classList.add('sb');
+  btn.__sb={stage,q:s=>stage.querySelector(s)};
+  return btn.__sb
+}
+/* Серверийн хариуг үзэгдэлд дамжуулна (hold-той үзэгдэлд л хамаатай) */
+let sbVerdict=null;
+const SB_WAIT_MAX=15000;
+function sbSetVerdict(ok){if(sbVerdict===null)sbVerdict=!!ok}
+/* Үзэгдлийг тоглуулна. Хөдөлгөөн багасгах горимд шууд өнгөрнө.
+   scene.hold=[a,b] бол тэр хооронд хариу ирэх хүртэл гогцоолно. */
+function sbPlay(btn,scene){
+  if(!btn)return Promise.resolve();
+  const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sb=sbMount(btn,scene);
+  if(calm)return Promise.resolve();
+  const locked=[btn];
+  locked.forEach(b=>{b.disabled=true});
+  btn.classList.add('sb-on');
+  return new Promise(resolve=>{
+    let t=0,last=performance.now(),waited=0,stopAt=null;
+    const FADE=320;
+    (function frame(now){
+      const dt=Math.min(now-last,80)*scene.speed;
+      last=now;
+      if(!document.hidden){
+        if(scene.hold&&sbVerdict===null&&t>=scene.hold[1]){
+          const span=scene.hold[1]-scene.hold[0];
+          t=scene.hold[0]+((t-scene.hold[0]+dt)%span);
+          waited+=dt;
+          if(waited>SB_WAIT_MAX)sbVerdict=false
+        }else t+=dt
+      }
+      if(scene.hold&&sbVerdict===false&&stopAt===null)stopAt=t+FADE;
+      scene.draw(sb,Math.min(t,scene.ms));
+      if(stopAt!==null){
+        const f=1-sbClamp((t-(stopAt-FADE))/FADE);
+        sb.stage.style.opacity=String(parseFloat(sb.stage.style.opacity||'1')*f)
+      }
+      const done=stopAt!==null?t>=stopAt:t>=scene.ms;
+      if(!done)requestAnimationFrame(frame);
+      else{
+        btn.classList.remove('sb-on');
+        sb.stage.style.opacity=0;
+        locked.forEach(b=>{b.disabled=false});
+        resolve()
+      }
+    })(last)
+  })
+}
+
+/* ── Илгээх үзэгдэл: ачаагаа мотоцикльд ачаад, жолооч замдаа гарна ──
+   Эх бичлэгийн зохиомжийг хадгалсан; алхааг нь гишгэлт/дүүжлэлтээр
+   бодож, ачигчийг томсгож, явах зайг алхмын уртад тааруулсан.
+   hold нь серверийн хариу ирэх хүртэл ачигчийг даллуулж хүлээлгэнэ —
+   зөвшөөрөгдвөл мотоцикль хөдөлж, батлагдаагүй бол үзэгдэл зогсоно. */
+const SB_SEND_STRIDE=22;
+const SB_SEND_X0=61,SB_SEND_X1=105;
+const SB_SEND_BOX=133.5;
+const SB_SEND={
+  view:'0 20 230 70',ms:3650,speed:1.25,hold:[1700,2100],
+  svg:`<defs>
+<linearGradient id="g__U__"><stop stop-color="#b0bbc8" stop-opacity="0"/><stop offset=".18" stop-color="#a9b5c4"/><stop offset=".82" stop-color="#a9b5c4"/><stop offset="1" stop-color="#b0bbc8" stop-opacity="0"/></linearGradient>
+<linearGradient id="c__U__" x2="0" y2="1"><stop stop-color="#536c80"/><stop offset="1" stop-color="#344d62"/></linearGradient>
+<linearGradient id="p__U__" x2="1" y2="1"><stop stop-color="#d4a553"/><stop offset="1" stop-color="#bd883c"/></linearGradient>
+<filter id="h__U__" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#22c7d2" flood-opacity=".55"/></filter>
+<filter id="s__U__" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="1" dy="1" stdDeviation="1" flood-color="#8293a8" flood-opacity=".25"/></filter>
+</defs>
+<path d="M16 78H214" stroke="url(#g__U__)" stroke-width="1.5"/>
+<g class="sb-veh"><g transform="translate(-67 0)">
+  <g class="sb-exh" opacity="0" stroke="#a2afbe" stroke-width="1.4" stroke-linecap="round">
+    <path class="e1" d="M172 65h12"/><path class="e2" d="M162 70h16"/><path class="e3" d="M175 74h8"/></g>
+  <g class="sb-bike" filter="url(#s__U__)">
+    <path d="M192 75H291" stroke="#f5f8fa" stroke-width="8" stroke-linecap="round"/><path d="M198 75H281" stroke="#3d5060" stroke-width="2.8"/><path d="M185 74h8" stroke="#3d5060" stroke-width="3" stroke-linecap="round"/>
+    <path d="M254 74Q259 66 263 52L276 53L282 74Z" fill="#e9eef2" stroke="#f9fcfe" stroke-width="1.2"/>
+    <path d="M265 63L269 49M265 48L273 50" fill="none" stroke="#3e4a55" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M198 73Q205 56 214 72M273 72Q283 58 293 72" fill="none" stroke="#edf3f7" stroke-width="5"/><path d="M274 69Q283 59 292 69" fill="none" stroke="#546575" stroke-width="1.6"/>
+    <rect x="216" y="56" width="31" height="5" rx="2" fill="#3e5263"/><rect x="239" y="52" width="21" height="12" rx="6" fill="#3d5669"/><path d="M240 58H259" stroke="#19bbcb" stroke-width="2.3"/>
+    <rect x="187" y="47" width="27" height="19" rx="2.5" fill="url(#c__U__)"/><path d="M189 51H212" stroke="#718497" stroke-width=".9" opacity=".65"/><circle cx="209" cy="62" r="1.5" fill="#17bdb8"/>
+    <g><path d="M232 44L230 54L238 57" fill="none" stroke="#425765" stroke-width="2.2" stroke-linecap="round"/><path d="M232 46L238 51L245 51" fill="none" stroke="#516775" stroke-width="1.6" stroke-linecap="round"/><circle cx="234" cy="40" r="3.6" fill="#24c1cb" filter="url(#h__U__)"/></g>
+  </g>
+  <g class="sb-wr"><circle cx="205" cy="75" r="8.6" fill="#edf4f8"/><circle cx="205" cy="75" r="6.5" fill="#293645"/><path d="M205 70V80M200 75H210" stroke="#627182" stroke-width="1"/><circle cx="205" cy="75" r="2.5" fill="#aab6c4"/></g>
+  <g class="sb-wf"><circle cx="284" cy="75" r="8.5" fill="#edf4f8"/><circle cx="284" cy="75" r="6.4" fill="#293645"/><path d="M284 70V80M279 75H289" stroke="#627182" stroke-width="1"/><circle cx="284" cy="75" r="2.5" fill="#aab6c4"/></g>
+</g></g>
+<g class="sb-worker">
+  <path class="sb-legs" fill="none" stroke="#536371" stroke-width="2.85" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M0-34.5V-15" stroke="#536371" stroke-width="3.15" stroke-linecap="round"/>
+  <path class="sb-arms" fill="none" stroke="#596e7a" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="0" cy="-40.5" r="5.55" fill="#22c3ce" filter="url(#h__U__)"/>
+</g>
+<g class="sb-parcel" filter="url(#s__U__)"><g transform="scale(1.25)">
+  <rect x="-7" y="-7" width="14" height="14" rx=".7" fill="url(#p__U__)" stroke="#ba8f49" stroke-width=".6"/>
+  <path d="M-7-7H7V-4H-7Z" fill="#dcb779"/><path d="M-1.2-7H1.2V7H-1.2Z" fill="#e5c18a"/>
+  <path d="M-7 0H7" stroke="#a17a3d" stroke-width=".8"/><path d="M-6-5H-2" stroke="#e9cba0" stroke-width=".7"/>
+</g></g>
+<path class="sb-hands" fill="none" stroke="#596e7a" stroke-width="2.85" stroke-linecap="round"/>
+<g class="sb-conf" opacity="0">`+
+    Array.from({length:18},(_,i)=>
+      `<rect class="cf" width="${i%3===0?3:2}" height="${i%2?3:2}" rx=".4" fill="${['#22c988','#32bdcf','#efbe54','#d581bc'][i%4]}"/>`
+    ).join('')+'</g>',
+  draw(sb,t){
+    sb.stage.style.opacity=sbP(t,0,180)*(1-sbP(t,3400,3650));
+    /* ── Мотоцикль ── */
+    const vehIn=sbP(t,150,450),depart=sbP(t,2300,3100);
+    const vehX=depart*depart*150;
+    const veh=sb.q('.sb-veh');
+    veh.setAttribute('transform',`translate(${vehX.toFixed(2)} ${(1-vehIn).toFixed(2)})`);
+    veh.style.opacity=vehIn;
+    const engine=sbP(t,2100,2300)*(1-sbP(t,3000,3200));
+    const vib=Math.sin(t/38)*.23*engine+Math.sin(depart*Math.PI*3)*.3*depart;
+    sb.q('.sb-bike').setAttribute('transform',`translate(0 ${vib.toFixed(2)})`);
+    const spin=(vehX/8.5*180/Math.PI).toFixed(1);
+    sb.q('.sb-wr').setAttribute('transform',`rotate(${spin} 205 75)`);
+    sb.q('.sb-wf').setAttribute('transform',`rotate(${spin} 284 75)`);
+    const exh=sb.q('.sb-exh');
+    exh.style.opacity=sbP(t,2120,2300)*(1-sbP(t,3050,3200))*.5;
+    exh.setAttribute('transform',`translate(${-((t/35)%9)} 0)`);
+    ['.e1','.e2','.e3'].forEach((c,i)=>
+      sb.q(c).style.opacity=.45+.55*(.5+.5*Math.sin(t/95-i*1.7)));
+
+    /* ── Ачигч ── */
+    let wx=SB_SEND_X0,walk=false,dir=1,carry=true,load=0,wave=0;
+    if(t<900){wx=sbMix(SB_SEND_X0,SB_SEND_X1,sbP(t,200,900));walk=t>=200}
+    else if(t<1500){wx=SB_SEND_X1;load=sbP(t,900,1500);carry=false}
+    else if(t<2500){wx=SB_SEND_X1;carry=false}
+    else{dir=-1;carry=false;wx=sbMix(SB_SEND_X1,SB_SEND_X0,sbP(t,2500,3200));walk=t<3200}
+    wave=sbEase(sbP(t,1500,1700))*(1-sbEase(sbP(t,2400,2600)));
+    const phase=(dir>0?(wx-SB_SEND_X0):(SB_SEND_X1-wx))/SB_SEND_STRIDE*SB_TAU;
+    const bob=walk?Math.cos(phase*2)*.5:0;
+    const worker=sb.q('.sb-worker');
+    worker.style.opacity=sbP(t,180,330)*(1-sbP(t,3050,3200));
+    worker.setAttribute('transform',`translate(${wx.toFixed(2)} ${(77+bob).toFixed(2)})`);
+    sb.q('.sb-legs').setAttribute('d',walk
+      ?sbLegs(phase,SB_SEND_STRIDE,-15,dir,-bob,2.2)
+      :sbStand(-15,-bob,2));
+
+    /* ── Ачаа ── */
+    let px=wx,py=52+bob,tilt=0;
+    if(t>=900&&t<1500){
+      const u=sbP(t,900,1500);
+      px=sbMix(SB_SEND_X1,SB_SEND_BOX,sbEase(u));
+      py=u<.28?sbMix(52,56,sbEase(u/.28)):sbMix(56,38.2,sbEase((u-.28)/.72));
+      tilt=-5*Math.sin(u*Math.PI)
+    }else if(t>=1500){
+      px=SB_SEND_BOX+vehX;
+      py=38.2+vib+Math.sin(sbP(t,1500,1680)*Math.PI)*.6
+    }
+    const parcel=sb.q('.sb-parcel');
+    parcel.setAttribute('transform',`translate(${px.toFixed(2)} ${py.toFixed(2)}) rotate(${tilt.toFixed(1)})`);
+    parcel.style.opacity=sbP(t,180,330);
+    const hands=sb.q('.sb-hands');
+    hands.style.opacity=t<1500?sbP(t,180,330):0;
+    hands.setAttribute('transform',`translate(${px.toFixed(2)} ${py.toFixed(2)}) rotate(${tilt.toFixed(1)})`);
+    hands.setAttribute('d','M-8.8 1.2v3.8M8.8 1.2v3.8');
+
+    /* ── Гар ── */
+    let arms;
+    if(carry)arms='M0-33L-12-27L-9-22.5M0-33L12-27L9-22.5';
+    else if(load>0&&load<1){
+      const hx=px-wx,hy=py-77-bob;
+      arms=`M0-33Q${(hx*.5-7).toFixed(1)} ${(hy+7).toFixed(1)} ${(hx-9).toFixed(1)} ${(hy+3).toFixed(1)}`
+         +`M0-33Q${(hx*.6+9).toFixed(1)} ${(hy+10).toFixed(1)} ${(hx+9).toFixed(1)} ${(hy+3).toFixed(1)}`
+    }else if(wave>.01){
+      const a=(t-1700)/400*SB_TAU,hx=9+Math.sin(a)*5.7;
+      arms=`M0-33L7.5 ${sbMix(-25.5,-43.5,wave).toFixed(1)}L${sbMix(10.5,hx,wave).toFixed(1)} ${sbMix(-19.5,-54,wave).toFixed(1)}M0-33L-4.5-25.5L-6-19.5`
+    }else{
+      const sw=walk?Math.cos(phase)*3.8:0;
+      arms=`M0-33L${(dir*3+sw).toFixed(1)}-25.5L${(dir*4.5+sw).toFixed(1)}-19.5`
+         +`M0-33L${(-dir*3-sw).toFixed(1)}-25.5L${(-dir*4.5-sw).toFixed(1)}-19.5`
+    }
+    sb.q('.sb-arms').setAttribute('d',arms);
+
+    /* ── Баяр хүргэх цацалт ── */
+    const burst=sbP(t,3100,3600);
+    sb.q('.sb-conf').style.opacity=(t>=3100?1:0)*(1-burst);
+    sb.stage.querySelectorAll('.cf').forEach((n,i)=>{
+      const ang=i*2.39996,r=22+(i%5)*7;
+      n.setAttribute('transform',
+        `translate(${(115+Math.cos(ang)*r*burst).toFixed(1)} ${(55+Math.sin(ang)*r*burst+26*burst*burst).toFixed(1)}) rotate(${(i*31+burst*180).toFixed(0)})`)
+    })
+  }
+};
+/* Илгээгдээгүй тэмдэг жижиг тул товч дотор биш, дэлгэцийн доор
+   хөвөгч самбар дээр тоглуулна */
+async function runSendFly(fn){
+  const fly=document.getElementById('sendFly');
+  if(!fly||sbBusy){await fn();return}
+  const badge=document.getElementById('saveBadge');
+  if(badge)badge.style.opacity='0';
+  fly.classList.add('on');
+  try{await runSend(fly,fn)}
+  finally{
+    fly.classList.remove('on');
+    const b2=document.getElementById('saveBadge');
+    if(b2)b2.style.opacity=''
+  }
+}
+/* Илгээх товч: үзэгдэл тоглох зуур үүл рүү бичиж, хариуг нь дамжуулна */
+async function runSend(btn,fn){
+  if(sbBusy)return;
+  sbBusy=true;
+  sbVerdict=null;
+  const anim=sbPlay(btn,SB_SEND);
+  let good=false;
+  try{good=await fn()}catch(e){good=false}
+  sbSetVerdict(good);
+  try{await anim}catch(e){}
+  sbBusy=false;
+  _renderSaveBadge()
+}
+
+// ══════════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════════
 async function doLogin(){
@@ -13751,7 +14037,10 @@ function _renderSaveBadge(){
   if(!dt||!_sectionCode){if(el)el.remove();return}
   if(!el){
     el=document.createElement('button');el.id='saveBadge';el.className='save-badge';
-    el.onclick=function(){flushSave(true);showToast('⏳ Илгээж байна...',1600)};
+    el.onclick=function(){
+      runSendFly(async()=>(await flushSave(true))===true)
+        .then(()=>{if(_dirtyAt())showToast('Илгээж чадсангүй — сүлжээгээ шалгана уу',2400)})
+    };
     document.body.appendChild(el)
   }
   const mins=Math.floor((Date.now()-dt)/60000);
@@ -13774,13 +14063,12 @@ function flushSave(force){
     const _lim=_lastPartMax;   // хязгаар хэсэг тус бүрд хамаарна
     if(_lim>DOC_LIMIT){_tooBig(_lim);return false}
     _localWriting=true;
-    _pushCloud(_p)
+    return _pushCloud(_p)
       .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';
-        setTimeout(()=>{_localWriting=false},600)})
+        setTimeout(()=>{_localWriting=false},600);return true})
       .catch(e=>{console.error('Flush err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
-        if(typeof _syncTabs==='function')_syncTabs()});
-    return true
+        if(typeof _syncTabs==='function')_syncTabs();return false})
   }catch(e){_localWriting=false;return false}
 }
 // Апп ар тал руу орох / хаагдахад амжиж илгээнэ
@@ -13873,7 +14161,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·177';
+const APP_BUILD='2026.10.11·178';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
