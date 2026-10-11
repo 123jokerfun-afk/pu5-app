@@ -178,12 +178,14 @@ html,body{height:100%;overflow:hidden;
   /* Утасны апп — доош шудрахад дахин ачаалахгүй, хажуу тийш ухрахгүй */
   overscroll-behavior:none;overscroll-behavior-y:none;
   touch-action:pan-x pan-y;
+  /* Өмнө нь 4 өөр өнгийн (шар+хөх+ягаан+улбар шар) туяа хольсон байсан
+     нь дэлгэцийн доод хэсэгт ягаан будаг мэт, ерөнхийдөө "цэвэргүй"
+     цайвар дэвсгэр үүсгэдэг байв (хэрэглэгчийн дэлгэцийн зурагнаас
+     илэрсэн — харанхуй загварын "AURORA GLASS"-тай адил шалтгаан).
+     Одоо ганц зөөлөн алтлаг туяа, цайвар саармаг суурин дээр. */
   background:
-    radial-gradient(ellipse 75% 50% at 12% 3%,rgba(255,210,63,.4),transparent 58%),
-    radial-gradient(ellipse 65% 45% at 92% 12%,rgba(62,198,255,.32),transparent 55%),
-    radial-gradient(ellipse 55% 40% at 75% 60%,rgba(255,77,157,.14),transparent 55%),
-    radial-gradient(ellipse 85% 55% at 40% 108%,rgba(255,142,60,.25),transparent 60%),
-    linear-gradient(168deg,#FFFAF0 0%,#FFF4DC 45%,#F0FAFF 100%);
+    radial-gradient(ellipse 70% 45% at 14% 0%,rgba(255,196,70,.22),transparent 60%),
+    linear-gradient(168deg,#FDFBF5 0%,#FBF6EA 48%,#F8F7F4 100%);
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
   color:var(--ink);-webkit-font-smoothing:antialiased}
 button{font-family:inherit}
@@ -13473,7 +13475,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·174';
+const APP_BUILD='2026.10.11·175';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
