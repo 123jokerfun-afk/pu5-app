@@ -996,7 +996,10 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
    тестүүд (swhome.js г.м.) үргэлжлүүлэн олно, зөвхөн хэмжээ энд
    өөрчлөгдөнө. */
 .pill-item .folder-name{font-size:11.5px;font-weight:800;letter-spacing:-.1px;line-height:1.2;color:inherit}
-.pill-item .folder-meta{font-size:9.5px;color:var(--ink3);font-weight:600;line-height:1.25;margin-top:0}
+/* letter-spacing бага зэрэг нэмж өгсөн нь зарим Android системийн
+   үсгэнд 9.5px-ийн жижиг хэмжээнд зарим кирилл үсгийн хослол
+   (жишээ нь "льсн") давхцаж, уншигдахгүй болдог асуудлыг багасгана */
+.pill-item .folder-meta{font-size:9.5px;color:var(--ink3);font-weight:600;line-height:1.25;margin-top:0;letter-spacing:.15px}
 .pill-indicator{position:absolute;z-index:1;border-radius:16px;
   border:1px solid transparent;
   transition:left .5s cubic-bezier(.34,1.35,.64,1),top .5s cubic-bezier(.34,1.35,.64,1),
@@ -13437,7 +13440,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·172';
+const APP_BUILD='2026.10.11·173';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
