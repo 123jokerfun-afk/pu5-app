@@ -105,7 +105,7 @@ ok('Эцэст нь өртөөнд өөрийн зам',
 /* Гарч, дахин нэвтрэхэд заагч цэвэрлэгдэнэ */
 const out2=await page.evaluate(async()=>{
   goBrHome();await new Promise(r=>setTimeout(r,240));
-  doLogout();await new Promise(r=>setTimeout(r,420));
+  _doLogoutCore();await new Promise(r=>setTimeout(r,420));   // doLogout()-ийн цонх/анимацигүйгээр шууд гарна
   return{f:activeFolderId,s:swFolderId,hub:_hubBr,
     keep:JSON.stringify([_keepDer,_keepBr])}});
 ok('Гарахад хоёр талын заагч тэглэгдэнэ',

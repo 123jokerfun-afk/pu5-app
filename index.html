@@ -507,65 +507,66 @@ body.rec-mode #dlFly{bottom:calc(var(--sab) + 178px)}
 body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 
 /* ══════════════════════════════════════════════════════════════
-   ГАРАХ ҮЗЭГДЭЛ — хаалгаар гарч, унаж алга болно (CSS-driven, цэвэр
-   transition/custom-property, SB_* тайзны системгүй). Санаа:
-   uulzwar_zai сиб апп. appConfirm("Тийм") дарсны дараа дэлгэц
-   бүхэлдээ халхалсан шилжилтийн дэлгэц дээр тоглоно.
-   ══════════════════════════════════════════════════════════════ */
-#logoutFly{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);
-  align-items:center;justify-content:center}
-#logoutFly.on{display:flex}
-#logoutFly .lo-stage{position:relative;width:336px;height:134px;
+   ГАРАХ ЦОНХ — "Тийм, гарах" товч өөрөө жижиг тайз, хаалгаар гарч
+   унаж алга болдог хүний дүрстэй (CSS-driven, цэвэр transition/
+   custom-property, SB_* тайзны системгүй). Санаа: uulzwar_zai сиб
+   апп — тэр аппын бодит бичлэгээр баталгаажуулснаар, баталгаажуулах
+   ЦОНХ нь үзэгдлийн ТУРШИД нээлттэй үлддэг, бүтэн дэлгэцийг
+   халхлахгүй болохыг тодруулав (v183, v181/v182-ын бүтэн дэлгэцийн
+   халхлагчийг сольсон).
+   .mo-person нь унах мөчдөө document.body руу шилждэг (доорх JS) —
+   #logoutModal-ын .sheet нь overflow-y:auto тул дотроо тасдах
+   байсан. Тиймээс доорх дүрсний class-уудыг (.mo-falling/.mo-fall-go)
+   DOM-ийн байршлаас ХАМААРАЛГҮЙгээр зохиосон. */
+.lo-btn{display:flex;align-items:center;justify-content:center;gap:8px}
+.lo-btn:disabled{opacity:.72;cursor:default}
+.lo-stage{position:relative;width:50px;height:40px;flex:none;
   --door-t:rotateY(18deg);--door-d:.2s;--door-delay:0s;
   --person-t:none;--person-d:.1s;--body-d:.1s;
   --arm1:none;--arm2:none;--leg1:none;--leg2:none}
-#logoutFly .mo-text{position:absolute;top:-44px;left:50%;transform:translateX(-50%);
-  white-space:nowrap;font-size:17px;font-weight:800;color:var(--ink2)}
-#logoutFly svg{display:block;position:absolute}
-/* Жижиг (34px) хэмжээгээрээ бүтэн дэлгэцийн халхлагч дээр гээгдсэн
-   шиг харагдаж байсан тул 2.4x томруулав — товч дотор биш, бүтэн
-   дэлгэц дээр тоглодог болсон тул */
-#logoutFly .mo-frame{width:82px;z-index:3;right:38px;bottom:26px;fill:#aeb7c2}
-#logoutFly .mo-flash{opacity:0;fill:#e8a33d}
-#logoutFly .mo-door{width:82px;z-index:5;right:38px;bottom:26px;transform-origin:100% 50%;
-  transform:perspective(260px) var(--door-t);transition:var(--door-d) ease var(--door-delay)}
-#logoutFly .mo-door path{fill:#39424e;stroke:#39424e;stroke-width:4}
-#logoutFly .mo-door circle{fill:#aeb7c2}
-#logoutFly .mo-person{z-index:4;width:74px;right:72px;bottom:34px;fill:#2b333c;
+.lo-stage svg{display:block;position:absolute}
+.mo-frame{width:34px;z-index:3;right:3px;bottom:3px;fill:#aeb7c2}
+.mo-flash{opacity:0;fill:#e8a33d}
+.mo-door{width:34px;z-index:5;right:3px;bottom:3px;transform-origin:100% 50%;
+  transform:perspective(110px) var(--door-t);transition:var(--door-d) ease var(--door-delay)}
+.mo-door path{fill:#39424e;stroke:#39424e;stroke-width:4}
+.mo-door circle{fill:#aeb7c2}
+.mo-person{z-index:4;width:31px;right:17px;bottom:6px;fill:#2b333c;
   transform:var(--person-t);transition:var(--person-d) cubic-bezier(.2,.1,.8,.9)}
-#logoutFly .mo-person .a1,#logoutFly .mo-person .a2,
-#logoutFly .mo-person .l1,#logoutFly .mo-person .l2{transition:var(--body-d) ease-in-out}
-#logoutFly .mo-person .a1{transform:var(--arm1);transform-origin:52% 45%}
-#logoutFly .mo-person .a2{transform:var(--arm2);transform-origin:47% 43%}
-#logoutFly .mo-person .l1{transform:var(--leg1);transform-origin:47% 64.5%}
-#logoutFly .mo-person .l2{transform:var(--leg2);transform-origin:43% 63%}
+.mo-person .a1,.mo-person .a2,
+.mo-person .l1,.mo-person .l2{transition:var(--body-d) ease-in-out}
+.mo-person .a1{transform:var(--arm1);transform-origin:52% 45%}
+.mo-person .a2{transform:var(--arm2);transform-origin:47% 43%}
+.mo-person .l1{transform:var(--leg1);transform-origin:47% 64.5%}
+.mo-person .l2{transform:var(--leg2);transform-origin:43% 63%}
 /* 1. Хаалга нээгдэж, хүн алхана */
-#logoutFly .lo-stage.clicked{--door-t:rotateY(45deg);
+.lo-stage.clicked{--door-t:rotateY(45deg);
   --person-t:translateX(24px);--person-d:.3s;--body-d:.3s;
   --arm1:translateX(-4px) translateY(-2px) rotate(120deg);
   --arm2:translateX(4px) rotate(-110deg);
   --leg1:translateX(-3px) rotate(80deg);
   --leg2:translateX(4px) rotate(-60deg)}
 /* 2. Хаалга хаагдана */
-#logoutFly .lo-stage.anim1{--door-t:none;--door-d:.1s;--door-delay:.25s;--person-d:.4s;
+.lo-stage.anim1{--door-t:none;--door-d:.1s;--door-delay:.25s;--person-d:.4s;
   --arm1:rotate(60deg);--arm2:rotate(-45deg);--leg1:rotate(-5deg);--leg2:rotate(10deg)}
 /* 3. Доргиж, хүн унана */
-#logoutFly .lo-stage.anim2{animation:moShake .2s linear;--person-d:1.1s;--body-d:.4s;
+.lo-stage.anim2{animation:moShake .2s linear;--person-d:1.1s;--body-d:.4s;
   --arm1:rotate(-60deg);--arm2:rotate(30deg);--leg1:rotate(-30deg);--leg2:rotate(20deg)}
 @keyframes moShake{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(2deg)}}
-#logoutFly .lo-stage.anim2 .mo-flash{animation:moFlash .3s linear}
+.lo-stage.anim2 .mo-flash{animation:moFlash .3s linear}
 @keyframes moFlash{0%{opacity:1}100%{opacity:0}}
-/* Унах үед fixed — OVERLAY-ийн хилээс гадуур бүх дэлгэцээр унана */
-#logoutFly .lo-stage.anim2 .mo-person{position:fixed;z-index:1;right:auto;bottom:auto;
+/* Унах үед document.body-д шилжиж fixed болно (доорх JS) — энэ
+   нь #logoutModal-аас ХАМААРАЛГҮЙ тул .sheet-ийн overflow таслахгүй */
+.mo-person.mo-falling{position:fixed;z-index:9999;right:auto;bottom:auto;
   left:var(--fall-x);top:var(--fall-y);
   animation:moSpin 1.1s infinite linear;
   transition:top 1.1s cubic-bezier(.7,.1,1,1) .05s}
-#logoutFly .lo-stage.anim2.falling .mo-person{top:var(--fall-end)}
+.mo-person.mo-falling.mo-fall-go{top:var(--fall-end)}
 @keyframes moSpin{from{transform:rotate(0deg) scale(1.25)}to{transform:rotate(359deg) scale(1.25)}}
 /* 4. Гарлаа */
-#logoutFly .lo-stage.logged-out .mo-door,#logoutFly .lo-stage.logged-out .mo-frame{
+.lo-stage.logged-out .mo-door,.lo-stage.logged-out .mo-frame{
   --door-d:.1s;--door-delay:0s;transform:translateX(10px) scale(0)}
-@media (prefers-reduced-motion: reduce){#logoutFly .lo-stage,#logoutFly .lo-stage *{animation:none !important;transition:none !important}}
+@media (prefers-reduced-motion: reduce){.lo-stage,.lo-stage *{animation:none !important;transition:none !important}}
 
 /* Устгах товч — удаан дарж идэвхжих хүртэл бүдэг, идэвхгүй харагдана */
 .lp-del .folder-del{opacity:.28;filter:grayscale(1);transition:opacity .18s,filter .18s,transform .18s}
@@ -1748,25 +1749,36 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <div id="sendFly" aria-hidden="true"></div>
 <div id="delFly" aria-hidden="true"></div>
 <div id="dlFly" aria-hidden="true"></div>
-<div id="logoutFly" aria-hidden="true">
-  <div class="lo-stage">
-    <span class="mo-text">Гарч байна…</span>
-    <svg class="mo-frame" viewBox="0 0 100 100" aria-hidden="true">
-      <path d="M93.4 86.3H58.6c-1.9 0-3.4-1.5-3.4-3.4V17.1c0-1.9 1.5-3.4 3.4-3.4h34.8c1.9 0 3.4 1.5 3.4 3.4v65.8c0 1.9-1.5 3.4-3.4 3.4z"/>
-      <path class="mo-flash" d="M40.5 43.7L26.6 31.4l-2.5 6.7zM41.9 50.4l-19.5-4-1.4 6.3zM40 57.4l-17.7 3.9 3.9 5.7z"/>
-    </svg>
-    <svg class="mo-door" viewBox="0 0 100 100" aria-hidden="true">
-      <path d="M93.4 86.3H58.6c-1.9 0-3.4-1.5-3.4-3.4V17.1c0-1.9 1.5-3.4 3.4-3.4h34.8c1.9 0 3.4 1.5 3.4 3.4v65.8c0 1.9-1.5 3.4-3.4 3.4z"/>
-      <circle cx="66" cy="50" r="3.7"/>
-    </svg>
-    <svg class="mo-person" viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="52.1" cy="32.4" r="6.4"/>
-      <path d="M50.7 62.8c-1.2 2.5-3.6 5-7.2 4-3.2-.9-4.9-3.5-4-7.8.7-3.4 3.1-13.8 4.1-15.8 1.7-3.4 1.6-4.6 7-3.7 4.3.7 4.6 2.5 4.3 5.4-.4 3.7-2.8 15.1-4.2 17.9z"/>
-      <g class="a1"><path d="M55.5 56.5l-6-9.5c-1-1.5-.6-3.5.9-4.4 1.5-1 3.7-1.1 4.6.4l6.1 10c1 1.5.3 3.5-1.1 4.4-1.5.9-3.5.5-4.5-.9z"/><path d="M69.4 59.9L58.1 58c-1.7-.3-2.9-1.9-2.6-3.7.3-1.7 1.9-2.9 3.7-2.6l11.4 1.9c1.7.3 2.9 1.9 2.6 3.7-.4 1.7-2 2.9-3.8 2.6z"/></g>
-      <g class="a2"><path d="M34.2 43.6L45 40.3c1.7-.6 3.5.3 4 2 .6 1.7-.3 4-2 4.5l-10.8 2.8c-1.7.6-3.5-.3-4-2-.6-1.6.3-3.4 2-4z"/><path d="M27.1 56.2L32 45.7c.7-1.6 2.6-2.3 4.2-1.6 1.6.7 2.3 2.6 1.6 4.2L33 58.8c-.7 1.6-2.6 2.3-4.2 1.6-1.7-.7-2.4-2.6-1.7-4.2z"/></g>
-      <g class="l1"><path d="M52.1 73.2s-7-5.7-7.9-6.5c-.9-.9-1.2-3.5-.1-4.9 1.1-1.4 3.8-1.9 5.2-.9l7.9 7c1.4 1.1 1.7 3.5.7 4.9-1.1 1.4-4.4 1.5-5.8.4z"/><path d="M52.6 84.4l-1-12.8c-.1-1.9 1.5-3.6 3.5-3.7 2-.1 3.7 1.4 3.8 3.4l1 12.8c.1 1.9-1.5 3.6-3.5 3.7-2 0-3.7-1.5-3.8-3.4z"/></g>
-      <g class="l2"><path d="M37.8 72.7s1.3-10.2 1.6-11.4 2.4-2.8 4.1-2.6c1.7.2 3.6 2.3 3.4 4l-1.8 11.1c-.2 1.7-1.7 3.3-3.4 3.1-1.8-.2-4.1-2.4-3.9-4.2z"/><path d="M29.5 82.3l9.6-10.9c1.3-1.4 3.6-1.5 5.1-.1 1.5 1.4.4 4.9-.9 6.3l-8.5 9.6c-1.3 1.4-3.6 1.5-5.1.1-1.4-1.3-1.5-3.5-.2-5z"/></g>
-    </svg>
+<div class="overlay" id="logoutModal" style="z-index:600;align-items:center;justify-content:center">
+  <div class="sheet" style="border-radius:26px;width:calc(100% - 48px);max-width:380px">
+    <div class="sheet-inner" style="padding:26px 22px 22px">
+      <div class="sheet-title" style="margin-bottom:6px">Гарах уу?</div>
+      <div style="font-size:14px;color:var(--ink3);line-height:1.5">Дахин ажиллахын тулд хэрэглэгчийн код, нууц үгээ дахин оруулах шаардлагатай.</div>
+      <div class="modal-btns">
+        <button class="btn-cancel" id="logoutNoBtn">Үгүй</button>
+        <button class="btn-ok lo-btn" id="logoutYesBtn">
+          <span class="lo-stage" aria-hidden="true">
+            <svg class="mo-frame" viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M93.4 86.3H58.6c-1.9 0-3.4-1.5-3.4-3.4V17.1c0-1.9 1.5-3.4 3.4-3.4h34.8c1.9 0 3.4 1.5 3.4 3.4v65.8c0 1.9-1.5 3.4-3.4 3.4z"/>
+              <path class="mo-flash" d="M40.5 43.7L26.6 31.4l-2.5 6.7zM41.9 50.4l-19.5-4-1.4 6.3zM40 57.4l-17.7 3.9 3.9 5.7z"/>
+            </svg>
+            <svg class="mo-door" viewBox="0 0 100 100" aria-hidden="true">
+              <path d="M93.4 86.3H58.6c-1.9 0-3.4-1.5-3.4-3.4V17.1c0-1.9 1.5-3.4 3.4-3.4h34.8c1.9 0 3.4 1.5 3.4 3.4v65.8c0 1.9-1.5 3.4-3.4 3.4z"/>
+              <circle cx="66" cy="50" r="3.7"/>
+            </svg>
+            <svg class="mo-person" viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="52.1" cy="32.4" r="6.4"/>
+              <path d="M50.7 62.8c-1.2 2.5-3.6 5-7.2 4-3.2-.9-4.9-3.5-4-7.8.7-3.4 3.1-13.8 4.1-15.8 1.7-3.4 1.6-4.6 7-3.7 4.3.7 4.6 2.5 4.3 5.4-.4 3.7-2.8 15.1-4.2 17.9z"/>
+              <g class="a1"><path d="M55.5 56.5l-6-9.5c-1-1.5-.6-3.5.9-4.4 1.5-1 3.7-1.1 4.6.4l6.1 10c1 1.5.3 3.5-1.1 4.4-1.5.9-3.5.5-4.5-.9z"/><path d="M69.4 59.9L58.1 58c-1.7-.3-2.9-1.9-2.6-3.7.3-1.7 1.9-2.9 3.7-2.6l11.4 1.9c1.7.3 2.9 1.9 2.6 3.7-.4 1.7-2 2.9-3.8 2.6z"/></g>
+              <g class="a2"><path d="M34.2 43.6L45 40.3c1.7-.6 3.5.3 4 2 .6 1.7-.3 4-2 4.5l-10.8 2.8c-1.7.6-3.5-.3-4-2-.6-1.6.3-3.4 2-4z"/><path d="M27.1 56.2L32 45.7c.7-1.6 2.6-2.3 4.2-1.6 1.6.7 2.3 2.6 1.6 4.2L33 58.8c-.7 1.6-2.6 2.3-4.2 1.6-1.7-.7-2.4-2.6-1.7-4.2z"/></g>
+              <g class="l1"><path d="M52.1 73.2s-7-5.7-7.9-6.5c-.9-.9-1.2-3.5-.1-4.9 1.1-1.4 3.8-1.9 5.2-.9l7.9 7c1.4 1.1 1.7 3.5.7 4.9-1.1 1.4-4.4 1.5-5.8.4z"/><path d="M52.6 84.4l-1-12.8c-.1-1.9 1.5-3.6 3.5-3.7 2-.1 3.7 1.4 3.8 3.4l1 12.8c.1 1.9-1.5 3.6-3.5 3.7-2 0-3.7-1.5-3.8-3.4z"/></g>
+              <g class="l2"><path d="M37.8 72.7s1.3-10.2 1.6-11.4 2.4-2.8 4.1-2.6c1.7.2 3.6 2.3 3.4 4l-1.8 11.1c-.2 1.7-1.7 3.3-3.4 3.1-1.8-.2-4.1-2.4-3.9-4.2z"/><path d="M29.5 82.3l9.6-10.9c1.3-1.4 3.6-1.5 5.1-.1 1.5 1.4.4 4.9-.9 6.3l-8.5 9.6c-1.3 1.4-3.6 1.5-5.1.1-1.4-1.3-1.5-3.5-.2-5z"/></g>
+            </svg>
+          </span>
+          <span class="lo-label">Тийм, гарах</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 <!-- ══ ДООД ТАБ — үндсэн шилжилт ══ -->
@@ -4111,7 +4123,7 @@ function dismissOverlay(ov){
   else closeModal(ov.id)
 }
 // Баталгаажуулах цонх бол санамсаргүй хаагдаж болохгүй — шийдвэр шаардана
-const _NO_DISMISS={appConfirmModal:1};
+const _NO_DISMISS={appConfirmModal:1,logoutModal:1};
 function initSheetGestures(){
   document.querySelectorAll('.overlay').forEach(ov=>{
     if(ov._gest||_NO_DISMISS[ov.id])return;
@@ -9679,43 +9691,78 @@ function _importLocalData(localDB){
   }catch(e){showToast('Алдаа: '+e.message)}
 }
 
-/* Хаалгаар гарч, унаж алга болох үзэгдэл. Бодит гарах логикийг
-   (state цэвэрлэлт, showView) ХОЙШЛУУЛАХГҮЙН тул ар талд (await-гүй)
-   тоглуулдаг — зөвхөн ВИЗУАЛ дэлгэц, доор нь жинхэнэ гарах аль хэдийн
-   шууд хийгдсэн байна. Санаа: uulzwar_zai сиб апп. */
-function playLogoutAnim(){
-  const el=document.getElementById('logoutFly');
-  const stage=el&&el.querySelector('.lo-stage');
-  const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!el||!stage||calm)return;
-  el.classList.add('on');
-  const r=stage.querySelector('.mo-person').getBoundingClientRect();
-  stage.style.setProperty('--fall-x',r.left+'px');
-  stage.style.setProperty('--fall-y',r.top+'px');
-  stage.style.setProperty('--fall-end',(window.innerHeight+120)+'px');
-  stage.classList.add('clicked');                      // 1. хаалга нээгдэж, хүн алхана
-  setTimeout(()=>stage.classList.add('anim1'),300);     // 2. хаалга хаагдана
-  setTimeout(()=>{
-    stage.classList.add('anim2');                       // 3. доргиж, хүн унана
-    requestAnimationFrame(()=>requestAnimationFrame(()=>stage.classList.add('falling')))
-  },900);
-  setTimeout(()=>{
-    stage.classList.add('logged-out');                  // 4. гарлаа
-    el.querySelector('.mo-text').textContent='Баяртай!';
+/* Товчийг анхны байдалд нь буцаана — дараагийн удаа нээгдэхдээ
+   хуучин "Гарлаа"/унасан төлөвөө үлдээхгүйн тул doLogout()-ийн
+   эхэнд ХОЖИМ тохиолдож болзошгүй тасалдлаас сэргийлж дахин дуудна. */
+function _resetLogoutStage(btn){
+  const stage=btn.querySelector('.lo-stage');
+  // Унасны дараа document.body-д байж болох тул stage-аас ХАЙХГҮЙ
+  const person=document.querySelector('.mo-person');
+  stage.className='lo-stage';
+  if(person){
+    // svg element дээр .className= шууд оноовол ажиллахгүй (SVGAnimatedString) —
+    // .setAttribute-аар class-ийг нь бодитоор цэвэрлэнэ
+    person.setAttribute('class','mo-person');
+    person.removeAttribute('style');
+    if(person.parentNode!==stage)stage.appendChild(person)  // унасны дараа буцаана
+  }
+  btn.querySelector('.lo-label').textContent='Тийм, гарах'
+}
+/* "Тийм, гарах" товч дотроо хаалгаар гарч, унаж алга болох үзэгдэл.
+   Цонх өөрөө үзэгдлийн ТУРШИД нээлттэй үлдэнэ — зөвхөн дуусаад
+   doLogout() хаана. Санаа: uulzwar_zai сиб апп (бодит бичлэгээр
+   баталгаажуулсан). */
+function playLogoutAnim(btn){
+  return new Promise(resolve=>{
+    const calm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(calm){resolve();return}
+    const stage=btn.querySelector('.lo-stage');
+    const label=btn.querySelector('.lo-label');
+    const person=stage.querySelector('.mo-person');
+    const r=person.getBoundingClientRect();
+    person.style.setProperty('--fall-x',r.left+'px');
+    person.style.setProperty('--fall-y',r.top+'px');
+    person.style.setProperty('--fall-end',(window.innerHeight+120)+'px');
+    stage.classList.add('clicked');                      // 1. хаалга нээгдэж, хүн алхана
+    setTimeout(()=>stage.classList.add('anim1'),300);     // 2. хаалга хаагдана
     setTimeout(()=>{
-      el.classList.remove('on');
-      stage.className='lo-stage';
-      stage.style.removeProperty('--fall-x');
-      stage.style.removeProperty('--fall-y');
-      stage.style.removeProperty('--fall-end');
-      el.querySelector('.mo-text').textContent='Гарч байна…'
-    },420)
-  },2100)
+      stage.classList.add('anim2');                       // 3. доргиж, хүн унана
+      // .sheet нь overflow-y:auto тул дотор нь унавал тасдагдана —
+      // body руу шилжүүлээд бүх дэлгэцээр чөлөөтэй унагана
+      document.body.appendChild(person);
+      person.classList.add('mo-falling');
+      requestAnimationFrame(()=>requestAnimationFrame(()=>person.classList.add('mo-fall-go')))
+    },900);
+    setTimeout(()=>{
+      stage.classList.add('logged-out');                  // 4. гарлаа
+      label.textContent='Гарлаа';
+      setTimeout(()=>{_resetLogoutStage(btn);resolve()},420)
+    },2100)
+  })
 }
 async function doLogout(){
+  const yesBtn=document.getElementById('logoutYesBtn');
+  const noBtn=document.getElementById('logoutNoBtn');
+  _resetLogoutStage(yesBtn);
+  yesBtn.disabled=false;noBtn.disabled=false;
+  openModal('logoutModal');
   // Санамсаргүй дарахад ажил тасалддаг байсан тул баталгаажуулна
-  if(!await appConfirm('Аппаас гарах уу?','Тийм','Үгүй'))return;
-  playLogoutAnim();
+  const go=await new Promise(resolve=>{
+    const done=v=>{yesBtn.onclick=null;noBtn.onclick=null;resolve(v)};
+    yesBtn.onclick=()=>done(true);
+    noBtn.onclick=()=>done(false)
+  });
+  if(!go){closeModal('logoutModal');return}
+  yesBtn.disabled=true;noBtn.disabled=true;
+  await playLogoutAnim(yesBtn);     // цонх ҮЗЭГДЭЛ дуустал нээлттэй хэвээр
+  yesBtn.disabled=false;noBtn.disabled=false;
+  closeModal('logoutModal');
+  _doLogoutCore()
+}
+/* Бодит гарах логик (state цэвэрлэлт, showView) — цонх/анимацигүйгээр.
+   Тестүүд (walk.js, hub.js, e2e.js гэх мэт) хурдан цэвэрлэгдсэн
+   байдлыг шалгахдаа үүнийг шууд дуудна, бүтэн UX-ийг (doLogout) биш. */
+function _doLogoutCore(){
   _autoTry=99;clearTimeout(_autoTimer);
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
   if(fbAuth)fbAuth.signOut().catch(()=>{});
@@ -13151,6 +13198,9 @@ async function exportSwForms(){
 }
 async function _exportSwFormsCore(){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
+  // exportSwForms()-ийн ts нь энд ХАРАГДАХГҮЙ (өөр функц) тул дахин бодно —
+  // swAllTurnouts() хямд, цэвэр тооцоолол тул 2 дахин дуудахад зардалгүй.
+  const ts=swAllTurnouts().filter(t=>(t.it||'').length);
 
   const f=swFolder()||{};
   const r=DB.rpt||{},td=mnToday();
@@ -14507,7 +14557,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·182';
+const APP_BUILD='2026.10.11·183';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
