@@ -4666,6 +4666,25 @@ function addKm(){
 }
 
 // ══════════════════════════════════════════════
+// РАМ ЗАМЫН ДЭР — УЛИРЛААР ДЭР↔СУМ ПАСПОРТ ХОСЛУУЛАХ
+//
+// v188-аас хойш идэвхтэй (трэш биш) паспорт season+year-ээр өвөрмөц
+// тул дэр паспорт бүрт яг 0 эсвэл 1 "хос" сумын паспорт тодорхой
+// олдоно. Рам замын дэр нь физикээр сумын дэргэд байдаг ч үзлэгийн
+// мөчлөгөөрөө (улирал) дэрийн паспорттай хамт явдаг тул дараалсан
+// цэг/сольсон/төлөвлөгөөг ТЭР ХОСДОО харуулна — бусад улирлын сумын
+// паспортод хамаарахгүй (хэрэглэгчийн мэдээлсэн зарчим).
+// ══════════════════════════════════════════════
+function swFolderBySeasonOf(derFolder){
+  if(!derFolder)return null;
+  return (DB.sw||[]).find(f=>!f.trashedAt&&
+    String(f.season||'')===String(derFolder.season||'')&&
+    String(f.year||'')===String(derFolder.year||''))||null
+}
+function activeSwPairFolder(){
+  return swFolderBySeasonOf((DB.folders||[]).find(f=>f.id===activeFolderId))
+}
+// ══════════════════════════════════════════════
 // СОЛИГДСОН ДЭР — тайлан
 // ══════════════════════════════════════════════
 // Идэвхтэй паспортын бүх зам/үеийг тойрч, сольсон гэж тэмдэглэсэн дэрүүдийг цуглуулна
@@ -4686,6 +4705,20 @@ function collectRepl(){
     rows.sort((a,b)=>a.sec===b.sec?a.idx-b.idx:String(a.sec).localeCompare(String(b.sec),'mn'));
     if(rows.length)out.push({num:t.num,name:trackLabel(t),rows})
   });
+  // Идэвхтэй дэр паспорттай ХОС (season+year таарсан) сумын паспортын
+  // рам замын дэрийн сольсон бүртгэл.
+  const swF=activeSwPairFolder();
+  if(swF)(swF.turnouts||[]).forEach(to=>{
+    const rp=to.slRepl||{},rows=[];
+    Object.keys(rp).forEach(k=>{
+      const i=parseInt(k,10),r=rp[k];
+      if(!r||!r.d)return;
+      rows.push({sec:'Рам зам төмөр',idx:i+1,date:r.d,type:r.t,
+                 mat:replMatOf(r),carve:!!r.s})
+    });
+    rows.sort((a,b)=>a.idx-b.idx);
+    if(rows.length)out.push({num:1000+to.num,name:`${to.num}-р сум · рам зам`,rows})
+  });
   return out
 }
 function replTotalCount(){
@@ -4699,6 +4732,16 @@ function collectConsec(){
   allTracks().forEach(t=>{
     const g=findConsecutiveBadForTrack(origSections(t));
     if(g.length)out.push({id:t.id,name:trackLabel(t),num:t.num,groups:g})
+  });
+  // Идэвхтэй дэр паспорттай ХОС (season+year таарсан) сумын паспортын
+  // рам замын дэрийн дараалсан цэг.
+  const swF=activeSwPairFolder();
+  if(swF)(swF.turnouts||[]).forEach(to=>{
+    const runs=swHeadRuns(to);if(!runs.length)return;
+    const groups=runs.map(r=>({len:r.length,crossSection:false,
+      items:r.map(i=>({secLabel:'Рам зам төмөр',posInSec:i+1}))}));
+    out.push({id:'sw:'+to.id,tid:to.id,sw:true,name:`${to.num}-р сум · рам зам`,
+      num:1000+to.num,groups})
   });
   return out
 }
@@ -4776,14 +4819,15 @@ function renderDerWrapFolder(){
   const wrap=document.getElementById('derWrapFolder');if(!wrap)return;
   if(!activeFolderId){wrap.innerHTML='';return}
   const f=getFolder(activeFolderId);if(!f){wrap.innerHTML='';return}
-  const inc=derIncCombinedN(f),out=derOutNFor(f),st=derStockFor(f),pn=planTotalCountFor(f.id);
+  const inc=derIncCombinedN(f),out=derOutNFor(f),st=derStockFor(f),
+    pt=planGrandTotalFor(f.id),pr=planReplacedCountFor(f.id);
   renderPillGroup('derWrapFolder',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
       meta:inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй',fn:`openDerIncForFolder('${f.id}')`},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',
       meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:`openDerOut('${f.id}')`},
     {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
-      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:`openPlanReport('${f.id}')`}
+      meta:pt?`${pt} төлөвлөсөн · ${pr} сольсон`:'Төлөвлөгөө алга',fn:`openPlanReport('${f.id}')`}
   ]);
 }
 
@@ -4860,22 +4904,38 @@ function collectPlan(){
     if(!rows.length)return;
     rows.sort((x,y)=>x.idx-y.idx);
     const a=swTally(tt),b2=Math.max(0,a.slBad-fix);
-    out.push({id:'sw:'+tt.id,sw:true,name:`${tt.num}-р сум`,n:pend,
+    const swF=_findSwFolderOfTurnout(tt.id);
+    out.push({id:'sw:'+tt.id,sw:true,swFid:swF?swF.id:null,name:`${tt.num}-р сум`,n:pend,
       secs:[{id:'sl',label:'Рам зам төмөр',rows,total:a.sl,bad:a.slBad,bad2:b2}],
       total:a.sl,bad:a.slBad,bad2:b2})
   });
   return out
 }
 function planTotalCount(){return collectPlan().reduce((s,t)=>s+t.n,0)}
-// Тухайн ГАНЦ паспортын өөрийнх нь + нийтлэг (Гол зам, сум) төлөвлөгөө.
+// Тухайн ГАНЦ паспортын өөрийнх нь + нийтлэг (Гол зам) төлөвлөгөө, мөн
+// season+year ХОС (swFolderBySeasonOf) сумын паспортын рам замын дэр.
 // collectPlan()-ыг дахин явуулахгүй, зөвхөн шүүнэ — давхар алхалт хийхгүй.
 function collectPlanFor(fid){
   const f=getFolder(fid);
   const own=new Set((f&&f.tracks||[]).map(t=>t.id));
   const mainIds=new Set(mainTracks().map(t=>t.id));
-  return collectPlan().filter(t=>t.sw||own.has(t.id)||mainIds.has(t.id))
+  const pairSw=swFolderBySeasonOf(f);
+  return collectPlan().filter(t=>
+    (t.sw?(pairSw&&t.swFid===pairSw.id):(own.has(t.id)||mainIds.has(t.id))))
 }
 function planTotalCountFor(fid){return collectPlanFor(fid).reduce((s,t)=>s+t.n,0)}
+// Төлөвлөсөн НИЙТ тоо (үлдсэн + аль хэдийн сольсон хоёуланг нь).
+// fid өгөхгүй бол БҮХ паспортоор (planTotalCountFor/collectPlanFor-той
+// ижил зарчим).
+function planGrandTotalFor(fid){
+  const d=fid?collectPlanFor(fid):collectPlan();
+  return d.reduce((s,t)=>s+t.secs.reduce((s2,sc)=>s2+sc.rows.length,0),0)
+}
+// Төлөвлөгөөнөөс АЛЬ ХЭДИЙН сольсон тоо.
+function planReplacedCountFor(fid){
+  const d=fid?collectPlanFor(fid):collectPlan();
+  return d.reduce((s,t)=>s+t.secs.reduce((s2,sc)=>s2+sc.rows.filter(r=>r.fulfilled).length,0),0)
+}
 // "12,0% → 8,0%" гэсэн хоёр хувийн шошго. Сольсноор буурахгүй бол
 // сумыг харуулахгүй — хэрэглэгч дэмий эргэлзэхгүй.
 function _pctPair(bad,bad2,total){
@@ -4935,7 +4995,7 @@ function renderPlanReport(fid){
   if(!data.length){
     body.innerHTML=_swEmpty('Төлөвлөсөн дэр алга — дэр дээрээ "Солихоор төлөвлөх" дарна');
     return}
-  let html='',N=0,W=0,T=0;
+  let html='',N=0,W=0,T=0,D=0;
   data.forEach(t=>{
     html+=`<div class="rp-track"><div class="rp-track-hd pl-hd">
       <span>${esc(t.name)}</span>${_pctPair(t.bad,t.bad2,t.total)}</div>`;
@@ -4944,7 +5004,7 @@ function renderPlanReport(fid){
       html+=`<div class="pl-ue"><span>${esc(sc.label)}</span>
         ${_pctPair(sc.bad,sc.bad2,sc.total)}</div>`;
       sc.rows.forEach(r=>{
-        if(!r.fulfilled){N++;if(r.m==='tbd')T++;else W++}
+        if(!r.fulfilled){N++;if(r.m==='tbd')T++;else W++}else D++;
         const go=r.sw?`jumpToSwPlan('${r.tid}',${r.pos})`
                     :`jumpToPlan('${t.id}','${r.secId}',${r.pos})`;
         // Үеийн нэр нь дээрх мөрөнд аль хэдийн байгаа тул давтахгүй.
@@ -4962,7 +5022,8 @@ function renderPlanReport(fid){
     });
     html+=`<div class="rp-sub"><span>${esc(t.name)}</span><span>${t.n} дэр</span></div></div>`
   });
-  html+=`<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N} дэр</span></div>`+
+  html+=`<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N+D} дэр</span></div>`+
+    `<div class="rp-sub" style="border:0"><span>✓ Сольсон ${D} дэр</span><span>Үлдсэн ${N} дэр</span></div>`+
     `<div class="rp-sub" style="border:0"><span>Модон ${W} дэр</span><span>ТБД ${T} дэр</span></div>`;
   body.innerHTML=html
 }
@@ -5067,14 +5128,15 @@ function derStockFor(f){return derIncCombinedN(f)-derOutNFor(f)}
 // БҮХ паспортыг хамарсан нэгдсэн тайлан руу нээгдэнэ (глобал хэвээр).
 function renderDerWrap(){
   const wrap=document.getElementById('derWrap');if(!wrap)return;
-  const inc=derIncN(),out=derOutNFor(null),st=derStockFor(null),pn=planTotalCount();
+  const inc=derIncN(),out=derOutNFor(null),st=derStockFor(null),
+    pt=planGrandTotalFor(),pr=planReplacedCountFor();
   renderPillGroup('derWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',
       meta:inc?`${inc} дэр · үлдэгдэл ${st}`:'Орлого бүртгээгүй',fn:'openDerInc()'},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',
       meta:out?`${out} дэр · сольсноор`:'Зарлага алга',fn:'openDerOut()'},
     {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
-      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:'openPlanReport()'}
+      meta:pt?`${pt} төлөвлөсөн · ${pr} сольсон`:'Төлөвлөгөө алга',fn:'openPlanReport()'}
   ]);
 }
 // null → Гол замын нийтлэг сан, эсвэл тухайн паспортын id — Орлого/Зарлага
@@ -5478,6 +5540,19 @@ function jumpToConsec(trackId,secId,pos){
   _fromConsec=true;                     // openTrack/openSection-ий дараа тавина
   showToast(`${trackLabel(t)} · ${sec.label} · #${pos}`,2200)
 }
+// collectConsec()-ийн рам замын дэрийн бүлгээс — jumpToSwPlan(tid,i)-тэй
+// ижил зарчим (swFolderId-г хэрэгтэй бол хослосон паспорт руу шилжүүлнэ).
+function jumpToConsecSw(tid,pos){
+  hap(8);closeModal('consecReportModal');
+  if(!swFolder()||!(swFolder().turnouts||[]).some(x=>x.id===tid)){
+    const f=_findSwFolderOfTurnout(tid);
+    if(f)swFolderId=f.id
+  }
+  swTurnoutId=tid;
+  const t=swTurnout();if(!t){showToast('Сум олдсонгүй');return}
+  showView('swRecView');renderSwRec(pos-1);
+  showToast(`Сум ${t.num} · рам зам #${pos}`,2200)
+}
 // Жагсаалт руу нь эргэж очно — шүүлтүүрийг нь хэвээр хадгална
 function backToConsec(){
   _fromConsec=false;
@@ -5513,8 +5588,10 @@ function renderConsecReport(){
       const bg=g.len>=5?'var(--dred-bg)':g.len===4?'var(--red-bg)':'var(--orange-bg)';
       const secs=[...new Set(g.items.map(i=>i.secLabel))];
       const first=g.items[0],last=g.items[g.items.length-1];
+      const jump=t.sw?`jumpToConsecSw('${t.tid}',${first.posInSec})`
+                      :`jumpToConsec('${t.id}','${first.secId}',${first.posInSec})`;
       rows+=`<div class="rp-row rp-jump" style="align-items:flex-start"
-        onclick="jumpToConsec('${t.id}','${first.secId}',${first.posInSec})">
+        onclick="${jump}">
         <span style="flex:1;min-width:0">
           <span style="font-weight:800;color:var(--ink2)">${esc(secs.join(' → '))}</span>
           <span style="display:block;font-size:10px;color:var(--ink3);font-weight:700;margin-top:2px">
@@ -8490,8 +8567,9 @@ function openAddFolder(br){
   updateFolderName();openModal('addFolderModal')
 }
 function updateFolderName(){
-  const sea=document.getElementById('afSeason').value;
   const yr=document.getElementById('afYear').value||new Date().getFullYear();
+  _guardSeasonSelect('afSeason',yr,DB.folders);
+  const sea=document.getElementById('afSeason').value;
   document.getElementById('afName').value=`${sea.charAt(0).toUpperCase()+sea.slice(1)} ${yr} паспорт`
 }
 /* Хурдан хоёр дарахад ДАВХАР үүсэхээс сэргийлнэ.
@@ -8507,12 +8585,43 @@ function _modalOpen(id){
   const m=document.getElementById(id);
   return !!(m&&m.classList.contains('open'))
 }
+/* Ижил он+улирлын хоёр дахь паспорт үүсгэхийг хориглоно. Хогийн санд
+   хийсэн паспортыг дахиж СЭРГЭЭДЭГГҮЙ болсон тул (зөвхөн Excel-ээр
+   архивлаад устгана — доорх ХОГИЙН САВ хэсгийг үз) идэвхтэй паспорт
+   үргэлж season+year-ээр өвөрмөц байх ёстой: рам замын дэрийг дэр↔сум
+   паспорт хооронд улирлаар зөв хослуулах (season-pairing) архитектур
+   үүн дээр тулгуурална — хос тодорхойгүй болбол алийг нь холбохоо
+   мэдэхгүй болно. */
+const SEASON_LBL={хавар:'Хавар',намар:'Намар',зун:'Зун',өвөл:'Өвөл'};
+function seasonYearTaken(list,season,year,excludeId){
+  return (list||[]).some(f=>f&&!f.trashedAt&&f.id!==excludeId&&
+    String(f.season||'')===String(season)&&String(f.year||'')===String(year))
+}
+// Тухайн онд аль хэдийн байгаа улирлыг сонголтоос идэвхгүй/нуугдсан
+// болгоно. Идэвхтэй сонголт дэндсэн бол анх чөлөөтэй рүү шилжүүлнэ.
+function _guardSeasonSelect(selId,year,list,excludeId){
+  const sel=document.getElementById(selId);if(!sel)return;
+  const cur=sel.value;let curTaken=false;
+  Array.from(sel.options).forEach(o=>{
+    const taken=!!year&&seasonYearTaken(list,o.value,year,excludeId);
+    o.disabled=taken;o.hidden=taken;
+    o.textContent=(SEASON_LBL[o.value]||o.value)+(taken?' — ашиглагдсан':'');
+    if(taken&&o.value===cur)curTaken=true
+  });
+  if(curTaken){
+    const free=Array.from(sel.options).find(o=>!o.disabled);
+    if(free)sel.value=free.value
+  }
+}
 function addFolder(){
   if(!_modalOpen('addFolderModal'))return;
   const name=(document.getElementById('afName').value||'').trim();
   if(!name){showToast('Нэр оруулна уу');return}
   const sea=document.getElementById('afSeason').value;
   const yr=document.getElementById('afYear').value||new Date().getFullYear()+'';
+  if(seasonYearTaken(DB.folders,sea,yr)){
+    showToast(`${yr} оны ${SEASON_LBL[sea]||sea}ын паспорт аль хэдийн бий`,2800);return
+  }
   const date=document.getElementById('afDate').value||new Date().toISOString().slice(0,10);
   const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[],sc:_sectionCode||''};
   const br=!!_brNew;
@@ -11591,14 +11700,15 @@ function _brRenderTracks(){
       </div></div>`}).join('')
     :'<div style="grid-column:span 2;text-align:center;padding:16px;color:var(--ink4);font-size:13px;font-weight:600">Зам нэмнэ үү</div>';
   // Хавтаснууд — өртөөнийхтэй ижил тайлангууд
-  const n=replTotalCount(),c=consecTotalCount(),pn=planTotalCountFor(open.id);
+  const n=replTotalCount(),c=consecTotalCount(),
+    pt=planGrandTotalFor(open.id),pr=planReplacedCountFor(open.id);
   renderPillGroup('brTrFolders',[
     {color:'var(--red)',bg:'var(--red-bg)',name:'Солигдсон дэр',
       meta:n?`Нийт ${n} дэр · сар сараар`:'Бүртгэл алга',fn:'openReplReport()'},
     {color:'var(--purple)',bg:'var(--purple-bg)',name:'Дараалсан цэг',
       meta:c?`${c} цэг · 3 ба түүнээс дээш`:'Дараалсан цэг олдсонгүй',fn:'openConsecReport()'},
     {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дэр',
-      meta:pn?`${pn} дэр · зам, үе, сумаар`:'Төлөвлөгөө алга',fn:`openPlanReport('${open.id}')`}
+      meta:pt?`${pt} төлөвлөсөн · ${pr} сольсон`:'Төлөвлөгөө алга',fn:`openPlanReport('${open.id}')`}
   ]);
   // Дэрийн агуулах — салбарын нээлттэй паспортын өөрийнх нь + нийтлэг
   // (Гол зам/сум) хэсэг, өртөөнийхтэй ижил зарчмаар.
@@ -11668,10 +11778,13 @@ function _brRenderSw(){
   ]);
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,mm=0;ks.forEach(L=>{n+=o[L];mm+=o[L]*L});return `${n} ш · ${swM(mm)} пог/м`};
+  const cnt=o=>Object.keys(o).reduce((s,L)=>s+o[L],0);
+  const pTot=cnt(swPlanBy());
   renderPillGroup('brSwWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',meta:sum(swIncBy())||'Орлого бүртгээгүй',fn:'openSwInc()'},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',meta:sum(swOutBy())||'Зарлага алга',fn:'openSwOut()'},
-    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',meta:sum(swPlanBy())||'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',
+      meta:pTot?`${pTot} ш төлөвлөсөн · ${cnt(swPlanReplacedBy())} ш сольсон`:'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
   ]);
 }
 /* Паспорт нээхэд ЭНД л үлдэнэ — өртөөний нүүр рүү үсрэхгүй */
@@ -11821,8 +11934,9 @@ function renderSwHome(){
 }
 // ── Паспорт нэмэх ──
 function updateSwFolderName(){
-  const s=document.getElementById('swfSeason').value;
   const y=document.getElementById('swfYear').value||new Date().getFullYear();
+  _guardSeasonSelect('swfSeason',y,DB.sw);
+  const s=document.getElementById('swfSeason').value;
   document.getElementById('swfName').value=`${s.charAt(0).toUpperCase()+s.slice(1)} ${y} сумын паспорт`
 }
 function openSwFolder(){
@@ -11839,9 +11953,14 @@ function addSwFolder(){
   if(!_modalOpen('swFolderModal'))return;
   const name=(document.getElementById('swfName').value||'').trim();
   if(!name){showToast('Нэр оруулна уу');return}
+  const sea=document.getElementById('swfSeason').value;
+  const yr=document.getElementById('swfYear').value||new Date().getFullYear()+'';
+  if(seasonYearTaken(DB.sw,sea,yr)){
+    showToast(`${yr} оны ${SEASON_LBL[sea]||sea}ын сумын паспорт аль хэдийн бий`,2800);return
+  }
   const f={id:'sf-'+uid(),name,
-    season:document.getElementById('swfSeason').value,
-    year:document.getElementById('swfYear').value||new Date().getFullYear()+'',
+    season:sea,
+    year:yr,
     date:document.getElementById('swfDate').value||new Date().toISOString().slice(0,10),
     sc:_sectionCode||'',turnouts:[]};
   if(_brNew)f.br=1;
@@ -12403,11 +12522,33 @@ function swOrigIt(to){
   Object.keys(rp).forEach(k=>{if(rp[k]&&rp[k].o&&it[+k])it[+k]='b'});
   return it.join('')
 }
+// swOrigIt()-той ижил логик, зөвхөн slRepl-ийг (рам замын дэр) МӨН
+// хамруулж сэргээнэ — дэр ба дүнзийг нэг дор "эх" төлөвт нь буцаана.
+// Экспорт (_exportSwPu5BookCore) болон swHeadRuns хоёул үүнийг ашиглана.
+function swFullOrigIt(to){
+  const it=(to.it||'').split('');
+  const apply=rp=>Object.keys(rp||{}).forEach(k=>{if(rp[k]&&rp[k].o&&it[+k])it[+k]='b'});
+  apply(to.slRepl);apply(to.dRepl);
+  return it.join('')
+}
 // 3 ба түүнээс дээш дараалсан тэнцэхгүй ДҮНЗ (эх төлөвөөр)
 function swRuns(to){
   const it=swOrigIt(to),head=to.head||0,out=[];
   let run=[];
   for(let i=head;i<it.length;i++){
+    if(it[i]==='b')run.push(i);
+    else{if(run.length>=3)out.push(run.slice());run=[]}
+  }
+  if(run.length>=3)out.push(run.slice());
+  return out
+}
+// swRuns(to)-той адил боловч ЭСРЭГ мужид (0..head, рам замын дэр
+// өөрөө — дүнз биш) ажиллана. swFullOrigIt ашигладаг тул солигдсон
+// рам-дэр ч дараалалдаа ХЭВЭЭР тооцогдоно.
+function swHeadRuns(to){
+  const it=swFullOrigIt(to),head=to.head||0,out=[];
+  let run=[];
+  for(let i=0;i<head;i++){
     if(it[i]==='b')run.push(i);
     else{if(run.length>=3)out.push(run.slice());run=[]}
   }
@@ -12422,8 +12563,10 @@ function swReplRows(to){
     return{i,no:i-head+1,d:e.d,nom:swSlot(to,i).len,real:e.L||swSlot(to,i).len}
   }).filter(x=>x.d).sort((a,b)=>a.no-b.no)
 }
-function swAllTurnouts(){
-  const f=swFolder();return f?(f.turnouts||[]).slice().sort((a,b)=>a.num-b.num):[]
+// Заавал дамжуулбал ТЭР паспортоор (идэвхтэй биш ч — жишээ нь хогийн
+// санд байгаа паспорт) бодно, үгүй бол идэвхтэйгээр нь (хуучин зан төлөв).
+function swAllTurnouts(f){
+  f=f||swFolder();return f?(f.turnouts||[]).slice().sort((a,b)=>a.num-b.num):[]
 }
 // Идэвхтэй сумын паспортоор хязгаарлагдахгүй — БҮХ паспортын сум.
 // Агуулахын тооцоо (зарлага/төлөвлөгөө) хэсгийн түвшинд ганц тул
@@ -12587,6 +12730,18 @@ function swPlanBy(f){
     Object.keys(pl).forEach(k=>{const L=+pl[k];if(L)o[L]=(o[L]||0)+1})});
   return o
 }
+// swPlanBy(f)-ээс АЛЬ ХЭДИЙН сольсон хэсэг (dRepl-ээр мэднэ) — ижил
+// бүтэц (урт → тоо), толгойн "сольсон" тоог харуулахад ашиглана.
+function swPlanReplacedBy(f){
+  f=f||swFolder();const o={};
+  ((f&&f.turnouts)||[]).forEach(t=>{
+    const pl=t.dPlan||{},rp=t.dRepl||{};
+    Object.keys(pl).forEach(k=>{
+      const L=+pl[k];if(!L)return;
+      if(rp[k]&&rp[k].d)o[L]=(o[L]||0)+1
+    })});
+  return o
+}
 // Үлдэгдэл − төлөвлөсөн. Засварлаж байгаа дүнзний ӨӨРИЙНХ нь төлөвлөгөөг
 // буцааж нэмнэ (эс тэгвэл өөрийнхөө уртыг дахин сонгож чадахгүй).
 function _swPlanFree(){
@@ -12691,7 +12846,7 @@ function openSwPlanRep(){
   if(!data.length){
     b.innerHTML=_swEmpty('Төлөвлөсөн дүнз алга — дүнз дээрээ "Солихоор төлөвлөх" дарна');
     openModal('swPlanRepModal');return}
-  let html='',by={},N=0,M=0;
+  let html='',by={},N=0,M=0,D=0,MD=0;
   data.forEach(t=>{
     html+=`<div class="rp-track"><div class="rp-track-hd pl-hd">
         <span>Сум ${t.num} · ${esc(t.mak)} · ${esc(t.mark)}</span>
@@ -12700,7 +12855,7 @@ function openSwPlanRep(){
          <span class="sw-c34">Төлөвлөсөн</span></div>`;
     let tn=0;
     t.rows.forEach(r=>{
-      if(!r.fulfilled){by[r.L]=(by[r.L]||0)+1;N++;M+=r.L;tn++}
+      if(!r.fulfilled){by[r.L]=(by[r.L]||0)+1;N++;M+=r.L;tn++}else{D++;MD+=r.L}
       html+=`<div class="sw-tr pl-row${r.fulfilled?' pl-done':''}" onclick="hap();swGotoPlan('${t.id}',${r.i})">
         <span class="sw-c1">#${r.no}</span>
         <span class="sw-c2">${swLen(r.nom)} м</span>
@@ -12719,7 +12874,8 @@ function openSwPlanRep(){
         <span class="sw-c2">${by[L]} ш</span>
         <span class="sw-c34">${swM(by[L]*L)} пог/м</span></div>`).join('')+
     `<div class="rp-sub"><span>${N} ш</span><span>${swM(M)} пог/м</span></div></div>`+
-    `<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N} ш · ${swM(M)} пог/м</span></div>`;
+    `<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N+D} ш · ${swM(M+MD)} пог/м</span></div>`+
+    `<div class="rp-sub" style="border:0"><span>✓ Сольсон ${D} ш</span><span>Үлдсэн ${N} ш</span></div>`;
   b.innerHTML=html;
   openModal('swPlanRepModal')
 }
@@ -13064,23 +13220,25 @@ function swRunBuckets(to){
 // Хамрах хүрээ: нээлттэй сумын паспорт (exportSwForms-той адил,
 // параметргүй — swFolder()-оор олдоно, branch/энгийн аль алинд ажиллана).
 // ══════════════════════════════════════════════
-async function exportSwPu5Book(btn){
-  const f=swFolder();
+// fid дамжуулбал ТЭР сумын паспортоор (нээлттэй эсэхээс үл хамаарч —
+// жишээ нь хогийн сангаас архивлаж татахад ашиглана), үгүй бол
+// идэвхтэй паспортоор.
+async function exportSwPu5Book(btn,fid){
+  const f=fid?(DB.sw||[]).find(x=>x.id===fid):swFolder();
   if(!f){showToast('Паспорт нээгээгүй байна',2600);return}
-  const ts=swAllTurnouts().filter(t=>(t.it||'').length);
+  const ts=swAllTurnouts(f).filter(t=>(t.it||'').length);
   if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
   if(!await appConfirm('Дүнзний ПУ-5 маягт татах уу?','Татах'))return;
-  await runDlFly(_exportSwPu5BookCore,btn)
+  await runDlFly(()=>_exportSwPu5BookCore(f),btn)
 }
 /* Цонх/анимацигүй бодит экспорт — exportSwPu5Book()-ийн баталгаажуулалтын
    ДАРАА, runDlFly-аар SB_DL-тэй зэрэгцэн ажиллана (exportSwForms/
-   _exportSwFormsCore-ийн адил зарчим). */
-async function _exportSwPu5BookCore(){
+   _exportSwFormsCore-ийн адил зарчим). fOverride өгвөл яг тэр
+   паспортоор бодно (хогийн сангаас архивлан татах зам). */
+async function _exportSwPu5BookCore(fOverride){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
-  // exportSwPu5Book()-ийн f/ts нь энд ХАРАГДАХГҮЙ (өөр функц) тул дахин бодно —
-  // swFolder()/swAllTurnouts() хямд, цэвэр тооцоолол тул 2 дахин дуудахад зардалгүй.
-  const f=swFolder()||{};
-  const ts=swAllTurnouts().filter(t=>(t.it||'').length);
+  const f=fOverride||swFolder()||{};
+  const ts=swAllTurnouts(f).filter(t=>(t.it||'').length);
 
   const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
   const W='FFFFFFFF';
@@ -13089,13 +13247,8 @@ async function _exportSwPu5BookCore(){
   const safeName=s=>s.replace(/[\\/*?:\[\]]/g,'').slice(0,31);
   const shortYm=d=>{const m=String(d||'').match(/^(\d{2})(\d{2})-(\d{2})/);return m?`${m[2]}/${+m[3]}`:''};
   // Сольхоос ӨМНӨХ (эх) төлөв — дэр ба дүнзийг нэг дор сэргээнэ.
-  // swOrigIt()-той ижил логик, зөвхөн slRepl-ийг мөн хамруулна.
-  const fullOrigIt=to=>{
-    const it=(to.it||'').split('');
-    const apply=rp=>Object.keys(rp||{}).forEach(k=>{if(rp[k]&&rp[k].o&&it[+k])it[+k]='b'});
-    apply(to.slRepl);apply(to.dRepl);
-    return it.join('')
-  };
+  // swFullOrigIt() — swHeadRuns-той хуваалцдаг глобал функц.
+  const fullOrigIt=swFullOrigIt;
   const runsInRange=(it,lo,hi)=>{
     const out=[];let run=[];
     for(let i=lo;i<hi;i++){
@@ -13507,11 +13660,13 @@ function renderSwIncCards(){
   if(!swFolder()){wrap.innerHTML='';return}
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,m=0;ks.forEach(L=>{n+=o[L];m+=o[L]*L});return `${n} ш · ${swM(m)} пог/м`};
-  const i=sum(swIncBy()),u=sum(swOutBy()),pn=sum(swPlanBy());
+  const cnt=o=>Object.keys(o).reduce((s,L)=>s+o[L],0);
+  const i=sum(swIncBy()),u=sum(swOutBy()),pTot=cnt(swPlanBy());
   renderPillGroup('swIncWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',meta:i||'Орлого бүртгээгүй',fn:'openSwInc()'},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',meta:u||'Зарлага алга',fn:'openSwOut()'},
-    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',meta:pn||'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
+    {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',
+      meta:pTot?`${pTot} ш төлөвлөсөн · ${cnt(swPlanReplacedBy())} ш сольсон`:'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
   ]);
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
@@ -14336,9 +14491,13 @@ function syncNow(){
 
    Устгах = DB.folders/DB.sw-ААС ХАСАХГҮЙ, зөвхөн f.trashedAt тэмдэглэнэ
    (deleteFolder/delSwFolderById-г үз). Тиймээс _splitDB-ийн парт бичилт
-   хэвээрээ явагдаж, тракууд/дэр/сум бүх өгөгдөл хадгалагдсаар байна —
-   сэргээхэд юу ч алдагдахгүй. 30 хоногийн дараа _purgeOldTrash() өөрөө
-   массиваас ЖИНХЭНЭ хасна (тэр үед л Firestore-ын хэсэг устгагдана).
+   хэвээрээ явагдаж, тракууд/дэр/сум бүх өгөгдөл хадгалагдсаар байна.
+
+   СЭРГЭЭДЭГГҮЙ (dlTrashItem-ийг үз): устгасны дараа ижил он+улирлын
+   шинэ паспорт аль хэдийн үүссэн байж болзошгүй тул (seasonYearTaken)
+   буцааж идэвхжүүлбэл давхардал гарна. Оронд нь бүрэн ПУ-5 маягтыг
+   Excel-ээр архивлаж татах боломжтой. 30 хоногийн дараа _purgeOldTrash()
+   өөрөө массиваас ЖИНХЭНЭ хасна (тэр үед л Firestore-ын хэсэг устгагдана).
    ══════════════════════════════════════════════ */
 function trashedItems(){
   const der=(DB.folders||[]).filter(f=>f.trashedAt).map(f=>({folder:f,kind:'der'}));
@@ -14379,19 +14538,20 @@ function renderTrash(){
         <div class="folder-meta">${esc(f.year||'')} · ${esc(f.season||'')} · ${dl} хоногийн дараа бүр мөсөн устна</div>
       </div>
       <div class="folder-actions">
-        <button class="fc-close" style="color:var(--g600)" onclick="restoreTrashItem('${f.id}','${kind}')">Сэргээх</button>
+        <button class="fc-close" style="color:var(--blue)" onclick="dlTrashItem('${f.id}','${kind}',event)">Excel татах</button>
         <button class="folder-del" aria-label="Бүр мөсөн устгах" onclick="purgeTrashItem('${f.id}','${kind}',event)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>`
   }).join('')
 }
-function restoreTrashItem(id,kind){
-  const arr=kind==='der'?(DB.folders||[]):(DB.sw||[]);
-  const f=arr.find(x=>x.id===id);if(!f)return;
-  delete f.trashedAt;saveDB();renderTrash();
-  showToast(`✓ "${f.name}" сэргээгдлээ`,2400);
-  if((document.querySelector('.view.active')||{}).id==='swHomeView')renderSwHome();
-  else if((document.querySelector('.view.active')||{}).id==='homeView')renderHome()
+/* Хогийн сангийн паспортыг СЭРГЭЭДЭГГҮЙ (ижил он+улирлын шинэ
+   паспорт аль хэдийн үүссэн байж болзошгүй тул — seasonYearTaken-ийг
+   үз). Үүний оронд бүрэн ПУ-5 маягтыг нь Excel-ээр архивлаж татна,
+   30 хоногийн дараа хэвээр бүр мөсөн устна. */
+function dlTrashItem(id,kind,e){
+  if(e)e.stopPropagation();
+  if(kind==='der')exportPu5Book(id);
+  else exportSwPu5Book(undefined,id)
 }
 async function purgeTrashItem(id,kind,e){
   if(e)e.stopPropagation();
@@ -14661,7 +14821,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.12·187';
+const APP_BUILD='2026.10.12·188';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
