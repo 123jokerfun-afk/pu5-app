@@ -24,9 +24,8 @@ await page.evaluate(()=>{
   saveDB();
 });
 const before=await page.evaluate(()=>JSON.stringify(DB.folders[0].tracks));
-const del=await page.evaluate(async()=>{
-  window.appConfirm=async()=>true;   // "Тийм" гэж автоматаар хариулна
-  await deleteFolder('f1');
+const del=await page.evaluate(()=>{
+  _deleteFolderCore('f1');   // баталгаажуулалтын UI-г алгасаад шууд устгалт
   return {active:derFolders().map(f=>f.id),raw:DB.folders.map(f=>({id:f.id,trashed:!!f.trashedAt}))}
 });
 ok('Устгасны дараа идэвхтэй жагсаалтаас алга',del.active.length===0,JSON.stringify(del.active));
@@ -53,8 +52,8 @@ ok('Сэргээсний дараа ч өгөгдөл бүрэн хэвээр',b
 
 // ── Дэр: бүр мөсөн устгах ──
 const purged=await page.evaluate(async()=>{
-  window.appConfirm=async()=>true;
-  await deleteFolder('f1');
+  _deleteFolderCore('f1');
+  window.appConfirm=async()=>true;   // purgeTrashItem өөрөө appConfirm дуудна
   await purgeTrashItem('f1','der');
   return {folders:DB.folders.map(f=>f.id)}
 });
@@ -67,9 +66,8 @@ await page.evaluate(()=>{
   saveDB();
 });
 const swBefore=await page.evaluate(()=>JSON.stringify(DB.sw[0].turnouts));
-const swDel=await page.evaluate(async()=>{
-  window.appConfirm=async()=>true;
-  await delSwFolderById('sf1');
+const swDel=await page.evaluate(()=>{
+  _delSwFolderByIdCore('sf1');
   return {active:swFolders().map(f=>f.id),trashed:!!DB.sw[0].trashedAt}
 });
 ok('Сум: устгасны дараа идэвхтэй жагсаалтаас алга',swDel.active.length===0,JSON.stringify(swDel));
@@ -84,8 +82,8 @@ const swRestored=await page.evaluate(()=>{
 ok('Сум: сэргээсний дараа идэвхтэй жагсаалтад буцна',swRestored.includes('sf1'),JSON.stringify(swRestored));
 
 const swPurged=await page.evaluate(async()=>{
-  window.appConfirm=async()=>true;
-  await delSwFolderById('sf1');
+  _delSwFolderByIdCore('sf1');
+  window.appConfirm=async()=>true;   // purgeTrashItem өөрөө appConfirm дуудна
   await purgeTrashItem('sf1','sw');
   return (DB.sw||[]).map(f=>f.id)
 });

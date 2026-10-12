@@ -109,6 +109,52 @@ await page.emulateMedia({reducedMotion:'no-preference'});
 await page.evaluate(()=>{window.__offline=false});
 await page.waitForTimeout(1600);         // дараагийн оролдлого (автомат/гараар) амжилттай болтол
 
+/* ── 6. runVerifyParts(btn) — "Үүлэн дэх бичлэгийг шалгах" товч ӨӨРӨӨ
+   жижиг тайз болоод дотроо шууд SB_SEND тоглоно (v185, logout-ын
+   зарчмаар, #sendFly-гүйгээр). Профайл хуудсыг нээгээд, тэндэх
+   .pf-row товчийг олж, runSend(btn,fn) зөв дамжиж байгааг шалгана. ── */
+await page.evaluate(()=>openProfSheet());
+await page.waitForFunction(()=>document.getElementById('profSheet').classList.contains('open'),
+  {timeout:2000});
+await page.waitForTimeout(150);
+const vfBtn=await page.$('#profSheet .pf-row[onclick*="runVerifyParts"]');
+ok('"Үүлэн дэх бичлэгийг шалгах" товч олдлоо',!!vfBtn);
+const vfInit=await page.evaluate(()=>{
+  const b=document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]');
+  return {sbOn:b&&b.classList.contains('sb-on'),msg:(document.getElementById('vfMsg')||{}).textContent};
+});
+ok('Анхандаа тоглоогүй',!vfInit.sbOn,JSON.stringify(vfInit));
+
+await page.evaluate(()=>{
+  window.__vfp=runVerifyParts(document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]'))
+});
+await page.waitForTimeout(80);
+const vfEarly=await page.evaluate(()=>({
+  sbOn:document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
+  disabled:document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').disabled
+}));
+ok('Дарсны дараа ШУУД (80мс) товч дотроо үзэгдэл тоглож эхэлсэн',
+   vfEarly.sbOn&&vfEarly.disabled,JSON.stringify(vfEarly));
+await page.waitForFunction(()=>!document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
+  {timeout:8000});
+const vfResult=await page.evaluate(()=>window.__vfp);
+const vfAfter=await page.evaluate(()=>({
+  sbOn:document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
+  msg:document.getElementById('vfMsg').textContent
+}));
+ok('Үзэгдэл дуусаад товч анхны байдалдаа буцаж, үр дүн бичигдэв',
+   !vfAfter.sbOn&&vfAfter.msg!=='Шалгаж байна…'&&vfAfter.msg.length>0,JSON.stringify(vfAfter));
+ok('runVerifyParts нь ok/алдаа true/false буцаана',typeof vfResult==='boolean',String(vfResult));
+
+// ── 7. btn-гүйгээр дуудвал (хуучин зан) — үзэгдэлгүйгээр ч ажиллана ──
+const vfNoBtn=await page.evaluate(async()=>{
+  const r=await runVerifyParts();
+  return {r,msg:document.getElementById('vfMsg').textContent}
+});
+ok('btn дамжуулаагүй үед ч (өмнөх зан) ажиллана, анимаци шаардахгүй',
+   typeof vfNoBtn.r==='boolean',JSON.stringify(vfNoBtn));
+await page.evaluate(()=>closeModal('profSheet'));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e)&&!/offline/.test(e));
 ok('Консолд (сүлжээгүйгээс өөр) алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,5)));
 console.log('\nSUMMARY '+R.filter(Boolean).length+'/'+R.length);

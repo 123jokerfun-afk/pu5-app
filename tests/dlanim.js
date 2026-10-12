@@ -92,6 +92,48 @@ const calmMs=Date.now()-calmStart;
 ok('Хөдөлгөөн хязгаарласан горимд шууд дуусна (<400мс)',calmMs<400,calmMs+'мс');
 await page.emulateMedia({reducedMotion:'no-preference'});
 
+/* ── 6. runCloudReload(btn) — "Үүлнээс дахин татах" товч ӨӨРӨӨ жижиг
+   тайз болоод, floating panel биш дотроо шууд SB_DL тоглоно (v185,
+   logout-ын зарчмаар товч дотор нь). Нүүр болон тохиргооны хуудсанд
+   ижил нэртэй 2 товч бий — энд нүүр дэх товчийг шалгана. ──────────── */
+const btnInit=await page.evaluate(()=>{
+  const b=document.querySelector('.add-track-btn[onclick^="runCloudReload"]');
+  return {exists:!!b,sbOn:b&&b.classList.contains('sb-on')}
+});
+ok('Нүүр дэх "Үүлнээс дахин татах" товч бэлэн, анхандаа тоглоогүй',
+   btnInit.exists&&!btnInit.sbOn,JSON.stringify(btnInit));
+
+await page.evaluate(()=>{
+  window.__crp=runCloudReload(document.querySelector('.add-track-btn[onclick^="runCloudReload"]'))
+});
+await page.waitForTimeout(80);
+const crEarly=await page.evaluate(()=>({
+  sbOn:document.querySelector('.add-track-btn[onclick^="runCloudReload"]').classList.contains('sb-on'),
+  disabled:document.querySelector('.add-track-btn[onclick^="runCloudReload"]').disabled
+}));
+ok('Дарсны дараа ШУУД (80мс) товч дотроо үзэгдэл тоглож эхэлсэн',
+   crEarly.sbOn&&crEarly.disabled,JSON.stringify(crEarly));
+await page.waitForFunction(()=>!document.querySelector('.add-track-btn[onclick^="runCloudReload"]').classList.contains('sb-on'),
+  {timeout:8000});
+await page.evaluate(()=>window.__crp);
+const crAfter=await page.evaluate(()=>({
+  sbOn:document.querySelector('.add-track-btn[onclick^="runCloudReload"]').classList.contains('sb-on'),
+  disabled:document.querySelector('.add-track-btn[onclick^="runCloudReload"]').disabled
+}));
+ok('Үзэгдэл дуусаад товч анхны байдалдаа буцав',!crAfter.sbOn&&!crAfter.disabled,JSON.stringify(crAfter));
+
+// ── 7. sbBusy үед runCloudReload анимаци алгасаад cloudReload()-оо ХИЙНЭ ──
+const crBusy=await page.evaluate(async()=>{
+  sbBusy=true;
+  const t0=Date.now();
+  await runCloudReload(document.querySelector('.add-track-btn[onclick^="runCloudReload"]'));
+  const ms=Date.now()-t0;
+  sbBusy=false;
+  return {ms,sbOn:document.querySelector('.add-track-btn[onclick^="runCloudReload"]').classList.contains('sb-on')}
+});
+ok('Өөр үзэгдэл (sbBusy) тоглож байхад анимацигүйгээр шууд дуусна (<1000мс)',
+   crBusy.ms<1000&&!crBusy.sbOn,JSON.stringify(crBusy));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,5)));
 console.log('\nSUMMARY '+R.filter(Boolean).length+'/'+R.length);

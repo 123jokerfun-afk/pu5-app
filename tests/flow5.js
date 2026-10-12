@@ -108,14 +108,14 @@ if(fc){
   const db=await del.boundingBox();
   await T.tap(page,db.x+db.width/2,db.y+db.height/2);
   await page.waitForTimeout(500);
-  ok('Энгийн дарахад устгахгүй',await page.evaluate(()=>DB.folders.length===2)&&!(await page.evaluate(()=>document.getElementById('appConfirmModal').classList.contains('open'))));
+  ok('Энгийн дарахад устгахгүй',await page.evaluate(()=>DB.folders.length===2)&&!(await page.evaluate(()=>document.getElementById('delModal').classList.contains('open'))));
   await T.longPress(page,bb.x+bb.width/2,bb.y+10,800);
   await page.waitForTimeout(400);
   ok('Урт дарахад идэвхжив',await page.evaluate(()=>!!document.querySelector('.folder-card.del-armed')));
   await T.tap(page,db.x+db.width/2,db.y+db.height/2);
   await page.waitForTimeout(500);
-  ok('Идэвхжсэний дараа баталгаажуулалт гарав',await page.evaluate(()=>document.getElementById('appConfirmModal').classList.contains('open')));
-  await page.evaluate(()=>document.getElementById('appConfirmCancelBtn').click());
+  ok('Идэвхжсэний дараа баталгаажуулалт гарав',await page.evaluate(()=>document.getElementById('delModal').classList.contains('open')));
+  await page.evaluate(()=>document.getElementById('delNoBtn').click());
 } else ok('folder-card олдсонгүй',false);
 
 console.log('\nERRORS:',JSON.stringify(errs,null,1));

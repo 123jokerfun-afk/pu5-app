@@ -483,6 +483,14 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .sb-stage{position:absolute;inset:0;z-index:1;opacity:0;pointer-events:none}
 .sb-stage svg{display:block;width:100%;height:100%}
 .sb.sb-on:disabled,.sb.sb-on[disabled]{opacity:1!important}
+/* .add-track-btn/.pf-row нь дотроо icon+текст/тэмдэг гэх мэт ХЭД ХЭДЭН
+   хүүхэдтэй тул sbMount тэднийг ганц .sb-label дотор боолгоход анхны
+   flex байрлал нь алдагддаг — тэрнийг .sb-label дотор хуулбарлав.
+   Тайз (sb-stage) багтаах зэрэг өндөр ч нэмэв (uulzwar_zai-гийн жор). */
+.add-track-btn.sb{min-height:84px}
+.add-track-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:8px}
+.pf-row.sb{min-height:84px}
+.pf-row.sb .sb-label{display:flex;align-items:center;gap:12px;width:100%;min-width:0}
 /* "Илгээгдээгүй" тэмдэг жижиг тул үзэгдлийг дэлгэцийн доор хөвөгч
    самбар дээр тоглуулна — тэмдгийг түр нуугаад орлуулна */
 #sendFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
@@ -492,15 +500,6 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 body.has-tabbar:not(.deep-view) #sendFly{bottom:calc(var(--sab) + 74px)}
 body.rec-mode #sendFly{bottom:calc(var(--sab) + 178px)}
 body.track-mode #sendFly{bottom:calc(var(--sab) + 82px)}
-/* Паспорт устгахыг баталсны дараа — "Илгээгдээгүй" тэмдэг шиг
-   бус, устгах нь тусдаа товчгүй тул өөрийн хөвөгч самбартай */
-#delFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
-  bottom:calc(12px + var(--sab));width:min(280px,calc(100vw - 32px));height:104px;
-  transform:translateX(-50%);border-radius:18px;background:var(--card);box-shadow:var(--sh-lg)}
-#delFly.on{display:block}
-body.has-tabbar:not(.deep-view) #delFly{bottom:calc(var(--sab) + 74px)}
-body.rec-mode #delFly{bottom:calc(var(--sab) + 178px)}
-body.track-mode #delFly{bottom:calc(var(--sab) + 82px)}
 /* Excel/CSV татахад — dlBlob() бодит файлыг өгөхийн өмнө тоглуулна.
    Экспортын товч олон, тараагдмал (зарим нь appConfirm-той) тул
    үзэгдлийг тэдгээр дээр биш, файл БЭЛЭН болсны дараах ганц
@@ -696,6 +695,14 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   text-shadow:0 1px 3px rgba(140,90,20,.25);
   transition:transform .18s ease,box-shadow .18s ease}
 .btn-ok:active{transform:scale(.97);box-shadow:0 2px 8px rgba(255,153,50,.35),inset 2px 2px 6px rgba(140,80,10,.35)}
+/* Устгах баталгаажуулалтын "Устгах" товч — SB_DEL бяцхан хүнийг
+   өнгөтэй дэвсгэр дээр уншихгүй тул цайвар неоморф гадаргуу дээр
+   улаан бичгээр (uulzwar_zai-гийн #delMod .rst-yes-ийн жор). */
+.btn-del-yes{padding:14px;border:none;border-radius:99px;min-height:84px;
+  background:var(--card);color:var(--red);font-size:15px;font-weight:800;cursor:pointer;
+  box-shadow:var(--sh-sm);transition:transform .18s ease,box-shadow .18s ease}
+.btn-del-yes:active{transform:scale(.98);box-shadow:var(--sh-sm-in)}
+.btn-del-yes:disabled{opacity:.72;cursor:default}
 .info-pill{font-size:12px;color:var(--purple);background:var(--purple-bg);
   padding:8px 12px;border-radius:var(--rs);margin-bottom:10px;font-weight:600;
   border:1px solid rgba(109,40,217,.15)}
@@ -1754,7 +1761,6 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 </div>
 <div id="toast"></div>
 <div id="sendFly" aria-hidden="true"></div>
-<div id="delFly" aria-hidden="true"></div>
 <div id="dlFly" aria-hidden="true"></div>
 <div class="overlay" id="logoutModal" style="z-index:600;align-items:center;justify-content:center">
   <div class="sheet" style="border-radius:26px;width:calc(100% - 48px);max-width:380px">
@@ -1784,6 +1790,23 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
           </span>
           <span class="lo-label">Тийм, гарах</span>
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Устгах баталгаажуулалт — "Тийм" товч дотроо шууд SB_DEL
+     (хогийн сав руу хийгч) үзэгдлийг тоглоно. appConfirm нийтлэг
+     тул энд хөндөхгүй, зөвхөн устгалтад зориулсан тусдаа модал. -->
+<div class="overlay" id="delModal" style="z-index:600;align-items:center;justify-content:center">
+  <div class="sheet" style="border-radius:26px;width:calc(100% - 48px);max-width:380px">
+    <div class="sheet-inner" style="padding:26px 22px 22px">
+      <div style="width:50px;height:50px;border-radius:15px;background:var(--red-bg);display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+        <svg class="ic" viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div id="delMsg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.5"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" id="delNoBtn">Болих</button>
+        <button class="btn-del-yes" id="delYesBtn">Устгах</button>
       </div>
     </div>
   </div>
@@ -2027,7 +2050,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
       <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px"></div>
       <div class="lp-hint" id="folderLp" style="display:none">Паспорт дээр удаан дарж устгах товчийг идэвхжүүлнэ</div>
-      <button class="add-track-btn" onclick="cloudReload()" style="border-color:#7BD3A0;color:#0F8A4C;margin-bottom:8px">
+      <button class="add-track-btn" onclick="runCloudReload(this)" style="border-color:var(--g400);color:var(--g700);margin-bottom:8px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg> Үүлнээс дахин татах
       </button>
       <button class="add-track-btn" onclick="openAddFolder()" style="border-color:var(--blue-mid);color:var(--blue)">
@@ -4130,7 +4153,7 @@ function dismissOverlay(ov){
   else closeModal(ov.id)
 }
 // Баталгаажуулах цонх бол санамсаргүй хаагдаж болохгүй — шийдвэр шаардана
-const _NO_DISMISS={appConfirmModal:1,logoutModal:1};
+const _NO_DISMISS={appConfirmModal:1,logoutModal:1,delModal:1};
 function initSheetGestures(){
   document.querySelectorAll('.overlay').forEach(ov=>{
     if(ov._gest||_NO_DISMISS[ov.id])return;
@@ -8494,14 +8517,19 @@ function closeFolder(){
 async function deleteFolder(fid,e){
   if(e)e.stopPropagation();
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
-  if(!await appConfirm(`"${f.name}" паспортыг Хогийн сав руу шилжүүлэх үү? 30 хоногийн дотор сэргээж болно.`))return;
-  await runDelFly(()=>{
-    f.trashedAt=new Date().toISOString();
-    if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
-    saveDB();
-    if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
-    else renderHome()
-  })
+  if(!await confirmDelete(f.name))return;
+  _deleteFolderCore(fid)
+}
+/* Цонх/анимацигүй бодит устгалт (trashedAt тэмдэглэл) — doLogout/
+   _doLogoutCore-ийн адил зарчим. Тестүүд (trash.js) баталгаажуулалтын
+   UI-г алгасаад шууд үүнийг дуудна. */
+function _deleteFolderCore(fid){
+  const f=DB.folders.find(x=>x.id===fid);if(!f)return;
+  f.trashedAt=new Date().toISOString();
+  if(activeFolderId===fid){activeFolderId=null;DB.tracks=[];document.getElementById('tracksSection').style.display='none'}
+  saveDB();
+  if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
+  else renderHome()
 }
 function renderFolders(){
   const grid=document.getElementById('foldersGrid');if(!grid)return;
@@ -9138,7 +9166,7 @@ async function runSendFly(fn){
 }
 /* Илгээх товч: үзэгдэл тоглох зуур үүл рүү бичиж, хариуг нь дамжуулна */
 async function runSend(btn,fn){
-  if(sbBusy)return;
+  if(sbBusy)return false;
   sbBusy=true;
   sbVerdict=null;
   const anim=sbPlay(btn,SB_SEND);
@@ -9147,7 +9175,8 @@ async function runSend(btn,fn){
   sbSetVerdict(good);
   try{await anim}catch(e){}
   sbBusy=false;
-  _renderSaveBadge()
+  _renderSaveBadge();
+  return good
 }
 
 /* ── Устгах үзэгдэл: цүнхийг өргөж, хогийн сав руу хийгээд явна ──
@@ -9221,18 +9250,32 @@ const SB_DEL={
       `translate(${(-2.5*open).toFixed(2)} ${(-1.5*open).toFixed(2)}) rotate(${(-55*open).toFixed(1)} 47.7 37.5)`)
   }
 };
-/* Устгах баталгаажуулалт тусдаа товчгүй (appConfirm бол бусад олон
-   зүйлд ч хэрэглэгддэг нийтлэг модал) тул батлагдсаны дараа
-   дэлгэцийн доорх тусдаа хөвөгч самбар дээр тоглуулна, дараа нь
-   жинхэнэ устгалт (trashedAt тэмдэглэл) хийгдэнэ. SB_DEL-д hold
-   байхгүй тул үргэлж бүтнээрээ тоглоод дуусна. */
-async function runDelFly(fn){
-  const fly=document.getElementById('delFly');
-  if(!fly||sbBusy){fn();return}
-  sbBusy=true;
-  fly.classList.add('on');
-  try{await sbPlay(fly,SB_DEL)}finally{fly.classList.remove('on');sbBusy=false}
-  fn()
+/* Устгах баталгаажуулалт — logout-ын зарчмаар: цонх үзэгдлийн
+   ТУРШИД нээлттэй үлдэж, "Устгах" товч дотроо шууд SB_DEL тоглоно
+   (appConfirm бол бусад олон газар хэрэглэгддэг нийтлэг модал тул
+   энд хөндөхгүй, тусдаа #delModal). Үр дүн appConfirm-тай ижил
+   true/false. SB_DEL-д hold байхгүй тул үргэлж бүтнээрээ тоглоно. */
+async function confirmDelete(name){
+  const yesBtn=document.getElementById('delYesBtn');
+  const noBtn=document.getElementById('delNoBtn');
+  document.getElementById('delMsg').textContent=
+    `"${name}" паспортыг хогийн сав руу шилжүүлнэ. 30 хоногийн дотор сэргээж болно.`;
+  yesBtn.disabled=false;noBtn.disabled=false;
+  openModal('delModal');
+  const go=await new Promise(resolve=>{
+    const done=v=>{yesBtn.onclick=null;noBtn.onclick=null;resolve(v)};
+    yesBtn.onclick=()=>done(true);
+    noBtn.onclick=()=>done(false)
+  });
+  if(!go){closeModal('delModal');return false}
+  yesBtn.disabled=true;noBtn.disabled=true;
+  if(!sbBusy){
+    sbBusy=true;
+    try{await sbPlay(yesBtn,SB_DEL)}finally{sbBusy=false}
+  }
+  yesBtn.disabled=false;noBtn.disabled=false;
+  closeModal('delModal');
+  return true
 }
 
 /* ── Татах үзэгдэл: хайрцгийг нүх рүү түлхээд, өөрөө ч үсрэн орно ──
@@ -9332,6 +9375,16 @@ async function runDlFly(fn){
   sbGatePromise=anim;
   try{await Promise.allSettled([Promise.resolve().then(fn),anim])}
   finally{fly.classList.remove('on');sbGatePromise=null;sbBusy=false}
+}
+/* "Үүлнээс дахин татах" товч (нүүр ба тохиргооны хуудсанд ижил
+   нэртэй 2 товч бий) шууд дотроо SB_DL тоглоно — файлын blob
+   хүлээхгүй тул sbGate хэрэггүй, зүгээр cloudReload()-той зэрэгцэн. */
+async function runCloudReload(btn){
+  if(sbBusy)return cloudReload();
+  sbBusy=true;
+  const anim=sbPlay(btn,SB_DL);
+  try{await Promise.allSettled([cloudReload(),anim])}
+  finally{sbBusy=false}
 }
 
 // ══════════════════════════════════════════════
@@ -11771,14 +11824,17 @@ function addSwFolder(){
 async function delSwFolderById(id,e){
   if(e)e.stopPropagation();
   const f=(DB.sw||[]).find(x=>x.id===id);if(!f)return;
-  if(!await appConfirm(`"${f.name}" паспортыг Хогийн сав руу шилжүүлэх үү? 30 хоногийн дотор сэргээж болно.`,'Устгах'))return;
-  await runDelFly(()=>{
-    f.trashedAt=new Date().toISOString();
-    if(swFolderId===id)swFolderId=null;
-    saveDB();
-    if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
-    else renderSwHome()
-  })
+  if(!await confirmDelete(f.name))return;
+  _delSwFolderByIdCore(id)
+}
+/* Цонх/анимацигүй бодит устгалт — _deleteFolderCore-ийн сумын хувилбар. */
+function _delSwFolderByIdCore(id){
+  const f=(DB.sw||[]).find(x=>x.id===id);if(!f)return;
+  f.trashedAt=new Date().toISOString();
+  if(swFolderId===id)swFolderId=null;
+  saveDB();
+  if((document.querySelector('.view.active')||{}).id==='brHomeView')renderBrHome();
+  else renderSwHome()
 }
 // ── Паспорт доторх сумын жагсаалт ──
 // Дэрийн паспорт шиг — дэлгэц солихгүй, нүүрэн дээрээ доор нь задарна
@@ -14116,15 +14172,18 @@ async function verifyParts(){
     biggest:Object.keys(parts).reduce((m,k)=>Math.max(m,_fsSize(parts[k])),0),
     why:ok?'':'Зөрүүтэй байна — өгөгдөл хараахан бүрэн бичигдээгүй байж болно'}
 }
-function runVerifyParts(){
+function runVerifyParts(btn){
   const m=document.getElementById('vfMsg');
-  if(m)m.textContent='Шалгаж байна…';
-  verifyParts().then(r=>{
-    if(!m)return;
-    m.textContent=r.ok
-      ? '✓ Таарч байна · '+r.count+' баримт · хамгийн том '+fmtBytes(r.biggest)
-      : '⚠ '+(r.why||'Зөрүүтэй');
-  }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e)});
+  const go=()=>{
+    if(m)m.textContent='Шалгаж байна…';
+    return verifyParts().then(r=>{
+      if(m)m.textContent=r.ok
+        ? '✓ Таарч байна · '+r.count+' баримт · хамгийн том '+fmtBytes(r.biggest)
+        : '⚠ '+(r.why||'Зөрүүтэй');
+      return r.ok
+    }).catch(e=>{if(m)m.textContent='⚠ '+((e&&e.message)||e);return false})
+  };
+  return btn?runSend(btn,go):go()
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -14209,7 +14268,7 @@ function renderSyncSheet(){
       <span class="pf-ic" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
       <span class="pf-t">Одоо илгээх<span class="pf-s">Өөрчлөлтийг үүл рүү хадгална</span></span>
       <span class="pf-ar">›</span></button>`:''}
-    <button class="pf-row" onclick="hap();closeModal('syncSheet');cloudReload()">
+    <button class="pf-row" onclick="hap();runCloudReload(this).then(()=>closeModal('syncSheet'))">
       <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
       <span class="pf-t">Үүлнээс дахин татах<span class="pf-s">Утсан дээрхийг үүлийнхээр солино</span></span>
       <span class="pf-ar">›</span></button>
@@ -14374,7 +14433,7 @@ function renderProfSheet(){
           fmtBytes(n)+' · '+(pc>100?'хязгаар хэтэрсэн'
             :(pc<0.1?'<0.1':pc.toFixed(pc<10?1:0))+'% дүүрсэн'),
           "closeModal('profSheet');openSyncSheet()")})()+
-      `<button class="pf-row" onclick="hap();runVerifyParts()">
+      `<button class="pf-row" onclick="hap();runVerifyParts(this)">
       <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
       <span class="pf-t">Үүлэн дэх бичлэгийг шалгах<span class="pf-s" id="vfMsg">Утсан дахьтай таарч байгаа эсэх</span></span>
       <span class="pf-ar">›</span></button>`+
@@ -14564,7 +14623,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.11·184';
+const APP_BUILD='2026.10.12·185';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
