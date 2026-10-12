@@ -491,6 +491,19 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .add-track-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:8px}
 .pf-row.sb{min-height:84px}
 .pf-row.sb .sb-label{display:flex;align-items:center;gap:12px;width:100%;min-width:0}
+/* Excel/CSV татах товчнууд (.exp-btn/.btn-ok/.pu5-btn) — v185-д
+   нэмсэн адил зарчим. .btn-ok нь энд ХАДГАЛАМЖИЙН тайлангуудад
+   ИНЛАЙН СТИЛИАР өнгөт градиент дэвсгэртэй тул SB_DL-ийн бяцхан
+   хүн уншигдахын тулд !important-аар цайвар гадаргуу руу сольно
+   (inline style class-аас илүү тэргүүлэх зэрэгтэй тул). */
+.exp-btn.sb{min-height:84px}
+.exp-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-ok.sb{min-height:84px;background:var(--card) !important;box-shadow:var(--sh-sm) !important;
+  color:var(--blue) !important;text-shadow:none !important}
+.btn-ok.sb:active{box-shadow:var(--sh-sm-in) !important}
+.btn-ok.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:8px}
+.pu5-btn.sb{min-height:84px}
+.pu5-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:6px}
 /* "Илгээгдээгүй" тэмдэг жижиг тул үзэгдлийг дэлгэцийн доор хөвөгч
    самбар дээр тоглуулна — тэмдгийг түр нуугаад орлуулна */
 #sendFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
@@ -2038,7 +2051,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         </button>
       </div>
       <div id="mainLineCard"></div>
-      <button class="add-track-btn" id="pu5MainBtn" onclick="exportPu5Book('main')" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
+      <button class="add-track-btn" id="pu5MainBtn" onclick="exportPu5Book('main',this)" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
       </button>
     </div>
@@ -2082,7 +2095,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </div>
       <div class="export-grid">
         <button class="exp-btn exp-xl" onclick="openThresholdExport()"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Excel</button>
-        <button class="exp-btn exp-csv" onclick="runDlFly(exportAllCSV)"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV</button>
+        <button class="exp-btn exp-csv" onclick="runDlFly(exportAllCSV,this)"><svg class="ic ic-lg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> CSV</button>
       </div>
     </div>
     </div><!-- /tracksSection -->
@@ -2249,7 +2262,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <div class="sec-lbl" style="margin-top:18px">Дэрийн агуулах</div>
         <div id="brDerWrap" style="display:flex;flex-direction:column;gap:8px"></div>
         <div class="sec-lbl" style="margin-top:18px">Экспорт</div>
-        <button class="add-track-btn" onclick="exportPu5Book('folder')" style="border-color:var(--g400);color:var(--g700)">
+        <button class="add-track-btn" onclick="exportPu5Book('folder',this)" style="border-color:var(--g400);color:var(--g700)">
           <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
         </button>
         <button class="add-track-btn" onclick="openThresholdExport()" style="border-color:var(--blue-mid);color:var(--blue);margin-top:8px">
@@ -2277,10 +2290,10 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <div class="sec-lbl" style="margin-top:18px">Дүнзний агуулах</div>
         <div id="brSwWrap" style="display:flex;flex-direction:column;gap:8px"></div>
         <div class="sec-lbl" style="margin-top:18px">Экспорт</div>
-        <button class="add-track-btn" onclick="exportSwForms()" style="border-color:var(--g400);color:var(--g700)">
+        <button class="add-track-btn" onclick="exportSwForms(this)" style="border-color:var(--g400);color:var(--g700)">
           <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах
         </button>
-        <button class="add-track-btn" onclick="exportSwPu5Book()" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
+        <button class="add-track-btn" onclick="exportSwPu5Book(this)" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
           <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 маягт татах
         </button>
       </div>
@@ -2341,10 +2354,10 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div id="swTurnoutsGrid" class="stagger"></div>
       <div class="lp-hint" id="swTurnoutLp" style="display:none">Сум дээр удаан дарж устгана</div>
       <div id="swFolderWrap" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
-      <button class="add-track-btn" id="swFormBtn" onclick="hap();exportSwForms()" style="border-color:var(--g400);color:var(--g700);margin-top:10px">
+      <button class="add-track-btn" id="swFormBtn" onclick="hap();exportSwForms(this)" style="border-color:var(--g400);color:var(--g700);margin-top:10px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Дүнзний маягт татах
       </button>
-      <button class="add-track-btn" onclick="hap();exportSwPu5Book()" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
+      <button class="add-track-btn" onclick="hap();exportSwPu5Book(this)" style="border-color:var(--g400);color:var(--g700);margin-top:8px">
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 маягт татах
       </button>
       <button class="add-track-btn" onclick="openSwTurnout()" style="border-color:#C084FC;color:#7E22CE;margin-top:8px">
@@ -2467,7 +2480,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('planRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Зам, үе, дэрийн дугаараар. Сумын рам замын дэр ч энд орно. Мөр дээр дарвал тэр жагсаалт руу шууд очно.</div>
-    <button class="btn-ok" onclick="runDlFly(exportPlanForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportPlanForm,this)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
     <div id="planRepBody"></div>
   </div></div>
 </div>
@@ -2553,7 +2566,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('swPlanRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сум, дүнзний дугаараар. Мөр дээр дарвал тэр сумын дүнзний жагсаалт руу шууд очно.</div>
-    <button class="btn-ok" onclick="runDlFly(exportPlanForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportPlanForm,this)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Төлөвлөгөө татах (Excel)</button>
     <div id="swPlanRepBody"></div>
   </div></div>
 </div>
@@ -2725,7 +2738,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">
       3 ба түүнээс дээш дараалсан цэгт хамаарч байсан дэрүүдээс сольсон нь. Хэдэн ч дэрийг, ямар ч өдөр сольсон бай энд бүртгэгдэнэ. Эдгээр нь "Солигдсон дэр" жагсаалтад ч цэнхэрээр орсон байна.
     </div>
-    <button class="btn-ok" id="carveXlsBtn" onclick="runDlFly(exportCarveForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сийрэгжилт татах (Маягт-1 Хавсралт-4)</button>
+    <button class="btn-ok" id="carveXlsBtn" onclick="runDlFly(exportCarveForm,this)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Сийрэгжилт татах (Маягт-1 Хавсралт-4)</button>
     <div id="carveReportBody"></div>
   </div></div>
 </div>
@@ -2746,7 +2759,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div class="sheet-title" style="margin:0">Солигдсон дэр</div>
       <button onclick="closeModal('replReportModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
-    <button class="btn-ok" onclick="runDlFly(exportReplForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportReplForm,this)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
     <div id="replReportBody"></div>
   </div></div>
 </div>
@@ -2864,7 +2877,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal('threshModal')">Болих</button>
-      <button class="btn-ok" onclick="runDlFly(saveRptAndExport)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel татах</button>
+      <button class="btn-ok" onclick="runDlFly(saveRptAndExport,this)"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Excel татах</button>
     </div>
   </div></div>
 </div>
@@ -3125,7 +3138,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <button onclick="closeModal('swReplRepModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
     <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Сольсон дүнзийг ҮРГЭЛЖ анхны уртаар нь тооцно — өөр уртаар сольсон ч сумын нийт пог/м өөрчлөгдөхгүй.</div>
-    <button class="btn-ok" onclick="runDlFly(exportSwReplForm)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
+    <button class="btn-ok" onclick="runDlFly(exportSwReplForm,this)" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--blue),var(--blue-mid));box-shadow:0 5px 20px rgba(30,58,110,.3)"><svg class="ic" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Жагсаалт татах (Excel)</button>
     <div id="swReplRepBody"></div>
   </div></div>
 </div>
@@ -7432,7 +7445,7 @@ function showSummaryAll(){
   html+=`<div class="sum-block"><div class="sum-block-title">Экспорт</div>
     <div class="export-grid">
       <button class="exp-btn exp-xl" onclick="openThresholdExport()"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10M10 19V5M16 19v-6M4 19h16"/></svg> Excel</button>
-      <button class="exp-btn exp-csv" onclick="runDlFly(exportAllCSV)">${ic("download",16)} CSV</button>
+      <button class="exp-btn exp-csv" onclick="runDlFly(exportAllCSV,this)">${ic("download",16)} CSV</button>
     </div></div>`;
   let consecAll='';
   _all.forEach(t=>{
@@ -7478,7 +7491,7 @@ function renderTrackSummaryHTML(t){
   <div class="sum-block"><div class="sum-block-title">Экспорт</div>
     <div class="export-grid">
       <button class="exp-btn exp-xl" onclick="openThresholdExport('${t.id}')"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10M10 19V5M16 19v-6M4 19h16"/></svg> Excel</button>
-      <button class="exp-btn exp-csv" onclick="runDlFly(()=>exportTrackCSV('${t.id}'))">${ic("download",16)} CSV</button>
+      <button class="exp-btn exp-csv" onclick="runDlFly(()=>exportTrackCSV('${t.id}'),this)">${ic("download",16)} CSV</button>
     </div></div>`
 }
 function backFromSummary(){
@@ -7896,9 +7909,9 @@ async function exportColoredExcel(){
 // Үе бүрийн дэрийг нэг нэгээр нь тэмдэглэсэн матриц шийтүүд (1-10, 11-20 үе...)
 // scope: 'main' = гол замын км, эсвэл паспортын id = тухайн паспортын өртөө зам
 // ══════════════════════════════════════════════
-async function exportPu5Book(scope){
+async function exportPu5Book(scope,btn){
   if(!await appConfirm('ПУ-5 дэвтэр загварыг татах уу?','Татах'))return;
-  await runDlFly(()=>_exportPu5BookCore(scope))
+  await runDlFly(()=>_exportPu5BookCore(scope),btn)
 }
 async function _exportPu5BookCore(scope){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
@@ -8559,7 +8572,7 @@ function renderFolders(){
         <button class="folder-del" onclick="armedDel(event,()=>deleteFolder('${f.id}',event))" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
-    <button class="pu5-btn" onclick="event.stopPropagation();hap();exportPu5Book('${f.id}')">
+    <button class="pu5-btn" onclick="event.stopPropagation();hap();exportPu5Book('${f.id}',this)">
       <svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
     </button>`
   }).join('');
@@ -9366,15 +9379,17 @@ const SB_DL={
 /* Товч дарсан тэр дор л эхэлнэ (fn-ийг ХҮЛЭЭХГҮЙ) — файл бэлдэх
    (ensureExcel, ExcelJS) ба үзэгдэл ЗЭРЭГЦЭЭ явна. dlBlob()-д хүрэх
    үед sbGate()-ээр хориглогдож, яг үзэгдэл дуусахад нь файл өгөгдөнө.
-   fn алдвал ч үзэгдэл тасрахгүй (Promise.allSettled). */
-async function runDlFly(fn){
-  const fly=document.getElementById('dlFly');
-  if(!fly||sbBusy)return fn();
-  sbBusy=true;fly.classList.add('on');
-  const anim=sbPlay(fly,SB_DL);
+   fn алдвал ч үзэгдэл тасрахгүй (Promise.allSettled). btn өгвөл
+   дэлгэцийн доорх #dlFly биш, яг тэр дарсан товч дотроо тоглоно
+   (жижиг icon-btn-үүд btn дамжуулахгүй — #dlFly дээрээ хэвээр). */
+async function runDlFly(fn,btn){
+  const target=btn||document.getElementById('dlFly');
+  if(!target||sbBusy)return fn();
+  sbBusy=true;if(!btn)target.classList.add('on');
+  const anim=sbPlay(target,SB_DL);
   sbGatePromise=anim;
   try{await Promise.allSettled([Promise.resolve().then(fn),anim])}
-  finally{fly.classList.remove('on');sbGatePromise=null;sbBusy=false}
+  finally{if(!btn)target.classList.remove('on');sbGatePromise=null;sbBusy=false}
 }
 /* "Үүлнээс дахин татах" товч (нүүр ба тохиргооны хуудсанд ижил
    нэртэй 2 товч бий) шууд дотроо SB_DL тоглоно — файлын blob
@@ -13036,13 +13051,23 @@ function swRunBuckets(to){
 // Хамрах хүрээ: нээлттэй сумын паспорт (exportSwForms-той адил,
 // параметргүй — swFolder()-оор олдоно, branch/энгийн аль алинд ажиллана).
 // ══════════════════════════════════════════════
-async function exportSwPu5Book(){
+async function exportSwPu5Book(btn){
   const f=swFolder();
   if(!f){showToast('Паспорт нээгээгүй байна',2600);return}
   const ts=swAllTurnouts().filter(t=>(t.it||'').length);
   if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
   if(!await appConfirm('Дүнзний ПУ-5 маягт татах уу?','Татах'))return;
+  await runDlFly(_exportSwPu5BookCore,btn)
+}
+/* Цонх/анимацигүй бодит экспорт — exportSwPu5Book()-ийн баталгаажуулалтын
+   ДАРАА, runDlFly-аар SB_DL-тэй зэрэгцэн ажиллана (exportSwForms/
+   _exportSwFormsCore-ийн адил зарчим). */
+async function _exportSwPu5BookCore(){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
+  // exportSwPu5Book()-ийн f/ts нь энд ХАРАГДАХГҮЙ (өөр функц) тул дахин бодно —
+  // swFolder()/swAllTurnouts() хямд, цэвэр тооцоолол тул 2 дахин дуудахад зардалгүй.
+  const f=swFolder()||{};
+  const ts=swAllTurnouts().filter(t=>(t.it||'').length);
 
   const wb=new ExcelJS.Workbook();wb.creator='ПУ-5 Дэр бүртгэл';wb.created=new Date();
   const W='FFFFFFFF';
@@ -13253,11 +13278,11 @@ async function exportSwPu5Book(){
   }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
 }
 
-async function exportSwForms(){
+async function exportSwForms(btn){
   const ts=swAllTurnouts().filter(t=>(t.it||'').length);
   if(!ts.length){showToast('Бүртгэл хийгдсэн сум алга байна',2800);return}
   if(!await appConfirm('Дүнзний маягт татах уу?','Татах'))return;
-  await runDlFly(_exportSwFormsCore)
+  await runDlFly(_exportSwFormsCore,btn)
 }
 async function _exportSwFormsCore(){
   if(!await ensureExcel()){showToast('Excel сан татагдсангүй — сүлжээгээ шалгана уу',3200);return}
@@ -14623,7 +14648,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.12·185';
+const APP_BUILD='2026.10.12·186';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

@@ -143,7 +143,12 @@ await page.evaluate(()=>{window.__delPromise5=deleteFolder('f3')});
 await page.waitForFunction(()=>document.getElementById('delModal').classList.contains('open'),
   {timeout:2000});
 const calmStart=Date.now();
-await page.click('#delYesBtn');
+// Шууд DOM click (page.click()-ийн actionability/stability хүлээлт биш) —
+// Playwright-ийн page.click() нь энэ цэг дээр (өмнөх хэдэн тестийн хуримтлагдсан
+// DOM/render ачаалалтай үед) заримдаа ~1с хүртэл "тогтворжихыг" хүлээдэг нь
+// аппын өөрийн хурдыг БИШ, тестийн хэрэгслийн давхаргыг хэмждэг асуудал
+// байсан — 7-р тест адил шууд click()-ээр баталгаатай болгов.
+await page.evaluate(()=>document.getElementById('delYesBtn').click());
 await page.waitForFunction(()=>!document.getElementById('delModal').classList.contains('open'),
   {timeout:1000});
 await page.evaluate(()=>window.__delPromise5);
