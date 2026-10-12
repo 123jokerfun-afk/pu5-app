@@ -106,8 +106,10 @@ const rep=await page.evaluate(async()=>{
   const tot=(document.querySelector('#planRepBody .rp-total')||{}).textContent||'';
   const subs=[...document.querySelectorAll('#planRepBody .rp-sub')].map(e=>e.textContent.replace(/\s+/g,' ').trim());
   return{cards,inPass,rows,ue,tot,subs}});
+// v191: карт одоо "N төлөвлөсөн · M сольсон" гэж 2 тоо харуулдаг болсон
+// (өмнө нь зөвхөн үлдсэн N-ийг л "N дэр" гэж харуулдаг байсан).
 ok('"Төлөвлөсөн дэр" карт нь Дэрийн агуулахын доор байна',
-   rep.cards.some(x=>/^Төлөвлөсөн дэр\|2 дэр/.test(x)),JSON.stringify(rep.cards));
+   rep.cards.some(x=>/^Төлөвлөсөн дэр\|2 төлөвлөсөн · 0 сольсон/.test(x)),JSON.stringify(rep.cards));
 ok('Орлого · Зарлага · Төлөвлөсөн дэр гэсэн дараалалтай',
    /^Орлого\|/.test(rep.cards[0])&&/^Зарлага\|/.test(rep.cards[1])
    &&/^Төлөвлөсөн дэр\|/.test(rep.cards[2]),JSON.stringify(rep.cards.map(x=>x.split('|')[0])));
@@ -294,9 +296,12 @@ const srep=await page.evaluate(async()=>{
   const body=document.getElementById('swPlanRepBody').textContent.replace(/\s+/g,' ');
   const tot=(document.querySelector('#swPlanRepBody .rp-total')||{}).textContent||'';
   return{cards,rows,body,tot}});
+// v191: карт одоо "N ш төлөвлөсөн · M ш сольсон" гэж тоогоор харуулдаг
+// болсон (өмнө нь урт нийлбэрээр "N ш · X пог/м" гэж харуулдаг байсан —
+// урт нийлбэр нь толгойн харьцуулалтад шаардлагагүй болсон).
 ok('"Төлөвлөсөн дүнз" карт нь Дүнзний агуулахын доор байна',
    srep.cards.length===3&&/^Орлого\|/.test(srep.cards[0])&&/^Зарлага\|/.test(srep.cards[1])
-   &&/^Төлөвлөсөн дүнз\|1 ш · 3,5 пог\/м$/.test(srep.cards[2]),JSON.stringify(srep.cards));
+   &&/^Төлөвлөсөн дүнз\|1 ш төлөвлөсөн · 0 ш сольсон$/.test(srep.cards[2]),JSON.stringify(srep.cards));
 ok('Жагсаалт нь дүнзний дугаар, одоогийн ба төлөвлөсөн уртыг харуулна',
    srep.rows.length===1&&/#1/.test(srep.rows[0])&&/3,5 м/.test(srep.rows[0]),
    JSON.stringify(srep.rows));
