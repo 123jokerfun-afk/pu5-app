@@ -156,11 +156,12 @@
 [data-theme="dark"] .cnt-n,[data-theme="dark"] .sw-st-n,
 [data-theme="dark"] .sum-tot-n,[data-theme="dark"] .ov-pct-n{
   text-shadow:0 0 6px currentColor}
-/* Бүртгэлийн хүрээ — гэрэлтэй загварт цайвар хавтан, харанхуйд зөөлөн туяа */
+/* Бүртгэлийн хүрээ — харанхуй загварт ч мөрийн өнгөнөөс тод ялгарахаар */
 [data-theme="dark"] .drum-frame{
-  background:linear-gradient(180deg,rgba(255,180,80,.16),rgba(255,140,60,.07));
-  border-color:rgba(255,168,60,.7);
-  box-shadow:0 8px 34px rgba(255,150,40,.28),inset 0 0 22px rgba(255,180,90,.10)}
+  background:linear-gradient(180deg,rgba(255,180,80,.32),rgba(255,140,60,.18));
+  border-color:#FFA847;
+  box-shadow:0 8px 36px rgba(255,150,40,.42),0 0 0 5px rgba(255,180,90,.24),
+    inset 0 0 22px rgba(255,180,90,.18)}
 /* ══ НИМГЭН, ӨРГӨН ЗАЙТАЙ ҮСЭГ ══
    Зөвхөн ТОМ гарчиг/тоонд. Жижиг шошго, биет бичиг нь тод хэвээр —
    гадаа уншихад нимгэн жижиг үсэг хэцүү болдог. */
@@ -485,25 +486,29 @@ body.track-mode .save-badge{bottom:calc(var(--sab) + 82px)}
 .sb.sb-on:disabled,.sb.sb-on[disabled]{opacity:1!important}
 /* .add-track-btn/.pf-row нь дотроо icon+текст/тэмдэг гэх мэт ХЭД ХЭДЭН
    хүүхэдтэй тул sbMount тэднийг ганц .sb-label дотор боолгоход анхны
-   flex байрлал нь алдагддаг — тэрнийг .sb-label дотор хуулбарлав.
-   Тайз (sb-stage) багтаах зэрэг өндөр ч нэмэв (uulzwar_zai-гийн жор). */
-.add-track-btn.sb{min-height:84px}
+   flex байрлал нь алдагддаг — тэрнийг .sb-label дотор ТУРШИД нь
+   (.sb — sbMount нэг л удаа, бүр мөсөн хийгддэг тул) хуулбарлав.
+   Харин тайз (sb-stage) багтаах зэрэг ӨНДРИЙГ зөвхөн ЖИНХЭНЭ тоглож
+   буй мөчид (.sb-on) л нэмнэ — үгүй бол товч үзэгдэл дуусаад ч
+   хуучин жижиг хэмжээгээрээ буцахгүй, мөнхөд томорсон хэвээр үлддэг
+   байв (хэрэглэгчийн мэдээлсэн алдаа). */
 .add-track-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:8px}
-.pf-row.sb{min-height:84px}
+.add-track-btn.sb.sb-on{min-height:84px}
 .pf-row.sb .sb-label{display:flex;align-items:center;gap:12px;width:100%;min-width:0}
-/* Excel/CSV татах товчнууд (.exp-btn/.btn-ok/.pu5-btn) — v185-д
-   нэмсэн адил зарчим. .btn-ok нь энд ХАДГАЛАМЖИЙН тайлангуудад
-   ИНЛАЙН СТИЛИАР өнгөт градиент дэвсгэртэй тул SB_DL-ийн бяцхан
-   хүн уншигдахын тулд !important-аар цайвар гадаргуу руу сольно
-   (inline style class-аас илүү тэргүүлэх зэрэгтэй тул). */
-.exp-btn.sb{min-height:84px}
+.pf-row.sb.sb-on{min-height:84px}
+/* Excel/CSV татах товчнууд (.exp-btn/.btn-ok/.pu5-btn) — дээрх адил
+   зарчим: өндөр/өнгө зөвхөн .sb-on үед. .btn-ok нь энд ХАДГАЛАМЖИЙН
+   тайлангуудад ИНЛАЙН СТИЛИАР өнгөт градиент дэвсгэртэй тул
+   SB_DL-ийн бяцхан хүн уншигдахын тулд !important-аар цайвар
+   гадаргуу руу сольно (inline style class-аас илүү тэргүүлэх
+   зэрэгтэй тул); тоглож дуусаад жинхэнэ CTA өнгөндөө буцна. */
 .exp-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-ok.sb{min-height:84px;background:var(--card) !important;box-shadow:var(--sh-sm) !important;
-  color:var(--blue) !important;text-shadow:none !important}
-.btn-ok.sb:active{box-shadow:var(--sh-sm-in) !important}
+.exp-btn.sb.sb-on{min-height:84px}
 .btn-ok.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:8px}
-.pu5-btn.sb{min-height:84px}
+.btn-ok.sb.sb-on{min-height:84px;background:var(--card) !important;box-shadow:var(--sh-sm) !important;
+  color:var(--blue) !important;text-shadow:none !important}
 .pu5-btn.sb .sb-label{display:flex;align-items:center;justify-content:center;gap:6px}
+.pu5-btn.sb.sb-on{min-height:84px}
 /* "Илгээгдээгүй" тэмдэг жижиг тул үзэгдлийг дэлгэцийн доор хөвөгч
    самбар дээр тоглуулна — тэмдгийг түр нуугаад орлуулна */
 #sendFly{display:none;position:fixed;left:50%;z-index:9998;pointer-events:none;
@@ -781,12 +786,17 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   -webkit-user-select:none;user-select:none;cursor:grab}
 .drum-viewport:active{cursor:grabbing}
 .drum-reel{position:absolute;left:0;right:0;top:0;will-change:transform}
+/* Одоо таарсан мөрийн хүрээ — өмнө нь цайвар, бараг харагдахгүй байсан
+   бөгөөд ялангуяа "Тэнцэхгүй" мөр (өөрөө улбар шартай) дээр таарахад
+   бараг ялгарахгүй байв. Одоо гэрэл/мөрийн өнгөнөөс үл хамааран
+   үргэлж тод ялгарахаар БҮРЭН ӨНГӨТЭЙ хүрээ, илүү зузаан мөнгөн шугам
+   болгов (хэрэглэгчийн мэдээлсэн — дэр, дүнз хоёулаа ижил хүрээ хуваалцдаг). */
 .drum-frame{position:absolute;left:10px;right:10px;top:0;height:52px;
   border-radius:17px;pointer-events:none;z-index:1;will-change:transform;
-  border:2.5px solid rgba(255,158,40,.8);
-  background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,246,224,.26));
-  box-shadow:0 8px 30px rgba(255,150,40,.3),0 0 0 4px rgba(255,190,90,.14),
-    inset 0 0 26px rgba(255,255,255,.55)}
+  border:3.5px solid #FF8A17;
+  background:linear-gradient(180deg,rgba(255,206,100,.5),rgba(255,150,48,.28));
+  box-shadow:0 8px 32px rgba(255,120,20,.45),0 0 0 5px rgba(255,170,60,.26),
+    inset 0 0 20px rgba(255,255,255,.5)}
 .drow{height:52px;box-sizing:border-box;display:flex;align-items:center;gap:8px;
   padding:0 14px;margin:0 14px;border-radius:14px;border:1.5px solid transparent;
   will-change:transform,opacity;transform-origin:50% 50%;
@@ -4681,11 +4691,13 @@ function collectRepl(){
 function replTotalCount(){
   return collectRepl().reduce((s,t)=>s+t.rows.length,0)
 }
-// Бүх замын 3 ба түүнээс дээш дараалсан тэнцэхгүй цэгүүд
+// Бүх замын 3 ба түүнээс дээш дараалсан тэнцэхгүй цэгүүд. origSections
+// ашигласнаар сольсон дэр ч дараалалдаа ХЭВЭЭР тооцогдоно — дүнзний
+// swRuns(swOrigIt)-той адил зарчим (хэрэглэгчийн мэдээлсэн зөрүү).
 function collectConsec(){
   const out=[];
   allTracks().forEach(t=>{
-    const g=findConsecutiveBadForTrack(t.sections||[]);
+    const g=findConsecutiveBadForTrack(origSections(t));
     if(g.length)out.push({id:t.id,name:trackLabel(t),num:t.num,groups:g})
   });
   return out
@@ -7411,7 +7423,7 @@ function showSectionSummary(){
       Тэнцэхгүй хувь: <strong style="color:${pCol}">${a.pct.toFixed(1)}%</strong>${a.pct>=25?' ⚠️ 25%-аас их!':''}
     </div>
   </div>
-  ${consecAnalysisHTML([sec],sec.label)}`;
+  ${consecAnalysisHTML([(origSections(_t).find(s=>s.id===sec.id)||sec)],sec.label)}`;
   showView('summaryView')
 }
 function showSummaryAll(){
@@ -7449,8 +7461,9 @@ function showSummaryAll(){
     </div></div>`;
   let consecAll='';
   _all.forEach(t=>{
-    const grps=findConsecutiveBadForTrack(t.sections);
-    if(grps.length>0)consecAll+=consecAnalysisHTML(t.sections,trackLabel(t))
+    const origSecs=origSections(t);
+    const grps=findConsecutiveBadForTrack(origSecs);
+    if(grps.length>0)consecAll+=consecAnalysisHTML(origSecs,trackLabel(t))
   });
   if(!consecAll)consecAll=`<div class="consec-block"><div class="consec-title">🔗 Дараалсан тэнцэхгүй дэр</div><div class="consec-empty">✓ Дараалсан тэнцэхгүй дэр олдсонгүй</div></div>`;
   html+=consecAll;
@@ -7487,7 +7500,7 @@ function renderTrackSummaryHTML(t){
     <div class="sum-sub">${tb.items.filter(x=>x.n>0).map(x=>`${x.k}: <strong>${x.n}</strong> (${(x.n/tb.total*100).toFixed(1)}%)`).join(' · ')||'Бүртгэл алга'}<br>
       Тэнцэхгүй: <strong style="color:${pCol}">${a.pct.toFixed(1)}%</strong>${a.pct>=25?' ⚠️ 25%-аас их!':''}</div>
   </div>${tbl}
-  ${consecAnalysisHTML(t.sections,t.num+'-р зам')}
+  ${consecAnalysisHTML(origSections(t),t.num+'-р зам')}
   <div class="sum-block"><div class="sum-block-title">Экспорт</div>
     <div class="export-grid">
       <button class="exp-btn exp-xl" onclick="openThresholdExport('${t.id}')"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10M10 19V5M16 19v-6M4 19h16"/></svg> Excel</button>
@@ -14648,7 +14661,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.12·186';
+const APP_BUILD='2026.10.12·187';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
