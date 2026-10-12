@@ -134,6 +134,55 @@ const crBusy=await page.evaluate(async()=>{
 ok('Өөр үзэгдэл (sbBusy) тоглож байхад анимацигүйгээр шууд дуусна (<1000мс)',
    crBusy.ms<1000&&!crBusy.sbOn,JSON.stringify(crBusy));
 
+/* ── 8. runDlFly(fn,btn) — Excel/CSV татах товчнууд ЯГ ТЭНД нь шууд
+   тоглодог болсон (v185 дараах, өргөтгөл): #dlFly биш, онклик дотор
+   "this" дамжуулсан бол тэр товч дотроо SB_DL тоглоно. Нүүрэн дэх
+   CSV товчоор шалгана — sbGate()-ийн dlBlob-той холбоо ч хадгалагдана.
+   Экспортын эгнээ #tracksSection дотор, зөвхөн паспорт НЭЭЛТТЭЙ үед
+   харагддаг тул эхлээд нэг паспорт үүсгэж нээнэ. */
+await page.evaluate(()=>{
+  DB.folders=[{id:'fexp',name:'Экспорт 2026',season:'хавар',year:'2026',date:'2026-01-01',sc:'ПД-6',
+    tracks:[{id:'texp',num:1,kind:'station',sections:[{id:'sexp',type:'normal',label:'1-р үе',
+      sleepers:[{type:'normal',ts:0}]}]}]}];
+  saveDB();renderHome();openFolder('fexp')
+});
+await page.waitForTimeout(300);
+const expInit=await page.evaluate(()=>{
+  const b=document.querySelector('#homeView .exp-btn.exp-csv');
+  return {exists:!!b,sbOn:b&&b.classList.contains('sb-on')}
+});
+ok('Нүүр дэх CSV товч бэлэн, анхандаа тоглоогүй',expInit.exists&&!expInit.sbOn,JSON.stringify(expInit));
+
+await page.evaluate(()=>{
+  window.__delivered2=false;
+  const btn=document.querySelector('#homeView .exp-btn.exp-csv');
+  window.__p8=runDlFly(async()=>{
+    await dlBlob(new Blob(['a,b\n1,2'],{type:'text/csv'}),'home.csv');
+    window.__delivered2=true
+  },btn)
+});
+await page.waitForTimeout(80);
+const expEarly=await page.evaluate(()=>{
+  const btn=document.querySelector('#homeView .exp-btn.exp-csv');
+  return {sbOn:btn.classList.contains('sb-on'),disabled:btn.disabled,
+    flyOn:document.getElementById('dlFly').classList.contains('on'),
+    delivered:window.__delivered2}
+});
+ok('Дарсны дараа ШУУД: товч дотроо тоглож эхэлсэн, #dlFly ХӨНДӨГДӨӨГҮЙ',
+   expEarly.sbOn&&expEarly.disabled&&!expEarly.flyOn,JSON.stringify(expEarly));
+ok('fn бэлэн ч dlBlob() үзэгдэл дуустал хүлээнэ (sbGate хэвээр ажиллана)',
+   !expEarly.delivered,JSON.stringify(expEarly));
+
+await page.waitForFunction(()=>!document.querySelector('#homeView .exp-btn.exp-csv').classList.contains('sb-on'),
+  {timeout:8000});
+await page.evaluate(()=>window.__p8);
+const expAfter=await page.evaluate(()=>{
+  const btn=document.querySelector('#homeView .exp-btn.exp-csv');
+  return {sbOn:btn.classList.contains('sb-on'),disabled:btn.disabled,delivered:window.__delivered2}
+});
+ok('Үзэгдэл дуусаад л файл өгөгдөж, товч анхны байдалдаа буцав',
+   expAfter.delivered&&!expAfter.sbOn&&!expAfter.disabled,JSON.stringify(expAfter));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,5)));
 console.log('\nSUMMARY '+R.filter(Boolean).length+'/'+R.length);
