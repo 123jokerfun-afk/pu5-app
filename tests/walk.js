@@ -482,14 +482,24 @@ const ccar=await page.evaluate(async()=>{
   _revLeave();await new Promise(r=>setTimeout(r,300));
   const s2=getTrack('tc').sections[1];
   window.appConfirm=_ac;
+  const cons=(collectConsec().find(x=>x.id==='tc')||{groups:[]}).groups.map(g=>
+    g.len+':'+g.items.map(i=>i.secLabel+'#'+i.posInSec).join(','));
   return{inRun,asked,carve,keys:Object.keys(s2.repl||{}),
-    back:!!(s2.repl&&s2.repl[0]&&s2.repl[0].s),cv:collectCarve().map(x=>x.rows.length)}});
+    back:!!(s2.repl&&s2.repl[0]&&s2.repl[0].s),cv:collectCarve().map(x=>x.rows.length),
+    cons,consN:consecTotalCount()}});
 ok('Ухрах горимд ч дэр нь дараалсан цэгт хамаарна',ccar.inRun,String(ccar.inRun));
 ok('Сийрэгжилтийн асуулт гарна',/сийрэгжилт/i.test(ccar.asked||''),(ccar.asked||'—').slice(0,52));
 ok('Солилт СИЙРЭГЖИЛТ гэж тэмдэглэгдэнэ',ccar.carve,String(ccar.carve));
 ok('Үеэс гарахад тэмдэг жинхэнэ дугаар (#1) дээрээ үлдэнэ',
    ccar.back&&ccar.keys.length===1&&ccar.keys[0]==='0',JSON.stringify(ccar.keys));
 ok('Сийрэгжилтийн жагсаалтад орно',JSON.stringify(ccar.cv)==='[1]',JSON.stringify(ccar.cv));
+/* Сольсон дэр дараалсан цэгийн ТАЙЛАНГААС алга болохгүй ёстой — дүнзний
+   swRuns(swOrigIt)-той адил origSections ашигладаг болсныг батална
+   (хэрэглэгчийн мэдээлсэн зөрүү: сольсны дараа "2-р үе#1" бүлгээсээ
+   унадаг байсан тул 3-дараалсан бүлэг бүхэлдээ алга болдог байв). */
+ok('Сольсны ДАРАА ч дараалсан цэг (2-р үе#1 орсон бүлэг) тайланд хэвээр',
+   ccar.cons.length===2&&/1-р үе#5,1-р үе#6,2-р үе#1/.test(ccar.cons[0])&&ccar.consN===2,
+   JSON.stringify(ccar.cons)+' · нийт '+ccar.consN);
 
 /* ══════════════════════════════════════════════════════════════
    УХРАХ ГОРИМООС ГАРАХ БҮХ ЗАМ
