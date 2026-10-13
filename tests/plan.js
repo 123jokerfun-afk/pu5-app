@@ -708,6 +708,54 @@ ok('Сум А нээлттэй үед Б-ийн рам зам дэр рүү үс
 ok('Буцахад тайлан руугаа буцна',swjb.modalOpen&&swjb.view2==='homeView',
    `${swjb.view2} · modal ${swjb.modalOpen}`);
 
+/* ── 13. Жагсаалтын бүлэглэл: үл сольсон дээрээ, сольсон доороо ──
+   idx/дугаараар шууд эрэмбэлбэл эрт сольсон мөр (бага дугаартай) ХАМГИЙН
+   ЭХЭНД гарах байсан. Ажилчин үлдсэн ажлаа эхлээд харах ёстой тул
+   fulfilled-ээр ЭХЛЭЭД бүлэглэж, дэд бүлэг тус бүрдээ дугаараараа эрэмбэлнэ. */
+console.log('\nЖагсаалтын бүлэглэл (үл сольсон → сольсон)');
+const grp=await page.evaluate(async()=>{
+  const mk=(id,lab,pat)=>({id,type:'normal',label:lab,note:'',date:'2026-05-01',
+    sleepers:pat.split('').map(c=>({type:c==='b'?'bad':'normal',ts:0}))});
+  DB.folders=[{id:'fg',name:'Бүлэглэл',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    tracks:[{id:'tg',num:1,kind:'station',note:'',sections:[mk('sg','1-р үе','bbbbnnnnnn')]}]}];
+  DB.main=[];DB.sw=[];swFolderId=null;
+  const sec=DB.folders[0].tracks[0].sections[0];
+  sec.plan={0:'tbd',1:'tbd',2:'tbd',3:'tbd'};     // #1..#4 бүгд төлөвлөсөн
+  sec.repl={0:{d:'2026-06-01',t:'tbd',m:'tbd'}};  // #1 (хамгийн бага дугаартай) АЛЬ ХЭДИЙН сольсон
+  activeFolderId='fg';DB.tracks=DB.folders[0].tracks;saveDB();
+  goHome();await new Promise(r=>setTimeout(r,320));
+  openPlanReport();await new Promise(r=>setTimeout(r,320));
+  const rows=[...document.querySelectorAll('#planRepBody .pl-row')].map(e=>({
+    idx:+((e.textContent.match(/#(\d+)/)||[])[1]),done:e.classList.contains('pl-done')}));
+  closeModal('planRepModal');
+  return{rows}});
+ok('Дэрийн жагсаалтад үл сольсон (#2,#3,#4) ЭХЭНД, сольсон (#1) ЭЦЭСТ',
+   grp.rows.length===4&&grp.rows.slice(0,3).every(r=>!r.done)&&grp.rows[3].done&&grp.rows[3].idx===1,
+   JSON.stringify(grp.rows));
+ok('Үл сольсон дэд бүлэг дугаараараа өсөх дараалалтай',
+   JSON.stringify(grp.rows.slice(0,3).map(r=>r.idx))==='[2,3,4]',
+   JSON.stringify(grp.rows.slice(0,3).map(r=>r.idx)));
+
+const sgrp=await page.evaluate(async()=>{
+  let it='';for(let i=0;i<10;i++)it+=i<4?'b':'n';
+  DB.sw=[{id:'sfg',name:'Бүлэглэл сум',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    turnouts:[{id:'wg',num:1,mak:'Р-65',mark:'1/9',head:0,it,
+      dPlan:{0:3,1:3,2:3,3:3},dRepl:{0:{d:'2026-06-01',t:'normal',m:'wood'}}}],
+    inc:[{id:'ig',d:'2026-05-01',items:[{L:3,n:10}]}]}];
+  swFolderId='sfg';saveDB();
+  goSwHome();await new Promise(r=>setTimeout(r,320));
+  openSwPlanRep();await new Promise(r=>setTimeout(r,320));
+  const rows=[...document.querySelectorAll('#swPlanRepBody .pl-row')].map(e=>({
+    no:+((e.textContent.match(/#(\d+)/)||[])[1]),done:e.classList.contains('pl-done')}));
+  closeModal('swPlanRepModal');
+  return{rows}});
+ok('Дүнзний жагсаалтад ч мөн адил: үл сольсон (#2,#3,#4) ЭХЭНД, сольсон (#1) ЭЦЭСТ',
+   sgrp.rows.length===4&&sgrp.rows.slice(0,3).every(r=>!r.done)&&sgrp.rows[3].done&&sgrp.rows[3].no===1,
+   JSON.stringify(sgrp.rows));
+ok('Үл сольсон дэд бүлэг дүнзний дугаараараа өсөх дараалалтай',
+   JSON.stringify(sgrp.rows.slice(0,3).map(r=>r.no))==='[2,3,4]',
+   JSON.stringify(sgrp.rows.slice(0,3).map(r=>r.no)));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);

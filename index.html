@@ -795,11 +795,11 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
    бараг ялгарахгүй байв. Одоо гэрэл/мөрийн өнгөнөөс үл хамааран
    үргэлж тод ялгарахаар БҮРЭН ӨНГӨТЭЙ хүрээ, илүү зузаан мөнгөн шугам
    болгов (хэрэглэгчийн мэдээлсэн — дэр, дүнз хоёулаа ижил хүрээ хуваалцдаг).
-   Мөрийн өндрөөс (DR_H=52) арай том (60) — доор _drumPaint()-ийн sc
-   томъёогоор хүрээн дэх мөр өөрөө томорч харагддагтай тааруулав. top:-4px
-   нь (60-52)/2 буюу хуучин ЯГ ТАТАЖ байсан мөрийн төвтэй зэрэгцүүлнэ. */
-.drum-frame{position:absolute;left:10px;right:10px;top:-4px;height:60px;
-  border-radius:19px;pointer-events:none;z-index:1;will-change:transform;
+   v189-д хүрээг мөртэй хамт томруулж үзсэн ч агуулга гажуудаж, зэргэлдээ
+   мөрүүд хэтэрхий бүдгэрч харагдсан тул буцаав (хэрэглэгчийн мэдээлсэн) —
+   доор зөвхөн төвийн мөрийн ТЕКСТ (.dr-in) бага зэрэг томорно. */
+.drum-frame{position:absolute;left:10px;right:10px;top:0;height:52px;
+  border-radius:17px;pointer-events:none;z-index:1;will-change:transform;
   border:3.5px solid #FF8A17;
   background:linear-gradient(180deg,rgba(255,206,100,.5),rgba(255,150,48,.28));
   box-shadow:0 8px 32px rgba(255,120,20,.45),0 0 0 5px rgba(255,170,60,.26),
@@ -849,6 +849,13 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .drow.dr-in{box-shadow:0 5px 22px rgba(255,150,40,.3),0 0 0 1.5px rgba(255,168,50,.55);
   filter:saturate(1.2) contrast(1.04)}
 .drow{transition:filter .18s ease,box-shadow .18s ease}
+/* Хүрээнд яг таарсан мөрийн текст (дугаар, төрөл) бага зэрэг томорч
+   харагдана — мөрийг scale хийхгүй тул зэргэлдээ мөр гажихгүй */
+.drow.dr-in .dr-num{font-size:13.5px}
+.drow.dr-in .drum-badge span{font-size:13.5px}
+.drow.dr-in .sw-kind{font-size:13.5px}
+.drow.dr-in .sw-state{font-size:14px}
+.drow.dr-in .dr-slot-lbl{font-size:12.5px}
 .dr-num{font-size:12px;font-weight:800;min-width:28px;font-variant-numeric:tabular-nums}
 /* Дараалсан (3+) тэнцэхгүй цэгийн дэс дугаар — мөрийн баруун талд */
 .dr-run{margin-left:auto;min-width:22px;height:20px;padding:0 5px;border-radius:6px;
@@ -5020,7 +5027,9 @@ function renderPlanReport(fid){
       // Үе бүрийн өөрийнх нь хувь — тэр үеийнхээ дэрийг сольсноор хэд болох
       html+=`<div class="pl-ue"><span>${esc(sc.label)}</span>
         ${_pctPair(sc.bad,sc.bad2,sc.total)}</div>`;
-      sc.rows.forEach(r=>{
+      // Үл сольсон (идэвхтэй) мөрүүд дээрээ, сольсон (бүдгэрсэн) мөрүүд
+      // доороо харагдана — ажилчин хийх ажлаа эхлээд харна
+      sc.rows.slice().sort((a,b)=>(a.fulfilled-b.fulfilled)||(a.idx-b.idx)).forEach(r=>{
         if(!r.fulfilled){N++;if(r.m==='tbd')T++;else W++}else D++;
         const go=r.sw?`jumpToSwPlan('${r.tid}',${r.pos})`
                     :`jumpToPlan('${t.id}','${r.secId}',${r.pos})`;
@@ -6438,10 +6447,11 @@ function _drumPaint(){
     if(r.style.visibility==='hidden'){r.style.visibility='';r.style.display=''}
     // Гөлгөр уналт (smoothstep) — кинк байхгүй
     const f=Math.min(1,ad/4),ss=f*f*(3-2*f);
-    // Хэрэглэгчийн хүссэнээр: холын мөрүүд хэвийн хэмжээндээ (1.0) үлдэж,
-    // хүрээнд яг таарсан төвийн мөр нь ТОМОРЧ харагдана (өмнө нь эсрэгээр —
-    // төв нь хэвийн, холдох тусам жижигэрдэг байсан).
-    const sc=1+0.16*(1-ss);
+    // Мөрийг бүхэлд нь томруулахаар v189-д оролдсон ч агуулга гажуудаж
+    // харагдсан тул буцаав — холдох тусам бага зэрэг жижигэрнэ
+    // (бөмбөрөгийн мэдрэмж). Төвийн мөрийг ялгаруулах нь доорх .dr-in
+    // дүрмээр зөвхөн ТЕКСТЭД (тоо/төрөл) хийгдэнэ, мөрийг scale хийхгүй.
+    const sc=1-0.115*ss;
     // Хүрээн доторх мөр тод, бусад нь огцом бүдгэрнэ
     const fall=Math.pow(Math.max(0,1-ad/4),3);
     const rec=r.dataset.rec==='1';
@@ -12877,7 +12887,8 @@ function openSwPlanRep(){
       +`<div class="sw-tr sw-tr-h"><span class="sw-c1">Дүнз</span><span class="sw-c2">Одоо</span>
          <span class="sw-c34">Төлөвлөсөн</span></div>`;
     let tn=0;
-    t.rows.forEach(r=>{
+    // Үл сольсон мөрүүд дээрээ, сольсон мөрүүд доороо (renderPlanReport-той ижил зарчим)
+    t.rows.slice().sort((a,b)=>(a.fulfilled-b.fulfilled)||(a.no-b.no)).forEach(r=>{
       if(!r.fulfilled){by[r.L]=(by[r.L]||0)+1;N++;M+=r.L;tn++}else{D++;MD+=r.L}
       html+=`<div class="sw-tr pl-row${r.fulfilled?' pl-done':''}" onclick="hap();swGotoPlan('${t.id}',${r.i})">
         <span class="sw-c1">#${r.no}</span>
@@ -14847,7 +14858,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.13·190';
+const APP_BUILD='2026.10.13·191';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
