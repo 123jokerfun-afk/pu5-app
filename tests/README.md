@@ -23,7 +23,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome herohome
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto multi
-node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair  (удаан)
+node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale  (удаан)
 node allE.js     # гүнзгий: e2e deep live fuzz×5  (хамгийн удаан)
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
@@ -75,6 +75,7 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `plan.js` | Солихоор төлөвлөх (дэр, дүнз, сумын рам замын дэр), тэмдэглэгээ, "сольсноор хэдэн хувь болох", дэрийн агуулах, захын тохиолдлууд |
 | `seasonguard.js` | Ижил он+улирлын хоёр дахь паспорт (дэр, сум) үүсгэхийг хориглох — Улирал сонголтын идэвхгүй/нуугдах, нөөц хамгаалалт, трэшинд байгаа нь давхардалд тооцогдохгүй |
 | `swpair.js` | Рам замын дэрийг season+year-ээр дэр↔сум паспорт хооронд хослуулах — дараалсан цэг/сольсон/төлөвлөгөө зөвхөн хос улиралд, `jumpToConsecSw`, `swHeadRuns`/`swFullOrigIt` |
+| `drumscale.js` | Бөмбөрөгийн хүрээнд таарсан мөр томорч, холын мөр хэвийн хэмжээндээ үлддэг эсэх (дэр, сум хоёулаа), хүрээний өндөр/төвлөрөл |
 | `e2e.js` | ПД-7 хэсгийн БҮТЭН урсгал — бүртгэл, ухрах, гол/салбар зам, сум, агуулах, төлөвлөгөө, өв, тайлан, экспорт, үүл |
 | `deep.js` | Дэлгэц, цонх бүрийн товчийг ҮНЭХЭЭР дарж үзнэ — 200+ товч |
 | `live.js` | Амьдралын мөчлөг — дахин ачаалалт, унасан үеийн засвар, бүх экспорт, офлайн |
