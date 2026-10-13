@@ -22,6 +22,16 @@ ok(dev.name+' · Өмнөх/Дараагийн ↔ joystick',!hit(res.pill,res.j
 ok(dev.name+' · Өмнөх/Дараагийн бичиг багтав',res.pill.sw<=res.pill.cw+1,res.pill.sw+'/'+res.pill.cw);
 ok(dev.name+' · зүүн санамж товчны доор ороогүй',res.L.right<=res.joy.left+1,Math.round(res.L.right)+'≤'+Math.round(res.joy.left));
 ok(dev.name+' · зүүн санамж багтав',res.L.sw<=res.L.cw+1,res.L.sw+'/'+res.L.cw);
+// v192: "Үеийн дэлгэрэнгүй" хүснэгт нарийн утсан дээр өргөн тул ӨӨРӨӨ
+// (.stbl-wrap) хажуу тийш гулсдаг, гэхдээ БҮХЭЛ дэлгэц гулсаж болохгүй
+// — эс тэгвэл дээрх картууд хамт шилжинэ (v192-с өмнө байсан алдаа).
+const sm=await page.evaluate(()=>{
+  goHome();openFolder('f-test1');openTrack('t1');showTrackSummary();
+  const view=document.getElementById('summaryView'),wrap=document.querySelector('.stbl-wrap');
+  return{viewSw:view.scrollWidth,viewCw:view.clientWidth,hasWrap:!!wrap}});
+await page.waitForTimeout(250);
+ok(dev.name+' · Үеийн дэлгэрэнгүй хүснэгт бүх дэлгэцийг гулсуулахгүй',
+   sm.hasWrap&&sm.viewSw<=sm.viewCw+4,sm.viewSw+'/'+sm.viewCw);
 await ctx.close();}
 console.log('SUMMARY '+R.filter(r=>r.c).length+'/'+R.length);
 await browser.close();

@@ -976,6 +976,10 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .sum-tot-l{font-size:9px;color:var(--ink3);margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .sum-sub{font-size:11px;color:var(--ink3);margin-top:10px;padding-top:10px;
   border-top:1px solid var(--border);line-height:1.8;font-weight:500}
+/* Нарийн утсан дээр (280px) баганын тоо хэтэрч гарвал ХҮСНЭГТ ӨӨРӨӨ
+   хажуу тийш гулсана — бүх дэлгэц биш (өмнө нь .sum-block-ийн эх дэлгэц
+   бүхэлдээ гулсаж, толгой/картууд хамт шилждэг асуудалтай байв). */
+.stbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .stbl{width:100%;border-collapse:collapse;font-size:11px}
 .stbl th{padding:6px 4px;font-size:9px;color:var(--ink3);border-bottom:2px solid var(--border);
   font-weight:800;text-align:center;text-transform:uppercase;letter-spacing:.04em}
@@ -7588,7 +7592,7 @@ function renderTrackSummaryHTML(t){
   if(!tb.items)tb.items=sleeperBreakdown({sleepers:[]},t).items;
   const pCol=a.pct>=25?'var(--red)':a.pct>=15?'var(--orange)':'var(--g600)';
   let tbl=`<div class="sum-block"><div class="sum-block-title">Үеийн дэлгэрэнгүй</div>
-    <table class="stbl"><thead><tr><th>Үе / Холбох</th><th>Нийт</th>${sleeperBreakdown({sleepers:[]},t).items.map(x=>`<th>${x.k}</th>`).join('')}<th>%</th></tr></thead><tbody>`;
+    <div class="stbl-wrap"><table class="stbl"><thead><tr><th>Үе / Холбох</th><th>Нийт</th>${sleeperBreakdown({sleepers:[]},t).items.map(x=>`<th>${x.k}</th>`).join('')}<th>%</th></tr></thead><tbody>`;
   dataSections(t).forEach(s=>{
     const sa=analyzeSection(s);const sb=sleeperBreakdown(s,t);const pc=isMainTrack(t)?analyzeMainSection(s,t).pct:sa.pct;
     const rCls=s.type==='connecting'?'co':pc>=25?'rd':pc>=15?'wd':'';
@@ -7597,7 +7601,7 @@ function renderTrackSummaryHTML(t){
       <td>${sb.total}</td>${sb.items.map(x=>`<td>${x.n||'—'}</td>`).join('')}
       <td class="${tCls}">${sa.total?pc.toFixed(0)+'%':'—'}</td></tr>`
   });
-  tbl+=`</tbody></table><div style="font-size:11px;color:var(--ink4);margin-top:8px">🔴 25%+ · 🟡 15–25% · 🟣 Холбох хэсэг</div></div>`;
+  tbl+=`</tbody></table></div><div style="font-size:11px;color:var(--ink4);margin-top:8px">🔴 25%+ · 🟡 15–25% · 🟣 Холбох хэсэг</div></div>`;
   document.getElementById('sumBody').innerHTML=`
   <div class="sum-block">
     <div class="sum-block-title">${esc(trackLabel(t))} · Нийт дүн</div>
@@ -14858,7 +14862,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.13·191';
+const APP_BUILD='2026.10.13·192';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
