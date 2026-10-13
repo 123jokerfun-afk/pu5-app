@@ -308,6 +308,28 @@ ok('Жагсаалт нь дүнзний дугаар, одоогийн ба т�
 ok('Уртаар нь ш · нийт пог/м гарна',/3,5 м 1 ш 3,5 пог\/м/.test(srep.body),
    (srep.body.match(/Уртаар нь.{0,60}/)||[''])[0]);
 ok('Доор нь нийт ш ба нийт пог/м',/1 ш · 3,5 пог\/м/.test(srep.tot),srep.tot);
+// code-review: .sw-c34::after{content:'м'} нь .ulit-тэй элементэд
+// (текстэд нь "м"/"пог/м" аль хэдийн байгаа) ДАВХАРЛАХГҮЙ байх ёстой —
+// textContent нь ::after-ийг харуулахгүй тул getComputedStyle-ээр шалгана.
+// openSwPlanRep()-ийн жинхэнэ мөр (.ulit) + тусдаа угсарсан "энгийн" мөр
+// (.ulit-гүй, жишээ нь openSwRealRep-ийн swLen(r.nom) хэв маяг) хоёуланг
+// нь шалгана.
+const muDup=await page.evaluate(()=>{
+  const row=document.querySelector('#swPlanRepBody .pl-row .sw-c34.ulit');
+  const probe=document.createElement('div');
+  probe.innerHTML=`<div class="sw-tr"><span class="sw-c1">x</span><span class="sw-c2">x</span>
+    <span class="sw-c34">7</span></div>`;
+  document.body.appendChild(probe);
+  const bare=probe.querySelector('.sw-c34');
+  const r={rowAfter:row?getComputedStyle(row,'::after').content:null,
+    bareAfter:bare?getComputedStyle(bare,'::after').content:null};
+  probe.remove();
+  return r
+});
+ok('.ulit элемент дээр ::after давхар "м" нэмэхгүй (content:none)',
+   muDup.rowAfter==='none',JSON.stringify(muDup));
+ok('Энгийн (.ulit-гүй) элемент дээр ::after хэвээр "м" нэмнэ',
+   muDup.bareAfter==='"м"',JSON.stringify(muDup));
 
 const sj=await page.evaluate(async()=>{
   document.querySelector('#swPlanRepBody .pl-row').click();

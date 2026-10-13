@@ -109,6 +109,38 @@ const fullOrig=await page.evaluate(()=>{
 });
 ok('swFullOrigIt: slRepl.o=1 бол тэр байрлал буцааж "b" болно',fullOrig==='bbnnn',fullOrig);
 
+// 9. jumpToConsecSw — буцах товч "Дараалсан цэг" тайлан руугаа буцна
+// (code-review: _fromConsec тавигдаагүй байсан тул swBackFromRec() нь
+// swHomeView рүү шилждэг байсныг засав).
+await page.evaluate(()=>{openFolder('fh');openConsecReport()});
+const backJump=await page.evaluate(()=>{
+  jumpToConsecSw('th',1);
+  const fromConsec=_fromConsec;
+  swBackFromRec();
+  return {fromConsec,modalOpen:_modalOpen('consecReportModal'),
+    view:(document.querySelector('.view.active')||{}).id}
+});
+ok('jumpToConsecSw: _fromConsec=true тавигдана',backJump.fromConsec===true,JSON.stringify(backJump));
+ok('Буцах товч "Дараалсан цэг" тайлан руугаа буцна',
+   backJump.modalOpen===true&&backJump.view==='homeView',JSON.stringify(backJump));
+
+// 10. swFolderBySeasonOf — season/year хоосон бол хослуулахгүй, хэд
+// хэдэн тохирол олдвол (хуучин, v188-аас өмнөх давхардсан өгөгдөл)
+// дэр паспортын огноонд хамгийн ойрыг сонгоно (санамсаргүй биш).
+const tieBreak=await page.evaluate(()=>{
+  const der={id:'fx',season:'хавар',year:'2026',date:'2026-04-20'};
+  const noSeason=swFolderBySeasonOf({id:'fy',season:'',year:'2026',date:'2026-04-20'});
+  // Хоёр "хавар 2026" сумын паспорт — нэг нь 04-10 (10 хоногийн зөрүү),
+  // нөгөө нь 04-25 (5 хоногийн зөрүү) — сүүлийнх нь илүү ойр байх ёстой.
+  DB.sw.push({id:'close',season:'хавар',year:'2026',date:'2026-04-25',turnouts:[]});
+  DB.sw.push({id:'far',season:'хавар',year:'2026',date:'2026-03-01',turnouts:[]});
+  const picked=swFolderBySeasonOf(der);
+  return {noSeason,pickedId:picked?picked.id:null}
+});
+ok('season хоосон дэр паспорт хослуулахгүй (null)',tieBreak.noSeason===null,JSON.stringify(tieBreak));
+ok('Хэд хэдэн тохиролоос дэр паспортын огноонд хамгийн ойрыг сонгоно',
+   tieBreak.pickedId==='close',JSON.stringify(tieBreak));
+
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 console.log('\nSUMMARY '+R.filter(Boolean).length+'/'+R.length);
