@@ -56,7 +56,9 @@ function ensureServer(){
       if(!f.startsWith(ROOT)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){
         s.writeHead(404);return s.end('not found')}
       s.writeHead(200,{'Content-Type':MIME[path.extname(f)]||'application/octet-stream'});
-      fs.createReadStream(f).pipe(s);
+      const rs=fs.createReadStream(f);
+      rs.on('error',()=>{try{s.destroy()}catch(e){}});   // унших алдаа процесс унахаас сэргийлнэ
+      rs.pipe(s);
     });
     _srv.on('error',rej);
     _srv.listen(0,'127.0.0.1',()=>{                 // 0 = сул портыг өөрөө сонгоно

@@ -56,6 +56,14 @@
       return {set(ref,v){ops.push(()=>ref.set(v));return this},
               delete(ref){ops.push(()=>ref.delete());return this},
               commit(){return Promise.all(ops.map(f=>f()))}}
+    },
+    // Жинхэнэ Firestore-ын адил атомик биш (нэг мөрөнд ажилладаг тул
+    // шаардлагагүй) — зөвхөн get/set/delete API-ийг дэмжинэ, апп
+    // _writeParts()-ын нэгтгэх логикоо шалгахад хангалттай.
+    runTransaction(fn){
+      const tx={get(ref){return ref.get()},set(ref,v){return ref.set(v)},
+                delete(ref){return ref.delete()}};
+      return Promise.resolve().then(()=>fn(tx))
     }
   }};
   fs.FieldValue={serverTimestamp:tsNow};

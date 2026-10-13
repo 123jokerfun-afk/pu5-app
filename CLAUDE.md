@@ -69,7 +69,7 @@ service worker бүртгэдэггүй).
 ```bash
 cd tests
 node allA.js && node allB.js      # 206 шалгалт
-node allC.js                      # үүлний бүтэц (49 шалгалт)
+node allC.js                      # үүлний бүтэц (68 шалгалт)
 node allD.js                      # экспорт ба интерфэйс (удаан)
 node allE.js                      # гүнзгий: e2e deep live fuzz×5 (хамгийн удаан)
 node sweepA.js && node sweepB.js  # 7 утасны байрлал (босоо)
