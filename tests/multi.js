@@ -93,6 +93,7 @@ ok('Утас 2 ЗӨВХӨН өөрийн паспортыг бичив',
 const same=await page.evaluate(async()=>{
   const cloud={};
   const mk=id=>({set:v=>{cloud[id]=JSON.parse(JSON.stringify(v));return Promise.resolve()},
+    get:()=>Promise.resolve({exists:id in cloud,data:()=>cloud[id]}),
     delete:()=>{delete cloud[id];return Promise.resolve()}});
   fbDb.collection=()=>({doc:()=>({collection:()=>({doc:mk})})});
   fbDb.batch=()=>{const ops=[];return {set:(r,v)=>ops.push(()=>r.set(v)),
@@ -109,6 +110,130 @@ const same=await page.evaluate(async()=>{
   const m=_unpackDB(_joinParts(cloud));
   return m.folders[0].tracks[0].sections[0].sleepers[0].type});
 ok('Нэг паспортыг хоёулаа засвал сүүлийнх нь',same==='tbd','='+same);
+
+/* ══════════════════════════════════════════════════════════════
+   ӨӨР НЭГЖ (зам/км/сум) дээр хоёулаа зэрэг засвал — ХОЁУЛАНГИЙНХ нь
+   хадгалагдана (v193 засвар). Жишээ: нэг паспорт дотор 2-р зам дээр
+   нэг хүн, 3-р зам дээр нөгөө хүн зэрэг бүртгэл хийх тохиолдол.
+   _writeParts() одоо main/p_.../s_... хэсгийг транзакцаар НЭГЖИЙН
+   түвшинд нэгтгэдэг тул дээрх "сүүлийнх нь хүчинтэй" ЗӨВХӨН яг ижил
+   нэгж дээр л хэвээр байна — өөр нэгжийн хооронд алдагдал гарахгүй.
+   ══════════════════════════════════════════════════════════════ */
+console.log('\nӨӨР нэгж дээр зэрэг ажиллах (v193)');
+
+// ── Жишээ 1: нэг паспорт дотор 2-р зам / 3-р зам ──
+const diffTrack=await page.evaluate(async()=>{
+  const cloud={};
+  const mk=id=>({set:v=>{cloud[id]=JSON.parse(JSON.stringify(v));return Promise.resolve()},
+    get:()=>Promise.resolve({exists:id in cloud,data:()=>cloud[id]}),
+    delete:()=>{delete cloud[id];return Promise.resolve()}});
+  fbDb.collection=()=>({doc:()=>({collection:()=>({doc:mk})})});
+  fbDb.batch=()=>{const ops=[];return {set:(r,v)=>ops.push(()=>r.set(v)),
+    delete:r=>ops.push(()=>r.delete()),commit:()=>Promise.all(ops.map(f=>f()))}};
+  const mkSec=(id,n)=>({id,type:'normal',label:id,note:'',date:'2026-05-01',
+    sleepers:Array.from({length:n},()=>({type:'normal',ts:0}))});
+  const base=()=>({location:'ПД-6',v:3,tracks:[],rpt:{},main:[],sw:[],
+    folders:[{id:'fT',name:'Хавар',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'t2',num:2,kind:'station',sections:[mkSec('s2',10)]},
+              {id:'t3',num:3,kind:'station',sections:[mkSec('s3',10)]}]}]});
+
+  // Эхлэлийн нийтлэг төлвийг илгээгээд хоёр "утасны" мэдэх суурь болгоно
+  DB=_unpackDB(base());_clearPartHashes();localStorage.removeItem(_unitsKey());
+  await _pushCloud(_packDB(DB));
+  const H0u=localStorage.getItem(_unitsKey()),H0p=localStorage.getItem(_partsKey());
+
+  // Утас А: ЗӨВХӨН 2-р замдаа бичнэ (ижил эхлэлийн суурьтай)
+  localStorage.setItem(_unitsKey(),H0u);localStorage.setItem(_partsKey(),H0p);
+  const A=_unpackDB(base());
+  A.folders[0].tracks[0].sections[0].sleepers[0].type='bad';
+  DB=A;await _pushCloud(_packDB(DB));
+
+  // Утас Б: А-гийн өөрчлөлтийг МЭДЭХГҮЙ, ЗӨВХӨН 3-р замдаа бичнэ
+  localStorage.setItem(_unitsKey(),H0u);localStorage.setItem(_partsKey(),H0p);
+  const Bd=_unpackDB(base());
+  Bd.folders[0].tracks[1].sections[0].sleepers[0].type='tbd';
+  DB=Bd;await _pushCloud(_packDB(DB));
+
+  const merged=_unpackDB(_joinParts(cloud)),f=merged.folders[0];
+  return {t2:f.tracks.find(t=>t.id==='t2').sections[0].sleepers[0].type,
+          t3:f.tracks.find(t=>t.id==='t3').sections[0].sleepers[0].type}
+});
+ok('2-р зам / 3-р зам дээр зэрэг бичвэл ХОЁУЛАНГИЙНХ нь хадгалагдана',
+   diffTrack.t2==='bad'&&diffTrack.t3==='tbd',JSON.stringify(diffTrack));
+
+// ── Жишээ 2: гол замын 5-р км / 7-р км ──
+const diffKm=await page.evaluate(async()=>{
+  const cloud={};
+  const mk=id=>({set:v=>{cloud[id]=JSON.parse(JSON.stringify(v));return Promise.resolve()},
+    get:()=>Promise.resolve({exists:id in cloud,data:()=>cloud[id]}),
+    delete:()=>{delete cloud[id];return Promise.resolve()}});
+  fbDb.collection=()=>({doc:()=>({collection:()=>({doc:mk})})});
+  fbDb.batch=()=>{const ops=[];return {set:(r,v)=>ops.push(()=>r.set(v)),
+    delete:r=>ops.push(()=>r.delete()),commit:()=>Promise.all(ops.map(f=>f()))}};
+  const mkSec=(id,n)=>({id,type:'normal',label:id,note:'',date:'2026-05-01',
+    sleepers:Array.from({length:n},()=>({type:'normal',ts:0}))});
+  const base=()=>({location:'ПД-6',v:3,tracks:[],rpt:{},folders:[],sw:[],
+    main:[{id:'km5',num:5,kind:'main',mat:'wood',sections:[mkSec('k5',10)]},
+          {id:'km7',num:7,kind:'main',mat:'wood',sections:[mkSec('k7',10)]}]});
+
+  DB=_unpackDB(base());_clearPartHashes();localStorage.removeItem(_unitsKey());
+  await _pushCloud(_packDB(DB));
+  const H0u=localStorage.getItem(_unitsKey()),H0p=localStorage.getItem(_partsKey());
+
+  // Утас А: ЗӨВХӨН 5-р км дээрээ бичнэ
+  localStorage.setItem(_unitsKey(),H0u);localStorage.setItem(_partsKey(),H0p);
+  const A=_unpackDB(base());
+  A.main[0].sections[0].sleepers[0].type='bad';
+  DB=A;await _pushCloud(_packDB(DB));
+
+  // Утас Б: А-гийн өөрчлөлтийг МЭДЭХГҮЙ, ЗӨВХӨН 7-р км дээрээ бичнэ
+  localStorage.setItem(_unitsKey(),H0u);localStorage.setItem(_partsKey(),H0p);
+  const Bd=_unpackDB(base());
+  Bd.main[1].sections[0].sleepers[0].type='tbd';
+  DB=Bd;await _pushCloud(_packDB(DB));
+
+  const merged=_unpackDB(_joinParts(cloud));
+  return {km5:merged.main.find(k=>k.id==='km5').sections[0].sleepers[0].type,
+          km7:merged.main.find(k=>k.id==='km7').sections[0].sleepers[0].type}
+});
+ok('5-р км / 7-р км дээр зэрэг бичвэл ХОЁУЛАНГИЙНХ нь хадгалагдана',
+   diffKm.km5==='bad'&&diffKm.km7==='tbd',JSON.stringify(diffKm));
+
+// ── Жишээ 3: нэг сумын паспорт дотор 2 өөр сум (тэгш хэмийн баталгаа) ──
+const diffSw=await page.evaluate(async()=>{
+  const cloud={};
+  const mk=id=>({set:v=>{cloud[id]=JSON.parse(JSON.stringify(v));return Promise.resolve()},
+    get:()=>Promise.resolve({exists:id in cloud,data:()=>cloud[id]}),
+    delete:()=>{delete cloud[id];return Promise.resolve()}});
+  fbDb.collection=()=>({doc:()=>({collection:()=>({doc:mk})})});
+  fbDb.batch=()=>{const ops=[];return {set:(r,v)=>ops.push(()=>r.set(v)),
+    delete:r=>ops.push(()=>r.delete()),commit:()=>Promise.all(ops.map(f=>f()))}};
+  const base=()=>({location:'ПД-6',v:3,tracks:[],rpt:{},main:[],folders:[],
+    sw:[{id:'swF',name:'Хавар',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      turnouts:[{id:'w1',num:1,mak:'Р-65',mark:'1/9',head:0,it:'nn',dRepl:{}},
+                {id:'w2',num:2,mak:'Р-65',mark:'1/9',head:0,it:'nn',dRepl:{}}]}]});
+
+  DB=_unpackDB(base());_clearPartHashes();localStorage.removeItem(_unitsKey());
+  await _pushCloud(_packDB(DB));
+  const H0u=localStorage.getItem(_unitsKey()),H0p=localStorage.getItem(_partsKey());
+
+  // Утас А: ЗӨВХӨН 1-р сум дээрээ бичнэ
+  localStorage.setItem(_unitsKey(),H0u);localStorage.setItem(_partsKey(),H0p);
+  const A=_unpackDB(base());
+  A.sw[0].turnouts[0].it='bn';
+  DB=A;await _pushCloud(_packDB(DB));
+
+  // Утас Б: А-гийн өөрчлөлтийг МЭДЭХГҮЙ, ЗӨВХӨН 2-р сум дээрээ бичнэ
+  localStorage.setItem(_unitsKey(),H0u);localStorage.setItem(_partsKey(),H0p);
+  const Bd=_unpackDB(base());
+  Bd.sw[0].turnouts[1].it='nb';
+  DB=Bd;await _pushCloud(_packDB(DB));
+
+  const merged=_unpackDB(_joinParts(cloud)),f=merged.sw[0];
+  return {w1:f.turnouts.find(t=>t.id==='w1').it,w2:f.turnouts.find(t=>t.id==='w2').it}
+});
+ok('Нэг сумын паспорт дотор 2 өөр сум дээр зэрэг бичвэл ХОЁУЛАНГИЙНХ нь хадгалагдана',
+   diffSw.w1==='bn'&&diffSw.w2==='nb',JSON.stringify(diffSw));
 
 console.log('\nERRORS:',JSON.stringify(errs.filter(e=>!/ERR_REQUEST_RANGE/.test(e)).slice(0,3)));
 console.log('SUMMARY '+R.filter(Boolean).length+'/'+R.length);

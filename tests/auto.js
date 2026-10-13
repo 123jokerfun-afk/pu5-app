@@ -23,7 +23,7 @@ await page.evaluate(()=>{
           :Promise.resolve(mkSnap(__c.parts))},
       onSnapshot:()=>{__c.listen='parts';return ()=>{}},
       doc:id=>({set:v=>{__c.wParts++;__c.parts[id]=v;return Promise.resolve()},
-        get:()=>Promise.resolve({exists:true}),
+        get:()=>Promise.resolve({exists:id in __c.parts,data:()=>__c.parts[id]}),
         delete:()=>{delete __c.parts[id];return Promise.resolve()}})})
   })});
   fbDb.batch=()=>{const ops=[];return {set:(r,v)=>ops.push(()=>r.set(v)),

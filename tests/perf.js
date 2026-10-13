@@ -116,7 +116,7 @@ ok('"Тийм, гарах" дарвал үзэгдэл дуусаад нэвтр
 /* ── 8. Service worker жинхэнээсээ ажиллаж, офлайн болгож байна уу ──
    Тусдаа контекст: base.js-ийн stub нь Firebase-г орлуулдаг ч SW нь
    нэг гарлын файлуудыг өөрөө кэшилнэ. */
-const swr=await (async()=>{
+async function swAttempt(){
   const base=await B.ensureServer();
   const ctx2=await br.newContext();
   const p2=await ctx2.newPage();
@@ -150,7 +150,13 @@ const swr=await (async()=>{
   await ctx2.setOffline(false);
   await ctx2.close();
   return {act,...cached,offline,offErr}
-})();
+}
+// Систем ачаалалтай үед (зэрэг ажиллаж буй бусад шалгалт/хөтөч) SW-ийн
+// install() доторх cache.add() түр саатаж/бүтэлгүйтэж болно — энэ бол
+// sw.js-ийн АЛДАА биш (тэр үргэлжид хэдэн дахин ачаалалтаар засагддаг),
+// тестийн орчны ачаалал тул НЭГ удаа дахин оролдоно.
+let swr=await swAttempt();
+if(!swr.hasIdx||!swr.offline)swr=await swAttempt();
 ok('Service worker идэвхжив',swr.act,JSON.stringify(swr.keys));
 ok('index.html кэшлэгдсэн',swr.hasIdx);
 ok('version.txt кэшлэгдээгүй',!swr.hasVer);

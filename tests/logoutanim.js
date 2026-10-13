@@ -22,10 +22,12 @@ const init=await page.evaluate(()=>{
   const yes=document.getElementById('logoutYesBtn');
   return {open:m&&m.classList.contains('open'),
     noExists:!!document.getElementById('logoutNoBtn'),
-    label:yes&&yes.querySelector('.lo-label').textContent};
+    label:yes&&yes.querySelector('.lo-label').textContent,
+    warnDisplay:getComputedStyle(document.getElementById('logoutDirtyWarn')).display};
 });
 ok('#logoutModal бэлэн, анхандаа хаалттай',init.noExists&&!init.open,JSON.stringify(init));
 ok('"Тийм, гарах" товчны бичиг анхандаа зөв',init.label==='Тийм, гарах',init.label);
+ok('Илгээгдээгүй сануулга анхандаа нуугдсан (dirty тэмдэггүй)',init.warnDisplay==='none',init.warnDisplay);
 
 // ── 2. doLogout() дуудахад ЦОНХ НЭЭГДЭНЭ, жинхэнэ гарах ХАРАХАН хийгдэхгүй ──
 await page.evaluate(()=>{doLogout()});    // await-гүй — яг л жинхэнэ onclick шиг
@@ -51,6 +53,26 @@ const cancelled=await page.evaluate(()=>({
 ok('"Үгүй" дарвал цонх хаагдаад, state хэвээр, анимаци тоглоогүй',
    !cancelled.open&&cancelled.stageClass==='lo-stage'&&
    cancelled.view!=='loginView'&&!!cancelled.code,JSON.stringify(cancelled));
+
+/* ── 3б. Илгээгдээгүй өөрчлөлт байгаа үед: сануулга харуулна, ГЭХДЭЭ
+   ГАРАХЫГ ХОРИГЛОХГҮЙ (хэрэглэгчийн хүсэлтээр — талбарын ажилчин
+   сүлжээгүй газраас өөр хэсэг рүү шилжих шаардлагатай байж болно). ── */
+await page.evaluate(()=>{localStorage.setItem(_dirtyKey(),String(Date.now()-125000))});
+await page.evaluate(()=>{doLogout()});
+await page.waitForFunction(()=>document.getElementById('logoutModal').classList.contains('open'),
+  {timeout:2000});
+const dirty=await page.evaluate(()=>{
+  const w=document.getElementById('logoutDirtyWarn');
+  return {display:getComputedStyle(w).display,text:w.textContent,
+    yesDisabled:document.getElementById('logoutYesBtn').disabled};
+});
+ok('Илгээгдээгүй үед сануулга харагдана',dirty.display==='block',dirty.display);
+ok('Сануулгын бичигт "илгээгдээгүй" ба минут гарна',
+   /Илгээгдээгүй/.test(dirty.text)&&/\d+ мин/.test(dirty.text),dirty.text);
+ok('Гарах товч ХОРИГЛОГДООГҮЙ (саадгүй)',!dirty.yesDisabled,String(dirty.yesDisabled));
+await page.click('#logoutNoBtn');       // цуцлаад цэвэр төлөвтэй үргэлжлүүлнэ
+await page.waitForTimeout(150);
+await page.evaluate(()=>{localStorage.removeItem(_dirtyKey())});
 
 // ── 4. "Тийм, гарах" дарвал: үзэгдэл ТЭР ДОР эхэлнэ, ЦОНХ НЭЭЛТТЭЙ хэвээр,
 //    товч хоёул түгжигдэнэ, жинхэнэ гарах ХАРАХАН хийгдэхгүй ──

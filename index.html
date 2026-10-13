@@ -728,6 +728,9 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .info-pill{font-size:12px;color:var(--purple);background:var(--purple-bg);
   padding:8px 12px;border-radius:var(--rs);margin-bottom:10px;font-weight:600;
   border:1px solid rgba(109,40,217,.15)}
+.warn-pill{font-size:12px;color:var(--orange);background:var(--orange-bg);
+  padding:8px 12px;border-radius:var(--rs);margin-bottom:10px;font-weight:600;
+  border:1px solid rgba(240,120,24,.2);line-height:1.5}
 .track-ov{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border)}
 .track-ov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .ov-cell{background:var(--bg);border-radius:var(--rs);padding:8px 4px;text-align:center;border:1px solid var(--border)}
@@ -1808,6 +1811,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     <div class="sheet-inner" style="padding:26px 22px 22px">
       <div class="sheet-title" style="margin-bottom:6px">Гарах уу?</div>
       <div style="font-size:14px;color:var(--ink3);line-height:1.5">Дахин ажиллахын тулд хэрэглэгчийн код, нууц үгээ дахин оруулах шаардлагатай.</div>
+      <div id="logoutDirtyWarn" class="warn-pill" style="display:none;margin-top:10px"></div>
       <div class="modal-btns">
         <button class="btn-cancel" id="logoutNoBtn">Үгүй</button>
         <button class="btn-ok lo-btn" id="logoutYesBtn">
@@ -9773,6 +9777,10 @@ async function _afterLoginInner(){
       } else {
         DB=_unpackDB(doc.data().db);
         _cloudLoaded=true;_cloudHadData=_dbHasData(DB);
+        // Нэгжийн (зам/км/сум) hash кэшийг ЦЭВЭР үүлний агуулгаар дэвшүүлнэ —
+        // доорх салбарт утсан дахь (батлагдаагүй) өгөгдлөөр дарагдаж болзошгүй
+        // тул ЭНД, дарагдахаас өмнө (_writeParts-ын тайлбарыг үз)
+        _syncUnitHashesFrom(DB);
         // ★ Үүлэн дэх нь ХООСОН атлаа утсанд өгөгдөл байвал утсан дахийг
         //   сэргээж, үүлэн рүү буцааж илгээнэ. Хоосноор дарж бичихгүй.
         if(!_cloudHadData&&_locDB&&_dbHasData(_locDB)){
@@ -9972,11 +9980,27 @@ function playLogoutAnim(btn){
     },2100)
   })
 }
+// Гарахын өмнө илгээгдээгүй өөрчлөлт байгааг СОРВОНГҮЙ сануулна — ХОРИГЛОХГҮЙ.
+// Талбарын ажилчин сүлжээгүй газраас өөр хэсэг рүү шилжих/ээлж солих
+// шаардлагатай байж болох тул гарахыг нь түгжих нь буруу (хэрэглэгчийн
+// хүсэлтээр энэ хувилбарыг зөвлөсөн). Өгөгдөл localStorage-д аль хэдийн
+// хадгалагдсан, зөвхөн ЦАГ хугацааны асуудал гэдгийг л тодорхой хэлнэ.
+function _renderLogoutDirtyWarn(){
+  const w=document.getElementById('logoutDirtyWarn');if(!w)return;
+  const dt=_dirtyAt();
+  if(!dt){w.style.display='none';return}
+  const mins=Math.floor((Date.now()-dt)/60000);
+  w.textContent='⚠ Илгээгдээгүй өөрчлөлт байна — утсан дээр хадгалагдсан ч үүл рүү хараахан очоогүй'+
+    (mins>0?` (${mins} мин)`:'')+
+    '. Одоо гарвал зөвхөн ДАХИН энэ кодоор нэвтрэхэд л илгээгдэнэ.';
+  w.style.display='block'
+}
 async function doLogout(){
   const yesBtn=document.getElementById('logoutYesBtn');
   const noBtn=document.getElementById('logoutNoBtn');
   _resetLogoutStage(yesBtn);
   yesBtn.disabled=false;noBtn.disabled=false;
+  _renderLogoutDirtyWarn();
   openModal('logoutModal');
   // Санамсаргүй дарахад ажил тасалддаг байсан тул баталгаажуулна
   const go=await new Promise(resolve=>{
@@ -10037,6 +10061,10 @@ function _applyRemote(remote,cloudMs){
       if(_ok===null){_unsentBanner(cloudMs);return}   // хоёулаа шинэ — хэрэглэгчээс асууна
       DB=_r;
       _migrateDB();   // өөр төхөөрөмжөөс паспорт дотор ирсэн км-ийг гол зам руу гаргана
+      // Нэгжийн (зам/км/сум) hash кэшийг шинэчилнэ — эс тэгвэл дараагийн
+      // илгээлт хуучин суурьтай харьцуулж, энэ шинэчлэлтийг алдана
+      // (_writeParts-ын толгой хэсгийн тайлбарыг үз)
+      _syncUnitHashesFrom(DB);
       if(_dbHasData(DB)){_cloudHadData=true;_cloudLoaded=true;_autoTry=0;clearTimeout(_autoTimer);
         const _eb2=document.getElementById('errBanner');if(_eb2)_eb2.remove()}
       if(!DB.folders)DB.folders=[];
@@ -14309,29 +14337,133 @@ function _cmpKey(o){
    мөнхөд үлдэж, дараагийн НЭВТРЭЛТ бүрд дахин уншигдаж "сэргэдэг" байв.
    Иймд _knownPartIds (сервэрээс ЖИНХЭНЭ сүүлд уншсан ID-нууд,
    _partsFromSnap-д шинэчлэгддэг) -ийг ХАМТ нь "өмнө байсан" гэж үзнэ. */
+/* ══════════════════════════════════════════════════════════════
+   ЗЭРЭГ ЗАСВАР — НЭГЖИЙН ТҮВШИНД НЭГТГЭХ
+
+   Асуудал: паспорт (мөн гол зам, сумын паспорт) бүхэлдээ НЭГ Firestore
+   баримт (parts/p_<id> гм) тул хоёр хүн ӨӨР ӨӨР зам/км/сум дээр
+   ойролцоо хугацаанд (~хэдхэн секундын зөрүүтэй) хадгалбал, хожуу
+   илгээсэн нь БҮХЭЛ баримтыг дарж бичиж, нөгөөгийн өөрчлөлтийг
+   (өөр зам/км дээр хийсэн ч гэсэн) алга болгодог байв — tests/multi.js
+   үүнийг "сүүлийнх нь хүчинтэй (энэ хэвийн)" гэж баримтжуулж байсан.
+
+   Шийдэл: main/p_.../s_... хэсгийг Firestore ТРАНЗАКЦААР бичнэ — сервэр
+   дэх хамгийн сүүлийн хувилбарыг уншаад, зөвхөн БИ ӨӨРЧИЛСӨН нэгжийг
+   (зам/км/сум) нь сольж, бусдыг (өөр төхөөрөмж өөрчилсөн байж болзошгүй)
+   сервэрийнхээр нь хэвээр үлдээнэ. "Би өөрчилсөн эсэх"-ийг мэдэхийн тулд
+   нэгж тус бүрийн "сүүлд мэдэгдэж байсан" hash-ийг тусдаа кэшлэнэ —
+   БОДИТ агуулгыг биш, зөвхөн hash-ийг хадгалдаг тул хэмжээ багатай.
+   Энэ кэш 2 газар шинэчлэгдэнэ: амжилттай илгээлтийн дараа (доор),
+   бодит цагийн шинэчлэлт хүлээн авах үед (_applyRemote) — эс тэгвэл
+   дараагийн илгээлт хуучин суурьтай харьцуулж буруу дүгнэлт хийнэ.
+
+   ЗАНГИДАХГҮЙ: яг ижил нэгж (жишээ нь нэг ЗАМ) дээр хоёул зэрэг
+   бичвэл хуучны адил сүүлийнхээрээ дарагдана — зөвхөн ӨӨР нэгжийн
+   хооронд алдагдал гарахгүй гэдгийг баталгаажуулна.
+
+   runTransaction дэмжихгүй орчинд (зарим туршилтын хуурамж Firestore)
+   доорх "энгийн" замаар — хуучин бүхэлд нь бичих байдлаар — ажиллана,
+   апп хэзээ ч гацахгүй. */
+function _partUnits(part){
+  if(!part)return null;
+  if(Array.isArray(part.main))return {arr:part.main,put:a=>({main:a})};
+  if(part.folder)return {arr:part.folder.tracks||[],
+    put:a=>({folder:Object.assign({},part.folder,{tracks:a})})};
+  if(part.sw)return {arr:part.sw.turnouts||[],
+    put:a=>({sw:Object.assign({},part.sw,{turnouts:a})})};
+  return null
+}
+function _unitsKey(){return 'sg_units_'+(_sectionCode||'')}
+function _loadUnitHashes(){
+  try{return JSON.parse(localStorage.getItem(_unitsKey())||'{}')||{}}catch(e){return {}}}
+function _saveUnitHashes(h){try{localStorage.setItem(_unitsKey(),JSON.stringify(h))}catch(e){}}
+/* Шинээр уншсан/хүлээн авсан DB-ийн нэгжүүдийн hash-ийг кэшинд бичнэ —
+   нэвтрэлтийн эхний уншилт, бодит цагийн шинэчлэлт хүлээн авах бүрд
+   дуудна (_afterLoginInner, _applyRemote). */
+function _syncUnitHashesFrom(db){
+  if(!db)return;
+  const h={};
+  h.main=Object.create(null);
+  (db.main||[]).forEach(u=>{if(u&&u.id)h.main[u.id]=_hash(JSON.stringify(u))});
+  (db.folders||[]).forEach(f=>{if(!f||!f.id)return;
+    const o=Object.create(null);
+    (f.tracks||[]).forEach(u=>{if(u&&u.id)o[u.id]=_hash(JSON.stringify(u))});
+    h[_partId('p',f.id)]=o});
+  (db.sw||[]).forEach(f=>{if(!f||!f.id)return;
+    const o=Object.create(null);
+    (f.turnouts||[]).forEach(u=>{if(u&&u.id)o[u.id]=_hash(JSON.stringify(u))});
+    h[_partId('s',f.id)]=o});
+  _saveUnitHashes(h)
+}
 function _writeParts(packed){
   if(!fbDb||!_sectionCode)return Promise.resolve(0);
   let parts;
   try{parts=_splitDB(packed)}catch(e){return Promise.resolve(0)}
   const prev=Object.assign({},_loadPartHashes());
   if(_knownPartIds)_knownPartIds.forEach(id=>{if(!(id in prev))prev[id]=null});
-  const now={}, col=fbDb.collection('sections')
-    .doc(_sectionCode).collection(PARTS_COL);
-  const batch=fbDb.batch(); let n=0,bytes=0;
+  const col=fbDb.collection('sections').doc(_sectionCode).collection(PARTS_COL);
+  const canMerge=typeof fbDb.runTransaction==='function';
+  const simple=[],merged=[];let bytes=0;
   Object.keys(parts).forEach(id=>{
     const json=JSON.stringify(parts[id]), h=_hash(json);
-    now[id]=h;
-    if(prev[id]!==h){
-      let d=parts[id];
-      try{d=Object.assign({u:firebase.firestore.FieldValue.serverTimestamp()},d)}catch(e){}
-      batch.set(col.doc(id),d);n++;bytes+=json.length}
+    if(prev[id]===h)return;
+    bytes+=json.length;
+    const uk=canMerge?_partUnits(parts[id]):null;
+    if(uk)merged.push({id,part:parts[id],uk,h});else simple.push({id,data:parts[id],h})
   });
-  Object.keys(prev).forEach(id=>{if(!(id in now)){batch.delete(col.doc(id));n++}});
-  if(!n)return Promise.resolve(0);
-  return batch.commit().then(()=>{
-    _savePartHashes(now);_knownPartIds=Object.keys(now);
+  const dels=[];
+  Object.keys(prev).forEach(id=>{if(!(id in parts))dels.push(id)});
+  if(!simple.length&&!merged.length&&!dels.length)return Promise.resolve(0);
+
+  const now={};
+  const simpleP=(simple.length||dels.length)?(()=>{
+    const batch=fbDb.batch();
+    simple.forEach(({id,data})=>{
+      let d=data;try{d=Object.assign({u:firebase.firestore.FieldValue.serverTimestamp()},d)}catch(e){}
+      batch.set(col.doc(id),d)});
+    dels.forEach(id=>batch.delete(col.doc(id)));
+    return batch.commit().then(()=>{simple.forEach(({id,h})=>{now[id]=h})})
+  })():Promise.resolve();
+
+  const unitHashes=_loadUnitHashes();
+  const mergedP=Promise.all(merged.map(({id,part,uk,h})=>
+    fbDb.runTransaction(async tx=>{
+      const snap=await tx.get(col.doc(id));
+      const serverPart=snap.exists?snap.data():null;
+      const serverArr=(serverPart&&_partUnits(serverPart)||{arr:[]}).arr;
+      const serverMap=new Map(serverArr.map(u=>[u.id,u]));
+      const myMap=new Map(uk.arr.map(u=>[u.id,u]));
+      const lastH=unitHashes[id]||{};
+      const mergedMap=new Map(serverMap);
+      myMap.forEach((u,uid)=>{
+        if(lastH[uid]!==_hash(JSON.stringify(u)))mergedMap.set(uid,u)});
+      // Устгасан нэгж: сүүлд мэдэж байсан ч одоо миний жагсаалтад алга —
+      // ЗӨВХӨН өөр хэн ч үүнийг надаас хойш өөрчлөөгүй бол устгана
+      Object.keys(lastH).forEach(uid=>{
+        if(myMap.has(uid))return;
+        const sv=serverMap.get(uid);
+        const svH=sv?_hash(JSON.stringify(sv)):null;
+        if(svH===null||svH===lastH[uid])mergedMap.delete(uid)});
+      const mergedArr=[...mergedMap.values()];
+      const newPart=Object.assign({},part,uk.put(mergedArr));
+      let d=newPart;try{d=Object.assign({u:firebase.firestore.FieldValue.serverTimestamp()},d)}catch(e){}
+      tx.set(col.doc(id),d);
+      return mergedArr
+    }).then(mergedArr=>{
+      const uh={};mergedArr.forEach(u=>{if(u&&u.id)uh[u.id]=_hash(JSON.stringify(u))});
+      unitHashes[id]=uh;
+      now[id]=h   // МИНИЙ ӨӨРИЙН агуулгын hash — дараагийн "өөрчлөгдсөн үү" шалгуурт
+    })
+  ));
+
+  return Promise.all([simpleP,mergedP]).then(()=>{
+    if(merged.length)_saveUnitHashes(unitHashes);
+    Object.keys(parts).forEach(id=>{if(!(id in now))now[id]=prev[id]});
+    _savePartHashes(now);_knownPartIds=Object.keys(parts);
     _partsErr='';_partsAt=Date.now();
-    _partsWrote=n;_partsBytes=bytes;return n});
+    _partsWrote=simple.length+merged.length+dels.length;_partsBytes=bytes;
+    return _partsWrote
+  })
 }
 /* Хос бичилт — хуучин баримт амжилттай бичигдсэний ДАРАА. Алдаа гарсан ч
    аппын ажиллагаанд нөлөөлөхгүй; зөвхөн Мэдэгдэл дээр тэмдэглэгдэнэ. */
@@ -14862,7 +14994,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.13·192';
+const APP_BUILD='2026.10.13·193';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
