@@ -662,7 +662,11 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .sw-tr:not(.sw-tr-h) .sw-c4::after{content:'м';font-size:9px;font-weight:800;opacity:.6;margin-left:2px}
 .sw-c34{grid-column:3 / span 2;font-size:16px;font-weight:900;text-align:center;
   color:var(--ink2);font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.sw-tr:not(.sw-tr-h) .sw-c34::after{content:'м';font-size:9px;font-weight:800;color:var(--ink4);margin-left:2px}
+/* .ulit ("unit literal") — эсийн бичигт "м"/"пог/м" аль хэдийн байгаа
+   бол ::after-ийг давхарлахгүй (найдвартай хайгуулаар олдсон алдаа:
+   "3,5 м" гэх мэт текст рүү мөн "м" нэмж "3,5 м м" болдог байв, нарийн
+   дэлгэц дээр гажуудаж бичигддэг). */
+.sw-tr:not(.sw-tr-h) .sw-c34:not(.ulit)::after{content:'м';font-size:9px;font-weight:800;color:var(--ink4);margin-left:2px}
 /* Дараалсан цэгийн урт */
 .sw-run-n{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;
   justify-content:center;color:#fff;font-size:13px;font-weight:900;flex-shrink:0}
@@ -4679,10 +4683,20 @@ function addKm(){
 // паспортод хамаарахгүй (хэрэглэгчийн мэдээлсэн зарчим).
 // ══════════════════════════════════════════════
 function swFolderBySeasonOf(derFolder){
-  if(!derFolder)return null;
-  return (DB.sw||[]).find(f=>!f.trashedAt&&
-    String(f.season||'')===String(derFolder.season||'')&&
-    String(f.year||'')===String(derFolder.year||''))||null
+  // season/year хоосон бол (хуучин, маягт дүүргэгдээгүй өгөгдөл) ямар ч
+  // хос баталгаагүй тул ХОСЛУУЛАХГҮЙ — хоосон мөр хоосон мөртэй санамсаргүй
+  // "таарч" болзошгүй.
+  if(!derFolder||!derFolder.season||!derFolder.year)return null;
+  const cands=(DB.sw||[]).filter(f=>!f.trashedAt&&
+    String(f.season)===String(derFolder.season)&&String(f.year)===String(derFolder.year));
+  if(cands.length<=1)return cands[0]||null;
+  // v188-ийн давхардал хориглолтоос ӨМНӨ үүссэн хуучин өгөгдөлд ховор
+  // тохиолдолд ижил улирлын 2+ сумын паспорт зэрэгцэж байж болзошгүй —
+  // массивын санамсаргүй дараалал биш, дэр паспортын огнооноос хамгийн
+  // ойрыг нь сонгож утга учиртай тулгана.
+  const dd=Date.parse(derFolder.date||'')||0;
+  return cands.reduce((best,f)=>
+    Math.abs((Date.parse(f.date||'')||0)-dd)<Math.abs((Date.parse(best.date||'')||0)-dd)?f:best)
 }
 function activeSwPairFolder(){
   return swFolderBySeasonOf((DB.folders||[]).find(f=>f.id===activeFolderId))
@@ -5554,6 +5568,7 @@ function jumpToConsecSw(tid,pos){
   swTurnoutId=tid;
   const t=swTurnout();if(!t){showToast('Сум олдсонгүй');return}
   showView('swRecView');renderSwRec(pos-1);
+  _fromConsec=true;                     // showView/renderSwRec-ийн дараа тавина
   showToast(`Сум ${t.num} · рам зам #${pos}`,2200)
 }
 // Жагсаалт руу нь эргэж очно — шүүлтүүрийг нь хэвээр хадгална
@@ -11784,13 +11799,12 @@ function _brRenderSw(){
   ]);
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,mm=0;ks.forEach(L=>{n+=o[L];mm+=o[L]*L});return `${n} ш · ${swM(mm)} пог/м`};
-  const cnt=o=>Object.keys(o).reduce((s,L)=>s+o[L],0);
-  const pTot=cnt(swPlanBy());
+  const pTot=swByLenCount(swPlanBy());
   renderPillGroup('brSwWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',meta:sum(swIncBy())||'Орлого бүртгээгүй',fn:'openSwInc()'},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',meta:sum(swOutBy())||'Зарлага алга',fn:'openSwOut()'},
     {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',
-      meta:pTot?`${pTot} ш төлөвлөсөн · ${cnt(swPlanReplacedBy())} ш сольсон`:'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
+      meta:pTot?`${pTot} ш төлөвлөсөн · ${swByLenCount(swPlanReplacedBy())} ш сольсон`:'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
   ]);
 }
 /* Паспорт нээхэд ЭНД л үлдэнэ — өртөөний нүүр рүү үсрэхгүй */
@@ -12748,6 +12762,9 @@ function swPlanReplacedBy(f){
     })});
   return o
 }
+// swPlanBy()/swPlanReplacedBy()-ийн урт→тоо маптай объектын нийт ширхэг
+// (_brRenderSw/renderSwIncCards хоёул хуваалцдаг).
+function swByLenCount(o){return Object.keys(o).reduce((s,L)=>s+o[L],0)}
 // Үлдэгдэл − төлөвлөсөн. Засварлаж байгаа дүнзний ӨӨРИЙНХ нь төлөвлөгөөг
 // буцааж нэмнэ (эс тэгвэл өөрийнхөө уртыг дахин сонгож чадахгүй).
 function _swPlanFree(){
@@ -12865,7 +12882,7 @@ function openSwPlanRep(){
       html+=`<div class="sw-tr pl-row${r.fulfilled?' pl-done':''}" onclick="hap();swGotoPlan('${t.id}',${r.i})">
         <span class="sw-c1">#${r.no}</span>
         <span class="sw-c2">${swLen(r.nom)} м</span>
-        <span class="sw-c34" style="color:var(--blue);font-weight:900">${swLen(r.L)} м ›</span>
+        <span class="sw-c34 ulit" style="color:var(--blue);font-weight:900">${swLen(r.L)} м ›</span>
         ${r.fulfilled?`<span class="repl-date rd-prev" style="grid-column:1 / -1;margin-top:2px">${fmtReplDate(r.replDate)}</span>`:''}</div>`
     });
     html+=`<div class="rp-sub"><span>Сум ${t.num} · ${tn} дүнз</span>
@@ -12878,7 +12895,7 @@ function openSwPlanRep(){
     Object.keys(by).map(Number).sort((a,b)=>a-b).map(L=>
       `<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
         <span class="sw-c2">${by[L]} ш</span>
-        <span class="sw-c34">${swM(by[L]*L)} пог/м</span></div>`).join('')+
+        <span class="sw-c34 ulit">${swM(by[L]*L)} пог/м</span></div>`).join('')+
     `<div class="rp-sub"><span>${N} ш</span><span>${swM(M)} пог/м</span></div></div>`+
     `<div class="rp-total"><span>Нийт төлөвлөсөн</span><span>${N+D} ш · ${swM(M+MD)} пог/м</span></div>`+
     `<div class="rp-sub" style="border:0"><span>✓ Сольсон ${D} ш</span><span>Үлдсэн ${N} ш</span></div>`;
@@ -13666,13 +13683,12 @@ function renderSwIncCards(){
   if(!swFolder()){wrap.innerHTML='';return}
   const sum=o=>{const ks=Object.keys(o);if(!ks.length)return null;
     let n=0,m=0;ks.forEach(L=>{n+=o[L];m+=o[L]*L});return `${n} ш · ${swM(m)} пог/м`};
-  const cnt=o=>Object.keys(o).reduce((s,L)=>s+o[L],0);
-  const i=sum(swIncBy()),u=sum(swOutBy()),pTot=cnt(swPlanBy());
+  const i=sum(swIncBy()),u=sum(swOutBy()),pTot=swByLenCount(swPlanBy());
   renderPillGroup('swIncWrap',[
     {color:'var(--g700)',bg:'var(--g100)',name:'Орлого',meta:i||'Орлого бүртгээгүй',fn:'openSwInc()'},
     {color:'var(--orange)',bg:'var(--orange-bg)',name:'Зарлага',meta:u||'Зарлага алга',fn:'openSwOut()'},
     {color:'var(--blue)',bg:'var(--blue-bg)',name:'Төлөвлөсөн дүнз',
-      meta:pTot?`${pTot} ш төлөвлөсөн · ${cnt(swPlanReplacedBy())} ш сольсон`:'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
+      meta:pTot?`${pTot} ш төлөвлөсөн · ${swByLenCount(swPlanReplacedBy())} ш сольсон`:'Төлөвлөгөө алга',fn:'openSwPlanRep()'}
   ]);
 }
 const _swEmpty=t=>`<div style="text-align:center;padding:20px;color:var(--ink4);font-size:13px;font-weight:600">${t}</div>`;
@@ -13723,7 +13739,7 @@ function renderSwInc(){
     const cells=(r.items||[]).map(it=>{
       const L=+it.L,q=+it.n||0;n+=q;m+=q*L;
       return `<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
-        <span class="sw-c2">${q} ш</span><span class="sw-c34">${swM(q*L)} пог/м</span></div>`
+        <span class="sw-c2">${q} ш</span><span class="sw-c34 ulit">${swM(q*L)} пог/м</span></div>`
     }).join('');
     N+=n;M+=m;
     html+=_swHd(fmtReplDate(r.d))+cells+
@@ -13741,7 +13757,7 @@ function renderSwInc(){
         <span class="sw-c34">пог/м</span></div>`+
       ks.map(L=>`<div class="sw-tr"><span class="sw-c1">${swLen(L)} м</span>
         <span class="sw-c2" style="color:${st[L]>0?'var(--g700)':'var(--red)'}">${st[L]} ш</span>
-        <span class="sw-c34">${swM(Math.max(0,st[L])*L)} пог/м</span></div>`).join('')+
+        <span class="sw-c34 ulit">${swM(Math.max(0,st[L])*L)} пог/м</span></div>`).join('')+
       `<div class="rp-sub" style="border:0"><span>НИЙТ ${stN} ш</span><span>${swM(stM)} пог/м</span></div></div>`
   }
   b.innerHTML=(html||_swEmpty('Орлого бүртгээгүй байна'))+
@@ -13944,6 +13960,10 @@ function swGotoDz(tid,i){
 }
 // Дараалсан дүнзний жагсаалтаас ирсэн бол буцахад тийшээ эргэнэ
 function swBackFromRec(){
+  // "Дараалсан цэг"-ийн рам замын дэрийн бүлгээс jumpToConsecSw()-оор
+  // ирсэн бол тэр жагсаалт руугаа буцна (recordView-ийн ижил _fromConsec
+  // шалгалттай адил зарчим, зөвхөн энд swRecView-ийн буцах замаар).
+  if(_fromConsec){backToConsec();return}
   if(_fromPlan){backToPlan();return}
   if(_swFromRun){_swFromRun=false;showView('swHomeView',true);renderSwHome();openSwRunRep();return}
   if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
@@ -14827,7 +14847,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.12·189';
+const APP_BUILD='2026.10.13·190';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
