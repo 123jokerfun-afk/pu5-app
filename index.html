@@ -941,7 +941,9 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   .jh-left,.jh-right{width:28px}
   .joy-hint{font-size:7px}
   .nav-pill{right:148px;gap:5px}
-  .nav-btn{white-space:normal;font-size:10px;padding:9px 4px;line-height:1.25;min-width:0}
+  /* "Дараагийн" гэдэг нэг үг хайрцагны тэн хагасаас (~56px) өргөн тул
+     энгийн мөр шилжилтээр багтахгүй — үгийг дундуур нь тасална */
+  .nav-btn{white-space:normal;font-size:10px;padding:9px 4px;line-height:1.25;min-width:0;overflow-wrap:anywhere}
 }
 .joy-icon{font-size:24px;pointer-events:none;color:#fff}
 .joy-lbl{font-size:9px;color:rgba(255,255,255,.88);font-weight:800;pointer-events:none;margin-top:2px}
@@ -14994,7 +14996,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.13·193';
+const APP_BUILD='2026.10.13·194';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
