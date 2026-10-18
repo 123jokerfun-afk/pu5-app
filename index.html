@@ -13148,8 +13148,11 @@ function buildReplSheet(wb){
   ws.getRow(5).height=19.5;ws.getRow(6).height=19.5;
   let rn=7,no=0,wood=0,tbd=0,carve=0;
   data.forEach(tr=>{
+    let tWood=0,tTbd=0,tCarve=0,tNo=0;
     tr.rows.forEach(r=>{
-      no++;if(r.mat==='tbd')tbd++;else wood++;if(r.carve)carve++;
+      no++;tNo++;
+      if(r.mat==='tbd'){tbd++;tTbd++}else{wood++;tWood++}
+      if(r.carve){carve++;tCarve++}
       put('A'+rn,no);
       put('B'+rn,tr.name,{font:AR(9),align:{wrapText:true}});
       put('C'+rn,r.sec,{font:AR(9),align:{wrapText:true}});
@@ -13158,7 +13161,18 @@ function buildReplSheet(wb){
       put('F'+rn,fmtReplDate(r.date),{font:AR(9)});
       put('G'+rn,r.carve?'🔧 тийм':'',{font:AR(9,true)});
       rn++
-    })
+    });
+    // Зам бүрийн дэд дүн — олон зам нэг жагсаалтад холилдоход ЗАМ бүрээр
+    // хэдийг сольсоныг тусад нь харуулахгүй бол нийт дүнгээс хасаж тооцоход
+    // хэцүү болдог байв (хэрэглэгчийн мэдээлсэн шаардлага).
+    if(tNo){
+      ws.mergeCells(`A${rn}:E${rn}`);
+      put('A'+rn,`${tr.name} — модон ${tWood} ш, ТБД ${tTbd} ш, сийрэгжилт ${tCarve} ш`,
+        {font:AR(9,true),align:{horizontal:'right'}});
+      ws.mergeCells(`F${rn}:G${rn}`);
+      put('F'+rn,tNo+' дэр',{font:AR(10,true)});
+      rn++
+    }
   });
   if(!no){ws.mergeCells('A7:G7');put('A7','Солигдсон дэр алга',{font:AR(10)});rn=8}
   else{
@@ -15003,7 +15017,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.13·195';
+const APP_BUILD='2026.10.18·196';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

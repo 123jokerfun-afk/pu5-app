@@ -27,15 +27,19 @@ await page.evaluate(()=>{
       fr.readAsDataURL(blob)})};
 });
 
-// ── Дэр: 2 солигдсон дэр (1 энгийн, 1 сийрэгжилт) ──
+// ── Дэр: 2 зам, зам бүрт солигдсон дэр (дэд дүн + нийт дүнг ялгахын тулд
+//    зориуд ӨӨР тоотой) ──
 await page.evaluate(()=>{
   DB.location='Шивээговь';
   DB.rpt={cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:'2026',date:'2026-04-01'};
   const s1={id:'s1',type:'normal',label:'1-р үе',note:'',date:'2026-05-01',
     sleepers:Array.from({length:10},()=>({type:'normal',ts:0})),
     repl:{2:{d:'2026-06-10',t:'normal',m:'wood',o:1},5:{d:'2026-07-15',t:'tbd',m:'tbd',s:1,o:1}}};
+  const s2={id:'s2',type:'normal',label:'1-р үе',note:'',date:'2026-05-01',
+    sleepers:Array.from({length:10},()=>({type:'normal',ts:0})),
+    repl:{3:{d:'2026-08-01',t:'normal',m:'wood',o:1}}};
   DB.folders=[{id:'fx',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
-    tracks:[{id:'t1',num:1,kind:'station',sections:[s1]}]}];
+    tracks:[{id:'t1',num:1,kind:'station',sections:[s1]},{id:'t2',num:2,kind:'station',sections:[s2]}]}];
   activeFolderId='fx';DB.tracks=DB.folders[0].tracks;
   DB.main=[];DB.sw=[];
   saveDB();
@@ -63,12 +67,29 @@ async function grab(call){
      r1[3]===3&&r1[4]==='Модон'&&r1[5]==='2026.06.10'&&!r1[6],JSON.stringify(r1));
   ok('2-р мөр: #6, ТБД, 2026.07.15, сийрэгжилттэй',
      r2[3]===6&&r2[4]==='ТБД'&&r2[5]==='2026.07.15'&&/тийм/.test(String(r2[6])),JSON.stringify(r2));
-  const totRow=V(ws.getRow(9)).slice(1);
-  ok('Нийт мөрөнд 2 дэр гэж бичигдэнэ',/2 дэр/.test(String(totRow[5])),JSON.stringify(totRow));
+  // 1-р замын дэд дүн — 8-р мөрийн дараа, 2-р замын мөр эхлэхээс өмнө
+  const sub1=V(ws.getRow(9)).slice(1);
+  ok('1-р замын дэд дүн: модон 1, ТБД 1, 2 дэр',
+     /^1-р зам/.test(String(sub1[0]))&&/модон 1 ш/.test(String(sub1[0]))&&
+     /ТБД 1 ш/.test(String(sub1[0]))&&/2 дэр/.test(String(sub1[5])),JSON.stringify(sub1));
+  const r3=V(ws.getRow(10)).slice(1);
+  ok('3-р мөр (2-р зам): #4, Модон, 2026.08.01',
+     r3[3]===4&&r3[4]==='Модон'&&r3[5]==='2026.08.01',JSON.stringify(r3));
+  const sub2=V(ws.getRow(11)).slice(1);
+  ok('2-р замын дэд дүн: модон 1, ТБД 0, 1 дэр',
+     /^2-р зам/.test(String(sub2[0]))&&/модон 1 ш/.test(String(sub2[0]))&&
+     /ТБД 0 ш/.test(String(sub2[0]))&&/1 дэр/.test(String(sub2[5])),JSON.stringify(sub2));
+  const totRow=V(ws.getRow(12)).slice(1);
+  ok('Нийт мөр (2 зам нийлсэн): модон 2, ТБД 1, 3 дэр — дэд дүнгээс ӨӨР',
+     /^НИЙТ/.test(String(totRow[0]))&&/модон 2 ш/.test(String(totRow[0]))&&
+     /ТБД 1 ш/.test(String(totRow[0]))&&/3 дэр/.test(String(totRow[5])),JSON.stringify(totRow));
 }
 
 // ── Хоосон үед зохих зурвас гарна ──
-await page.evaluate(()=>{DB.folders[0].tracks[0].sections[0].repl={};saveDB()});
+await page.evaluate(()=>{
+  DB.folders[0].tracks[0].sections[0].repl={};
+  DB.folders[0].tracks[1].sections[0].repl={};
+  saveDB()});
 const emptyToast=await page.evaluate(async()=>{
   let msg=null;const orig=window.showToast;window.showToast=(m)=>{msg=m;if(orig)return orig(m)};
   await exportReplForm();
