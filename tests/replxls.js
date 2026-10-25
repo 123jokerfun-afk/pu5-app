@@ -118,12 +118,18 @@ const emptyToast=await page.evaluate(async()=>{
 });
 ok('Хоосон үед татахгүй, зурвас гарна',/алга/.test(emptyToast||''),String(emptyToast));
 
-// ── Дүнз: сумын паспортод 2 солигдсон дүнз ──
+// ── Дүнз: 2 сум, 1-р сум нь 2 ӨӨР сард сольсон (дэрэн дээр зөрүү
+//    гаргаж байсантай адил нөхцөл) — модал ч ЗӨВХӨН СУМААР бүлэглэдэг
+//    тул (сараар ДАХИН бүлэглэдэггүй) Excel-тэй зөрөхгүй гэдгийг шалгана ──
 await page.evaluate(()=>{
   let it='';for(let i=0;i<12;i++)it+='n';
   DB.sw=[{id:'sf',name:'Зун 2026',season:'зун',year:'2026',date:'2026-06-01',sc:'ПД-6',
-    turnouts:[{id:'w1',num:1,mak:'Р-65',mark:'1/11',head:4,it,
-      dRepl:{5:{d:'2026-06-20',L:3,o:1},9:{d:'2026-07-01',L:3.25,o:0}}}]}];
+    turnouts:[
+      {id:'w1',num:1,mak:'Р-65',mark:'1/11',head:4,it,
+        dRepl:{5:{d:'2026-06-20',L:3,o:1},9:{d:'2026-07-01',L:3.25,o:0}}},
+      {id:'w2',num:2,mak:'Р-65',mark:'1/9',head:4,it,
+        dRepl:{6:{d:'2026-08-10',L:3.25,o:1}}}
+    ]}];
   swFolderId='sf';saveDB();
 });
 {
@@ -134,13 +140,27 @@ await page.evaluate(()=>{
   const HD=['Д/д','Сум №','Сумын маяг','Марк','Дүнзний дугаар','Одоогийн урт, пог/м','Сольсон урт, пог/м','Огноо'];
   ok('Толгой мөр тохирно',JSON.stringify(V(ws.getRow(5)).slice(1))===JSON.stringify(HD),
      JSON.stringify(V(ws.getRow(5)).slice(1)));
-  const r1=V(ws.getRow(7)).slice(1),r2=V(ws.getRow(8)).slice(1);
+  const r1=V(ws.getRow(7)).slice(1),r2=V(ws.getRow(8)).slice(1),r3=V(ws.getRow(9)).slice(1);
   ok('1-р мөр: сум 1, дүнз #2, 2026.06.20',
      r1[1]===1&&r1[4]===2&&r1[7]==='2026.06.20',JSON.stringify(r1));
   ok('2-р мөр: сум 1, дүнз #6, 2026.07.01',
      r2[1]===1&&r2[4]===6&&r2[7]==='2026.07.01',JSON.stringify(r2));
-  const totRow=V(ws.getRow(9)).slice(1);
-  ok('Нийт мөрөнд 2 ш гэж бичигдэнэ',/2 ш/.test(String(totRow[6])),JSON.stringify(totRow));
+  ok('3-р мөр: сум 2, дүнз #3, 2026.08.10',
+     r3[1]===2&&r3[4]===3&&r3[7]==='2026.08.10',JSON.stringify(r3));
+  const totRow=V(ws.getRow(10)).slice(1);
+  ok('Нийт мөрөнд 3 ш гэж бичигдэнэ (2 сум нийлсэн)',/3 ш/.test(String(totRow[6])),JSON.stringify(totRow));
+
+  // Модал ЗӨВХӨН СУМААР (сараар дахин бүлэглэхгүй) тул сум бүрийн дэд
+  // дүн Excel-ийн тухайн сумын мөрүүдтэй шууд тохирох ёстой — 1-р сум
+  // 6, 7-р сард хуваагдсан ч нийлбэр нь өөрчлөгдөхгүй.
+  const modalSub=await page.evaluate(()=>{
+    openSwReplRep();
+    return [...document.querySelectorAll('#swReplRepBody .rp-sub')].map(e=>e.textContent)
+  });
+  ok('Модалд Сум 1 — 2 ш (6, 7-р сарын 2 бичлэг НЭГ дэд дүнд, Excel-тэй тохирно)',
+     modalSub.some(r=>/Сум 1/.test(r)&&/2\s*ш/.test(r)),JSON.stringify(modalSub));
+  ok('Модалд Сум 2 — 1 ш',
+     modalSub.some(r=>/Сум 2/.test(r)&&/1\s*ш/.test(r)),JSON.stringify(modalSub));
 }
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
