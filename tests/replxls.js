@@ -85,6 +85,27 @@ async function grab(call){
      /ТБД 1 ш/.test(String(totRow[0]))&&/3 дэр/.test(String(totRow[5])),JSON.stringify(totRow));
 }
 
+/* Аппын "Солигдсон дэр" цонх САРААР бүлэглэдэг тул 1-р зам (6, 7-р
+   сард тус бүрдээ 1 удаа сольсон) хоёр өөр сарын блокт тус тусдаа,
+   бага тоотойгоор гардаг — Excel-ийн "1-р зам — 2 дэр" дэд дүнтэй
+   зэрэгцүүлж харвал зөрсөн мэт санагддаг байсан (хэрэглэгчийн
+   мэдээлсэн зөрүү). "Замаар нийт" хэсэг Excel-ийн дэд дүнтэй ЯГ
+   таарч байгааг энд баталгаажуулна. */
+{
+  const byTrack=await page.evaluate(()=>{
+    openReplReport();
+    const months=document.querySelectorAll('#replReportBody > .rp-month');
+    const last=months[months.length-1];   // "Замаар нийт" хэсэг (сарын блокуудын ардах)
+    return {hd:(last.querySelector('.rp-month-hd')||{}).textContent||'',
+      rows:[...last.querySelectorAll('.rp-sub')].map(e=>e.textContent)}
+  });
+  ok('"Замаар нийт" гарчигт 3 дэр (2 замын нийлбэр)',/3 дэр/.test(byTrack.hd),JSON.stringify(byTrack.hd));
+  ok('"Замаар нийт"-д 1-р зам — 2 дэр (Excel-ийн дэд дүнтэй ЯГ тохирно)',
+     byTrack.rows.some(r=>/1-р зам/.test(r)&&/2\s*дэр/.test(r)),JSON.stringify(byTrack.rows));
+  ok('"Замаар нийт"-д 2-р зам — 1 дэр (Excel-ийн дэд дүнтэй ЯГ тохирно)',
+     byTrack.rows.some(r=>/2-р зам/.test(r)&&/1\s*дэр/.test(r)),JSON.stringify(byTrack.rows));
+}
+
 // ── Хоосон үед зохих зурвас гарна ──
 await page.evaluate(()=>{
   DB.folders[0].tracks[0].sections[0].repl={};
