@@ -1,0 +1,30 @@
+Copyright © 2026 ПУ-5 апп. Бүх эрх хуулиар хамгаалагдсан.
+Copyright © 2026 ПУ-5 апп. All rights reserved.
+
+Энэ repository-д байрлах эх код, баримт бичиг, загвар, бусад бүх
+агуулга нь зохиогчийн эрхийн хуулиар хамгаалагдсан бөгөөд зөвхөн
+эрх эзэмшигчийн мэдэлд байна.
+
+Эрх эзэмшигчийн урьдчилсан бичгээр өгсөн зөвшөөрөлгүйгээр дараах
+үйлдлийг хийхийг ХАТУУ ХОРИГЛОНО:
+  - хуулбарлах, тараах, нийтлэх;
+  - өөрчлөх, дахин боловсруулах, деривaтив бүтээл үүсгэх;
+  - худалдах, арилжих, лиценз олгох;
+  - арилжааны болон арилжааны бус зориулалтаар ашиглах.
+
+Энэ эх кодыг нийтэд үзүүлэх боломжтой (public) байрлуулсан нь
+дээрх эрхийг ямар ч байдлаар өөрчлөхгүй, бууруулахгүй.
+
+---
+
+This repository and all its contents (source code, documentation,
+assets) are protected by copyright law and remain the exclusive
+property of the copyright holder.
+
+Without prior written permission from the copyright holder, you
+may NOT copy, distribute, publish, modify, create derivative works
+from, sell, sublicense, or otherwise use this code, in whole or in
+part, for any commercial or non-commercial purpose.
+
+Public visibility of this repository does not constitute a license,
+waiver, or grant of any rights under copyright.
