@@ -287,6 +287,31 @@ button{font-family:inherit}
 #homeView .hero{padding-bottom:16px}
 #homeView .hero-stats{margin-top:13px}
 .hero-chips{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+
+/* ══════════════════════════════════════════════
+   LANDING — нэвтэрсний/апп ахин нээгдсэний дараа ЭХЛЭЭД
+   харагдах цэвэрхэн хаалга. Паспортын жагсаалт мэт өгөгдөлтэй
+   агуулгыг энд ОРУУЛААГҮЙ — зөвхөн "Паспорт" руу чиглүүлнэ
+   (`_afterLoginInner`, `goPassport`). */
+.lnd-wrap{flex:1;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;
+  padding:calc(var(--sat) + 16px) 20px calc(var(--sab) + 16px)}
+.lnd-top{display:flex;justify-content:flex-end;gap:6px}
+.lnd-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center}
+.lnd-icon{width:88px;height:88px;background:var(--card);border-radius:26px;
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-lg);
+  margin-bottom:18px}
+.lnd-title{font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-.5px}
+.lnd-sub{font-size:13px;color:var(--ink3);font-weight:600;margin-top:4px;margin-bottom:34px;max-width:260px}
+.lnd-btn{display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;max-width:280px;padding:18px;border:none;border-radius:var(--r);
+  background:var(--card);color:var(--blue);font-family:inherit;
+  font-size:17px;font-weight:900;letter-spacing:.02em;cursor:pointer;
+  box-shadow:var(--sh-lg);transition:transform .16s,box-shadow .16s}
+.lnd-btn:active{transform:translateY(1px);box-shadow:var(--sh-sm-in)}
+.lnd-sw-link{display:flex;align-items:center;gap:4px;margin-top:20px;
+  background:none;border:none;color:var(--ink3);font-family:inherit;
+  font-size:12.5px;font-weight:700;cursor:pointer;padding:8px}
 /* Цагаан хагас-тунгалаг дэвсгэр нь өнгөлөг/бараан hero дээр байхаар
    зохиогдсон байсан ч v152-ийн цайвар (неоморф) hero дээр цагаан бичиг
    бараг харагдахгүй болсныг зассан — гэрэлтэй горимд картын өнгө,
@@ -1256,7 +1281,7 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 
 .view.active{animation:slideInRight .32s cubic-bezier(.22,1,.36,1)}
 .view.active.nav-back{animation:slideInLeft .32s cubic-bezier(.22,1,.36,1)}
-#homeView.active,#loginView.active{animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
+#homeView.active,#loginView.active,#landingView.active{animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
 
 .overlay.open .sheet{animation:sheetUp .34s cubic-bezier(.22,1.02,.36,1)}
 .overlay.open{animation:fadeUp .2s ease}
@@ -1546,6 +1571,8 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   border-radius:16px;background:var(--card);
   border:1px solid var(--border);
   box-shadow:var(--sh-sm)}
+[data-theme="dark"] .lnd-icon,
+[data-theme="dark"] .lnd-btn{border:1px solid var(--border)}
 [data-theme="dark"] .sw-nav{
   border-radius:999px;padding:8px 15px;
   background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.20);
@@ -2034,6 +2061,34 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   </div>
   <div class="home-body" style="padding:14px 14px 40px" id="adminBody">
     <div style="text-align:center;padding:40px;color:var(--ink4);font-size:13px">Уншиж байна...</div>
+  </div>
+</div>
+
+<!-- LANDING -->
+<div class="view" id="landingView">
+  <div class="lnd-wrap">
+    <div class="lnd-top">
+      <button class="hero-edit" onclick="toggleTheme()" aria-label="Өнгө солих" id="lndThemeBtn"></button>
+      <button class="hero-edit" onclick="doLogout()" aria-label="Гарах" style="color:var(--red)">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+    <div class="lnd-center">
+      <div class="lnd-icon">
+        <img src="icon-192.png" alt="" width="64" height="64" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
+      </div>
+      <div class="lnd-title" id="lndTitle">ПУ-5</div>
+      <div class="lnd-sub">Дэр, дүнзний бүртгэл, хяналтын систем</div>
+      <button class="lnd-btn" id="lndPassBtn" onclick="hap();goPassport()">
+        Паспорт
+        <svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button class="lnd-sw-link" onclick="hap();goSwHome()">
+        СШ ПУ-5 (сум/дүнз)
+        <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="build-tag" style="text-align:center;padding:14px 0 2px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
   </div>
 </div>
 
@@ -4070,10 +4125,12 @@ function applyTheme(t){
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   const m=document.querySelector('meta[name="theme-color"]');
   if(m)m.setAttribute('content',dark?'#1B1046':'#FF9932');
-  // Товч дээр ОЧИХ горимын дүрсийг харуулна
-  const b=document.getElementById('themeBtn');
-  if(b){b.innerHTML=dark?_SUN:_MOON;
-    b.setAttribute('aria-label',dark?'Гэрэлтэй болгох':'Харанхуй болгох')}
+  // Товч дээр ОЧИХ горимын дүрсийг харуулна (нүүр + landing-ийн хувилбар)
+  ['themeBtn','lndThemeBtn'].forEach(function(id){
+    const b=document.getElementById(id);
+    if(b){b.innerHTML=dark?_SUN:_MOON;
+      b.setAttribute('aria-label',dark?'Гэрэлтэй болгох':'Харанхуй болгох')}
+  });
 }
 function toggleTheme(){
   hap(8);
@@ -4114,7 +4171,7 @@ function ring(pct,size,color){
 // VIEWS
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
-const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
+const _VDEPTH={loginView:0,landingView:0.5,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
   swHomeView:1,swRecView:2,brHomeView:1};
 let _curDepth=0;
 function showView(id,back){
@@ -4155,6 +4212,15 @@ function goHome(){
   if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
   _hubTo(false);
   _navBack=true;showView('homeView');
+  const ts=document.getElementById('tracksSection');
+  if(ts)ts.style.display=activeFolderId?'block':'none';
+  renderHome()
+}
+// Landing-аас "Паспорт" дарахад — урагшаа орох тул nav-back БИШ
+// (_VDEPTH: landingView 0.5 → homeView 1).
+function goPassport(){
+  _hubTo(false);
+  showView('homeView');
   const ts=document.getElementById('tracksSection');
   if(ts)ts.style.display=activeFolderId?'block':'none';
   renderHome()
@@ -4283,6 +4349,7 @@ function initSheetGestures(){
 // ══════════════════════════════════════════════
 function renderHome(){
   document.getElementById('locName').textContent=DB.location;
+  const _lt=document.getElementById('lndTitle');if(_lt)_lt.textContent=DB.location;
   renderRptInfoCard();
   const _ts=document.getElementById('tracksSection');
   if(_ts)_ts.style.display=activeFolderId?'block':'none';
@@ -9761,7 +9828,11 @@ async function _afterLoginInner(){
   // орох мэдрэмж дундуур нь тасалдахгүй, апп шууд "үсэрч" гарч ирэхгүй
   if(signInAnim){try{await signInAnim}catch(e){}signInAnim=null}
   if(_isAdmin){showView('adminView');await loadAdminView();return}
-  showView('homeView');
+  // Апп руу ороход ЭХЛЭЭД минималист landing — Паспортын жагсаалт
+  // руу зөвхөн "Паспорт" дарахад орно (`goPassport`). homeView-ийн
+  // өгөгдлийг (`renderHome` доор) ард талд нь бэлдсээр байна, тул
+  // товшсон мөчид шууд бэлэн байна.
+  showView('landingView');
   _errBanner('⏳ Үүлнээс өгөгдөл татаж байна...','Хүлээнэ үү');
   // ★ Сүлжээгүйд хийгээд илгээгдээгүй үлдсэн ажил утсанд байгаа эсэх.
   //   Байвал үүлэн дэх ХУУЧИН өгөгдлөөр дарж бичихгүй.
@@ -14618,7 +14689,9 @@ function goTab(t){
 }
 function _syncTabs(force){
   const bar=document.getElementById('tabbar');if(!bar)return;
-  const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active');
+  // Landing нь цэвэрхэн, доод табгүй хаалга тул энд нуугдана
+  const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active')
+    &&!document.getElementById('landingView').classList.contains('active');
   document.body.classList.toggle('has-tabbar',on);
   if(!on)return;
   const sw=document.getElementById('swHomeView').classList.contains('active');
@@ -15032,7 +15105,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.10.25·197';
+const APP_BUILD='2026.11.03·198';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

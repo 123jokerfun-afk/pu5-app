@@ -44,25 +44,25 @@ ok('Нууц үг рүү шилжихэд зөөгч тийшээ алхана',
 
 // ── 3. Зөвшөөрөгдсөн нэвтрэлт: жинхэнэ doLogin()-оор, тест stub нь
 //    ямарч итгэмжлэлээр үргэлж амжилттай болдог тул verdict=true замыг
-//    шалгана. homeView ШУУД биш, үзэгдэл дуустал хүлээгээд л гарч
-//    ирэх ёстойг баталгаажуулна. ──
+//    шалгана. landingView ШУУД биш, үзэгдэл дуустал хүлээгээд л гарч
+//    ирэх ёстойг баталгаажуулна (homeView нь зөвхөн "Паспорт" дарахад). ──
 await page.fill('#loginCode','ПД-6');
 await page.fill('#loginPass','test1234');
 await page.click('#loginBtn');
 await page.waitForTimeout(250);
 const midPlay=await page.evaluate(()=>({
   playing:document.getElementById('loginBtn').classList.contains('playing'),
-  homeActive:document.getElementById('homeView').classList.contains('active')
+  landingActive:document.getElementById('landingView').classList.contains('active')
 }));
-ok('Дарсны дараа шууд биш, үзэгдэл тоглож эхэлнэ',midPlay.playing&&!midPlay.homeActive,
+ok('Дарсны дараа шууд биш, үзэгдэл тоглож эхэлнэ',midPlay.playing&&!midPlay.landingActive,
    JSON.stringify(midPlay));
-await page.waitForFunction(()=>document.getElementById('homeView').classList.contains('active'),
+await page.waitForFunction(()=>document.getElementById('landingView').classList.contains('active'),
   {timeout:15000});
 const afterHome=await page.evaluate(()=>({
   playing:document.getElementById('loginBtn').classList.contains('playing'),
-  homeActive:document.getElementById('homeView').classList.contains('active')
+  landingActive:document.getElementById('landingView').classList.contains('active')
 }));
-ok('Үзэгдэл дуусаад л homeView гарч ирнэ',!afterHome.playing&&afterHome.homeActive,
+ok('Үзэгдэл дуусаад л landingView гарч ирнэ',!afterHome.playing&&afterHome.landingActive,
    JSON.stringify(afterHome));
 
 // ── 4. Татгалзсан нэвтрэлт: auth-г дарж бичээд алдаа оруулна.
@@ -98,11 +98,11 @@ await page.waitForFunction(()=>!document.getElementById('loginBtn').classList.co
   {timeout:15000});
 const rejEnd=await page.evaluate(()=>({
   loginActive:document.getElementById('loginView').classList.contains('active'),
-  homeActive:document.getElementById('homeView').classList.contains('active'),
+  landingActive:document.getElementById('landingView').classList.contains('active'),
   btnDisabled:document.getElementById('loginBtn').disabled
 }));
-ok('Татгалзсаны дараа homeView рүү ОРООГҮЙ, loginView хэвээр',
-   rejEnd.loginActive&&!rejEnd.homeActive,JSON.stringify(rejEnd));
+ok('Татгалзсаны дараа landingView рүү ОРООГҮЙ, loginView хэвээр',
+   rejEnd.loginActive&&!rejEnd.landingActive,JSON.stringify(rejEnd));
 ok('Товч дахин идэвхжиж, ахин оролдож болно',!rejEnd.btnDisabled);
 await page.evaluate(()=>{fbAuth.signInWithEmailAndPassword=window.__origSignIn});
 

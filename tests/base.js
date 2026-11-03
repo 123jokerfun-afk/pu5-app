@@ -114,12 +114,20 @@ async function newPage(browser,dev){
   return {ctx,page,errs};
 }
 
-async function login(page,code){
+// Нэвтэрсний дараа ЭХЛЭЭД landing гарч ирнэ (`landing.js` үүнийг шалгана).
+// `login()` нь homeView хүртэл "Паспорт" дараад орно — бусад бүх тест
+// үүнийг ашигладаг тул энд зогсоно.
+async function loginToLanding(page,code){
   code=code||'ПЧ-1';
   await page.waitForSelector('#loginCode',{timeout:10000});
   await page.fill('#loginCode',code);
   await page.fill('#loginPass','test1234');
   await page.click('#loginBtn');
+  await page.waitForFunction(()=>document.getElementById('landingView')&&document.getElementById('landingView').classList.contains('active'),{timeout:15000});
+}
+async function login(page,code){
+  await loginToLanding(page,code);
+  await page.click('#lndPassBtn');
   await page.waitForFunction(()=>document.getElementById('homeView')&&document.getElementById('homeView').classList.contains('active'),{timeout:15000});
   await page.waitForTimeout(1900);
   // импортын асуулт гарвал үгүй гэж хаана
@@ -172,4 +180,4 @@ async function tapTargets(page){
   })
 }
 
-module.exports={chromium,launch,EXE,DEVICES,newPage,login,overflow,tapTargets,ensureServer,STUB};
+module.exports={chromium,launch,EXE,DEVICES,newPage,login,loginToLanding,overflow,tapTargets,ensureServer,STUB};
