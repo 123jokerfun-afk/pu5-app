@@ -162,6 +162,39 @@ ok('index.html кэшлэгдсэн',swr.hasIdx);
 ok('version.txt кэшлэгдээгүй',!swr.hasVer);
 ok('Сүлжээгүй үед апп кэшнээс нээгдэнэ',swr.offline,swr.offErr);
 
+/* ── 8b. ?v=<хувилбар> cache-busting — аппын шинэчлэлт шалгагчийн
+   hardReload()-ийн гол арга. Кэш рүү санаатайгаар ХУУЧИН тэмдэгт
+   тавиад: энгийн хүсэлт хуучнаа (stale-while-revalidate зөв хэвээр),
+   харин ?v=-тэй хүсэлт кэшийг огт үл тоож шууд сүлжээнээс ирэх
+   ёстойг шалгана. */
+async function bustAttempt(){
+  const base=await B.ensureServer();
+  const ctx=await br.newContext();
+  const p=await ctx.newPage();
+  await p.goto(base+'/index.html',{waitUntil:'load'});
+  try{
+    await p.waitForFunction(async()=>{
+      const r=await navigator.serviceWorker.getRegistration();
+      return !!(r&&r.active)},{timeout:15000})
+  }catch(e){}
+  const res=await p.evaluate(async()=>{
+    const ks=(await caches.keys()).filter(k=>k.startsWith('pu5-'));
+    if(!ks.length)return {err:'no pu5- cache'};
+    const c=await caches.open(ks[0]);
+    await c.put('index.html',new Response('ХУУЧИН_ТЭМДЭГТ',{headers:{'Content-Type':'text/html'}}));
+    const plain=await (await fetch('index.html')).text();
+    const busted=await (await fetch('index.html?v=test123')).text();
+    return {plain,busted}
+  });
+  await ctx.close();
+  return res
+}
+let bust=await bustAttempt();
+if(bust.err||!/ХУУЧИН_ТЭМДЭГТ/.test(bust.plain||''))bust=await bustAttempt();
+ok('Энгийн хүсэлт (query-гүй) хэвээр кэшнээс ирнэ',/ХУУЧИН_ТЭМДЭГТ/.test(bust.plain||''),JSON.stringify(bust).slice(0,80));
+ok('?v=-тэй хүсэлт кэшийг алгасаж сүлжээнээс шууд ирнэ',
+   !!bust.busted&&!/ХУУЧИН_ТЭМДЭГТ/.test(bust.busted),JSON.stringify(bust).slice(0,120));
+
 /* ── 9. Интро видео солигдоход хуучин кэш үлдэх ёсгүй ──
    Видеог сольчихоод CACHE-ийн дугаарыг ахиулахаа мартвал хэрэглэгчид
    утсандаа хадгалагдсан ХУУЧИН видеог үзсээр байна. */

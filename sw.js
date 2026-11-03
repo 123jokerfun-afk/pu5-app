@@ -13,7 +13,7 @@
      ард нь шинийг татна. Дараагийн нээлтэд шинэ нь ирнэ.
    · Идэвхжихдээ өөр хувилбарын кэшийг устгана.
    ══════════════════════════════════════════════════════════════ */
-const VER='2026.11.03-198';
+const VER='2026.11.03-199';
 const CACHE='pu5-'+VER;
 
 /* Гадны сангууд. Хаяг нь хувилбар агуулсан тул өөрчлөгддөггүй —
@@ -59,11 +59,17 @@ self.addEventListener('fetch',e=>{
   const isDoc=req.mode==='navigate'||
     (sameOrigin&&/(^\/|\/|index\.html)$/.test(url.pathname)&&/index\.html$|\/$/.test(url.pathname));
 
-  // Аппын хуудас — кэшнээс шууд өгөөд, ард нь шинэчилнэ
+  // Аппын хуудас — кэшнээс шууд өгөөд, ард нь шинэчилнэ. ЭСВЭЛ хэрэв
+  // хаягт query string байвал (жишээ нь ?v=<хувилбар> — аппын шинэчлэлт
+  // шалгагчийн hardReload() cache-busting) кэшийг огт шалгахгүй, шууд
+  // сүлжээнээс авна. Өмнө нь c.match('index.html') ЯМАР Ч query-г
+  // үл тоож байсан тул ?v= нэмсэн ч хуучин кэш шууд буцдаг, шинэчлэлт
+  // нэг дахин ачаалалт зуур биш 2-3 даваад л бий болдог байв.
   if(isDoc){
     e.respondWith((async()=>{
       const c=await caches.open(CACHE);
-      const hit=await c.match('index.html');
+      const bust=url.search.length>0;
+      const hit=bust?null:await c.match('index.html');
       const net=fetch(req).then(r=>{
         if(r&&r.ok)c.put('index.html',r.clone()).catch(()=>{});
         return r
