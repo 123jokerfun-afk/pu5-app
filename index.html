@@ -289,29 +289,52 @@ button{font-family:inherit}
 .hero-chips{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
 
 /* ══════════════════════════════════════════════
-   LANDING — нэвтэрсний/апп ахин нээгдсэний дараа ЭХЛЭЭД
-   харагдах цэвэрхэн хаалга. Паспортын жагсаалт мэт өгөгдөлтэй
-   агуулгыг энд ОРУУЛААГҮЙ — зөвхөн "Паспорт" руу чиглүүлнэ
-   (`_afterLoginInner`, `goPassport`). */
-.lnd-wrap{flex:1;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;
-  padding:calc(var(--sat) + 16px) 20px calc(var(--sab) + 16px)}
-.lnd-top{display:flex;justify-content:flex-end;gap:6px}
-.lnd-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+   НҮҮРНИЙ ДАШБОАРД — хэрэглэгч тухайн паспортоо нээлгүйгээр
+   ЭХЛЭЭД харах ерөнхий тойм: материал, сум/дүнз, 2 паспортын
+   чиг хандлага, хувиар шүүсэн үе тоолуур (`renderDashboard`). */
+.dash-grid{display:flex;gap:8px;margin-top:4px}
+.dash-mini{flex:1;min-width:0;background:var(--card);border-radius:16px;
+  padding:10px 8px;box-shadow:var(--sh-sm);text-align:center}
+.dash-mini-link{cursor:pointer;transition:transform .15s}
+.dash-mini-link:active{transform:scale(.95)}
+.dash-mini-n{font-size:19px;font-weight:900;color:var(--ink);letter-spacing:-.4px;
+  font-variant-numeric:tabular-nums}
+.dash-mini-l{font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;
+  letter-spacing:.04em;margin-top:1px}
+.dash-cmp{background:var(--card);border-radius:var(--rm);padding:14px;margin-top:10px;
+  box-shadow:var(--sh-sm)}
+.dash-cmp-hd{display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:10px}
+.dash-trend{font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px}
+.dash-trend.up{background:var(--red-bg);color:var(--red)}
+.dash-trend.down{background:var(--g50);color:var(--g700)}
+.dash-trend.flat{background:var(--bg2);color:var(--ink3)}
+.dash-bars{display:flex;gap:18px}
+.dash-bar-grp{flex:1;min-width:0}
+.dash-bar-grp-lbl{font-size:10px;color:var(--ink3);font-weight:700;margin-bottom:6px;
   text-align:center}
-.lnd-icon{width:88px;height:88px;background:var(--card);border-radius:26px;
-  display:flex;align-items:center;justify-content:center;box-shadow:var(--sh-lg);
-  margin-bottom:18px}
-.lnd-title{font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-.5px}
-.lnd-sub{font-size:13px;color:var(--ink3);font-weight:600;margin-top:4px;margin-bottom:34px;max-width:260px}
-.lnd-btn{display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;max-width:280px;padding:18px;border:none;border-radius:var(--r);
-  background:var(--card);color:var(--blue);font-family:inherit;
-  font-size:17px;font-weight:900;letter-spacing:.02em;cursor:pointer;
-  box-shadow:var(--sh-lg);transition:transform .16s,box-shadow .16s}
-.lnd-btn:active{transform:translateY(1px);box-shadow:var(--sh-sm-in)}
-.lnd-sw-link{display:flex;align-items:center;gap:4px;margin-top:20px;
-  background:none;border:none;color:var(--ink3);font-family:inherit;
-  font-size:12.5px;font-weight:700;cursor:pointer;padding:8px}
+.dash-bar-row{display:flex;align-items:flex-end;gap:6px;height:64px}
+.dash-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  height:100%}
+.dash-bar-n{font-size:11px;font-weight:800;color:var(--ink2);margin-bottom:3px;
+  font-variant-numeric:tabular-nums}
+.dash-bar{width:100%;max-width:34px;border-radius:7px 7px 2px 2px;min-height:3px;
+  transition:height .5s cubic-bezier(.22,1,.36,1)}
+.dash-bar.old{background:var(--ink5)}
+.dash-bar.new{background:var(--blue-mid)}
+.dash-bar-date{font-size:9px;color:var(--ink4);font-weight:600;margin-top:5px}
+.dash-thr{background:var(--card);border-radius:var(--rm);padding:14px;margin-top:10px;
+  box-shadow:var(--sh-sm)}
+.dash-thr-hd{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:9px}
+.dash-thr-chips{display:flex;gap:5px;flex-wrap:wrap}
+.dash-thr-chip{background:var(--bg2);border:none;border-radius:99px;padding:7px 12px;
+  font-size:12px;font-weight:800;color:var(--ink3);font-family:inherit;cursor:pointer;
+  min-height:28px;box-sizing:border-box;transition:background .15s,color .15s}
+.dash-thr-chip.active{background:var(--orange);color:#fff}
+.dash-thr-result{margin-top:10px;font-size:13px;font-weight:700;color:var(--ink2);
+  text-align:center}
+.dash-thr-result b{color:var(--orange);font-size:17px}
+.dash-empty{text-align:center;padding:18px;color:var(--ink4);font-size:12.5px;font-weight:600}
 /* Цагаан хагас-тунгалаг дэвсгэр нь өнгөлөг/бараан hero дээр байхаар
    зохиогдсон байсан ч v152-ийн цайвар (неоморф) hero дээр цагаан бичиг
    бараг харагдахгүй болсныг зассан — гэрэлтэй горимд картын өнгө,
@@ -1281,7 +1304,7 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 
 .view.active{animation:slideInRight .32s cubic-bezier(.22,1,.36,1)}
 .view.active.nav-back{animation:slideInLeft .32s cubic-bezier(.22,1,.36,1)}
-#homeView.active,#loginView.active,#landingView.active{animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
+#homeView.active,#loginView.active{animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
 
 .overlay.open .sheet{animation:sheetUp .34s cubic-bezier(.22,1.02,.36,1)}
 .overlay.open{animation:fadeUp .2s ease}
@@ -1571,8 +1594,11 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   border-radius:16px;background:var(--card);
   border:1px solid var(--border);
   box-shadow:var(--sh-sm)}
-[data-theme="dark"] .lnd-icon,
-[data-theme="dark"] .lnd-btn{border:1px solid var(--border)}
+/* --blue-mid дэвсгэр дүүргэлт (харин зай/хүрээнд биш) болгож ашиглахад
+   харанхуй дэвсгэр дээр хэт гэрэлтдэг (theme.js-ийн гэрэлтэлтийн
+   шалгуураар илэрсэн) — тул энд бага зэрэг бүдэгрүүлсэн, бараан
+   фоонд зохимжтой өнгөөр сольно. */
+[data-theme="dark"] .dash-bar.new{background:var(--g600)}
 [data-theme="dark"] .sw-nav{
   border-radius:999px;padding:8px 15px;
   background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.20);
@@ -2064,34 +2090,6 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   </div>
 </div>
 
-<!-- LANDING -->
-<div class="view" id="landingView">
-  <div class="lnd-wrap">
-    <div class="lnd-top">
-      <button class="hero-edit" onclick="toggleTheme()" aria-label="Өнгө солих" id="lndThemeBtn"></button>
-      <button class="hero-edit" onclick="doLogout()" aria-label="Гарах" style="color:var(--red)">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-      </button>
-    </div>
-    <div class="lnd-center">
-      <div class="lnd-icon">
-        <img src="icon-192.png" alt="" width="64" height="64" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">
-      </div>
-      <div class="lnd-title" id="lndTitle">ПУ-5</div>
-      <div class="lnd-sub">Дэр, дүнзний бүртгэл, хяналтын систем</div>
-      <button class="lnd-btn" id="lndPassBtn" onclick="hap();goPassport()">
-        Паспорт
-        <svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
-      <button class="lnd-sw-link" onclick="hap();goSwHome()">
-        СШ ПУ-5 (сум/дүнз)
-        <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-      </button>
-    </div>
-    <div class="build-tag" style="text-align:center;padding:14px 0 2px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
-  </div>
-</div>
-
 <!-- HOME -->
 <div class="view" id="homeView">
   <div class="hero">
@@ -2131,6 +2129,12 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
   </div>
   <div class="home-body">
+    <!-- Дашбоард — сүүлийн паспортын ерөнхий тойм, тухайн паспортоо
+         нээлгүйгээр шууд харагдана (`renderDashboard`) -->
+    <div class="home-section" id="dashSection" style="margin-top:16px">
+      <div class="sec-lbl" style="margin-top:0">Ерөнхий тойм · <span id="dashFolderName">—</span></div>
+      <div id="dashBody"></div>
+    </div>
     <!-- Гол зам — паспортаас хараат бус, паспортуудын дээр -->
     <div class="home-section" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -4125,12 +4129,10 @@ function applyTheme(t){
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   const m=document.querySelector('meta[name="theme-color"]');
   if(m)m.setAttribute('content',dark?'#1B1046':'#FF9932');
-  // Товч дээр ОЧИХ горимын дүрсийг харуулна (нүүр + landing-ийн хувилбар)
-  ['themeBtn','lndThemeBtn'].forEach(function(id){
-    const b=document.getElementById(id);
-    if(b){b.innerHTML=dark?_SUN:_MOON;
-      b.setAttribute('aria-label',dark?'Гэрэлтэй болгох':'Харанхуй болгох')}
-  });
+  // Товч дээр ОЧИХ горимын дүрсийг харуулна
+  const b=document.getElementById('themeBtn');
+  if(b){b.innerHTML=dark?_SUN:_MOON;
+    b.setAttribute('aria-label',dark?'Гэрэлтэй болгох':'Харанхуй болгох')}
 }
 function toggleTheme(){
   hap(8);
@@ -4171,7 +4173,7 @@ function ring(pct,size,color){
 // VIEWS
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
-const _VDEPTH={loginView:0,landingView:0.5,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
+const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
   swHomeView:1,swRecView:2,brHomeView:1};
 let _curDepth=0;
 function showView(id,back){
@@ -4212,15 +4214,6 @@ function goHome(){
   if(_brMode){_brMode=false;showView('brHomeView',true);renderBrHome();return}
   _hubTo(false);
   _navBack=true;showView('homeView');
-  const ts=document.getElementById('tracksSection');
-  if(ts)ts.style.display=activeFolderId?'block':'none';
-  renderHome()
-}
-// Landing-аас "Паспорт" дарахад — урагшаа орох тул nav-back БИШ
-// (_VDEPTH: landingView 0.5 → homeView 1).
-function goPassport(){
-  _hubTo(false);
-  showView('homeView');
   const ts=document.getElementById('tracksSection');
   if(ts)ts.style.display=activeFolderId?'block':'none';
   renderHome()
@@ -4345,12 +4338,115 @@ function initSheetGestures(){
 }
 
 // ══════════════════════════════════════════════
+// НҮҮРНИЙ ДАШБОАРД — тухайн паспортоо нээлгүйгээр шууд харагдах
+// ерөнхий тойм: материал, сум/дүнз, 2 паспортын чиг хандлага,
+// хувиар шүүсэн үе тоолуур.
+// ══════════════════════════════════════════════
+// Хуучнаас шинэ рүү биш, ШИНЭЭС ХУУЧИН руу (огноогоор буурахаар)
+// эрэмбэлсэн эхний N паспорт. Хогийн саванд хаягдсан/салбарын
+// хуулбарыг оруулахгүй.
+function _latestFolders(list,n){
+  return (list||[]).filter(f=>f&&!f.trashedAt&&!f.br)
+    .slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))
+    .slice(0,n||1)
+}
+// Нэг дэрийн паспортын (folder) ерөнхий тойм: гол замыг оролцуулахгүй
+// (паспортын дэр ЗӨВХӨН өртөөний зам, renderHome-ийн gTotal-тай адил
+// зарчим). sections нь хувь-шүүлтэд ашиглагдана (dashSetThreshold).
+function _derFolderStats(f){
+  const r={total:0,bad:0,wood:0,conc:0,repl:0,sections:[]};
+  (f.tracks||[]).filter(t=>!isMainTrack(t)).forEach(t=>{
+    (t.sections||[]).forEach(s=>{
+      const a=analyzeSection(s);
+      r.total+=a.total;r.bad+=a.totalBad;r.wood+=a.woodTotal;r.conc+=a.concreteTotal;
+      if(s.repl)r.repl+=Object.keys(s.repl).length;
+      r.sections.push({pct:a.pct})
+    })
+  });
+  r.pct=r.total>0?(r.bad/r.total*100):0;
+  return r
+}
+// Нэг сумын (дүнзний) паспортын ерөнхий тойм — swTally-г ашиглана
+// (swHomeView-ийн толгойтой яг ижил тооцоо).
+function _swFolderStats(f){
+  const r={turnouts:0,total:0,bad:0,repl:0};
+  (f.turnouts||[]).forEach(to=>{
+    r.turnouts++;const a=swTally(to);r.total+=a.total;r.bad+=a.bad;r.repl+=a.dRepl+a.slRepl
+  });
+  r.pct=r.total>0?(r.bad/r.total*100):0;
+  return r
+}
+let _dashThreshold=15;
+function dashSetThreshold(p){_dashThreshold=p;renderDashboard()}
+function renderDashboard(){
+  const sec=document.getElementById('dashSection'),body=document.getElementById('dashBody');
+  if(!body)return;
+  const der=_latestFolders(DB.folders,2);
+  const nm=document.getElementById('dashFolderName');
+  if(!der.length){
+    if(nm)nm.textContent='—';
+    body.innerHTML='<div class="dash-empty">Паспорт нэмэгдэхэд энд ерөнхий тойм гарч ирнэ</div>';
+    return
+  }
+  const latest=der[0],prev=der[1]||null;
+  const dLS=_derFolderStats(latest),dPS=prev?_derFolderStats(prev):null;
+  if(nm)nm.textContent=latest.name||`${latest.season||''} ${latest.year||''}`;
+
+  // Сум/дүнзний сүүлийн паспорт (бэлэн бол)
+  const swLatest=_latestFolders(DB.sw,1)[0]||null;
+  const swS=swLatest?_swFolderStats(swLatest):null;
+
+  let h='<div class="dash-grid">'+
+    `<div class="dash-mini"><div class="dash-mini-n">${dLS.wood}</div><div class="dash-mini-l">Модон</div></div>`+
+    `<div class="dash-mini"><div class="dash-mini-n">${dLS.conc}</div><div class="dash-mini-l">ТБД</div></div>`+
+    `<div class="dash-mini dash-mini-link" onclick="hap();goSwHome()"><div class="dash-mini-n">${swS?swS.total:0}</div><div class="dash-mini-l">Сум/дүнз →</div></div>`+
+    '</div>';
+
+  // ── Чиг хандлага: сүүлийн 2 паспортын тэнцэхгүй/сольсон тоо ──
+  if(dPS){
+    const diff=dLS.bad-dPS.bad;
+    const trendCls=diff>0?'up':diff<0?'down':'flat';
+    const trendTxt=diff>0?`▲ +${diff}`:diff<0?`▼ ${diff}`:'— өөрчлөлтгүй';
+    const bar=(v,mx)=>Math.max(3,mx>0?Math.round(v/mx*64):3);
+    const badMx=Math.max(dPS.bad,dLS.bad,1),replMx=Math.max(dPS.repl,dLS.repl,1);
+    h+=`<div class="dash-cmp">
+      <div class="dash-cmp-hd"><span>Чиг хандлага (сүүлийн 2 паспорт)</span><span class="dash-trend ${trendCls}">${trendTxt}</span></div>
+      <div class="dash-bars">
+        <div class="dash-bar-grp"><div class="dash-bar-grp-lbl">Тэнцэхгүй дэр</div>
+          <div class="dash-bar-row">
+            <div class="dash-bar-col"><div class="dash-bar-n">${dPS.bad}</div><div class="dash-bar old" style="height:${bar(dPS.bad,badMx)}px"></div><div class="dash-bar-date">${esc(prev.season||'')} ${esc(prev.year||'')}</div></div>
+            <div class="dash-bar-col"><div class="dash-bar-n">${dLS.bad}</div><div class="dash-bar new" style="height:${bar(dLS.bad,badMx)}px"></div><div class="dash-bar-date">${esc(latest.season||'')} ${esc(latest.year||'')}</div></div>
+          </div>
+        </div>
+        <div class="dash-bar-grp"><div class="dash-bar-grp-lbl">Сольсон дэр</div>
+          <div class="dash-bar-row">
+            <div class="dash-bar-col"><div class="dash-bar-n">${dPS.repl}</div><div class="dash-bar old" style="height:${bar(dPS.repl,replMx)}px"></div><div class="dash-bar-date">${esc(prev.season||'')} ${esc(prev.year||'')}</div></div>
+            <div class="dash-bar-col"><div class="dash-bar-n">${dLS.repl}</div><div class="dash-bar new" style="height:${bar(dLS.repl,replMx)}px"></div><div class="dash-bar-date">${esc(latest.season||'')} ${esc(latest.year||'')}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`
+  }
+
+  // ── Хувь сонгож шүүх: сүүлийн паспортаас X%-иас дээш үеийн тоо ──
+  const atOrAbove=dLS.sections.filter(s=>s.pct>=_dashThreshold).length;
+  h+=`<div class="dash-thr">
+    <div class="dash-thr-hd">Хувь сонгож шалгах (${esc(latest.name||'сүүлийн паспорт')})</div>
+    <div class="dash-thr-chips">${[5,10,15,20,25].map(p=>
+      `<button class="dash-thr-chip${p===_dashThreshold?' active':''}" onclick="hap();dashSetThreshold(${p})">${p}%+</button>`).join('')}</div>
+    <div class="dash-thr-result"><b>${atOrAbove}</b> үе ${_dashThreshold}%-иас дээш тэнцэхгүйтэй (${dLS.sections.length} үеэс)</div>
+  </div>`;
+
+  body.innerHTML=h
+}
+
+// ══════════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════════
 function renderHome(){
   document.getElementById('locName').textContent=DB.location;
-  const _lt=document.getElementById('lndTitle');if(_lt)_lt.textContent=DB.location;
   renderRptInfoCard();
+  renderDashboard();
   const _ts=document.getElementById('tracksSection');
   if(_ts)_ts.style.display=activeFolderId?'block':'none';
   const r=DB.rpt||{};
@@ -9828,11 +9924,7 @@ async function _afterLoginInner(){
   // орох мэдрэмж дундуур нь тасалдахгүй, апп шууд "үсэрч" гарч ирэхгүй
   if(signInAnim){try{await signInAnim}catch(e){}signInAnim=null}
   if(_isAdmin){showView('adminView');await loadAdminView();return}
-  // Апп руу ороход ЭХЛЭЭД минималист landing — Паспортын жагсаалт
-  // руу зөвхөн "Паспорт" дарахад орно (`goPassport`). homeView-ийн
-  // өгөгдлийг (`renderHome` доор) ард талд нь бэлдсээр байна, тул
-  // товшсон мөчид шууд бэлэн байна.
-  showView('landingView');
+  showView('homeView');
   _errBanner('⏳ Үүлнээс өгөгдөл татаж байна...','Хүлээнэ үү');
   // ★ Сүлжээгүйд хийгээд илгээгдээгүй үлдсэн ажил утсанд байгаа эсэх.
   //   Байвал үүлэн дэх ХУУЧИН өгөгдлөөр дарж бичихгүй.
@@ -14689,9 +14781,7 @@ function goTab(t){
 }
 function _syncTabs(force){
   const bar=document.getElementById('tabbar');if(!bar)return;
-  // Landing нь цэвэрхэн, доод табгүй хаалга тул энд нуугдана
-  const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active')
-    &&!document.getElementById('landingView').classList.contains('active');
+  const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active');
   document.body.classList.toggle('has-tabbar',on);
   if(!on)return;
   const sw=document.getElementById('swHomeView').classList.contains('active');
@@ -15105,7 +15195,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.03·199';
+const APP_BUILD='2026.11.03·200';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
