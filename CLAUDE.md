@@ -33,9 +33,13 @@ service worker бүртгэдэггүй).
   2. Аппын бүх логик
 - Гадны сан: Firebase 9.23 (gstatic), ExcelJS 4.3 (cdnjs)
 
-Дэлгэцүүд: `loginView`, `homeView` (дэр), `swHomeView` (сум/СШ),
-`trackView`, `recordView`, `swRecView`, `mainKmView`, `summaryView`,
-`adminView`.
+Дэлгэцүүд: `loginView`, `homeView` (дэр — Нүүр/Паспорт дэд таб),
+`swHomeView` (сум/СШ), `brHomeView` (салбар зам), `syncView`
+(Мэдэгдэл), `profView` (Профайл), `trackView`, `recordView`,
+`swRecView`, `mainKmView`, `summaryView`, `adminView`.
+
+Доод табын дараалал (шудрахад мөн энэ дарааллаар): Салбар зам (зөвхөн
+`hasBranch()`) | Нүүр | Паспорт | Сумууд | Мэдэгдэл | Профайл.
 
 ## Өгөгдөл
 

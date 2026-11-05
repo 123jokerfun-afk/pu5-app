@@ -96,7 +96,7 @@ const MODALS=[
  ['derOutModal','openDerOut()'],['threshModal','openThresholdExport()'],
  ['planRepModal','openPlanReport()'],['replReportModal','openReplReport()'],
  ['consecReportModal','openConsecReport()'],['carveReportModal','openCarveReport()'],
- ['pwaModal','pwaHowTo()'],['syncSheet','openSyncSheet()'],['profSheet','openProfSheet()'],
+ ['pwaModal','pwaHowTo()'],
  ['addTrackModal','openTrack("T1",1);openAddTrack()'],
  ['addSecModal','openTrack("T1",1);openAddSection("normal")'],
  ['walkModal','openTrack("T1",1);askWalk()'],

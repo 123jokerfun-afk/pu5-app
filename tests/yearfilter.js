@@ -46,14 +46,14 @@ const der=await page.evaluate(async()=>{
   confirmYearFilter();await new Promise(r=>setTimeout(r,260));
   const afterConfirm=[...document.querySelectorAll('#foldersGrid .folder-name')].map(e=>e.textContent.trim());
   return{before,auto,pendingAfterScroll,stillFullList,afterConfirm,filter:_yearFilter,
-    sheetClosed:!document.getElementById('profSheet').classList.contains('open')}});
+    stayProf:document.getElementById('profView').classList.contains('active')}});
 ok('Профайл нээхэд энэ жил (2026) авто таарна',der.auto==='2026',der.auto);
 ok('Шудрахад ГАНЦААРАА жагсаалт хэвээрээ (шүүгдэхгүй)',
    der.stillFullList.length===2,JSON.stringify(der.stillFullList));
 ok('Батлах товч дарсны дараа зөвхөн 2025 оны паспорт үлдэнэ',
    der.afterConfirm.length===1&&/2025/.test(der.afterConfirm[0]),
    JSON.stringify(der.afterConfirm));
-ok('Батлахад профайл цэс хаагдана',der.sheetClosed,String(der.sheetClosed));
+ok('Батлахад профайл дэлгэц хэвээр (v203-аас доороос гарах цонх биш)',der.stayProf,String(der.stayProf));
 
 /* ── 3. Сумын жагсаалт ч мөн адил шүүгдэнэ ── */
 console.log('\nСумын жагсаалт');

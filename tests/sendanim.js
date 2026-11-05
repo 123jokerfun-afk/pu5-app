@@ -114,32 +114,32 @@ await page.waitForTimeout(1600);         // дараагийн оролдлог�
    зарчмаар, #sendFly-гүйгээр). Профайл хуудсыг нээгээд, тэндэх
    .pf-row товчийг олж, runSend(btn,fn) зөв дамжиж байгааг шалгана. ── */
 await page.evaluate(()=>openProfSheet());
-await page.waitForFunction(()=>document.getElementById('profSheet').classList.contains('open'),
+await page.waitForFunction(()=>document.getElementById('profView').classList.contains('active'),
   {timeout:2000});
 await page.waitForTimeout(150);
-const vfBtn=await page.$('#profSheet .pf-row[onclick*="runVerifyParts"]');
+const vfBtn=await page.$('#profView .pf-row[onclick*="runVerifyParts"]');
 ok('"Үүлэн дэх бичлэгийг шалгах" товч олдлоо',!!vfBtn);
 const vfInit=await page.evaluate(()=>{
-  const b=document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]');
+  const b=document.querySelector('#profView .pf-row[onclick*="runVerifyParts"]');
   return {sbOn:b&&b.classList.contains('sb-on'),msg:(document.getElementById('vfMsg')||{}).textContent};
 });
 ok('Анхандаа тоглоогүй',!vfInit.sbOn,JSON.stringify(vfInit));
 
 await page.evaluate(()=>{
-  window.__vfp=runVerifyParts(document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]'))
+  window.__vfp=runVerifyParts(document.querySelector('#profView .pf-row[onclick*="runVerifyParts"]'))
 });
 await page.waitForTimeout(80);
 const vfEarly=await page.evaluate(()=>({
-  sbOn:document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
-  disabled:document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').disabled
+  sbOn:document.querySelector('#profView .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
+  disabled:document.querySelector('#profView .pf-row[onclick*="runVerifyParts"]').disabled
 }));
 ok('Дарсны дараа ШУУД (80мс) товч дотроо үзэгдэл тоглож эхэлсэн',
    vfEarly.sbOn&&vfEarly.disabled,JSON.stringify(vfEarly));
-await page.waitForFunction(()=>!document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
+await page.waitForFunction(()=>!document.querySelector('#profView .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
   {timeout:8000});
 const vfResult=await page.evaluate(()=>window.__vfp);
 const vfAfter=await page.evaluate(()=>({
-  sbOn:document.querySelector('#profSheet .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
+  sbOn:document.querySelector('#profView .pf-row[onclick*="runVerifyParts"]').classList.contains('sb-on'),
   msg:document.getElementById('vfMsg').textContent
 }));
 ok('Үзэгдэл дуусаад товч анхны байдалдаа буцаж, үр дүн бичигдэв',
@@ -153,7 +153,7 @@ const vfNoBtn=await page.evaluate(async()=>{
 });
 ok('btn дамжуулаагүй үед ч (өмнөх зан) ажиллана, анимаци шаардахгүй',
    typeof vfNoBtn.r==='boolean',JSON.stringify(vfNoBtn));
-await page.evaluate(()=>closeModal('profSheet'));
+await page.evaluate(()=>goTab('home'));
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e)&&!/offline/.test(e));
 ok('Консолд (сүлжээгүйгээс өөр) алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,5)));

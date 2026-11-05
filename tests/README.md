@@ -21,8 +21,8 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 
 ```bash
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
-node allB.js     # flow8 flow9 overlap notch swhome herohome
-node allC.js     # үүлний бүтэц: sizeguard docid parts auto deletesync multi offlinelogout
+node allB.js     # flow8 flow9 overlap notch swhome herohome dashboard hometab tabnav
+node allC.js     # үүлний бүтэц: sizeguard docid parts auto deletesync unitdel multi offlinelogout
 node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale  (удаан)
 node allE.js     # гүнзгий: e2e deep live fuzz×5  (хамгийн удаан)
 node sweepA.js   # 4 утасны байрлал
@@ -52,12 +52,14 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `parts.js` | Паспортыг тусдаа баримт болгох — хуваалт/нийлүүлэлт |
 | `docid.js` | Firestore-ын баримтын нэрийн дүрэм |
 | `auto.js` | Автомат шилжилт — хэсгүүдээс унших, байхгүй бол хуучнаас уншаад өөрөө шилжих |
+| `unitdel.js` | Устгасан сум/зам сервэрээс ч устах эсэх — Firestore-ын эрэмбэлсэн түлхүүрийг дуурайна |
 | `multi.js` | Хоёр утас зэрэг ажиллах — хэн нь юу бичсэн |
 | `offlinelogout.js` | Сүлжээгүйд бүртгэл хийгээд, СҮЛЖЭЭГҮЙ ХЭВЭЭРЭЭ гарахад localStorage/"илгээгдээгүй" тэмдэг алдагдахгүй эсэх, дараа нь дахин нэвтрэхэд өөрөө үүл рүү илгээгддэг эсэх |
 | `ui2.js` | Алдаа харуулагч, хувилбарын бичиглэл, таб, хуудаснууд |
 | `raw.js` | Түүхий код дэлгэцэнд гарах — эх код + хоосон төлөв бүр |
 | `tap.js` | Товч үнэхээр дарагдах уу — тогтмол давхарга товч дарж байгаа эсэх |
-| `swipe.js` | Шудралт — заалт анивчих, дэлгэц хооронд шилжих |
+| `swipe.js` | Шудралт — заалт анивчих, табын дарааллаар шилжих |
+| `tabnav.js` | Доод таб: Салбар зам \| Нүүр \| Паспорт \| Сумууд \| Мэдэгдэл \| Профайл, шудралт, Нүүр анхдагч |
 | `perf.js` | Service worker, офлайн, ExcelJS-ийн хойшлуулсан ачаалалт, гарах товч |
 | `pack.js` | `_packDB` гаралт хуучинтай ижил эсэх (тоо бүртгэлийн бичиг баримтын эх өгөгдөл) |
 | `swrec.js` | Дүнз бүртгэх нь дэртэй ижил зарчимтай эсэх |
