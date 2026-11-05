@@ -26,23 +26,18 @@ await T.swipe(page,cb.x+cb.width/2,cb.y+cb.height/2,0,200,10);
 await page.waitForTimeout(500);
 ok('Агуулгын хэсгээс доош шудрах → хаагдав',await page.evaluate(()=>!document.getElementById('editSleeperModal').classList.contains('open')));
 
-// ── 1в. Профайл (урт, scroll-той) цонх: дунд цэгээс богино шудрахад
-//    ХААГДАХГҮЙ (зүгээр scroll хийгдэнэ), дээд цэгтээ хүрмэгц л хаана ──
+// ── 1в. Профайл одоо доороос гарах цонх БИШ, энгийн дэлгэц (v203) —
+//    доош шудрахад хаагдаж алга болохгүй, зүгээр гүйлгэгдэнэ ──
 await page.evaluate(()=>openProfSheet());
 await page.waitForTimeout(500);
-await page.evaluate(()=>{document.querySelector('#profSheet .sheet').scrollTop=100});
-await page.waitForTimeout(150);
-const pSt0=await page.evaluate(()=>document.querySelector('#profSheet .sheet').scrollTop);
-let pb=await T.box(page,'#profSheet .sheet');
-await T.swipe(page,pb.x+pb.width/2,pb.y+150,0,20,4);
-await page.waitForTimeout(300);
-ok('Профайл: дунд цэгээс богино шудрахад хаагдахгүй',
-  pSt0>0&&await page.evaluate(()=>document.getElementById('profSheet').classList.contains('open')),
-  'scrollTop='+pSt0);
+ok('Профайл энгийн дэлгэцээр нээгдэв',
+  await page.evaluate(()=>document.getElementById('profView').classList.contains('active')&&!document.querySelector('.overlay.open')));
+let pb=await T.box(page,'#profView .home-body');
 await T.swipe(page,pb.x+pb.width/2,pb.y+150,0,250,14);
-await page.waitForTimeout(500);
-ok('Профайл: дээд цэгт хүрээд үргэлжлүүлж татахад хаагдана',
-  !(await page.evaluate(()=>document.getElementById('profSheet')?.classList.contains('open'))));
+await page.waitForTimeout(400);
+ok('Профайл: доош шудрахад дэлгэц хэвээр (хаагдахгүй)',
+  await page.evaluate(()=>document.getElementById('profView').classList.contains('active')));
+await page.evaluate(()=>goTab('home'));await page.waitForTimeout(300);
 
 // ── 2. Sheet: ард дарах ──
 await page.evaluate(()=>openEditSleeper(5));
@@ -76,17 +71,18 @@ ok('Баруун шудрах → дараагийн үе',await page.evaluate((
    s0+' → '+await page.evaluate(()=>activeSectionId));
 
 // ── 5. Нүүр ↔ СШ шудрах ──
-await page.evaluate(()=>goHome());await page.waitForTimeout(600);
+await page.evaluate(()=>goTab('home'));await page.waitForTimeout(600);
 // 10 алхам үед харнесс өөрөө 604мс зарцуулж, аппын 600мс хязгаараас
 // хэтэрдэг байв — тест аппыг биш, CDP-ийн хоцролтыг хэмжиж байсан.
 // 4 алхам = 356мс, жинхэнэ хүний шудралттай (150–400мс) ойрхон.
 await T.swipe(page,340,300,-280,0,4);
 await page.waitForTimeout(800);
-ok('Нүүрээс зүүн шудрах → СШ ПУ-5',await page.evaluate(()=>document.getElementById('swHomeView').classList.contains('active')),
+// v203-аас табын дарааллаар: Нүүр → (зүүн) → Паспорт
+ok('Нүүрээс зүүн шудрах → Паспорт таб',await page.evaluate(()=>document.getElementById('homeView').classList.contains('active')&&_curTab()==='pass'),
    await page.evaluate(()=>[...document.querySelectorAll('.view.active')].map(v=>v.id).join(',')));
 await T.swipe(page,50,300,280,0,4);
 await page.waitForTimeout(800);
-ok('СШ-ээс баруун шудрах → Нүүр',await page.evaluate(()=>document.getElementById('homeView').classList.contains('active')),
+ok('Паспортоос баруун шудрах → Нүүр',await page.evaluate(()=>document.getElementById('homeView').classList.contains('active')&&_curTab()==='home'),
    await page.evaluate(()=>[...document.querySelectorAll('.view.active')].map(v=>v.id).join(',')));
 
 // ── 6. Урт дарж устгах идэвхжүүлэх ──

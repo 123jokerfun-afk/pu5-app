@@ -1,6 +1,8 @@
 /* ══════════════════════════════════════════════════════════════
    ШУДРАЛТ — ДЭЛГЭЦ АНИВЧИХ
 
+   Доод табын дэлгэцүүдийн хооронд шудрахад (v203-аас табын
+   дарааллаар: Салбар | Нүүр | Паспорт | Сумууд | Мэдэгдэл | Профайл).
    v105-д дэр ↔ сум хооронд шудрахад дэлгэц анивчдаг байв. Хоёр
    шалтгаантай:
 
@@ -44,35 +46,38 @@ async function swipe(viewId,dir,px,jitter,steps){
     mo.disconnect();
     let flips=0,prev=null;
     writes.forEach(o=>{const on=o==='1';if(prev!==null&&on!==prev)flips++;prev=on});
-    return {writes:writes.length,flips,label,
+    return {writes:writes.length,flips,label,tab:_curTab(),
       view:(document.querySelector('.view.active')||{}).id};
   },[viewId,dir,px,jitter,steps]);
 }
 
-/* ── 1. Нүүр → СШ (зүүн тийш) ─────────────────────────────── */
-await page.evaluate(()=>goHome()); await page.waitForTimeout(400);
+/* ── 1. Нүүр → Паспорт (зүүн тийш) — доод табын дарааллаар ─── */
+await page.evaluate(()=>goTab('home')); await page.waitForTimeout(400);
 const a=await swipe('homeView',-1,286,9,26);
-ok('Нүүрээс зүүн шудрахад СШ рүү оров',a.view==='swHomeView',a.view);
+ok('Нүүрээс зүүн шудрахад Паспорт таб руу оров',a.view==='homeView'&&a.tab==='pass',a.view+' · '+a.tab);
 ok('Заалт олон дахин бичигдэхгүй',a.writes<=3,a.writes+' бичлэг');
 ok('Заалт анивчихгүй (асаа/унтраа ≤1)',a.flips<=1,a.flips+' удаа');
-ok('Заалтын бичиг зөв — "үе" биш дэлгэцийн нэр',/СШ ПУ-5/.test(a.label),JSON.stringify(a.label));
-
-/* ── 2. СШ → Нүүр (баруун тийш) ───────────────────────────── */
+ok('Заалтын бичиг зөв — дараагийн табын нэр',/Паспорт →/.test(a.label),JSON.stringify(a.label));
+/* ── 1б. Паспорт → Сумууд (зүүн тийш) ─────────────────────── */
+await page.waitForTimeout(400);
+const a2=await swipe('homeView',-1,286,9,26);
+ok('Паспортоос зүүн шудрахад Сумууд руу оров',a2.view==='swHomeView',a2.view);
+ok('Заалт: "Сумууд →"',/Сумууд →/.test(a2.label),JSON.stringify(a2.label));
+/* ── 2. Сумууд → Паспорт (баруун тийш) ────────────────────── */
 await page.waitForTimeout(400);
 const b=await swipe('swHomeView',1,286,9,26);
-ok('СШ-ээс баруун шудрахад Нүүр рүү буцав',b.view==='homeView',b.view);
+ok('Сумуудаас баруун шудрахад Паспорт руу буцав',b.view==='homeView'&&b.tab==='pass',b.view+' · '+b.tab);
 ok('Буцахад ч заалт анивчихгүй',b.flips<=1&&b.writes<=3,b.writes+' бичлэг, '+b.flips+' анивчилт');
-ok('Буцах заалтын бичиг зөв',/Дэр ПУ-5/.test(b.label),JSON.stringify(b.label));
-
+ok('Буцах заалтын бичиг зөв',/← Паспорт/.test(b.label),JSON.stringify(b.label));
 /* ── 3. ХҮЧТЭЙ найгалт — хамгийн муу тохиолдол ────────────── */
-await page.evaluate(()=>goHome()); await page.waitForTimeout(400);
+await page.evaluate(()=>goTab('home')); await page.waitForTimeout(400);
 const c=await swipe('homeView',-1,286,26,30);
 ok('Хүчтэй найгалттай ч анивчихгүй',c.flips<=1,c.flips+' удаа, '+c.writes+' бичлэг');
 
 /* ── 4. Богино шудралт — шилжихгүй ───────────────────────── */
-await page.evaluate(()=>goHome()); await page.waitForTimeout(400);
+await page.evaluate(()=>goTab('home')); await page.waitForTimeout(400);
 const d=await swipe('homeView',-1,40,6,10);
-ok('Богино шудралтад шилжихгүй',d.view==='homeView',d.view);
+ok('Богино шудралтад шилжихгүй',d.view==='homeView'&&d.tab==='home',d.view+' · '+d.tab);
 ok('Богино шудралтын дараа заалт үлдэхгүй',
    await page.evaluate(()=>document.getElementById('swipeFlash').style.opacity!=='1'));
 

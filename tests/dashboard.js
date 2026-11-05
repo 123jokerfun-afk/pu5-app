@@ -1,6 +1,7 @@
 /* НҮҮРНИЙ ДАШБОАРД — тухайн паспортоо нээлгүйгээр шууд харагдах
-   ерөнхий тойм (`renderDashboard`): материал, сум/дүнз, 2 паспортын
-   чиг хандлага, хувиар шүүсэн үеийн тоолуур. Тоо бүрийг нарийн
+   ерөнхий тойм (`renderDashboard`): тэнцэхгүй хувийн цагираг, материал,
+   Маягт 1-3-ийн 25%+ ба дараалан муудсан хүснэгт, анхаарах үе,
+   хувиар шүүсэн үеийн тоолуур. Тоо бүрийг нарийн
    тооцоолсон эх өгөгдөлтэй тулган баталгаажуулна. */
 const B=require('./base');
 const R=[];const ok=(n,c,d)=>{R.push(!!c);console.log((c?'  ✓ ':'  ✗ ')+n+(d!==undefined?'  — '+d:''))};
@@ -58,12 +59,21 @@ await page.evaluate(()=>{
 
 const dash=await page.evaluate(()=>{
   const g=[...document.querySelectorAll('#dashBody .dash-mini-n')].map(e=>e.textContent.trim());
+  const tb=id=>[...document.querySelectorAll('#'+id+' tr')].map(r=>[...r.children].map(c=>c.textContent.trim()));
+  // Excel (Маягт 1-3)-ийн тооцоотой ЯГ ижил байх ёстой — тэр функцээр нь бодно
+  const f=DB.folders.find(x=>x.id==='FLAST');
+  const trs=f.tracks.filter(t=>!isMainTrack(t));
   return {
     name:document.getElementById('dashFolderName').textContent,
     minis:g,
-    trendTxt:(document.querySelector('.dash-trend')||{}).textContent,
-    trendCls:(document.querySelector('.dash-trend')||{}).className,
-    barNs:[...document.querySelectorAll('.dash-bar-n')].map(e=>e.textContent.trim()),
+    pct:(document.getElementById('dashPct')||{}).textContent,
+    trend:(document.querySelector('#dashHero .dash-trend')||{}).className||'',
+    hasChart:document.querySelectorAll('.dash-cmp,.dash-bars,.dash-band-wrap').length,
+    speedTxt:/Хурд хязгаар/.test(document.getElementById('dashBody').textContent),
+    pctTbl:tb('dashPctTbl'),runTbl:tb('dashRunTbl'),
+    expPct:trs.map(_pctBuckets),expRun:trs.map(_runBuckets),
+    worst:[...document.querySelectorAll('#dashWorst .dash-wr-n')].map(e=>e.textContent.trim()),
+    worstP:[...document.querySelectorAll('#dashWorst .dash-wr-p')].map(e=>e.textContent.trim()),
     thrResult:document.querySelector('.dash-thr-result').textContent,
     activeChip:(document.querySelector('.dash-thr-chip.active')||{}).textContent
   }
@@ -73,23 +83,34 @@ ok('Модон/ТБД/Сум-дүнз mini-карт зөв (60/0/10)',
    dash.minis[0]==='60'&&dash.minis[1]==='0'&&dash.minis[2]==='10',JSON.stringify(dash.minis));
 ok('Гол зам дашбоардын тооцоонд ОРООГҮЙ (50 тэнцэхгүй нэмэгдээгүй)',
    dash.minis[0]==='60',dash.minis[0]);
-ok('Чиг хандлага: тэнцэхгүй өссөн тул "up" анги, +6',
-   /up/.test(dash.trendCls)&&/\+6/.test(dash.trendTxt),dash.trendCls+' / '+dash.trendTxt);
-ok('Баарны тоо: тэнцэхгүй хуучин=4 шинэ=10, сольсон хуучин=2 шинэ=5',
-   JSON.stringify(dash.barNs)===JSON.stringify(['4','10','2','5']),JSON.stringify(dash.barNs));
+ok('Цагираг: тэнцэхгүй хувь 10/60 = 16.7%',dash.pct==='16.7%',dash.pct);
+ok('Өмнөх паспортоос (4/20=20%) буурсан тул "down"',/down/.test(dash.trend),dash.trend);
+ok('Чиг хандлагын график, "Хурд хязгаарлах" гарчиг ХАСАГДСАН',
+   dash.hasChart===0&&!dash.speedTxt,dash.hasChart+' / '+dash.speedTxt);
+// Хүснэгт 1: толгой + зам бүр + Нийт
+ok('25%+ хүснэгтийн толгой маягтынх шиг',
+   JSON.stringify(dash.pctTbl[0])===JSON.stringify(['Зам','25-30','31-40','41-50','50 их']),JSON.stringify(dash.pctTbl[0]));
+ok('25%+ хүснэгт: 2-р зам, 30%-ийн үе 25-30 баганад',
+   dash.pctTbl[1]&&dash.pctTbl[1][0]==='2-р зам'&&dash.pctTbl[1][1]==='1',JSON.stringify(dash.pctTbl[1]));
+ok('25%+ хүснэгт Excel-ийн _pctBuckets-тэй ижил',
+   JSON.stringify(dash.pctTbl.slice(1,-1).map(r=>r.slice(1).map(v=>+v||0)))===JSON.stringify(dash.expPct),
+   JSON.stringify(dash.expPct));
+ok('25%+ хүснэгтийн Нийт мөр: 1 / 0 / 0 / 0',
+   JSON.stringify(dash.pctTbl[dash.pctTbl.length-1])===JSON.stringify(['Нийт','1','0','0','0']),
+   JSON.stringify(dash.pctTbl[dash.pctTbl.length-1]));
+// Хүснэгт 2: дараалан муудсан
+ok('Дараалан муудсан хүснэгтийн толгой: 3 / 4 / 5 ба<',
+   JSON.stringify(dash.runTbl[0])===JSON.stringify(['Зам','3','4','5 ба<']),JSON.stringify(dash.runTbl[0]));
+ok('Дараалан муудсан Excel-ийн _runBuckets-тэй ижил',
+   JSON.stringify(dash.runTbl.slice(1,-1).map(r=>r.slice(1).map(v=>+v||0)))===JSON.stringify(dash.expRun),
+   JSON.stringify(dash.runTbl)+' vs '+JSON.stringify(dash.expRun));
+ok('Дараалан муудсан: 6 дараалсан (3-р үе) "5 ба<" баганад',
+   dash.expRun[0][2]===1&&dash.runTbl[dash.runTbl.length-1][3]==='1',JSON.stringify(dash.runTbl));
+ok('Анхаарах үе: хамгийн өндөр нь 3-р үе (30%)',
+   /2-р зам · 3-р үе/.test(dash.worst[0]||'')&&dash.worstP[0]==='30%',JSON.stringify(dash.worst)+' '+JSON.stringify(dash.worstP));
 ok('Анхдагч 15% босго идэвхтэй',/15%/.test(dash.activeChip),dash.activeChip);
 ok('15% босгод 2 үе орно (15% ба 30%, 3-аас)',
    /^2\s/.test(dash.thrResult.trim())||/>\s*2\s*</.test(dash.thrResult),dash.thrResult);
-
-// ── 2б. Хурд хязгаарлалт шаардах шат: 15%/5%/30%-иас зөвхөн 30% нь
-//        25%-ийн босгыг давж, 25-30% багцад ордог (бодит паспортын
-//        Маягт 1-ийн 25-30/31-40/41-50/50+ ангилалтай ижил) ──
-const bandNs=await page.evaluate(()=>[...document.querySelectorAll('.dash-band-n')].map(e=>e.textContent.trim()));
-const bandLbls=await page.evaluate(()=>[...document.querySelectorAll('.dash-band-l')].map(e=>e.textContent.trim()));
-ok('Хурд хязгаарлалтын шат: зөвхөн 30%-ийн үе 25-30% багцад орно',
-   JSON.stringify(bandNs)===JSON.stringify(['1','0','0','0']),JSON.stringify(bandNs));
-ok('Шатны шошго зөв дараалалтай',
-   JSON.stringify(bandLbls)===JSON.stringify(['25-30%','31-40%','41-50%','50%+']),JSON.stringify(bandLbls));
 
 // ── 3. Босго товч солиход дахин тооцоологдоно ──
 const thr5=await page.evaluate(()=>{dashSetThreshold(5);
@@ -111,11 +132,12 @@ await page.waitForTimeout(300);
 // ── 5. Ганц паспорт (хуучин нь байхгүй) — графикгүй, алдаагүй ──
 const single=await page.evaluate(()=>{
   DB.folders=DB.folders.filter(f=>f.id==='FLAST');saveDB();renderHome();
-  return {cmp:document.querySelectorAll('.dash-cmp').length,
+  return {pill:document.querySelectorAll('#dashHero .dash-trend').length,
     thr:document.querySelectorAll('.dash-thr').length,
+    tbl:document.querySelectorAll('#dashPctTbl table,#dashRunTbl table').length,
     minis:document.querySelectorAll('.dash-mini').length}
 });
-ok('Ганц паспорттой үед харьцуулах график гарахгүй',single.cmp===0,JSON.stringify(single));
+ok('Ганц паспорттой үед "өмнөхөөс" харьцуулалт гарахгүй, хүснэгт хэвээр',single.pill===0&&single.tbl===2,JSON.stringify(single));
 ok('Ганц паспорттой ч mini-карт, босго хэсэг хэвээр ажиллана',
    single.thr===1&&single.minis===3,JSON.stringify(single));
 

@@ -33,8 +33,8 @@ ok('Профайл дээр "Хувилбар vN"',/^Хувилбар v\d+$/.tes
 const tb=await page.evaluate(()=>{
   const bar=document.getElementById('tabbar');
   return {shown:getComputedStyle(bar).display!=='none',
-    n:bar.querySelectorAll('.tab-b').length,
-    labels:[...bar.querySelectorAll('.tab-b')].map(b=>{
+    n:[...bar.querySelectorAll('.tab-b')].filter(b=>getComputedStyle(b).display!=='none').length,
+    labels:[...bar.querySelectorAll('.tab-b')].filter(b=>getComputedStyle(b).display!=='none').map(b=>{
       const sp=[...b.querySelectorAll('span')].filter(x=>!x.classList.contains('tab-dot'));
       return sp.length?sp[sp.length-1].textContent:''})}});
 ok('Таб харагдав',tb.shown&&tb.n===5,'мөр='+tb.n);
@@ -55,11 +55,11 @@ ok('Нүүр таб → дэр нүүр',nav.home==='homeView'&&nav.homeMark==='
 
 const sheets=await page.evaluate(async()=>{
   goTab('sync'); await new Promise(r=>setTimeout(r,300));
-  const s=document.getElementById('syncSheet').classList.contains('open');
+  const s=document.getElementById('syncView').classList.contains('active');
   const txt=document.getElementById('syncBody').textContent;
   closeModal('syncSheet');
   goTab('prof'); await new Promise(r=>setTimeout(r,300));
-  const p=document.getElementById('profSheet').classList.contains('open');
+  const p=document.getElementById('profView').classList.contains('active');
   const ptxt=document.getElementById('profBody').textContent;
   closeModal('profSheet');
   return {s,p,meter:/Хамгийн том хэсэг/.test(txt),

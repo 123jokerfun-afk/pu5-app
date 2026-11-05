@@ -301,28 +301,66 @@ button{font-family:inherit}
   font-variant-numeric:tabular-nums}
 .dash-mini-l{font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;
   letter-spacing:.04em;margin-top:1px}
-.dash-cmp{background:var(--card);border-radius:var(--rm);padding:14px;margin-top:10px;
-  box-shadow:var(--sh-sm)}
-.dash-cmp-hd{display:flex;align-items:center;justify-content:space-between;
-  font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:10px}
-.dash-trend{font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px}
+.dash-trend{font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
 .dash-trend.up{background:var(--red-bg);color:var(--red)}
 .dash-trend.down{background:var(--g50);color:var(--g700)}
 .dash-trend.flat{background:var(--bg2);color:var(--ink3)}
-.dash-bars{display:flex;gap:18px}
-.dash-bar-grp{flex:1;min-width:0}
-.dash-bar-grp-lbl{font-size:10px;color:var(--ink3);font-weight:700;margin-bottom:6px;
-  text-align:center}
-.dash-bar-row{display:flex;align-items:flex-end;gap:6px;height:64px}
-.dash-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-  height:100%}
-.dash-bar-n{font-size:11px;font-weight:800;color:var(--ink2);margin-bottom:3px;
-  font-variant-numeric:tabular-nums}
-.dash-bar{width:100%;max-width:34px;border-radius:7px 7px 2px 2px;min-height:3px;
-  transition:height .5s cubic-bezier(.22,1,.36,1)}
-.dash-bar.old{background:var(--ink5)}
-.dash-bar.new{background:var(--blue-mid)}
-.dash-bar-date{font-size:9px;color:var(--ink4);font-weight:600;margin-top:5px}
+/* Карт — бүх блокийн нийтлэг товойлгосон хайрцаг */
+.dash-card{background:var(--card);border-radius:var(--rm);padding:14px;margin-top:10px;
+  box-shadow:var(--sh-sm)}
+.dash-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.dash-t{font-size:13px;font-weight:800;color:var(--ink)}
+.dash-s{font-size:10.5px;font-weight:600;color:var(--ink3);margin-top:1px}
+/* Гол үзүүлэлт — тэнцэхгүй дэрийн хувийн цагираг */
+.dash-hero{display:flex;gap:12px;align-items:center}
+.dash-ring{width:112px;height:112px;flex:none;position:relative;display:grid;place-items:center;
+  border-radius:50%;box-shadow:var(--sh-sm-in)}
+.dash-ring svg{position:absolute;inset:0;width:100%;height:100%}
+.dash-ring-c{position:relative;text-align:center}
+.dash-ring-n{font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.dash-ring-l{font-size:9.5px;font-weight:700;color:var(--ink3)}
+.dash-kv{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dash-kv div{display:flex;justify-content:space-between;align-items:baseline;gap:6px;
+  background:var(--bg2);border-radius:12px;padding:7px 10px}
+.dash-kv span{font-size:11px;font-weight:700;color:var(--ink3)}
+.dash-kv b{font-size:14px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.dash-st{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:11.5px;font-weight:700;color:var(--ink2)}
+.dash-st i{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+  font-size:10.5px;font-weight:900;color:#fff;flex:none}
+/* Маягт 1-3-тай ижил хүснэгт (зам тус бүр + Нийт) */
+.dash-tbl{width:100%;border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+.dash-tbl th{font-size:10.5px;font-weight:800;color:var(--ink3);padding:6px 4px;text-align:center;
+  border-bottom:1px solid var(--border)}
+.dash-tbl th:first-child,.dash-tbl td:first-child{text-align:left;padding-left:2px}
+.dash-tbl td{font-size:13px;font-weight:700;color:var(--ink2);padding:7px 4px;text-align:center;
+  border-bottom:1px solid var(--border)}
+.dash-tbl tr.tot td{font-weight:900;color:var(--ink);border-bottom:0;background:var(--bg2)}
+.dash-tbl tr.tot td:first-child{border-radius:10px 0 0 10px}
+.dash-tbl tr.tot td:last-child{border-radius:0 10px 10px 0}
+/* Анхаарах үе — хамгийн өндөр хувьтай үеүүд, дарахад тэр үе рүү */
+.dash-wr{display:grid;grid-template-columns:1fr 46px;align-items:center;gap:8px;padding:8px 2px;
+  cursor:pointer;border-bottom:1px solid var(--border)}
+.dash-wr:last-child{border-bottom:0}
+.dash-wr:active{opacity:.6}
+.dash-wr-n{font-size:12.5px;font-weight:700;color:var(--ink)}
+.dash-wr-tr{height:6px;border-radius:4px;background:var(--bg2);margin-top:5px;overflow:hidden}
+.dash-wr-tr i{display:block;height:100%;border-radius:0 4px 4px 0}
+.dash-wr-p{text-align:right;font-size:13px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+/* Төлөвлөгөө + агуулах — хоёр багана */
+.dash-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.dash-two .dash-card{margin-top:0}
+.dash-pl{width:64px;height:64px;margin:6px auto 4px;position:relative;display:grid;place-items:center}
+.dash-pl svg{position:absolute;inset:0}
+.dash-pl b{position:relative;font-size:14px;font-weight:900;color:var(--ink)}
+.dash-cap{text-align:center;font-size:11px;font-weight:700;color:var(--ink3)}
+.dash-stk{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.dash-stk div{display:flex;justify-content:space-between;background:var(--bg2);border-radius:10px;
+  padding:7px 10px;font-size:12px;font-weight:700;color:var(--ink2)}
+.dash-stk b{color:var(--ink);font-weight:900;font-variant-numeric:tabular-nums}
+/* Дарж Мэдэгдэл рүү ордог тул хуруунд хүрэлцэх өндөртэй (≥44px) */
+.dash-sync{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;
+  min-height:44px;font-size:11.5px;font-weight:700;color:var(--ink3);cursor:pointer}
+.dash-sync i{width:8px;height:8px;border-radius:50%;display:block}
 .dash-thr{background:var(--card);border-radius:var(--rm);padding:14px;margin-top:10px;
   box-shadow:var(--sh-sm)}
 .dash-thr-hd{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:9px}
@@ -334,12 +372,6 @@ button{font-family:inherit}
 .dash-thr-result{margin-top:10px;font-size:13px;font-weight:700;color:var(--ink2);
   text-align:center}
 .dash-thr-result b{color:var(--orange);font-size:17px}
-.dash-band-wrap{background:var(--card);border-radius:var(--rm);padding:14px;
-  box-shadow:var(--sh-sm)}
-.dash-band-row{display:flex;gap:6px;margin-top:10px}
-.dash-band{flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:8px 4px;text-align:center}
-.dash-band-n{font-size:16px;font-weight:900;color:var(--orange);font-variant-numeric:tabular-nums}
-.dash-band-l{font-size:9px;color:var(--ink3);font-weight:700;margin-top:1px}
 .dash-empty{text-align:center;padding:18px;color:var(--ink4);font-size:12.5px;font-weight:600}
 /* Цагаан хагас-тунгалаг дэвсгэр нь өнгөлөг/бараан hero дээр байхаар
    зохиогдсон байсан ч v152-ийн цайвар (неоморф) hero дээр цагаан бичиг
@@ -1604,7 +1636,6 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
    харанхуй дэвсгэр дээр хэт гэрэлтдэг (theme.js-ийн гэрэлтэлтийн
    шалгуураар илэрсэн) — тул энд бага зэрэг бүдэгрүүлсэн, бараан
    фоонд зохимжтой өнгөөр сольно. */
-[data-theme="dark"] .dash-bar.new{background:var(--g600)}
 [data-theme="dark"] .sw-nav{
   border-radius:999px;padding:8px 15px;
   background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.20);
@@ -1656,7 +1687,9 @@ body.deep-view #tabbar{transform:translateY(100%);pointer-events:none}
   color:rgba(220,228,255,.55);transition:color .28s ease,background .28s ease;
   -webkit-tap-highlight-color:transparent}
 .tab-b svg{width:21px;height:21px;stroke-width:1.8}
-.tab-b span{font-size:9.5px;font-weight:600;letter-spacing:.02em}
+.tab-b{min-width:0}
+.tab-b span{font-size:9.5px;font-weight:600;letter-spacing:.02em;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab-b[aria-current="true"]{color:#fff;
   background:linear-gradient(158deg,rgba(255,255,255,.20),rgba(255,255,255,.07));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.26),0 6px 18px rgba(0,0,0,.3)}
@@ -1919,6 +1952,11 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 </div>
 <!-- ══ ДООД ТАБ — үндсэн шилжилт ══ -->
 <nav id="tabbar" aria-label="Үндсэн цэс">
+  <!-- Салбар зам — Нүүрийн зүүн талд, зөвхөн салбар замтай хэсэгт харагдана -->
+  <button class="tab-b" id="tabBr" onclick="goTab('br')" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h6c5 0 6-12 12-12M17 3l4 3-4 3"/></svg>
+    <span>Салбар зам</span>
+  </button>
   <button class="tab-b" id="tabHome" onclick="goTab('home')" aria-current="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
     <span>Нүүр</span>
@@ -1941,28 +1979,20 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   </button>
 </nav>
 
-<!-- ══ МЭДЭГДЭЛ — үүлтэй холбоо, илгээгээгүй өөрчлөлт ══ -->
-<div class="overlay" id="syncSheet">
-  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="sheet-title" style="margin:0">Мэдэгдэл</div>
-      <button onclick="closeModal('syncSheet')" class="x-btn" aria-label="Хаах">×</button>
-    </div>
-    <div id="syncBody"></div>
-    <div style="height:calc(18px + var(--sab))"></div>
-  </div></div>
+<!-- ══ МЭДЭГДЭЛ ба ПРОФАЙЛ — доороос гулсаж гарах цонх байсныг энгийн
+     дэлгэц болгосон (хэрэглэгчийн хүсэлт): доод табын бусад хуудастай
+     адил нээгдэж, хажуу тийш шудраад шилжиж болно. ══ -->
+<div class="view" id="syncView">
+  <div class="pg-hdr"><div class="pg-hdr-row"><div style="flex:1;min-width:0">
+    <div class="pg-title">Мэдэгдэл</div>
+    <div class="pg-sub">Үүлтэй холбоо, илгээгээгүй өөрчлөлт</div></div></div></div>
+  <div class="home-body" style="padding:14px 14px 40px"><div id="syncBody"></div></div>
 </div>
-
-<!-- ══ ПРОФАЙЛ — хэсэг, тохиргоо, гарах ══ -->
-<div class="overlay" id="profSheet">
-  <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div class="sheet-title" style="margin:0">Профайл</div>
-      <button onclick="closeModal('profSheet')" class="x-btn" aria-label="Хаах">×</button>
-    </div>
-    <div id="profBody"></div>
-    <div style="height:calc(18px + var(--sab))"></div>
-  </div></div>
+<div class="view" id="profView">
+  <div class="pg-hdr"><div class="pg-hdr-row"><div style="flex:1;min-width:0">
+    <div class="pg-title">Профайл</div>
+    <div class="pg-sub">Хэсэг, тохиргоо, гарах</div></div></div></div>
+  <div class="home-body" style="padding:14px 14px 40px"><div id="profBody"></div></div>
 </div>
 
 <!-- ХОГИЙН САВ: устгасан паспорт (дэр ба сум), 30 хоногийн дотор сэргээж болно -->
@@ -2332,7 +2362,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
     </div>
   </div>
   <div class="home-body" style="padding:14px 14px 40px">
-    <div class="lp-hint" id="brSwipeHint">← Хажуу тийш шудран Дэр ПУ-5 руу буцна</div>
+    <div class="lp-hint" id="brSwipeHint">Зүүн тийш шудран Нүүр рүү шилжинэ →</div>
     <!-- Хоёр цонх: Зам ба Сум. Салбар замын бүх ажил ЭНД хийгдэнэ —
          өртөөний нүүр рүү үсрэхгүй. -->
     <div class="br-tabs">
@@ -2474,7 +2504,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       </div>
       <div id="swSpecList" style="display:none;margin-top:8px"></div>
     </div>
-    <div class="lp-hint" style="margin-top:14px">Баруун тийш шудран Дэр ПУ-5 руу буцна →</div>
+    <div class="lp-hint" style="margin-top:14px">← Хажуу тийш шудран табуудын хооронд шилжинэ →</div>
     <div class="build-tag" style="text-align:center;padding:18px 0 26px;font-size:10px;font-weight:600;color:var(--ink5)"></div>
   </div>
 </div>
@@ -4180,7 +4210,7 @@ function ring(pct,size,color){
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
 const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
-  swHomeView:1,swRecView:2,brHomeView:1};
+  swHomeView:1,swRecView:2,brHomeView:1,syncView:1,profView:1};
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
@@ -4345,8 +4375,9 @@ function initSheetGestures(){
 
 // ══════════════════════════════════════════════
 // НҮҮРНИЙ ДАШБОАРД — тухайн паспортоо нээлгүйгээр шууд харагдах
-// ерөнхий тойм: материал, сум/дүнз, 2 паспортын чиг хандлага,
-// хувиар шүүсэн үе тоолуур.
+// ерөнхий тойм: тэнцэхгүй хувь, материал, Маягт 1-3-ийн 25%+ ба
+// дараалан муудсан хүснэгт, хувиар шүүх, анхаарах үе, төлөвлөгөө,
+// агуулах. Чиг хандлагын графикийг хэрэглэгчийн хүсэлтээр хассан.
 // ══════════════════════════════════════════════
 // Хуучнаас шинэ рүү биш, ШИНЭЭС ХУУЧИН руу (огноогоор буурахаар)
 // эрэмбэлсэн эхний N паспорт. Хогийн саванд хаягдсан/салбарын
@@ -4385,6 +4416,15 @@ function _swFolderStats(f){
 let _dashThreshold=15;
 let _homeSubTab='home';
 function dashSetThreshold(p){_dashThreshold=p;renderDashboard()}
+// Анхаарах үе дээр дарахад: тэр паспортыг нээж → зам → үе рүү
+function dashJump(fid,tid,sid){
+  hap(8);
+  if(activeFolderId!==fid)openFolder(fid);
+  const t=getTrack(tid);if(!t){showToast('Зам олдсонгүй');return}
+  openTrack(tid,1);
+  if(!(t.sections||[]).some(s=>s.id===sid)){showToast('Тухайн үе олдсонгүй');return}
+  openSection(sid,0)
+}
 function renderDashboard(){
   const sec=document.getElementById('dashSection'),body=document.getElementById('dashBody');
   if(!body)return;
@@ -4403,60 +4443,119 @@ function renderDashboard(){
   const swLatest=_latestFolders(DB.sw,1)[0]||null;
   const swS=swLatest?_swFolderStats(swLatest):null;
 
-  let h='<div class="dash-grid">'+
+  // Өртөөний замууд — дугаараар (Маягт 1-3-ийн мөрийн дараалал)
+  const trs=(latest.tracks||[]).filter(t=>!isMainTrack(t)).slice().sort((x,y)=>x.num-y.num);
+  const nSec=dLS.sections.length;
+  let h='';
+
+  // ── 1. Гол үзүүлэлт: тэнцэхгүй дэрийн хувь (цагираг) ──
+  // Өнгө нь замын картын босготой ижил (15% / 25%), өнгө дангаараа
+  // биш — тэмдэг ба бичвэр хамт явна.
+  const pct=dLS.pct, lvl=pct>=25?2:pct>=15?1:0;
+  const lvCol=['var(--g600)','var(--orange)','var(--red)'][lvl];
+  const lvTxt=['15%-иас доош','15–25% — анхаарах','25%-иас дээш'][lvl];
+  const C=2*Math.PI*46, arc=Math.max(0,Math.min(100,pct))/100*C;
+  let pill='';
+  if(dPS){
+    const d=pct-dPS.pct, cls=d>0.05?'up':d<-0.05?'down':'flat';
+    pill=`<span class="dash-trend ${cls}">${cls==='up'?'▲':cls==='down'?'▼':'—'} ${Math.abs(d).toFixed(1)}% өмнөхөөс</span>`
+  }
+  h+=`<div class="dash-card" id="dashHero">
+    <div class="dash-hd"><div><div class="dash-t">${esc(latest.name||'Сүүлийн паспорт')}</div>
+      <div class="dash-s">Өртөөний зам · ${trs.length} зам · ${nSec} үе</div></div>${pill}</div>
+    <div class="dash-hero">
+      <div class="dash-ring"><svg viewBox="0 0 112 112" aria-hidden="true">
+        <circle cx="56" cy="56" r="46" fill="none" stroke="var(--bg2)" stroke-width="9"/>
+        <circle cx="56" cy="56" r="46" fill="none" stroke="${lvCol}" stroke-width="9" stroke-linecap="round"
+          stroke-dasharray="${arc.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 56 56)"/></svg>
+        <div class="dash-ring-c"><div class="dash-ring-n" id="dashPct">${pct.toFixed(1)}%</div>
+          <div class="dash-ring-l">тэнцэхгүй дэр</div></div></div>
+      <div class="dash-kv">
+        <div><span>Нийт дэр</span><b>${dLS.total}</b></div>
+        <div><span>Тэнцэхгүй</span><b>${dLS.bad}</b></div>
+        <div><span>Сольсон</span><b>${dLS.repl}</b></div>
+      </div>
+    </div>
+    <div class="dash-st"><i style="background:${lvCol}">${lvl?'!':'✓'}</i>${lvTxt}</div>
+  </div>`;
+
+  // ── 2. Материал ба сум ──
+  h+='<div class="dash-grid" style="margin-top:10px">'+
     `<div class="dash-mini"><div class="dash-mini-n">${dLS.wood}</div><div class="dash-mini-l">Модон</div></div>`+
     `<div class="dash-mini"><div class="dash-mini-n">${dLS.conc}</div><div class="dash-mini-l">ТБД</div></div>`+
     `<div class="dash-mini dash-mini-link" onclick="hap();goSwHome()"><div class="dash-mini-n">${swS?swS.total:0}</div><div class="dash-mini-l">Сум/дүнз →</div></div>`+
     '</div>';
 
-  // ── Чиг хандлага: сүүлийн 2 паспортын тэнцэхгүй/сольсон тоо ──
-  if(dPS){
-    const diff=dLS.bad-dPS.bad;
-    const trendCls=diff>0?'up':diff<0?'down':'flat';
-    const trendTxt=diff>0?`▲ +${diff}`:diff<0?`▼ ${diff}`:'— өөрчлөлтгүй';
-    const bar=(v,mx)=>Math.max(3,mx>0?Math.round(v/mx*64):3);
-    const badMx=Math.max(dPS.bad,dLS.bad,1),replMx=Math.max(dPS.repl,dLS.repl,1);
-    h+=`<div class="dash-cmp">
-      <div class="dash-cmp-hd"><span>Чиг хандлага (сүүлийн 2 паспорт)</span><span class="dash-trend ${trendCls}">${trendTxt}</span></div>
-      <div class="dash-bars">
-        <div class="dash-bar-grp"><div class="dash-bar-grp-lbl">Тэнцэхгүй дэр</div>
-          <div class="dash-bar-row">
-            <div class="dash-bar-col"><div class="dash-bar-n">${dPS.bad}</div><div class="dash-bar old" style="height:${bar(dPS.bad,badMx)}px"></div><div class="dash-bar-date">${esc(prev.season||'')} ${esc(prev.year||'')}</div></div>
-            <div class="dash-bar-col"><div class="dash-bar-n">${dLS.bad}</div><div class="dash-bar new" style="height:${bar(dLS.bad,badMx)}px"></div><div class="dash-bar-date">${esc(latest.season||'')} ${esc(latest.year||'')}</div></div>
-          </div>
-        </div>
-        <div class="dash-bar-grp"><div class="dash-bar-grp-lbl">Сольсон дэр</div>
-          <div class="dash-bar-row">
-            <div class="dash-bar-col"><div class="dash-bar-n">${dPS.repl}</div><div class="dash-bar old" style="height:${bar(dPS.repl,replMx)}px"></div><div class="dash-bar-date">${esc(prev.season||'')} ${esc(prev.year||'')}</div></div>
-            <div class="dash-bar-col"><div class="dash-bar-n">${dLS.repl}</div><div class="dash-bar new" style="height:${bar(dLS.repl,replMx)}px"></div><div class="dash-bar-date">${esc(latest.season||'')} ${esc(latest.year||'')}</div></div>
-          </div>
-        </div>
-      </div>
+  // ── 3–4. Маягт 1-3-ийн хоёр хүснэгт — сүүлийн паспортаар, зам тус
+  //    бүр + Нийт. Excel-тэй ЯГ ижил тооцоо (_pctBuckets/_runBuckets),
+  //    тэгээс бусдыг л бичнэ (маягтынх шиг хоосон нүд). ──
+  const tbl=(id,title,cols,rowFn)=>{
+    const tot=cols.map(()=>0);
+    const rows=trs.map(t=>{const v=rowFn(t);v.forEach((n,i)=>{tot[i]+=n});
+      return `<tr><td>${t.num}-р зам</td>${v.map(n=>`<td>${n||''}</td>`).join('')}</tr>`}).join('');
+    return `<div class="dash-card" id="${id}">
+      <div class="dash-t" style="margin-bottom:6px">${title}</div>
+      ${trs.length?`<table class="dash-tbl"><thead><tr><th>Зам</th>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${rows}<tr class="tot"><td>Нийт</td>${tot.map(n=>`<td>${n}</td>`).join('')}</tr></tbody></table>`
+        :'<div class="dash-empty">Өртөөний зам бүртгэгдээгүй</div>'}
     </div>`
-  }
+  };
+  h+=tbl('dashPctTbl','1 үенд 25%-с дээш тэнцэхгүй гарсан үеийн тоо',
+    ['25-30','31-40','41-50','50 их'],_pctBuckets);
+  h+=tbl('dashRunTbl','Дараалан муудсан',['3','4','5 ба<'],_runBuckets);
 
-  // ── Хувь сонгож шүүх: сүүлийн паспортаас X%-иас дээш үеийн тоо ──
+  // ── 5. Хувь сонгож шүүх: сүүлийн паспортаас X%-иас дээш үеийн тоо ──
   const atOrAbove=dLS.sections.filter(s=>s.pct>=_dashThreshold).length;
   h+=`<div class="dash-thr">
     <div class="dash-thr-hd">Хувь сонгож шалгах (${esc(latest.name||'сүүлийн паспорт')})</div>
     <div class="dash-thr-chips">${[5,10,15,20,25].map(p=>
       `<button class="dash-thr-chip${p===_dashThreshold?' active':''}" onclick="hap();dashSetThreshold(${p})">${p}%+</button>`).join('')}</div>
-    <div class="dash-thr-result"><b>${atOrAbove}</b> үе ${_dashThreshold}%-иас дээш тэнцэхгүйтэй (${dLS.sections.length} үеэс)</div>
+    <div class="dash-thr-result"><b>${atOrAbove}</b> үе ${_dashThreshold}%-иас дээш тэнцэхгүйтэй (${nSec} үеэс)</div>
   </div>`;
 
-  // ── Хурд хязгаарлалт шаардах шат: 25%-с дээш үеийг бодит паспортын
-  //    тайланд ашигладагтай ижил ангилалаар (25-30/31-40/41-50/50 ба их)
-  //    задлан харуулна — зам тэнцэхгүй дэрийн тоог хурд хязгаарлах
-  //    шаардлагатай эсэхийг тогтооход ашигладаг бодит шат. ──
-  const bandOf=p=>p>=50?3:p>=41?2:p>=31?1:p>=25?0:-1;
-  const bandN=[0,0,0,0];
-  dLS.sections.forEach(s=>{const b=bandOf(s.pct);if(b>=0)bandN[b]++});
-  const bandLbl=['25-30%','31-40%','41-50%','50%+'];
-  h+=`<div class="dash-band-wrap" style="margin-top:10px">
-    <div class="dash-thr-hd">Хурд хязгаарлалт шаардах шат (${esc(latest.name||'сүүлийн паспорт')})</div>
-    <div class="dash-band-row">${bandLbl.map((lbl,i)=>
-      `<div class="dash-band"><div class="dash-band-n">${bandN[i]}</div><div class="dash-band-l">${lbl}</div></div>`).join('')}</div>
+  // ── 6. Анхаарах үе — хамгийн өндөр хувьтай 4 үе (хүснэгттэй ижил
+  //    тооцоо), дарахад тэр паспорт → зам → үе рүү шууд очно ──
+  const worst=[];
+  trs.forEach(t=>_origSecs(t).forEach(s=>{
+    const a=_secTally(s,t);if(!a.total||!a.bad)return;
+    worst.push({t,s,p:a.bad/a.total*100})}));
+  worst.sort((x,y)=>y.p-x.p);
+  if(worst.length){
+    h+=`<div class="dash-card" id="dashWorst">
+      <div class="dash-hd"><div><div class="dash-t">Анхаарах үе</div>
+        <div class="dash-s">Хамгийн өндөр хувьтай ${Math.min(4,worst.length)} үе · дарахад тэр үе рүү орно</div></div></div>
+      ${worst.slice(0,4).map(w=>{const c=w.p>=25?'var(--red)':w.p>=15?'var(--orange)':'var(--g600)';
+        return `<div class="dash-wr" onclick="dashJump('${latest.id}','${w.t.id}','${w.s.id}')">
+          <div><div class="dash-wr-n">${w.t.num}-р зам · ${esc(w.s.label||'үе')}</div>
+            <div class="dash-wr-tr"><i style="width:${Math.min(100,w.p).toFixed(0)}%;background:${c}"></i></div></div>
+          <div class="dash-wr-p">${w.p.toFixed(0)}%</div></div>`}).join('')}
+    </div>`
+  }
+
+  // ── 7. Солих төлөвлөгөө (энэ паспортын) ба агуулахын үлдэгдэл ──
+  const pt=planGrandTotalFor(latest.id),pr=planReplacedCountFor(latest.id);
+  const pp=pt?Math.round(pr/pt*100):0, PC=2*Math.PI*26;
+  const dz=swLatest?Object.values(swStock(swLatest)).reduce((a,n)=>a+(+n||0),0):0;
+  h+=`<div class="dash-two">
+    <div class="dash-card" id="dashPlan" onclick="hap();openPlanReport()" style="cursor:pointer">
+      <div class="dash-t">Солих төлөвлөгөө</div>
+      ${pt?`<div class="dash-pl"><svg viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="26" fill="none" stroke="var(--bg2)" stroke-width="7"/>
+          <circle cx="32" cy="32" r="26" fill="none" stroke="var(--blue)" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="${(pp/100*PC).toFixed(1)} ${PC.toFixed(1)}" transform="rotate(-90 32 32)"/></svg><b>${pp}%</b></div>
+        <div class="dash-cap">${pr} / ${pt} сольсон</div>`
+        :'<div class="dash-cap" style="margin-top:14px">Төлөвлөгөө алга</div>'}
+    </div>
+    <div class="dash-card" id="dashStock">
+      <div class="dash-t">Агуулахын үлдэгдэл</div>
+      <div class="dash-stk"><div>Дэр <b>${derStockFor(latest)}</b></div><div>Дүнз <b>${dz}</b></div></div>
+    </div>
   </div>`;
+
+  // ── 8. Үүлтэй холбоо — дарахад Мэдэгдэл ──
+  const dt=_dirtyAt();
+  h+=`<div class="dash-sync" id="dashSync" onclick="hap();goTab('sync')">
+    <i style="background:${dt?'var(--orange)':'var(--g500)'}"></i>${dt?'Илгээгээгүй өөрчлөлт байна':'Үүлэнд хадгалсан'}</div>`;
 
   body.innerHTML=h
 }
@@ -9970,6 +10069,8 @@ async function _afterLoginInner(){
   // орох мэдрэмж дундуур нь тасалдахгүй, апп шууд "үсэрч" гарч ирэхгүй
   if(signInAnim){try{await signInAnim}catch(e){}signInAnim=null}
   if(_isAdmin){showView('adminView');await loadAdminView();return}
+  // Апп руу орох бүрд Нүүр таб анхдагчаар сонгогдоно
+  _homeSubTab='home';
   showView('homeView');
   _errBanner('⏳ Үүлнээс өгөгдөл татаж байна...','Хүлээнэ үү');
   // ★ Сүлжээгүйд хийгээд илгээгдээгүй үлдсэн ажил утсанд байгаа эсэх.
@@ -12115,18 +12216,19 @@ function isBrFolder(){
 function goSwHome(){hap(6);_hubTo(false);showView('swHomeView');renderSwHome();
   loadSwSpecs().then(chg=>{if(chg)renderSwHome()})}
 function goDerHome(){_hubTo(false);showView('homeView',true);renderHome()}
-// Нүүр ↔ СШ ПУ-5: зүүн шудрахад СШ рүү, баруун шудрахад Дэр рүү буцна.
+// Доод табын дэлгэцүүдийн хооронд хажуу тийш шудран шилжинэ
+// (Салбар зам | Нүүр | Паспорт | Сумууд | Мэдэгдэл | Профайл).
 // Дэлгэц босоо гүйдэг тул зөвхөн тодорхой ХӨНДЛӨН шудралтад ажиллана.
 function initSwSwipe(){
-  /* Нэг дэлгэц ХОЁР чиглэлд шудрагдаж болно (нүүр → зүүн тийш СШ,
-     баруун тийш Салбар зам). Чиглэл тус бүрд тусдаа сонсогч тавивал
+  /* Нэг дэлгэц ХОЁР чиглэлд шудрагдаж болно (өмнөх ба дараагийн таб).
+     Чиглэл тус бүрд тусдаа сонсогч тавивал
      нэг нь заалт асаахад нөгөө нь унтрааж, заалт анивчина — тиймээс
      элемент бүрд ГАНЦ сонсогч, чиглэлээ дотроо шийднэ. */
   const bind=(id,dirs)=>{
     const v=document.getElementById(id);if(!v)return;
     let st=null;
     const ready=()=>!document.querySelector('.overlay.open');
-    const pick=dx=>dirs[String(Math.sign(dx))]||null;
+    const pick=dx=>(typeof dirs==='function'?dirs():dirs)[String(Math.sign(dx))]||null;
     v.addEventListener('touchstart',e=>{
       if(!ready()){st=null;return}
       const t=e.touches[0];st={x:t.clientX,y:t.clientY,time:Date.now()}
@@ -12147,12 +12249,17 @@ function initSwSwipe(){
       if(d&&Math.abs(dx)>62&&Math.abs(dx)>Math.abs(dy)*1.6&&dt<600)d.go()
     },{passive:true})
   };
-  bind('homeView',{
-    '-1':{go:()=>goSwHome(),lbl:'← СШ ПУ-5'},
-    // Салбар зам нь зөвхөн тэр замтай хэсэгт нээгдэнэ
-    '1':{go:()=>{if(hasBranch())goBrHome()},lbl:'Салбар зам →'}});
-  bind('swHomeView',{'1':{go:()=>goDerHome(),lbl:'Дэр ПУ-5 →'}});
-  bind('brHomeView',{'-1':{go:()=>goDerHome(),lbl:'← Дэр ПУ-5'}})
+  // Доод табын дарааллаар шилжинэ: хуруу ЗҮҮН тийш → дараагийн (баруун
+  // талын) таб, БАРУУН тийш → өмнөх таб. Чиглэлийг шудралт бүрд ШИНЭЭР
+  // тооцно — Нүүр/Паспорт нэг дэлгэц тул дэд таб нь өөрчлөгддөг.
+  const dirsNow=()=>{
+    const o=_tabOrder(),i=o.indexOf(_curTab()),r={};
+    if(i<0)return r;
+    if(i<o.length-1)r['-1']={go:()=>goTab(o[i+1]),lbl:_TAB_NM[o[i+1]]+' →'};
+    if(i>0)r['1']={go:()=>goTab(o[i-1]),lbl:'← '+_TAB_NM[o[i-1]]};
+    return r
+  };
+  ['homeView','swHomeView','brHomeView','syncView','profView'].forEach(id=>bind(id,dirsNow))
 }
 
 // ── Нүүр: паспортын жагсаалт ──
@@ -14821,6 +14928,7 @@ function goTab(t){
   hap(8);
   if(t==='sync'){openSyncSheet();return}
   if(t==='prof'){openProfSheet();return}
+  if(t==='br'){goBrHome();return}
   if(t==='sw'){goSwHome();_syncTabs();return}
   // Админд нүүр гэдэг нь удирдлагын дэлгэц — дэрийн паспорт байдаггүй
   if(_isAdmin){
@@ -14832,17 +14940,33 @@ function goTab(t){
   goDerHome();
   _syncTabs(t)
 }
+/* Одоо аль таб дээр байна — идэвхтэй дэлгэцээс (Нүүр/Паспорт нь нэг
+   дэлгэцийн хоёр дэд таб). Табын тэмдэглэгээ ба шудрах шилжилт хоёул
+   үүнийг ашиглана. */
+function _curTab(){
+  const av=(document.querySelector('.view.active')||{}).id;
+  const m={swHomeView:'sw',brHomeView:'br',syncView:'sync',profView:'prof'};
+  if(m[av])return m[av];
+  return (!_isAdmin&&_homeSubTab==='pass')?'pass':'home'
+}
+// Табын дараалал — шудрахад яг энэ дарааллаар шилжинэ
+function _tabOrder(){
+  if(_isAdmin)return ['home','sync','prof'];
+  return (hasBranch()?['br']:[]).concat(['home','pass','sw','sync','prof'])
+}
+const _TAB_NM={br:'Салбар зам',home:'Нүүр',pass:'Паспорт',sw:'Сумууд',sync:'Мэдэгдэл',prof:'Профайл'};
 function _syncTabs(force){
   const bar=document.getElementById('tabbar');if(!bar)return;
   const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active');
   document.body.classList.toggle('has-tabbar',on);
   if(!on)return;
-  const sw=document.getElementById('swHomeView').classList.contains('active');
-  const cur=force||(sw?'sw':'home');
-  // Админд Паспорт / Сумууд гэсэн таб утгагүй тул нуугдана
+  const cur=force||_curTab();
+  // Админд Паспорт / Сумууд / Салбар гэсэн таб утгагүй тул нуугдана
   ['tabPass','tabSw'].forEach(id=>{
     const b=document.getElementById(id);if(b)b.style.display=_isAdmin?'none':''});
-  [['home','tabHome'],['pass','tabPass'],['sw','tabSw'],
+  const tb=document.getElementById('tabBr');
+  if(tb)tb.style.display=(!_isAdmin&&hasBranch())?'':'none';
+  [['br','tabBr'],['home','tabHome'],['pass','tabPass'],['sw','tabSw'],
    ['sync','tabSync'],['prof','tabProf']].forEach(([k,id])=>{
     const b=document.getElementById(id);
     if(b)b.setAttribute('aria-current',k===cur?'true':'false')});
@@ -14851,7 +14975,7 @@ function _syncTabs(force){
 }
 
 /* ── Мэдэгдэл: үүлтэй холбоо ─────────────────────────────── */
-function openSyncSheet(){renderSyncSheet();openModal('syncSheet');_syncTabs('sync')}
+function openSyncSheet(){renderSyncSheet();showView('syncView');_syncTabs('sync')}
 function renderSyncSheet(){
   const b=document.getElementById('syncBody');if(!b)return;
   const dt=_dirtyAt();
@@ -14888,7 +15012,7 @@ function renderSyncSheet(){
       <span class="pf-ic" style="color:var(--g600)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
       <span class="pf-t">Одоо илгээх<span class="pf-s">Өөрчлөлтийг үүл рүү хадгална</span></span>
       <span class="pf-ar">›</span></button>`:''}
-    <button class="pf-row" onclick="hap();runCloudReload(this).then(()=>closeModal('syncSheet'))">
+    <button class="pf-row" onclick="hap();runCloudReload(this).then(()=>renderSyncSheet())">
       <span class="pf-ic" style="color:var(--blue)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7M21 3v6h-6"/></svg></span>
       <span class="pf-t">Үүлнээс дахин татах<span class="pf-s">Утсан дээрхийг үүлийнхээр солино</span></span>
       <span class="pf-ar">›</span></button>
@@ -14991,7 +15115,7 @@ async function purgeTrashItem(id,kind,e){
 }
 
 /* ── Профайл: хэсэг, тохиргоо, гарах ─────────────────────── */
-function openProfSheet(){renderProfSheet();openModal('profSheet');_syncTabs('prof')}
+function openProfSheet(){renderProfSheet();showView('profView');_syncTabs('prof')}
 function renderProfSheet(){
   const b=document.getElementById('profBody');if(!b)return;
   const em=(_currentUser&&_currentUser.email)||'';
@@ -15011,7 +15135,7 @@ function renderProfSheet(){
   };
   const theme=row(I.theme,'var(--gold-deep)','Дэлгэцийн загвар',
     dark?'Харанхуй':'Гэрэлтэй',"toggleTheme();renderProfSheet()");
-  const out=row(I.out,'var(--red)','Гарах','',"closeModal('profSheet');doLogout()");
+  const out=row(I.out,'var(--red)','Гарах','',"doLogout()");
   const tag=`<div class="build-tag" style="text-align:center;padding:14px 0 4px;font-size:10px;
       font-weight:600;color:var(--ink5)"></div>`;
   const hd=(nm,sub,showYear)=>`<div class="pf-hd">
@@ -15033,23 +15157,23 @@ function renderProfSheet(){
   if(_isAdmin){
     b.innerHTML=hd('Ерөнхий удирдлага',em||'Бүх хэсгийн хяналт')+
       row(I.sheet,'#0F8A4C','Google Sheets','Маягт илгээх, хүснэгт нээх',
-        "closeModal('profSheet');openSheetCfg()")+
+        "openSheetCfg()")+
       row(I.down,'var(--g600)','Excel татах','Бүх хэсгийн нэгтгэл',
-        "closeModal('profSheet');adminExportExcel()")+
+        "adminExportExcel()")+
       row(I.refresh,'var(--blue)','Өгөгдөл шинэчлэх','Үүлнээс дахин уншина',
-        "closeModal('profSheet');loadAdminView()")+
+        "loadAdminView()")+
       theme+out+tag;
   } else {
     const nm=DB.location||'ПУ-5';
     b.innerHTML=hd(nm,em||('Хэсэг: '+(_sectionCode||'—')),true)+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
-        'var(--purple)','Нэгдсэн дүн','Бүх замын нийлбэр тайлан',"closeModal('profSheet');showSummaryAll()")+
+        'var(--purple)','Нэгдсэн дүн','Бүх замын нийлбэр тайлан',"showSummaryAll()")+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>',
-        'var(--blue)','Хэсгийн нэр засах',esc(nm),"closeModal('profSheet');editLocation()")+
+        'var(--blue)','Хэсгийн нэр засах',esc(nm),"editLocation()")+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.2 2.2M17.6 17.6l2.2 2.2M2 12h3M19 12h3M4.2 19.8l2.2-2.2M17.6 6.4l2.2-2.2"/></svg>',
-        'var(--g600)','Тайлангийн тохиргоо','Гарчиг, албан тушаалтан',"closeModal('profSheet');openReportSettings()")+
+        'var(--g600)','Тайлангийн тохиргоо','Гарчиг, албан тушаалтан',"openReportSettings()")+
       row('<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>',
-        'var(--red)','Хогийн сав',trashCount()?`${trashCount()} устгасан паспорт`:'Хоосон',"closeModal('profSheet');openTrashModal()")+
+        'var(--red)','Хогийн сав',trashCount()?`${trashCount()} устгасан паспорт`:'Хоосон',"openTrashModal()")+
       theme+
       (()=>{docBytes();const n=_lastPartMax,pc=n/DOC_LIMIT*100;
         const col=pc>=85?'var(--red)':pc>=60?'var(--orange)':'var(--g600)';
@@ -15057,7 +15181,7 @@ function renderProfSheet(){
           col,'Хамгийн том паспорт',
           fmtBytes(n)+' · '+(pc>100?'хязгаар хэтэрсэн'
             :(pc<0.1?'<0.1':pc.toFixed(pc<10?1:0))+'% дүүрсэн'),
-          "closeModal('profSheet');openSyncSheet()")})()+
+          "openSyncSheet()")})()+
       `<button class="pf-row" onclick="hap();runVerifyParts(this)">
       <span class="pf-ic" style="color:var(--purple)"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
       <span class="pf-t">Үүлэн дэх бичлэгийг шалгах<span class="pf-s" id="vfMsg">Утсан дахьтай таарч байгаа эсэх</span></span>
@@ -15100,7 +15224,8 @@ function _profYearWheel(){
 function confirmYearFilter(){
   hap();
   _yearFilter=(_pfYearPending==='Бүгд')?null:_pfYearPending;
-  closeModal('profSheet');
+  // Профайл одоо энгийн дэлгэц тул хаахгүй — сонгосон оныг дахин зурна
+  if(typeof renderProfSheet==='function')renderProfSheet();
   renderFolders();renderSwHome();renderBrHome();
   showToast(_yearFilter?`${_yearFilter} оны паспортууд`:'Бүх оны паспортууд',2200)
 }
@@ -15231,6 +15356,7 @@ function _appBack(){
     case 'trackView':backFromTrack();return true;
     case 'mainKmView':goHome();return true;
     case 'summaryView':backFromSummary();return true;
+    case 'syncView':case 'profView':goTab('home');return true;
     case 'adminView':return false;
     case 'homeView':
       return false;   // нүүр хуудас = үндэс
@@ -15248,7 +15374,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.05·202';
+const APP_BUILD='2026.11.05·203';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
