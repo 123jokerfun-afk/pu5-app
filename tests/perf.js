@@ -177,6 +177,11 @@ async function bustAttempt(){
       const r=await navigator.serviceWorker.getRegistration();
       return !!(r&&r.active)},{timeout:15000})
   }catch(e){}
+  // Идэвхжсэн ч хуудсыг ХАРААХАН удирдаагүй (controller=null) бол fetch
+  // service worker-ийг огт дайрахгүй, кэшийг алгасна — ачаалал ихтэй үед
+  // энэ шалгалт санамсаргүй унадаг байсан. Удирдаж эхэлтэл хүлээнэ.
+  const ctl=()=>p.waitForFunction(()=>!!navigator.serviceWorker.controller,{timeout:8000});
+  try{await ctl()}catch(e){await p.reload({waitUntil:'load'});try{await ctl()}catch(_){}}
   const res=await p.evaluate(async()=>{
     const ks=(await caches.keys()).filter(k=>k.startsWith('pu5-'));
     if(!ks.length)return {err:'no pu5- cache'};

@@ -2106,7 +2106,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         </div>
         <div>
           <div class="hero-text-title" id="locName">ПУ-5</div>
-          <div class="hero-text-sub">Замын 3-р анги · Дэр бүртгэл</div>
+          <div class="hero-text-sub" id="heroSub">Замын 3-р анги · Дэр бүртгэл</div>
         </div>
       </div>
       <div style="display:flex;gap:6px">
@@ -2116,7 +2116,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <button class="hero-edit" onclick="editLocation()" aria-label="Засах"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
-    <div style="position:relative;margin-top:8px;margin-bottom:4px">
+    <div id="heroMetaWrap" style="position:relative;margin-top:8px;margin-bottom:4px">
       <div id="heroMeta" class="hero-meta-text" style="font-size:11px;font-weight:600"></div>
     </div>
     <div class="hero-stats" id="heroStats">
@@ -4475,17 +4475,30 @@ function _applyHomeSubTab(){
   ['mainTrackSection','derWarehouseSection','foldersSection'].forEach(id=>{
     const s=document.getElementById(id);if(s)s.style.display=onPass?'block':'none'});
   const ts=document.getElementById('tracksSection');
-  if(ts)ts.style.display=(onPass&&activeFolderId)?'block':'none';
+  const open=onPass&&!!activeFolderId;
+  if(ts)ts.style.display=open?'block':'none';
+  // Толгойн тоонууд нээлттэй паспортын ЗАМУУДААС тооцогддог тул паспорт
+  // нээгээгүй үед (Нүүр табд үргэлж) бүгд 0 харагдаж утгагүй байв —
+  // зөвхөн паспорт нээлттэй үед харуулна. Нүүрний тоймыг dashSection өгнө.
+  ['heroStats','heroChips'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display=open?'':'none'});
+  const mw=document.getElementById('heroMetaWrap');
+  if(mw)mw.style.display=open?'':'none';
 }
 function renderHome(){
   document.getElementById('locName').textContent=DB.location;
   renderRptInfoCard();
   renderDashboard();
-  _applyHomeSubTab();
   const r=DB.rpt||{};
+  // "Замын 3-р анги · ПД-6" — хэсгийн товчлол нь нэвтэрсэн кодоос
+  const sub=document.getElementById('heroSub');
+  if(sub){const sc=(_sectionCode&&!/^admin$/i.test(_sectionCode))?_sectionCode:(r.secName||'');
+    sub.textContent=`Замын ${r.cls||3}-р анги${sc?' '+sc:''} · Дэр бүртгэл`}
   const meta=document.getElementById('heroMeta');
   const _af=DB.folders.find(x=>x.id===activeFolderId);
-  if(meta)meta.textContent=_af?`${_af.name} · ${r.cls||''}${r.cls?'-р анги':''} ${r.secName||r.sec||''} хэсэг`:`${r.cls||''}${r.cls?'-р анги':''} ${r.secName||r.sec||''} хэсэг · ${r.season||''} ${r.year||''}`;
+  // Анги/хэсэг/улирал гарчигт аль хэдийн байгаа тул энд зөвхөн нээлттэй паспортын нэр
+  if(meta)meta.textContent=_af?_af.name:'';
+  _applyHomeSubTab();
   // Паспортын дээд дүн = ЗӨВХӨН өртөөний зам.
   // Гол замын дүнг "Гол зам" дотор тусад нь харуулна.
   let gTotal=0,gBad=0,gTbd=0,gBadTbd=0;
@@ -14611,21 +14624,33 @@ function _unitsKey(){return 'sg_units_'+(_sectionCode||'')}
 function _loadUnitHashes(){
   try{return JSON.parse(localStorage.getItem(_unitsKey())||'{}')||{}}catch(e){return {}}}
 function _saveUnitHashes(h){try{localStorage.setItem(_unitsKey(),JSON.stringify(h))}catch(e){}}
+/* Нэгжийн hash — түлхүүрийн ДАРААЛЛААС үл хамаарна.
+   Жинхэнэ Firestore объектын түлхүүрийг цагаан толгойн дарааллаар
+   буцаадаг, апп харин {id,num,station,mak,...} гэж үүсгэсэн дарааллаар
+   нь хадгалдаг. Энгийн JSON.stringify нь хоёр өөр мөр гаргаж, "сервэр
+   дэх нэгж миний сүүлд мэдсэнтэй адил уу" гэсэн шалгалт ХЭЗЭЭ Ч
+   таарахгүй байсан тул устгасан сум сервэрт үлдэж, дахин орход буцаж
+   гарч ирдэг байв (tests/unitdel.js). */
+function _uHash(u){return _hash(JSON.stringify(_canon(u)))}
 /* Шинээр уншсан/хүлээн авсан DB-ийн нэгжүүдийн hash-ийг кэшинд бичнэ —
    нэвтрэлтийн эхний уншилт, бодит цагийн шинэчлэлт хүлээн авах бүрд
-   дуудна (_afterLoginInner, _applyRemote). */
+   дуудна (_afterLoginInner, _applyRemote).
+   Энд ирэх DB нь ЗАДАЛСАН (дэр бүр объект), сервэр дээр харин ШАХСАН
+   (дэр бүр 1 тэмдэгт) — шахаж байж тулгавал л hash таарна. Эс тэгвэл
+   нэвтэрсний дараа устгасан зам/км сервэрт мөнхөд үлддэг байв. */
 function _syncUnitHashesFrom(db){
   if(!db)return;
+  db=_packDB(db);
   const h={};
   h.main=Object.create(null);
-  (db.main||[]).forEach(u=>{if(u&&u.id)h.main[u.id]=_hash(JSON.stringify(u))});
+  (db.main||[]).forEach(u=>{if(u&&u.id)h.main[u.id]=_uHash(u)});
   (db.folders||[]).forEach(f=>{if(!f||!f.id)return;
     const o=Object.create(null);
-    (f.tracks||[]).forEach(u=>{if(u&&u.id)o[u.id]=_hash(JSON.stringify(u))});
+    (f.tracks||[]).forEach(u=>{if(u&&u.id)o[u.id]=_uHash(u)});
     h[_partId('p',f.id)]=o});
   (db.sw||[]).forEach(f=>{if(!f||!f.id)return;
     const o=Object.create(null);
-    (f.turnouts||[]).forEach(u=>{if(u&&u.id)o[u.id]=_hash(JSON.stringify(u))});
+    (f.turnouts||[]).forEach(u=>{if(u&&u.id)o[u.id]=_uHash(u)});
     h[_partId('s',f.id)]=o});
   _saveUnitHashes(h)
 }
@@ -14670,13 +14695,13 @@ function _writeParts(packed){
       const lastH=unitHashes[id]||{};
       const mergedMap=new Map(serverMap);
       myMap.forEach((u,uid)=>{
-        if(lastH[uid]!==_hash(JSON.stringify(u)))mergedMap.set(uid,u)});
+        if(lastH[uid]!==_uHash(u))mergedMap.set(uid,u)});
       // Устгасан нэгж: сүүлд мэдэж байсан ч одоо миний жагсаалтад алга —
       // ЗӨВХӨН өөр хэн ч үүнийг надаас хойш өөрчлөөгүй бол устгана
       Object.keys(lastH).forEach(uid=>{
         if(myMap.has(uid))return;
         const sv=serverMap.get(uid);
-        const svH=sv?_hash(JSON.stringify(sv)):null;
+        const svH=sv?_uHash(sv):null;
         if(svH===null||svH===lastH[uid])mergedMap.delete(uid)});
       const mergedArr=[...mergedMap.values()];
       const newPart=Object.assign({},part,uk.put(mergedArr));
@@ -14684,7 +14709,7 @@ function _writeParts(packed){
       tx.set(col.doc(id),d);
       return mergedArr
     }).then(mergedArr=>{
-      const uh={};mergedArr.forEach(u=>{if(u&&u.id)uh[u.id]=_hash(JSON.stringify(u))});
+      const uh={};mergedArr.forEach(u=>{if(u&&u.id)uh[u.id]=_uHash(u)});
       unitHashes[id]=uh;
       now[id]=h   // МИНИЙ ӨӨРИЙН агуулгын hash — дараагийн "өөрчлөгдсөн үү" шалгуурт
     })
@@ -15223,7 +15248,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.05·201';
+const APP_BUILD='2026.11.05·202';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

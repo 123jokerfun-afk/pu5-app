@@ -27,6 +27,13 @@ ok('dashSection харагдана',await vis('dashSection')!=='none');
 ok('mainTrackSection НУУГДСАН',await vis('mainTrackSection')==='none');
 ok('derWarehouseSection НУУГДСАН',await vis('derWarehouseSection')==='none');
 ok('foldersSection НУУГДСАН',await vis('foldersSection')==='none');
+// Толгойн 0-тэй тоонууд (Замын тоо/Нийт дэр/Тэнцэхгүй %) болон чипс,
+// "3-р анги ПД-6 хэсэг · намар 2026" мөр Нүүрт харагдахгүй
+ok('Нүүрт heroStats НУУГДСАН',await vis('heroStats')==='none');
+ok('Нүүрт heroChips НУУГДСАН',await vis('heroChips')==='none');
+ok('Нүүрт жижиг мөр (heroMeta) НУУГДСАН',await vis('heroMetaWrap')==='none');
+const sub=await page.evaluate(()=>document.getElementById('heroSub').textContent);
+ok('Гарчиг: "Замын 3-р анги ПД-6 · Дэр бүртгэл"',sub==='Замын 3-р анги ПД-6 · Дэр бүртгэл',sub);
 
 // ── 2. "Паспорт" таб дарахад эсрэгээр сэлгэнэ ──
 await page.click('#tabPass');
@@ -36,6 +43,7 @@ ok('dashSection НУУГДСАН',await vis('dashSection')==='none');
 ok('mainTrackSection харагдана',await vis('mainTrackSection')!=='none');
 ok('derWarehouseSection харагдана',await vis('derWarehouseSection')!=='none');
 ok('foldersSection харагдана',await vis('foldersSection')!=='none');
+ok('Паспорт нээгээгүй бол толгойн тоо нуугдсан хэвээр',await vis('heroStats')==='none');
 ok('"Шинэ паспорт нэмэх" товч харагдаж, дарагдахуйц боллоо',
    await page.evaluate(()=>{const b=[...document.querySelectorAll('.add-track-btn')].find(x=>/Шинэ паспорт нэмэх/.test(x.textContent));
      if(!b)return false;const r=b.getBoundingClientRect();return r.width>0&&r.height>0}));
@@ -54,10 +62,14 @@ await page.evaluate(()=>{openFolder('F1');goHome()});
 await page.waitForTimeout(250);
 ok('goHome() дуудсан ч "Паспорт" дэд-таб хэвээр үлдэв',await vis('foldersSection')!=='none');
 ok('activeFolderId-той үед Замууд хэсэг ч Паспорт табд харагдана',await vis('tracksSection')!=='none');
+ok('Паспорт нээлттэй үед толгойн тоо харагдана',await vis('heroStats')!=='none'&&await vis('heroChips')!=='none');
+const meta=await page.evaluate(()=>document.getElementById('heroMeta').textContent);
+ok('Жижиг мөрөнд зөвхөн паспортын нэр',meta==='Намар паспорт',meta);
 
 await page.click('#tabHome');
 await page.waitForTimeout(250);
 ok('Нүүр рүү шилжихэд activeFolderId байсан ч Замууд хэсэг нуугдана',await vis('tracksSection')==='none');
+ok('Нүүр рүү шилжихэд толгойн тоо дахин нуугдана',await vis('heroStats')==='none');
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,5)));
