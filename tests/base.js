@@ -128,6 +128,14 @@ async function login(page,code){
   await page.waitForTimeout(250);
 }
 
+// Нүүр → Паспорт дэд-табруу шилжинэ (Гол зам/Дэрийн агуулах/Паспортууд
+// одоо зөвхөн энэ табд харагддаг тул, тэдгээртэй харьцах тестүүд эхлээд
+// үүнийг дуудна).
+async function gotoPass(page){
+  await page.click('#tabPass');
+  await page.waitForTimeout(220);
+}
+
 // Дэлгэцээс хальсан элемент
 async function overflow(page){
   return await page.evaluate(()=>{
@@ -172,4 +180,4 @@ async function tapTargets(page){
   })
 }
 
-module.exports={chromium,launch,EXE,DEVICES,newPage,login,overflow,tapTargets,ensureServer,STUB};
+module.exports={chromium,launch,EXE,DEVICES,newPage,login,gotoPass,overflow,tapTargets,ensureServer,STUB};

@@ -91,6 +91,7 @@ ok('СШ-ээс баруун шудрах → Нүүр',await page.evaluate(()=>
 
 // ── 6. Урт дарж устгах идэвхжүүлэх ──
 await page.evaluate(()=>goHome());await page.waitForTimeout(500);
+await B.gotoPass(page);
 const fc=await page.$('.folder-card.lp-del');
 if(fc){
   // Доод табын самбар үргэлж дэлгэц дээр тогтмол хадгалагдаж
