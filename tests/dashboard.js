@@ -81,6 +81,16 @@ ok('Анхдагч 15% босго идэвхтэй',/15%/.test(dash.activeChip),
 ok('15% босгод 2 үе орно (15% ба 30%, 3-аас)',
    /^2\s/.test(dash.thrResult.trim())||/>\s*2\s*</.test(dash.thrResult),dash.thrResult);
 
+// ── 2б. Хурд хязгаарлалт шаардах шат: 15%/5%/30%-иас зөвхөн 30% нь
+//        25%-ийн босгыг давж, 25-30% багцад ордог (бодит паспортын
+//        Маягт 1-ийн 25-30/31-40/41-50/50+ ангилалтай ижил) ──
+const bandNs=await page.evaluate(()=>[...document.querySelectorAll('.dash-band-n')].map(e=>e.textContent.trim()));
+const bandLbls=await page.evaluate(()=>[...document.querySelectorAll('.dash-band-l')].map(e=>e.textContent.trim()));
+ok('Хурд хязгаарлалтын шат: зөвхөн 30%-ийн үе 25-30% багцад орно',
+   JSON.stringify(bandNs)===JSON.stringify(['1','0','0','0']),JSON.stringify(bandNs));
+ok('Шатны шошго зөв дараалалтай',
+   JSON.stringify(bandLbls)===JSON.stringify(['25-30%','31-40%','41-50%','50%+']),JSON.stringify(bandLbls));
+
 // ── 3. Босго товч солиход дахин тооцоологдоно ──
 const thr5=await page.evaluate(()=>{dashSetThreshold(5);
   return document.querySelector('.dash-thr-result').textContent});

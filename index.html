@@ -334,6 +334,12 @@ button{font-family:inherit}
 .dash-thr-result{margin-top:10px;font-size:13px;font-weight:700;color:var(--ink2);
   text-align:center}
 .dash-thr-result b{color:var(--orange);font-size:17px}
+.dash-band-wrap{background:var(--card);border-radius:var(--rm);padding:14px;
+  box-shadow:var(--sh-sm)}
+.dash-band-row{display:flex;gap:6px;margin-top:10px}
+.dash-band{flex:1;min-width:0;background:var(--bg2);border-radius:12px;padding:8px 4px;text-align:center}
+.dash-band-n{font-size:16px;font-weight:900;color:var(--orange);font-variant-numeric:tabular-nums}
+.dash-band-l{font-size:9px;color:var(--ink3);font-weight:700;margin-top:1px}
 .dash-empty{text-align:center;padding:18px;color:var(--ink4);font-size:12.5px;font-weight:600}
 /* Цагаан хагас-тунгалаг дэвсгэр нь өнгөлөг/бараан hero дээр байхаар
    зохиогдсон байсан ч v152-ийн цайвар (неоморф) hero дээр цагаан бичиг
@@ -2136,7 +2142,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <div id="dashBody"></div>
     </div>
     <!-- Гол зам — паспортаас хараат бус, паспортуудын дээр -->
-    <div class="home-section" style="margin-top:16px">
+    <div class="home-section" id="mainTrackSection" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div class="sec-lbl" style="margin-top:0" id="mainSecLbl">Гол зам</div>
         <button class="sw-link" onclick="hap();goSwHome()">СШ ПУ-5
@@ -2148,11 +2154,11 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
         <svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> ПУ-5 дэвтэр загвар
       </button>
     </div>
-    <div class="home-section" style="margin-top:16px">
+    <div class="home-section" id="derWarehouseSection" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Дэрийн агуулах · Гол зам</div>
       <div id="derWrap"></div>
     </div>
-    <div class="home-section" style="margin-top:16px">
+    <div class="home-section" id="foldersSection" style="margin-top:16px">
       <div class="sec-lbl" style="margin-top:0">Паспортууд</div>
       <div id="foldersGrid" class="stagger" style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px"></div>
       <div class="lp-hint" id="folderLp" style="display:none">Паспорт дээр удаан дарж устгах товчийг идэвхжүүлнэ</div>
@@ -4377,6 +4383,7 @@ function _swFolderStats(f){
   return r
 }
 let _dashThreshold=15;
+let _homeSubTab='home';
 function dashSetThreshold(p){_dashThreshold=p;renderDashboard()}
 function renderDashboard(){
   const sec=document.getElementById('dashSection'),body=document.getElementById('dashBody');
@@ -4437,18 +4444,44 @@ function renderDashboard(){
     <div class="dash-thr-result"><b>${atOrAbove}</b> үе ${_dashThreshold}%-иас дээш тэнцэхгүйтэй (${dLS.sections.length} үеэс)</div>
   </div>`;
 
+  // ── Хурд хязгаарлалт шаардах шат: 25%-с дээш үеийг бодит паспортын
+  //    тайланд ашигладагтай ижил ангилалаар (25-30/31-40/41-50/50 ба их)
+  //    задлан харуулна — зам тэнцэхгүй дэрийн тоог хурд хязгаарлах
+  //    шаардлагатай эсэхийг тогтооход ашигладаг бодит шат. ──
+  const bandOf=p=>p>=50?3:p>=41?2:p>=31?1:p>=25?0:-1;
+  const bandN=[0,0,0,0];
+  dLS.sections.forEach(s=>{const b=bandOf(s.pct);if(b>=0)bandN[b]++});
+  const bandLbl=['25-30%','31-40%','41-50%','50%+'];
+  h+=`<div class="dash-band-wrap" style="margin-top:10px">
+    <div class="dash-thr-hd">Хурд хязгаарлалт шаардах шат (${esc(latest.name||'сүүлийн паспорт')})</div>
+    <div class="dash-band-row">${bandLbl.map((lbl,i)=>
+      `<div class="dash-band"><div class="dash-band-n">${bandN[i]}</div><div class="dash-band-l">${lbl}</div></div>`).join('')}</div>
+  </div>`;
+
   body.innerHTML=h
 }
 
 // ══════════════════════════════════════════════
 // HOME
 // ══════════════════════════════════════════════
+/* Нүүр таб → зөвхөн Ерөнхий тойм (dashSection); Паспорт таб → Гол зам,
+   Дэрийн агуулах, Паспортууд (хуучин нэг урсгалаар гүйдэг байсныг хоёр
+   тусдаа дэд-табд хуваасан). _homeSubTab нь renderHome() дуудагдах бүрт
+   (goHome/goDerHome/goTab зэрэг аль ч замаар) хадгалагдсан хэвээр байна. */
+function _applyHomeSubTab(){
+  const dash=document.getElementById('dashSection');
+  const onPass=_homeSubTab==='pass';
+  if(dash)dash.style.display=onPass?'none':'block';
+  ['mainTrackSection','derWarehouseSection','foldersSection'].forEach(id=>{
+    const s=document.getElementById(id);if(s)s.style.display=onPass?'block':'none'});
+  const ts=document.getElementById('tracksSection');
+  if(ts)ts.style.display=(onPass&&activeFolderId)?'block':'none';
+}
 function renderHome(){
   document.getElementById('locName').textContent=DB.location;
   renderRptInfoCard();
   renderDashboard();
-  const _ts=document.getElementById('tracksSection');
-  if(_ts)_ts.style.display=activeFolderId?'block':'none';
+  _applyHomeSubTab();
   const r=DB.rpt||{};
   const meta=document.getElementById('heroMeta');
   const _af=DB.folders.find(x=>x.id===activeFolderId);
@@ -14770,13 +14803,8 @@ function goTab(t){
     if(!_adminData.length)loadAdminView();else renderAdminSections(_adminData);
     _syncTabs('home');return
   }
+  if(t==='home'||t==='pass')_homeSubTab=t;
   goDerHome();
-  if(t==='pass'){
-    const sec=document.getElementById('foldersGrid');
-    if(sec)setTimeout(()=>{
-      const h=sec.closest('.home-section');
-      if(h)h.scrollIntoView({behavior:'smooth',block:'start'})},140);
-  }
   _syncTabs(t)
 }
 function _syncTabs(force){
@@ -15195,7 +15223,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.03·200';
+const APP_BUILD='2026.11.05·201';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

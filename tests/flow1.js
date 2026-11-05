@@ -6,6 +6,7 @@ const browser=await B.launch();
 const {ctx,page,errs}=await B.newPage(browser,B.DEVICES[1]);
 await B.login(page);
 ok('Нэвтрэлт',true);
+await B.gotoPass(page);
 
 // ── 1. Паспорт нэмэх ──
 await page.click('text=Шинэ паспорт нэмэх');
