@@ -3461,6 +3461,8 @@ const ADMIN_CODE = 'ADMIN';
 
 let fbApp=null,fbAuth=null,fbDb=null;
 let _cloudLoaded=false,_cloudHadData=false;
+// Гарах бүрд ахина; хойшлогдсон signOut зөвхөн өөрийн дугаар хэвээр бол ажиллана
+let _logoutGen=0;
 
 // ── Өгөгдөл шахах: дэр бүрийг 1 үсэг болгоно (n/b/t/x) → 10 дахин бага ──
 const _SLMAP={normal:'n',bad:'b',tbd:'t',bad_tbd:'x'};
@@ -3583,7 +3585,7 @@ function _initFB(){
 // DATA
 // ══════════════════════════════════════════════
 let DB={location:'ПУ-5',tracks:[],v:3,folders:[],main:[],
-  rpt:{cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:new Date().getFullYear()+'',date:new Date().toISOString().slice(0,10)}
+  rpt:{cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:new Date().getFullYear()+'',date:mnTodayStr()}
 };
 let activeTrackId=null,activeSectionId=null,summaryBack='home',pendingSecType='normal';
 let activeFolderId=null;
@@ -3803,7 +3805,7 @@ function _migrateDB(){
   if(DB.tracks&&DB.tracks.length&&!DB.folders.length){
     const yr=DB.rpt&&DB.rpt.year?DB.rpt.year:new Date().getFullYear()+'';
     const sea=DB.rpt&&DB.rpt.season?DB.rpt.season:'хавар';
-    DB.folders.push({id:'f-'+Date.now(),name:`${sea.charAt(0).toUpperCase()+sea.slice(1)} ${yr} паспорт`,season:sea,year:yr,date:DB.rpt&&DB.rpt.date?DB.rpt.date:new Date().toISOString().slice(0,10),tracks:DB.tracks});
+    DB.folders.push({id:'f-'+Date.now(),name:`${sea.charAt(0).toUpperCase()+sea.slice(1)} ${yr} паспорт`,season:sea,year:yr,date:DB.rpt&&DB.rpt.date?DB.rpt.date:mnTodayStr(),tracks:DB.tracks});
     DB.tracks=[];
   }
   // Гол зам нь паспортаас хамаарахгүй тусдаа өгөгдөл. Хуучин паспорт дотор
@@ -3930,6 +3932,10 @@ function _lsRead(){
     return d
   }catch(e){return null}
 }
+// Утсанд бичиж чадаагүй (санах ой дүүрсэн, хөтөч хориглосон) үед өмнө нь
+// дуугүй өнгөрдөг байв. Сүлжээгүй газар энэ нь апп хаагдахад бүртгэл бүрмөсөн
+// алга болно гэсэн үг тул заавал мэдэгдэнэ — дэр товших бүрд биш, минутад нэг.
+let _lsWarnAt=0;
 function _lsWrite(packed){
   try{
     if(_sectionCode)packed._sc=_sectionCode;
@@ -3937,7 +3943,15 @@ function _lsWrite(packed){
     // Нэвтэрсэн үед хуучин нэгдсэн түлхүүрт бичихээ болино —
     // эс тэгвэл өөр хэсгийн өгөгдлийг дарж бичих эрсдэлтэй
     if(!_sectionCode)localStorage.setItem('sg_der_v3',JSON.stringify(packed))
-  }catch(e){}
+  }catch(e){
+    const now=Date.now();
+    if(now-_lsWarnAt>60000){
+      _lsWarnAt=now;
+      console.error('Утсанд хадгалж чадсангүй:',e);
+      _errBanner('Утсанд хадгалж чадсангүй',
+        'Утасны санах ой дүүрсэн байж болзошгүй. Сүлжээнд холбогдож үүлэнд илгээтэл аппаа бүү хаа.')
+    }
+  }
 }
 function loadDB(){
   if(!fbDb||!_sectionCode){
@@ -3968,8 +3982,9 @@ function saveDB(){
     const _lim=_lastPartMax;   // хязгаар хэсэг тус бүрд хамаарна
     if(_lim>DOC_LIMIT){_tooBig(_lim);return}
     _localWriting=true;
+    const sc=_sectionCode;
     _pushCloud(_p)
-      .then(()=>{_dirtyClear();_lastSaveErr='';
+      .then(()=>{_dirtyClear(sc);_lastSaveErr='';
         setTimeout(()=>{_localWriting=false},600)})
       .catch(e=>{console.error('Save err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -4027,6 +4042,10 @@ function mnToday(){
   const d=new Date();
   return{y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()}
 }
+// 'YYYY-MM-DD' — МУ-ын өнөөдөр. toISOString() нь UTC тул УБ-ын 00:00–07:59-д
+// өчигдрийн огноо өгдөг байсан (паспорт, тайлангийн огноо нэг өдрөөр хоцордог).
+function mnTodayStr(){const t=mnToday();
+  return t.y+'-'+String(t.m).padStart(2,'0')+'-'+String(t.d).padStart(2,'0')}
 function daysInMonth(y,m){return new Date(y,m,0).getDate()}
 function fmtReplDate(s){
   // '2026-08-19' → '2026.08.19'
@@ -5616,17 +5635,17 @@ function renderReplReport(){
       <div class="rp-month-hd"><span>📅 ${mo.label}</span><span>${mo.n} дэр</span></div>`;
     Object.keys(mo.tracks).forEach(tn=>{
       const rows=mo.tracks[tn];
-      html+=`<div class="rp-track"><div class="rp-track-hd">${tn}</div>`;
+      html+=`<div class="rp-track"><div class="rp-track-hd">${esc(tn)}</div>`;
       rows.forEach(r=>{
         html+=`<div class="rp-row${r.carve?' rp-carve':''}">
           <span style="flex:1;font-weight:700;color:${r.carve?'var(--blue)':'var(--ink2)'}">${
-            r.carve?'🔧 ':''}${r.sec}</span>
+            r.carve?'🔧 ':''}${esc(r.sec)}</span>
           <span style="font-weight:800;color:${r.carve?'var(--blue)':'var(--ink)'};min-width:44px">#${r.idx}</span>
           <span class="mat-tag">${matLabel(r.mat)}</span>
           <span class="repl-date${r.carve?' rd-carve':''}">${fmtReplDate(r.date)}</span>
         </div>`
       });
-      html+=`<div class="rp-sub"><span>${tn}</span><span>${rows.length} дэр</span></div></div>`
+      html+=`<div class="rp-sub"><span>${esc(tn)}</span><span>${rows.length} дэр</span></div></div>`
     });
     html+=`</div>`
   });
@@ -5642,7 +5661,7 @@ function renderReplReport(){
       <span>🛤️ Замаар нийт (бүх сар)</span><span>${total} дэр</span></div>`;
   data.forEach(t=>{
     html+=`<div class="rp-sub" style="border-radius:10px;margin-bottom:6px">
-      <span>${t.name}</span><span>${t.rows.length} дэр</span></div>`
+      <span>${esc(t.name)}</span><span>${t.rows.length} дэр</span></div>`
   });
   html+=`</div>`;
   html+=`<div class="rp-total"><span>Бүх сарын нийт</span><span>${total} дэр</span></div>`;
@@ -5692,17 +5711,17 @@ function openCarveReport(){
       <div class="rp-month-hd" style="background:var(--blue-bg);color:var(--blue)"><span>📅 ${mo.label}</span><span>${mo.n} дэр</span></div>`;
     Object.keys(mo.tracks).forEach(tn=>{
       const rows=mo.tracks[tn];
-      html+=`<div class="rp-track"><div class="rp-track-hd" style="background:var(--blue-bg);color:var(--blue)">${tn}</div>`;
+      html+=`<div class="rp-track"><div class="rp-track-hd" style="background:var(--blue-bg);color:var(--blue)">${esc(tn)}</div>`;
       rows.forEach(r=>{
         if(r.mat==='tbd')tbd++;else wood++;
         html+=`<div class="rp-row rp-carve">
-          <span style="flex:1;font-weight:700;color:var(--blue)">${r.sec}</span>
+          <span style="flex:1;font-weight:700;color:var(--blue)">${esc(r.sec)}</span>
           <span style="font-weight:800;color:var(--blue);min-width:44px">#${r.idx}</span>
           <span class="mat-tag">${matLabel(r.mat)}</span>
           <span class="repl-date rd-carve">${fmtReplDate(r.date)}</span>
         </div>`
       });
-      html+=`<div class="rp-sub" style="background:var(--blue-bg);color:var(--blue)"><span>${tn}</span><span>${rows.length} дэр</span></div></div>`
+      html+=`<div class="rp-sub" style="background:var(--blue-bg);color:var(--blue)"><span>${esc(tn)}</span><span>${rows.length} дэр</span></div></div>`
     });
     html+=`</div>`
   });
@@ -5983,7 +6002,7 @@ function openRptSettings(){
   document.getElementById('rptSecName').value=r.secName||'ПД-6';
   document.getElementById('rptSeason').value=r.season||'хавар';
   document.getElementById('rptYear').value=r.year||new Date().getFullYear();
-  document.getElementById('rptDate').value=r.date||new Date().toISOString().slice(0,10);
+  document.getElementById('rptDate').value=r.date||mnTodayStr();
   document.getElementById('rptSign').value=r.sign||'';
   updateRptPreview();openModal('rptModal')
 }
@@ -5994,7 +6013,7 @@ function updateRptPreview(){
   const season=document.getElementById('rptSeason').value||'хавар';
   const yr=document.getElementById('rptYear').value||new Date().getFullYear();
   const p=document.getElementById('rptPreview');
-  if(p)p.innerHTML=`<b>Хавсралт-2:</b> ЗАМЫН ${cls}-Р АНГИ ${sec}-Р ХЭСЭГ<br><b>Хавсралт-3:</b> Замын ${cls}-р ангийн ${yr} оны ${season}ын паспортын үзлэгзэр...<br><b>Хэсэг нэр:</b> ${secName}`
+  if(p)p.innerHTML=`<b>Хавсралт-2:</b> ЗАМЫН ${esc(cls)}-Р АНГИ ${esc(sec)}-Р ХЭСЭГ<br><b>Хавсралт-3:</b> Замын ${esc(cls)}-р ангийн ${esc(yr)} оны ${esc(season)}ын паспортын үзлэгзэр...<br><b>Хэсэг нэр:</b> ${esc(secName)}`
 }
 ['rptCls','rptSec','rptSecName','rptSeason','rptYear'].forEach(id=>{
   document.getElementById(id)?.addEventListener('input',updateRptPreview);
@@ -6007,7 +6026,7 @@ function saveRptSettings(){
     secName:document.getElementById('rptSecName').value||'ПД-6',
     season:document.getElementById('rptSeason').value||'хавар',
     year:document.getElementById('rptYear').value||new Date().getFullYear(),
-    date:document.getElementById('rptDate').value||new Date().toISOString().slice(0,10),
+    date:document.getElementById('rptDate').value||mnTodayStr(),
     sign:(document.getElementById('rptSign').value||'').trim()
   });
   saveDB();closeModal('rptModal');renderRptInfoCard();showToast('✓ Тайлангийн тохиргоо хадгалагдлаа')
@@ -6019,14 +6038,14 @@ function renderRptInfoCard(){
   el.textContent=`${r.year} он · ${r.season} · Замын ${r.cls}-р анги · ${r.secName||r.sec+'-р хэсэг'}`
 }
 function openReportSettings(){
-  if(!DB.rpt)DB.rpt={cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:new Date().getFullYear()+'',date:new Date().toISOString().slice(0,10)};
+  if(!DB.rpt)DB.rpt={cls:'3',sec:'6',secName:'ПД-6',season:'хавар',year:new Date().getFullYear()+'',date:mnTodayStr()};
   const r=DB.rpt;
   document.getElementById('rsClass').value=r.cls||'3';
   document.getElementById('rsSection').value=r.sec||'6';
   document.getElementById('rsSectionName').value=r.secName||'ПД-6';
   document.getElementById('rsSeason').value=r.season||'хавар';
   document.getElementById('rsYear').value=r.year||new Date().getFullYear();
-  document.getElementById('rsDate').value=r.date||new Date().toISOString().slice(0,10);
+  document.getElementById('rsDate').value=r.date||mnTodayStr();
   updateRsPreview();openModal('reportSettingsModal')
 }
 function updateRsPreview(){
@@ -6048,7 +6067,7 @@ function saveReportSettings(){
   DB.rpt.secName=document.getElementById('rsSectionName').value||'ПД-'+DB.rpt.sec;
   DB.rpt.season=document.getElementById('rsSeason').value;
   DB.rpt.year=document.getElementById('rsYear').value||new Date().getFullYear()+'';
-  DB.rpt.date=document.getElementById('rsDate').value||new Date().toISOString().slice(0,10);
+  DB.rpt.date=document.getElementById('rsDate').value||mnTodayStr();
   saveDB();closeModal('reportSettingsModal');renderHome();showToast('✓ Тохиргоо хадгалагдлаа')
 }
 
@@ -6363,7 +6382,7 @@ function renderTrackView(){
     // Холбох хэсэг нь жагсаалтын ДЭЭД талд. Өмнө нь доод талд байсан тул
     // үе бүртгэж гараад ирэхэд хайх шаардлагатай болдог байв.
     if(conn.length){
-      html+=`<div class="sec-lbl" style="margin-top:4px">Холбох хэсгүүд <span style="font-size:10px;color:var(--ink4);font-weight:600;text-transform:none">(${trackLabel(t)} тооцоонд нэмэгдэнэ)</span></div>`;
+      html+=`<div class="sec-lbl" style="margin-top:4px">Холбох хэсгүүд <span style="font-size:10px;color:var(--ink4);font-weight:600;text-transform:none">(${esc(trackLabel(t))} тооцоонд нэмэгдэнэ)</span></div>`;
       html+=`<div class="stagger">`+conn.map(s=>sectionCard(s,t)).join('')+`</div>`
     }
     if(normal.length){html+=`<div class="sec-lbl" style="margin-top:${conn.length?16:4}px">Үенүүд</div><div class="stagger">`+normal.map(s=>sectionCard(s,t)).join('')+`</div>`}
@@ -6575,7 +6594,7 @@ function openAddSection(type){
       <div id="asAdjHint" style="font-size:11px;color:var(--ink3);font-weight:600;margin-top:6px">Аль нэгийг нь сонгоно уу</div>
     </div>`:''}
     <div class="ff"><label>Тайлбар (заавал биш)</label><input type="text" id="asNote" placeholder="..."></div>
-    <div class="info-pill">ℹ Холбох хэсэг нь ${trackLabel(t)}-ын нийт тооцоонд автоматаар нэмэгдэнэ</div>`:`
+    <div class="info-pill">ℹ Холбох хэсэг нь ${esc(trackLabel(t))}-ын нийт тооцоонд автоматаар нэмэгдэнэ</div>`:`
     <div class="ff-row">
       <div class="ff"><label>Үеийн дугаар</label><input type="number" id="asNum" value="${nextNum}" min="1"></div>
       <div class="ff"><label>Нэмэлт нэр</label><input type="text" id="asExtra" placeholder="..."></div>
@@ -7175,6 +7194,10 @@ async function applyBulk(){
   const sec=activeSec(),t=activeTrack();if(!sec)return;
   const n=parseInt(document.getElementById('bulkN').value,10);
   if(isNaN(n)||n<0){showToast('Тоогоо оруулна уу');return}
+  // max="200" нь гараар бичихэд хамаарахгүй — 460-ын оронд 4600 гэж андуурвал
+  // нэг үе мянга мянган дэртэй болж хувь бүхэлдээ буруу гарна. Урт гагнасан
+  // рельсэнд олон дэр бодитоор байж болох тул хориглохгүй, зөвхөн асууна.
+  if(n>200&&!await appConfirm(`${n} дэр — нэг үед ийм олон дэр ховор. Зөв оруулсан уу?`,'Тийм, зөв'))return;
   const cur=sec.sleepers.length;
   if(n===cur){closeModal('bulkModal');return}
   if(n<cur&&!await appConfirm(`Сүүлийн ${cur-n} дэр устана. Үргэлжлүүлэх үү?`))return;
@@ -8001,7 +8024,7 @@ function showDlLink(url,name){
   const div=document.createElement('div');div.id='dlLinkBanner';
   div.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:rgba(50,42,30,.94);backdrop-filter:blur(10px);color:#fff;padding:14px 16px;border-radius:14px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.4)';
   div.innerHTML=`<div style="margin-bottom:8px">📥 Файл бэлэн болсон:</div>
-    <a href="${url}" download="${name}" style="display:block;background:var(--g500);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:800;text-decoration:none">${name}</a>
+    <a href="${url}" download="${esc(name)}" style="display:block;background:var(--g500);color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:800;text-decoration:none">${esc(name)}</a>
     <button onclick="this.parentElement.remove()" aria-label="Хаах" style="position:absolute;top:2px;right:4px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer">×</button>`;
   document.body.appendChild(div);
   setTimeout(()=>{const b=document.getElementById('dlLinkBanner');if(b)b.remove()},30000)
@@ -8927,7 +8950,7 @@ function openAddFolder(br){
   _brNew=br?1:0;
   document.getElementById('afSeason').value='хавар';
   document.getElementById('afYear').value=new Date().getFullYear();
-  document.getElementById('afDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('afDate').value=mnTodayStr();
   updateFolderName();openModal('addFolderModal')
 }
 function updateFolderName(){
@@ -8986,7 +9009,7 @@ function addFolder(){
   if(seasonYearTaken(DB.folders,sea,yr)){
     showToast(`${yr} оны ${SEASON_LBL[sea]||sea}ын паспорт аль хэдийн бий`,2800);return
   }
-  const date=document.getElementById('afDate').value||new Date().toISOString().slice(0,10);
+  const date=document.getElementById('afDate').value||mnTodayStr();
   const folder={id:'f-'+uid(),name,season:sea,year:yr,date,tracks:[],sc:_sectionCode||''};
   const br=!!_brNew;
   if(br)folder.br=1;
@@ -9941,6 +9964,7 @@ async function doLogin(){
   const email=latin+'@'+FB_DOMAIN;
 
   try{
+    _logoutGen++;          // хүлээгдэж буй хойшлогдсон гаралт энэ нэвтрэлтийг гаргахгүй
     const cred=await fbAuth.signInWithEmailAndPassword(email,pass);
     _currentUser=cred.user;
     _sectionCode=code;
@@ -9967,7 +9991,7 @@ function _errBanner(title,detail){
     const d=document.createElement('div');d.id='errBanner';
     d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99998;background:#B3261E;color:#fff;'+
       'padding:9px 34px 9px 12px;font:600 12px/1.4 -apple-system,sans-serif;box-shadow:0 3px 14px rgba(0,0,0,.3)';
-    d.innerHTML='⚠ '+title+'<br><span style="font-weight:400;opacity:.9;font-size:11px">'+detail+'</span>'+
+    d.innerHTML='⚠ '+esc(title)+'<br><span style="font-weight:400;opacity:.9;font-size:11px">'+esc(detail)+'</span>'+
       '<button onclick="this.parentElement.remove()" aria-label="Хаах" style="position:absolute;top:0;right:0;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;color:#fff;font-size:19px;cursor:pointer;line-height:1">×</button>';
     document.body.appendChild(d)
   }catch(e){}
@@ -10132,7 +10156,7 @@ async function _afterLoginInner(){
                        :'✓ Утсан дахь өгөгдлийг сэргээж үүлэн рүү илгээлээ',3600)
     } else {
       DB={location:_sectionCode,tracks:[],v:3,folders:[],
-        rpt:{cls:'3',sec:'6',secName:_sectionCode,season:'хавар',year:new Date().getFullYear()+'',date:new Date().toISOString().slice(0,10)}};
+        rpt:{cls:'3',sec:'6',secName:_sectionCode,season:'хавар',year:new Date().getFullYear()+'',date:mnTodayStr()}};
       _cloudLoaded=true;_cloudHadData=false;
       _errBanner('Үүлэн дээр бичлэг олдсонгүй','sections/'+_sectionCode+' баримт байхгүй');
     }
@@ -10239,7 +10263,7 @@ function _importLocalData(localDB){
       // Хуучин бүтэц — folder болгож шилжүүлнэ
       const yr=(localDB.rpt&&localDB.rpt.year)||new Date().getFullYear()+'';
       const sea=(localDB.rpt&&localDB.rpt.season)||'хавар';
-      const nf={id:'f-'+Date.now(),name:sea.charAt(0).toUpperCase()+sea.slice(1)+' '+yr+' паспорт (утаснаас)',season:sea,year:yr,date:new Date().toISOString().slice(0,10),tracks:localDB.tracks,sc:_sectionCode||''};
+      const nf={id:'f-'+Date.now(),name:sea.charAt(0).toUpperCase()+sea.slice(1)+' '+yr+' паспорт (утаснаас)',season:sea,year:yr,date:mnTodayStr(),tracks:localDB.tracks,sc:_sectionCode||''};
       if(!DB.folders.some(x=>folderKey(x)===folderKey(nf)))DB.folders.push(nf);
     }
     // Гол замын км — дугаараар давхардвал бүртгэл ихтэйг нь үлдээнэ
@@ -10353,11 +10377,21 @@ async function doLogout(){
 function _doLogoutCore(){
   _autoTry=99;clearTimeout(_autoTimer);
   if(_syncUnsub){_syncUnsub();_syncUnsub=null}
-  if(fbAuth)fbAuth.signOut().catch(()=>{});
-  if(_dirtyAt())flushSave(true);          // гарахын өмнө амжиж илгээнэ
+  // Гарахын өмнө амжиж илгээнэ. Нэвтрэлтээс ӨМНӨ нь гарвал бичилт эрхгүй
+  // болж татгалзагддаг байсан тул илгээлт дуусталх (8 сек хүртэл) хүлээнэ.
+  // Хооронд нь дахин нэвтэрсэн бол (ижил хэсгээр ч) тэр шинэ сессийг гаргахгүй —
+  // uid ижил байж болох тул нэвтрэлт бүр _logoutGen-ийг ахиулж хүчингүй болгоно.
+  const _fl=_dirtyAt()?flushSave(true):false;
+  const _g=++_logoutGen;
+  const _out=()=>{try{if(fbAuth&&_logoutGen===_g)fbAuth.signOut().catch(()=>{})}catch(e){}};
+  if(_fl&&typeof _fl.then==='function')Promise.race([_fl,new Promise(r=>setTimeout(r,8000))]).then(_out,_out);
+  else _out();
   shAutoStop();                           // гарсны дараа цаг үлдэж болохгүй
   _revLeave();_revTrk={};_revAsked={};_hubReset();_brMode=false;
   _currentUser=null;_sectionCode=null;_isAdmin=false;
+  // Дараагийн нэвтрэлт өөрийн үүлийг уншиж дуустал бичихгүй байх ёстой —
+  // өмнөх хэсгийн "уншсан" тэмдэг үлдвэл шинэ хэсэгт хуучин өгөгдлийг илгээж болзошгүй
+  _cloudLoaded=false;_cloudHadData=false;
   activeFolderId=null;DB={location:'',tracks:[],v:3,folders:[],main:[],rpt:{}};
   resetSignInAnim();        // дараагийн нэвтрэхэд хуучин үзэгдлийн төлөв үлдэхгүй
   showView('loginView')
@@ -10914,7 +10948,7 @@ async function adminExportExcel(){
 
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    dlBlob(blob,'Бүх_хэсэг_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    dlBlob(blob,'Бүх_хэсэг_'+mnTodayStr()+'.xlsx');
     showToast('✓ Excel татагдлаа!')
   }catch(e){showToast('Алдаа: '+e.message);console.error(e)}
 }
@@ -12346,7 +12380,7 @@ function openSwFolder(){
   if(!_brPend)_brNew=0;_brPend=0;
   document.getElementById('swfSeason').value='хавар';
   document.getElementById('swfYear').value=new Date().getFullYear();
-  document.getElementById('swfDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('swfDate').value=mnTodayStr();
   updateSwFolderName();openModal('swFolderModal')
 }
 let _brPend=0;
@@ -12363,7 +12397,7 @@ function addSwFolder(){
   const f={id:'sf-'+uid(),name,
     season:sea,
     year:yr,
-    date:document.getElementById('swfDate').value||new Date().toISOString().slice(0,10),
+    date:document.getElementById('swfDate').value||mnTodayStr(),
     sc:_sectionCode||'',turnouts:[]};
   if(_brNew)f.br=1;
   // ЗААВАЛ DB.sw дээр — swFolders() нь шүүсэн хуулбар
@@ -14632,11 +14666,11 @@ function _partId(pfx,id){
   if(s&&/^[A-Za-z0-9_-]+$/.test(s))return pfx+'_'+s;
   return pfx+'_h'+_hash(s).replace(/[^A-Za-z0-9]/g,'')
 }
-function _partsKey(){return 'sg_parts_'+(_sectionCode||'')}
+function _partsKey(sc){return 'sg_parts_'+((sc===undefined?_sectionCode:sc)||'')}
 function _loadPartHashes(){
   try{return JSON.parse(localStorage.getItem(_partsKey())||'{}')||{}}catch(e){return {}}}
-function _savePartHashes(h){
-  try{localStorage.setItem(_partsKey(),JSON.stringify(h))}catch(e){}}
+function _savePartHashes(h,sc){
+  try{localStorage.setItem(_partsKey(sc),JSON.stringify(h))}catch(e){}}
 function _clearPartHashes(){try{localStorage.removeItem(_partsKey())}catch(e){}}
 /* DJB2 — өөрчлөгдсөнийг мэдэхэд хангалттай, урттай нь хамт хадгална */
 function _hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
@@ -14727,10 +14761,10 @@ function _partUnits(part){
     put:a=>({sw:Object.assign({},part.sw,{turnouts:a})})};
   return null
 }
-function _unitsKey(){return 'sg_units_'+(_sectionCode||'')}
+function _unitsKey(sc){return 'sg_units_'+((sc===undefined?_sectionCode:sc)||'')}
 function _loadUnitHashes(){
   try{return JSON.parse(localStorage.getItem(_unitsKey())||'{}')||{}}catch(e){return {}}}
-function _saveUnitHashes(h){try{localStorage.setItem(_unitsKey(),JSON.stringify(h))}catch(e){}}
+function _saveUnitHashes(h,sc){try{localStorage.setItem(_unitsKey(sc),JSON.stringify(h))}catch(e){}}
 /* Нэгжийн hash — түлхүүрийн ДАРААЛЛААС үл хамаарна.
    Жинхэнэ Firestore объектын түлхүүрийг цагаан толгойн дарааллаар
    буцаадаг, апп харин {id,num,station,mak,...} гэж үүсгэсэн дарааллаар
@@ -14763,6 +14797,7 @@ function _syncUnitHashesFrom(db){
 }
 function _writeParts(packed){
   if(!fbDb||!_sectionCode)return Promise.resolve(0);
+  const sc=_sectionCode;
   let parts;
   try{parts=_splitDB(packed)}catch(e){return Promise.resolve(0)}
   const prev=Object.assign({},_loadPartHashes());
@@ -14823,9 +14858,10 @@ function _writeParts(packed){
   ));
 
   return Promise.all([simpleP,mergedP]).then(()=>{
-    if(merged.length)_saveUnitHashes(unitHashes);
+    if(merged.length)_saveUnitHashes(unitHashes,sc);
     Object.keys(parts).forEach(id=>{if(!(id in now))now[id]=prev[id]});
-    _savePartHashes(now);_knownPartIds=Object.keys(parts);
+    _savePartHashes(now,sc);
+    if(_sectionCode===sc)_knownPartIds=Object.keys(parts);
     _partsErr='';_partsAt=Date.now();
     _partsWrote=simple.length+merged.length+dels.length;_partsBytes=bytes;
     return _partsWrote
@@ -15230,7 +15266,9 @@ function confirmYearFilter(){
   showToast(_yearFilter?`${_yearFilter} оны паспортууд`:'Бүх оны паспортууд',2200)
 }
 
-function _dirtyKey(){return 'sg_der_dirty_'+(_sectionCode||'')}
+// sc — асинхрон бичилт эхэлсэн хэсэг. Хариу ирэхэд хэрэглэгч гарсан/өөр хэсгээр
+// нэвтэрсэн байж болох тул тэр үеийн _sectionCode-ыг биш, эхлэлийнхийг ашиглана.
+function _dirtyKey(sc){return 'sg_der_dirty_'+((sc===undefined?_sectionCode:sc)||'')}
 function _dirtyAt(){
   try{const v=localStorage.getItem(_dirtyKey());return v?parseInt(v,10)||0:0}catch(e){return 0}
 }
@@ -15238,8 +15276,8 @@ function _dirtySet(){
   try{if(!localStorage.getItem(_dirtyKey()))localStorage.setItem(_dirtyKey(),String(Date.now()))}catch(e){}
   _renderSaveBadge()
 }
-function _dirtyClear(){
-  try{localStorage.removeItem(_dirtyKey())}catch(e){}
+function _dirtyClear(sc){
+  try{localStorage.removeItem(_dirtyKey(sc))}catch(e){}
   _renderSaveBadge()
 }
 // Илгээгдээгүй байдлыг доод буланд харуулна — дарвал шууд илгээнэ
@@ -15275,8 +15313,9 @@ function flushSave(force){
     const _lim=_lastPartMax;   // хязгаар хэсэг тус бүрд хамаарна
     if(_lim>DOC_LIMIT){_tooBig(_lim);return false}
     _localWriting=true;
+    const sc=_sectionCode;
     return _pushCloud(_p)
-      .then(()=>{_dirtyClear();_cloudLoaded=true;_lastSaveErr='';
+      .then(()=>{_dirtyClear(sc);if(_sectionCode===sc)_cloudLoaded=true;_lastSaveErr='';
         setTimeout(()=>{_localWriting=false},600);return true})
       .catch(e=>{console.error('Flush err:',e);
         _lastSaveErr=(e&&e.message)||String(e);_localWriting=false;
@@ -15374,7 +15413,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.05·203';
+const APP_BUILD='2026.11.06·204';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
@@ -15536,6 +15575,11 @@ function _swClear(){
   const LOCAL=norm(APP_BUILD);
   const TRY_KEY='_updReload';
   let lastCheck=0,notified=false;
+  // hardReload()-ийн ?v= нь зөвхөн ТЭР нэг ачаалалтад CDN-ийн кэшийг тойрох
+  // зорилготой. Хаягт үлдвэл таб нээгдэх бүрд service worker кэшийг алгасаж
+  // 4G-ээр бүтэн файлыг дахин татдаг, сүлжээгүй үед апп нээгддэггүй байсан.
+  try{if(/[?&]v=/.test(location.search))
+    history.replaceState(history.state,'',location.pathname+location.hash)}catch(e){}
   // sessionStorage зарим орчинд алдаа шиддэг тул хамгаалалттай уншиж бичнэ
   const sGet=k=>{try{return sessionStorage.getItem(k)}catch(e){return null}};
   const sSet=(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}};
