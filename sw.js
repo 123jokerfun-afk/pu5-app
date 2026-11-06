@@ -13,7 +13,7 @@
      ард нь шинийг татна. Дараагийн нээлтэд шинэ нь ирнэ.
    · Идэвхжихдээ өөр хувилбарын кэшийг устгана.
    ══════════════════════════════════════════════════════════════ */
-const VER='2026.11.05-203';
+const VER='2026.11.06-204';
 const CACHE='pu5-'+VER;
 
 /* Гадны сангууд. Хаяг нь хувилбар агуулсан тул өөрчлөгддөггүй —
@@ -34,6 +34,13 @@ self.addEventListener('activate',e=>{
     const keys=await caches.keys();
     await Promise.all(keys.filter(k=>k.startsWith('pu5-')&&k!==CACHE)
       .map(k=>caches.delete(k)));
+    // install()-ийн урьдчилсан кэшлэлт сүлжээний саатлаар бүтэлгүйтвэл (алдааг
+    // санаатай залгидаг) кэш хоосон үлдэж, анхны офлайн нээлт ажилладаггүй байв.
+    // Идэвхжихдээ хоосон бол нэг удаа дахин оролдоно.
+    try{
+      const c=await caches.open(CACHE);
+      if(!(await c.match('index.html')))await c.add(new Request('index.html',{cache:'reload'}));
+    }catch(_){}
     await self.clients.claim();
   })());
 });
@@ -76,7 +83,12 @@ self.addEventListener('fetch',e=>{
       }).catch(()=>null);
       if(hit){e.waitUntil(net);return hit}
       const r=await net;
-      return r||new Response('<h1>Сүлжээгүй байна</h1>',
+      if(r)return r;
+      // ?v=-тэй хүсэлт сүлжээгүй үед кэштэй хуулбар руу буцна. Өмнө нь шууд
+      // "Сүлжээгүй байна" гардаг байсан тул шинэчлэлтийн дараа хаяг нь ?v=
+      // хэвээр үлдсэн табыг офлайн нээхэд апп огт нээгддэггүй байв.
+      const fb=bust?await c.match('index.html'):null;
+      return fb||new Response('<h1>Сүлжээгүй байна</h1>',
         {status:503,headers:{'Content-Type':'text/html; charset=utf-8'}});
     })());
     return

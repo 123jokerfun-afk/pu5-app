@@ -116,19 +116,28 @@ ok('"Тийм, гарах" дарвал үзэгдэл дуусаад нэвтр
 /* ── 8. Service worker жинхэнээсээ ажиллаж, офлайн болгож байна уу ──
    Тусдаа контекст: base.js-ийн stub нь Firebase-г орлуулдаг ч SW нь
    нэг гарлын файлуудыг өөрөө кэшилнэ. */
+/* waitForFunction-д async функц өгвөл буцаасан Promise-ийг "үнэн" гэж үзээд
+   ~40 мс-д ШУУД дуусдаг — service worker суулгаж дуусахыг огт хүлээдэггүй
+   (төлөв нь 'installing' эсвэл бүр бүртгэлгүй) байсан тул доорх кэшийн
+   шалгалт санамсаргүй унадаг байв. Хуудас дотроо 'activated' болтол жинхэнэ
+   хүлээнэ — activate()-ийн waitUntil (кэш цэвэрлэх, дахин оролдох) дууссаны дараа. */
+function waitActivated(pg,ms){
+  return pg.evaluate(ms=>new Promise(res=>{
+    const t=setTimeout(()=>res(false),ms);
+    navigator.serviceWorker.ready.then(r=>{
+      const w=r.active,done=()=>{clearTimeout(t);res(true)};
+      if(w.state==='activated')done();
+      else w.addEventListener('statechange',()=>{if(w.state==='activated')done()})
+    })
+  }),ms||15000)
+}
 async function swAttempt(){
   const base=await B.ensureServer();
   const ctx2=await br.newContext();
   const p2=await ctx2.newPage();
   await p2.goto(base+'/index.html',{waitUntil:'load'});
   // Идэвхжтэл нь хүлээнэ
-  let act=false;
-  try{
-    await p2.waitForFunction(async()=>{
-      const r=await navigator.serviceWorker.getRegistration();
-      return !!(r&&r.active)},{timeout:15000});
-    act=true
-  }catch(e){}
+  const act=await waitActivated(p2);
   const cached=await p2.evaluate(async()=>{
     const ks=await caches.keys();
     const pu5=ks.filter(k=>k.startsWith('pu5-'));
@@ -172,11 +181,7 @@ async function bustAttempt(){
   const ctx=await br.newContext();
   const p=await ctx.newPage();
   await p.goto(base+'/index.html',{waitUntil:'load'});
-  try{
-    await p.waitForFunction(async()=>{
-      const r=await navigator.serviceWorker.getRegistration();
-      return !!(r&&r.active)},{timeout:15000})
-  }catch(e){}
+  await waitActivated(p);
   // Идэвхжсэн ч хуудсыг ХАРААХАН удирдаагүй (controller=null) бол fetch
   // service worker-ийг огт дайрахгүй, кэшийг алгасна — ачаалал ихтэй үед
   // энэ шалгалт санамсаргүй унадаг байсан. Удирдаж эхэлтэл хүлээнэ.

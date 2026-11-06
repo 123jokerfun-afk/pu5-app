@@ -47,6 +47,15 @@ await page.evaluate(()=>{
         delete:()=>{delete __c.parts[id];return Promise.resolve()}})
     })
   })});
+  // Жинхэнэ Firestore-д транзакц сүлжээгүй үед ажилладаггүй (сервертэй
+  // харилцах шаардлагатай). Стубын runTransaction үүнийг дуурайдаггүй —
+  // tx.set()-ийн татгалзсан хариуг үл тоож "амжилттай" буцаадаг байв.
+  // v204-өөс өмнө тэр хуурамч амжилт гарсны ДАРАА ирж, _sectionCode=null
+  // үед буруу (хоосон кодтой) түлхүүрийг арилгадаг байсан тул энэ тест
+  // санамсаргүй давж байсан. Одоо илгээлт эхэлсэн хэсгийн түлхүүрийг зөв
+  // арилгадаг болсон тул сүлжээгүй байдлыг бүрэн дуурайх шаардлагатай.
+  const _rt=fbDb.runTransaction.bind(fbDb);
+  fbDb.runTransaction=fn=>__c.fail?Promise.reject(new Error('offline')):_rt(fn);
   fbDb.batch=()=>{const ops=[];return{
     set:(r,v)=>{ops.push(()=>r.set(v))},
     delete:r=>ops.push(()=>r.delete()),
