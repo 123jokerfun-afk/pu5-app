@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Дэр бүртгэл">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#FF9932">
+<meta name="theme-color" content="#dfe5ed">
 <meta name="description" content="Төмөр замын дэр шалгалт бүртгэх систем">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -537,7 +537,10 @@ button{font-family:inherit}
   font-variant-numeric:tabular-nums}
 .sw-empty-line{font-size:11.5px;color:var(--ink4);margin:8px 0 0 6px;font-weight:600}
 /* Илгээгдээгүй өөрчлөлтийн тэмдэг */
-.save-badge{position:fixed;left:12px;bottom:calc(12px + var(--sab));z-index:9997;
+/* z-index: доод табаас (300) дээр, харин цонхнуудаас (.overlay 400+) ДООР.
+   Өмнө нь 9997 байсан тул "Дэр засах" зэрэг доороос гарах цонхны эхний
+   сонголтыг халхалж, тэр хэсэгт дарахад сонголтын оронд тэмдэг дарагддаг байв. */
+.save-badge{position:fixed;left:12px;bottom:calc(12px + var(--sab));z-index:399;
   display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:99px;border:none;
   background:linear-gradient(135deg,#8A5009,#B45309);color:#fff;font-family:inherit;
   font-size:11.5px;font-weight:800;cursor:pointer;box-shadow:0 5px 18px rgba(138,80,9,.4);
@@ -1882,6 +1885,382 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
   .fp-body{animation:none!important}
   .fp-person.typing .fp-wave{animation:none!important}
 }
+
+/* ══════════════════════════════════════════════════════════════
+   УУЛЗВАРЫН НЕОМОРФ ДАВХАРГА (v205)
+   uulzwar_zai аппын цайвар неоморф загварыг (хөх-саарал материал,
+   хүчтэй хос сүүдэр, дээд ирмэгийн гэрэл, өнгөт градиент товч) ПУ-5-ийн
+   ГЭРЭЛТЭЙ загварт бүрэн шилжүүлэв. Дээрх дүрмүүдийг устгалгүй ЭНЭ
+   давхаргаар дарж бичсэн нь: харанхуй загвар огт хөндөгдөхгүй, асуудал
+   гарвал энэ ганц хэсгийг л хасахад хуучин байдалдаа буцна.
+   Гол зарчим (Uulzwar-ынхтай ижил):
+   · Дэвсгэр (#dfe5ed) нь товгор гадаргуунаас (#eaeef4) БҮДЭГ — тиймээс
+     карт дэвсгэрээсээ "өргөгдөж", дотор талын нүх (var(--bg)) "хонхойно".
+   · Товгор зүйл бүр дарахад СУУНА (inset сүүдэр) — даралтыг мэдрүүлнэ.
+   · Төлөвийн өнгө (ногоон=тэнцэх, улбар=тэнцэхгүй, улаан=ТБД, ягаан=сум)
+     утгаа хадгална — зөвхөн саарал гадаргуу дээр уншигдахаар гүнзгийрэв.
+   · Брэндийн алтлаг-улбар шарын оронд Uulzwar-ын индиго/цэнхэр.
+   ══════════════════════════════════════════════════════════════ */
+:root:not([data-theme="dark"]){
+  --surface:#eaeef4;--sh-d:#b9c2d0;--sh-l:#ffffff;
+  --bg:#dfe5ed;--bg2:#e4e9f0;--card:#eaeef4;
+  /* Хүснэгтийн мөр, явцын зам зэрэгт хүрээ хэрэгтэй тул бүр алга
+     болгохгүй — товгор картуудын хүрээг доор тусад нь арилгана */
+  --border:rgba(150,165,190,.30);--border2:rgba(130,146,172,.52);
+  --ink:#2b333c;--ink2:#48515c;--ink3:#5f6873;--ink4:#6b7581;--ink5:#7f8996;
+  /* Төлөвийн өнгө — утга хэвээр, саарал дээр уншигдахаар бараан.
+     Тодролын харьцааг (contrast) #eaeef4 гадаргуу дээр хэмжиж тохируулав:
+     бичигт хэрэглэгддэг ногоон/улбар шар/улаан/цэнхэр бүгд ≥ 3.9:1 — өмнөх
+     шаргал загварт улбар шар 2.9:1, жижиг шошго 2.4:1 байсан (нарны гэрэлд
+     бараг уншигдахгүй). */
+  --g900:#0a4a3e;--g800:#0b6152;--g700:#0a6a55;--g600:#087a5e;
+  --g500:#0d9068;--g400:#3cc796;--g300:#7fd8b8;
+  --g100:rgba(18,166,121,.15);--g50:rgba(18,166,121,.09);
+  --gold:#7d88f0;--gold-deep:#4b56d6;--gold-bg:rgba(75,86,214,.12);
+  --orange:#b85406;--orange-bg:rgba(232,112,20,.13);--orange-mid:#e0761e;
+  --red:#d2345a;--red-bg:rgba(214,52,86,.12);--red-mid:#e85a7c;
+  --dred:#ad1e45;--dred-bg:rgba(176,30,69,.14);
+  --blue:#006cff;--blue-bg:rgba(0,108,255,.11);--blue-mid:#4d9bff;
+  --purple:#8a3fd4;--purple-bg:rgba(138,63,212,.12);
+  --pink:#c4429a;--pink-bg:rgba(196,66,154,.12);
+  /* Гүн — сүүдэр + гэрлийн хос, дээд ирмэгт нимгэн гэрэл */
+  --lift:inset 0 1px 0 #fff,11px 11px 22px var(--sh-d),-11px -11px 22px var(--sh-l);
+  --lift-lo:inset 0 1px 0 #fff,6px 6px 13px var(--sh-d),-6px -6px 13px var(--sh-l);
+  --lift-hi:inset 0 1.5px 0 #fff,16px 16px 32px var(--sh-d),-16px -16px 32px var(--sh-l);
+  --sunk:inset 5px 5px 10px var(--sh-d),inset -5px -5px 10px var(--sh-l);
+  --sunk-sm:inset 3px 3px 6px var(--sh-d),inset -3px -3px 6px var(--sh-l);
+  --sh-sm:var(--lift-lo);
+  --sh:inset 0 1px 0 #fff,8px 8px 17px var(--sh-d),-8px -8px 17px var(--sh-l);
+  --sh-lg:var(--lift);
+  --sh-sm-in:var(--sunk);
+  --grad-accent:linear-gradient(180deg,#7d88f0 0%,#4b56d6 100%);
+  --grad-blue:linear-gradient(180deg,#4d9bff 0%,#006cff 100%);
+  --grad-green:linear-gradient(180deg,#17b07a 0%,#0b7f5e 100%);
+  --glow-accent:0 6px 18px -5px rgba(75,86,214,.55);
+  --glow-blue:0 6px 18px -5px rgba(0,108,255,.5);
+  --glow-green:0 6px 18px -5px rgba(11,127,94,.45);
+  color-scheme:light}
+/* Хөдөлгөөний муруй — хоёр загварт нийтлэг */
+:root{--ease:cubic-bezier(.32,.08,.24,1);--spring:cubic-bezier(.34,1.4,.5,1)}
+
+html:not([data-theme="dark"]) body{
+  background:
+    radial-gradient(80% 50% at 50% 0%,rgba(255,255,255,.32) 0%,rgba(255,255,255,0) 100%),
+    radial-gradient(80% 50% at 50% 100%,rgba(190,203,222,.38) 0%,rgba(190,203,222,0) 100%),
+    #dfe5ed;
+  background-attachment:fixed}
+
+/* ── Толгой ── */
+html:not([data-theme="dark"]) .pg-hdr{background:rgba(223,229,237,.84);
+  border-bottom-color:transparent;box-shadow:0 10px 22px -16px var(--sh-d)}
+html:not([data-theme="dark"]) .hero,
+html:not([data-theme="dark"]) #swHero{background:transparent;border-radius:0}
+html:not([data-theme="dark"]) .hero::before{opacity:.35;filter:grayscale(1) brightness(.7)}
+html:not([data-theme="dark"]) .hero-icon{background:var(--surface);border-radius:16px;
+  box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .hero-stat-n{text-shadow:1px 1.5px 1px rgba(150,165,190,.45),-1px -1px 1px #fff}
+html:not([data-theme="dark"]) .hero-stat-l{text-shadow:none}
+html:not([data-theme="dark"]) .back-btn{color:var(--blue)}
+html:not([data-theme="dark"]) .back-btn::before{border-color:var(--blue)}
+
+/* ── Товгор гадаргуу: карт, мөр, жижиг товч ── */
+html:not([data-theme="dark"]) :is(.folder-card,.track-card,.sec-card,.sw-card,.spc-card,
+  .sum-block,.consec-block,.adm-sec,.dash-card,.dash-thr,.dash-mini,.log-item,.pf-row,
+  .sy-state,.sy-meter,.km-row,.br-tab,.br-st,.inc-row-v,.pill-nav,.hero-stat,.hero-chip,
+  .icon-btn,.hero-edit,.rb-btn,.rb-chip,.round-btn,.sec-edit-btn,.sw-nav,.btn-cancel,
+  .btn-del-yes,.exp-btn,.add-track-btn,.etb,.kind-btn,.mat-btn,.fast-btn,.adj-btn,.pb,
+  .adm-fold,.adm-season,.cs-btn,.sec-card-del){
+  background-color:var(--surface);border-color:transparent;box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) :is(.folder-card,.track-card,.sec-card,.sw-card,.sum-block,
+  .consec-block,.adm-sec,.dash-card,.dash-thr){box-shadow:var(--sh)}
+/* Сумын карт цагаан градиент дэвсгэртэй байсан — материалаа нэгтгэнэ */
+html:not([data-theme="dark"]) .exp-csv{background:var(--surface);border-color:transparent}
+html:not([data-theme="dark"]) .add-track-btn{border:1.5px dashed var(--border2);color:var(--ink3)}
+html:not([data-theme="dark"]) .sec-card.type-turnout{border:1.5px dashed rgba(0,108,255,.35)}
+
+/* Дарахад СУУНА — хуурай scale биш, гадаргуу дотогшоо орсон мэт */
+html:not([data-theme="dark"]) :is(.folder-card,.track-card,.sec-card,.sw-card,.spc-card,
+  .dash-mini-link,.log-item,.pf-row,.km-row,.br-tab,.icon-btn,.hero-edit,.rb-btn,.rb-chip,
+  .round-btn,.sec-edit-btn,.sw-nav,.btn-cancel,.btn-del-yes,.exp-btn,.add-track-btn,.etb,
+  .kind-btn,.mat-btn,.fast-btn,.adj-btn,.pb,.adm-fold,.adm-season,.cs-btn,.x-btn,
+  .pu5-btn,.sec-card-del,.pill-item,.carve-btn):active{
+  box-shadow:var(--sunk)!important;background-color:var(--surface)}
+html:not([data-theme="dark"]) .log-item:active{background:var(--surface)}
+html:not([data-theme="dark"]) .x-btn:active{background:var(--surface)}
+
+/* ── Хонхор (суусан) хэсгүүд — карт доторх нүх ── */
+html:not([data-theme="dark"]) :is(.dash-kv div,.dash-stk div,.sw-st-c,.sum-tot,.adm-cell,
+  .ov-pct,.spc-scroll,.sw-meters,.pwa-note,.wheel,.wheel-year,.pf-yr-wrap,
+  .rp-track-hd,.out-tr-h,.sw-tr-h,.ov-cell){
+  background-color:var(--surface);border-color:transparent;box-shadow:var(--sunk-sm)}
+html:not([data-theme="dark"]) .consec-row{background-color:var(--surface);box-shadow:var(--sunk-sm)}
+html:not([data-theme="dark"]) .dash-ring{box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) :is(.track-pbar,.sec-pbar,.dash-wr-tr,.sy-bar){
+  background:var(--surface);box-shadow:inset 2px 2px 4px var(--sh-d),inset -2px -2px 4px var(--sh-l)}
+html:not([data-theme="dark"]) .dash-tbl tr.tot td{background:rgba(75,86,214,.08)}
+html:not([data-theme="dark"]) .consec-nums span{background:var(--surface);border-color:transparent;
+  box-shadow:2px 2px 4px var(--sh-d),-2px -2px 4px var(--sh-l)}
+html:not([data-theme="dark"]) .consec-row.c5p{background:var(--dred-bg)}
+html:not([data-theme="dark"]) .consec-row.cross{background:var(--purple-bg)}
+
+/* ── Талбар — хонхор, анхаарвал цэнхэр цагираг ── */
+html:not([data-theme="dark"]) :is(.ff input,.ff select,.ff textarea,.ov-f input,.inc-row select,
+  .inc-row input,.thresh-input){
+  background:var(--surface);border-color:transparent;box-shadow:var(--sunk);color:var(--ink)}
+html:not([data-theme="dark"]) :is(.ff input,.ff select,.ff textarea,.ov-f input,.inc-row select,
+  .inc-row input,.thresh-input):focus{
+  background:var(--surface);border-color:transparent;
+  box-shadow:inset 3px 3px 7px var(--sh-d),inset -3px -3px 7px var(--sh-l),0 0 0 2px rgba(0,108,255,.38)}
+
+/* ── Өнгөт гол товч — градиент + гэрэлт ирмэг + туяа ── */
+html:not([data-theme="dark"]) .btn-ok{background:var(--grad-accent);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.45),var(--glow-accent);text-shadow:none}
+html:not([data-theme="dark"]) .btn-ok:active{
+  box-shadow:inset 3px 3px 7px rgba(30,36,120,.45),inset -2px -2px 5px rgba(255,255,255,.2)}
+html:not([data-theme="dark"]) .exp-xl{background:var(--grad-green);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-green)}
+html:not([data-theme="dark"]) .exp-xl:active{box-shadow:inset 3px 3px 7px rgba(5,60,40,.4)!important;
+  background:var(--grad-green)}
+html:not([data-theme="dark"]) .asb-normal{background:var(--grad-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-accent)}
+html:not([data-theme="dark"]) .asb-conn,html:not([data-theme="dark"]) .asb-turn{
+  background:var(--surface);border-color:transparent;box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .asb-turn{color:var(--blue)}
+html:not([data-theme="dark"]) .add-sec-btn:active{box-shadow:var(--sunk)!important}
+html:not([data-theme="dark"]) .asb-normal:active{background:var(--grad-accent);
+  box-shadow:inset 3px 3px 7px rgba(30,36,120,.45)!important}
+html:not([data-theme="dark"]) .add-sec-dock{background:rgba(223,229,237,.92);
+  border-top-color:transparent;box-shadow:0 -10px 24px -14px var(--sh-d)}
+html:not([data-theme="dark"]) .carve-btn{background:var(--grad-blue);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-blue)}
+html:not([data-theme="dark"]) .carve-btn:active{background:var(--grad-blue)}
+html:not([data-theme="dark"]) .rp-total{background:var(--grad-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--glow-accent)}
+html:not([data-theme="dark"]) .pb.on{background:var(--grad-green);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--glow-green)}
+html:not([data-theme="dark"]) :is(.kind-btn,.mat-btn,.fast-btn,.adj-btn).selected{
+  background:var(--grad-blue);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-blue)}
+html:not([data-theme="dark"]) .adm-season.on{background:var(--grad-green);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-green)}
+html:not([data-theme="dark"]) .dash-thr-chip{background:var(--surface);box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .dash-thr-chip.active{
+  background:linear-gradient(180deg,#d06a14 0%,#b05004 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px -5px rgba(184,84,6,.5)}
+
+/* ── Утгатай хувилбарууд — ерөнхий товгор дүрэм дарахгүй байх ── */
+html:not([data-theme="dark"]) .etb-n{background:var(--g100)}
+html:not([data-theme="dark"]) .etb-b{background:var(--orange-bg)}
+html:not([data-theme="dark"]) .etb-t{background:var(--red-bg)}
+html:not([data-theme="dark"]) .etb-bt{background:var(--dred-bg)}
+html:not([data-theme="dark"]) :is(.etb,.cs-btn).sel{box-shadow:0 0 0 2.5px var(--ink) inset,var(--lift-lo)}
+html:not([data-theme="dark"]) .br-tab.sel{background:var(--purple-bg);color:var(--purple);
+  border-color:rgba(138,63,212,.45);box-shadow:var(--sunk-sm)}
+html:not([data-theme="dark"]) .sec-card.sec-just{box-shadow:var(--sh),0 0 0 3px var(--blue-mid)}
+html:not([data-theme="dark"]) .sw-card.del-armed{box-shadow:var(--sh),0 0 0 2px rgba(210,52,90,.45)}
+html:not([data-theme="dark"]) .lp-del.lp-hold{box-shadow:var(--sunk),0 0 0 2px var(--red) inset!important}
+
+/* ── Нээлттэй паспорт — өргөлтийн цагираг ── */
+html:not([data-theme="dark"]) .folder-card.active-folder{background:var(--surface);
+  box-shadow:var(--sh),0 0 0 2px rgba(75,86,214,.5)}
+html:not([data-theme="dark"]) .folder-card.active-folder::before{background:var(--grad-accent)}
+html:not([data-theme="dark"]) #swFolders .folder-card.active-folder{
+  border-color:transparent!important;background:var(--surface);
+  box-shadow:var(--sh),0 0 0 2px rgba(138,63,212,.5)}
+html:not([data-theme="dark"]) .folder-icon{background:var(--surface);box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .folder-card.del-armed{box-shadow:var(--sh),0 0 0 2px rgba(210,52,90,.45)}
+/* Картын өнгөт зураас — брэнд индиго, үеийн төрөл утгаараа */
+html:not([data-theme="dark"]) .track-card::before{background:var(--grad-accent)}
+html:not([data-theme="dark"]) .track-card::after{background:radial-gradient(circle at 85% 8%,rgba(125,136,240,.12),transparent 55%)}
+html:not([data-theme="dark"]) .sec-card.type-normal::before{background:var(--grad-green)}
+html:not([data-theme="dark"]) .sec-card.type-turnout::before{background:var(--grad-blue)}
+html:not([data-theme="dark"]) .sw-card::before{background:linear-gradient(180deg,#a66bf0,#7a2fc8)}
+
+/* ── Сумын (ягаан) хэсгийн гараар бичсэн цайвар өнгөнүүд ── */
+html:not([data-theme="dark"]) :is(.sw-nav,.sw-tag,.sw-badge,.spc-mark,.spc-chip i,.fc-close-sw){color:var(--purple)}
+html:not([data-theme="dark"]) :is(.spc-tot,.spc-sum,.sw-next,.sw-slpanel .ssp-h){color:#7a2fc8}
+html:not([data-theme="dark"]) :is(.sw-next,.spc-sum,.sw-slpanel,.sw-r-sl){
+  background:var(--purple-bg);border-color:rgba(138,63,212,.25)}
+html:not([data-theme="dark"]) .sw-r-sl .sw-kind{background:rgba(138,63,212,.16);border-color:rgba(138,63,212,.35);color:#7a2fc8}
+html:not([data-theme="dark"]) .sw-link{background:var(--purple-bg);border-color:rgba(138,63,212,.35);color:var(--purple)}
+html:not([data-theme="dark"]) .sw-add{background:var(--surface);color:var(--purple);
+  box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .sw-add::after{border-color:rgba(138,63,212,.35)}
+html:not([data-theme="dark"]) .sw-add:active{box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) .sw-slpanel .ssp-c{background:var(--surface);box-shadow:var(--sunk-sm)}
+html:not([data-theme="dark"]) .sw-kind{background:var(--surface);border-color:transparent;box-shadow:var(--sunk-sm)}
+html:not([data-theme="dark"]) .sw-r-bad{border-color:rgba(217,101,12,.4)}
+
+/* ── Хүснэгтийн тодруулсан мөрүүд — тунгалаг өнгөөр ── */
+html:not([data-theme="dark"]) .stbl tr.rd td{background:var(--red-bg)}
+html:not([data-theme="dark"]) .stbl tr.wd td{background:rgba(232,170,20,.1)}
+html:not([data-theme="dark"]) .stbl tr.co td{background:var(--purple-bg)}
+
+/* ── Бүртгэлийн дэлгэц ── */
+/* Тоолуурын хүрээ HTML-д шууд бичигдсэн (шаргал #F5C272 г.м.) — Uulzwar-д
+   хүрээ байхгүй, өнгө нь дэвсгэр ба тоогоор л илэрнэ */
+html:not([data-theme="dark"]) :is(.cnt,.ov-cell,.cs-cell){border-color:transparent!important}
+html:not([data-theme="dark"]) .cnt{box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .cnt:active{box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) .drum-frame{border:3px solid #6f7bec;
+  background:linear-gradient(180deg,rgba(125,136,240,.24),rgba(75,86,214,.1));
+  box-shadow:0 8px 26px -4px rgba(75,86,214,.55),0 0 0 4px rgba(125,136,240,.2),
+    inset 0 1px 0 rgba(255,255,255,.6)}
+html:not([data-theme="dark"]) .drow{box-shadow:inset 3px 3px 6px rgba(150,165,190,.45),inset -3px -3px 6px rgba(255,255,255,.8)}
+html:not([data-theme="dark"]) .drow.dr-rec{background:var(--surface);box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .drow.dr-normal{border-color:rgba(18,166,121,.45)}
+html:not([data-theme="dark"]) .drow.dr-bad{border-color:rgba(217,101,12,.5)}
+html:not([data-theme="dark"]) .drow.dr-tbd{border-color:rgba(210,52,90,.5)}
+html:not([data-theme="dark"]) .drow.dr-bad-tbd{border-color:rgba(173,30,69,.5)}
+html:not([data-theme="dark"]) .drow.dr-plan{border-color:var(--blue)}
+html:not([data-theme="dark"]) .drow.dr-in{
+  box-shadow:0 6px 20px -4px rgba(75,86,214,.45),0 0 0 1.5px rgba(111,123,236,.55)}
+html:not([data-theme="dark"]) .drum-hl{border-color:rgba(111,123,236,.6);background:rgba(125,136,240,.07)}
+html:not([data-theme="dark"]) .drum-hint{background:rgba(234,238,244,.94);box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .dr-edit,html:not([data-theme="dark"]) .log-edit-icon{
+  background:var(--surface);box-shadow:2px 2px 4px var(--sh-d),-2px -2px 4px var(--sh-l)}
+html:not([data-theme="dark"]) .dr-slot{background:rgba(0,108,255,.05)}
+/* Туслах товч ба "Өмнөх/Дараагийн" — Uulzwar-ын дугуй навигацийн жор */
+html:not([data-theme="dark"]) .round-btn{box-shadow:var(--lift)}
+html:not([data-theme="dark"]) .nav-btn{border-color:transparent}
+html:not([data-theme="dark"]) .nav-prev{background:var(--surface);color:var(--purple);box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .nav-next{background:var(--grad-blue);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-blue)}
+html:not([data-theme="dark"]) .nav-prev:active{box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) .nav-next:active{box-shadow:inset 3px 3px 7px rgba(0,50,140,.45)}
+/* Төрөл сонгох бөмбөлөг — хонхор дугуй худаг дотор товгор бөмбөг */
+html:not([data-theme="dark"]) .joy-ring{border:none;background:var(--surface);box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) .joy-btn{border:3px solid rgba(255,255,255,.55);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.45),10px 10px 20px var(--sh-d),-8px -8px 18px var(--sh-l)}
+html:not([data-theme="dark"]) .joy-btn{animation:none;background:var(--grad-accent)}
+html:not([data-theme="dark"]) .joy-btn:active{
+  box-shadow:inset 4px 4px 9px rgba(0,0,0,.22),inset -3px -3px 7px rgba(255,255,255,.3)}
+html:not([data-theme="dark"]) .etb{box-shadow:var(--lift-lo)}
+html:not([data-theme="dark"]) .etb-n{border-color:rgba(18,166,121,.4)}
+html:not([data-theme="dark"]) .etb-b{border-color:rgba(217,101,12,.45)}
+html:not([data-theme="dark"]) .etb-t{border-color:rgba(210,52,90,.45)}
+html:not([data-theme="dark"]) .etb-bt{border-color:rgba(173,30,69,.45)}
+html:not([data-theme="dark"]) .etb-del{background:var(--surface)}
+html:not([data-theme="dark"]) .swipe-flash.rf{background:linear-gradient(to left,rgba(0,108,255,.14),transparent)}
+html:not([data-theme="dark"]) .flash-pill{background:rgba(43,51,60,.72)}
+
+/* ── Доод цонх, халхавч, мэдэгдэл ── */
+html:not([data-theme="dark"]) .overlay{background:rgba(120,135,155,.42);
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+html:not([data-theme="dark"]) .sheet{background:var(--surface);
+  box-shadow:inset 0 1.5px 0 #fff,0 -12px 34px -8px var(--sh-d)}
+html:not([data-theme="dark"]) .sheet-handle{background:rgba(150,165,190,.7)}
+html:not([data-theme="dark"]) #toast{background:rgba(43,51,60,.94)}
+html:not([data-theme="dark"]) .skel{background:linear-gradient(90deg,rgba(185,194,208,.35) 25%,rgba(255,255,255,.7) 50%,rgba(185,194,208,.35) 75%);
+  background-size:200% 100%}
+
+/* ── Илгээгдээгүй тэмдэг — товгор цайвар, шар цэгтэй ── */
+html:not([data-theme="dark"]) .save-badge{background:var(--surface);color:var(--ink);
+  box-shadow:var(--lift)}
+html:not([data-theme="dark"]) .save-badge:active{box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) .save-badge .sb-dot{background:#e8a33d;box-shadow:0 0 10px 1px rgba(232,163,61,.8)}
+html:not([data-theme="dark"]) .save-badge .sb-go{background:var(--grad-blue);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--glow-blue)}
+
+/* ── Сонгогч дугуй (сар/өдөр/он) — брэндийн индиго ── */
+html:not([data-theme="dark"]) .wheel-band,html:not([data-theme="dark"]) .spw-band{
+  background:rgba(75,86,214,.08)}
+
+/* ── Доод таб — товгор тавцан, идэвхтэй нь индиго капсул ── */
+html:not([data-theme="dark"]) #tabbar{background:rgba(234,238,244,.92);
+  border-top-color:transparent;
+  box-shadow:inset 0 1px 0 #fff,0 -10px 28px -12px var(--sh-d)}
+html:not([data-theme="dark"]) .tab-b{color:var(--ink3)}
+html:not([data-theme="dark"]) .tab-b:active{box-shadow:var(--sunk)}
+html:not([data-theme="dark"]) .tab-b[aria-current="true"]{color:#fff;background:var(--grad-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),var(--glow-accent)}
+html:not([data-theme="dark"]) .tab-dot{border-color:var(--surface)}
+
+/* ── Мэдэгдэл, профайл ── */
+html:not([data-theme="dark"]) .pf-row .pf-ic{background:var(--surface);border-color:transparent;
+  box-shadow:3px 3px 6px var(--sh-d),-3px -3px 6px var(--sh-l)}
+html:not([data-theme="dark"]) .pf-row:active{background:var(--surface)}
+html:not([data-theme="dark"]) .pf-hd .pf-av{background:var(--grad-accent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),var(--glow-accent)}
+html:not([data-theme="dark"]) .pf-yr-ok{background:var(--grad-green);box-shadow:var(--glow-green)}
+html:not([data-theme="dark"]) .pill-icon{background:var(--surface);
+  box-shadow:3px 3px 6px var(--sh-d),-3px -3px 6px var(--sh-l)}
+html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
+
+/* ══ НЭВТРЭХ ДЭЛГЭЦ — загвараас үл хамааран Uulzwar-ын материал ══ */
+#loginView{--lg-bg:#eaeef4;--lg-light:#ffffff;--lg-dark:#b9c2d0;
+  --lg-text:#2b333c;--lg-sub:#5f6873;--lg-accent:#006cff}
+#loginView .lg-wrap{background:
+  radial-gradient(80% 50% at 50% 0%,rgba(255,255,255,.32) 0%,rgba(255,255,255,0) 100%),
+  radial-gradient(80% 50% at 50% 100%,rgba(190,203,222,.38) 0%,rgba(190,203,222,0) 100%),#dfe5ed}
+#loginView .lg-card{box-shadow:inset 0 1.5px 0 #fff,16px 16px 32px var(--lg-dark),-16px -16px 32px var(--lg-light)}
+#loginView .lg-title{text-shadow:1px 1px 2px rgba(150,165,190,.45),-1px -1px 2px #fff}
+#loginView .lg-input:focus{box-shadow:inset 3px 3px 7px var(--lg-dark),inset -3px -3px 7px var(--lg-light),
+  0 0 0 2px rgba(0,108,255,.35)}
+#loginView .lg-btn{box-shadow:inset 0 1px 0 #fff,9px 9px 18px var(--lg-dark),-9px -9px 18px var(--lg-light)}
+#loginView .lg-btn:active{box-shadow:inset 5px 5px 10px var(--lg-dark),inset -5px -5px 10px var(--lg-light)}
+/* Брэндийн тэмдэг — Uulzwar-ын индиго хавтан, удаан 3D эргэлттэй */
+#loginView .lg-lock{width:76px;height:76px;border-radius:24px;font-size:0;
+  background:var(--lg-bg);box-shadow:inset 0 1.5px 0 #fff,10px 10px 20px var(--lg-dark),-10px -10px 20px var(--lg-light);
+  animation:lgFloat 2.4s ease-in-out infinite;perspective:220px}
+#loginView .lg-lock img{width:58px;height:58px;border-radius:16px;display:block;
+  box-shadow:0 10px 22px -8px rgba(75,86,214,.55);animation:ic3dSway 6s ease-in-out infinite}
+.lp-door{box-shadow:3px 3px 5px #a0aabb,-3px -3px 5px #fff}
+.lp-hole{background:radial-gradient(ellipse,rgba(72,201,216,.55),transparent 75%),
+  linear-gradient(120deg,#a6bcca,#c0d4df);box-shadow:inset 2px 2px 5px rgba(109,147,170,.4)}
+.lp-door{background:#a7bccb}
+.lp-leaf::after{background:#26bed0;box-shadow:0 0 4px #33c6d8}
+.lp-thresh{box-shadow:1px 2px 3px #aab4c5}
+.fp-person{filter:drop-shadow(0 1px 1px rgba(116,140,153,.25))}
+#loginView .pwa-btn{border-color:transparent;
+  background:var(--lg-bg);color:var(--lg-accent);
+  box-shadow:inset 0 1px 0 #fff,6px 6px 13px var(--lg-dark),-6px -6px 13px var(--lg-light)}
+#loginView .pwa-btn:active{box-shadow:inset 4px 4px 9px var(--lg-dark),inset -4px -4px 9px var(--lg-light)}
+#loginView .pwa-hint{color:var(--lg-sub);text-shadow:none}
+
+/* ══════════════════════════════════════════════════════════════
+   ДАРАЛТ МЭДРЭХ 3D ХАЗАЙЛТ (хоёр загварт)
+   Хуруу дарсан цэг рүүгээ гадаргуу доошилж хазайна — жинхэнэ товчлуур
+   дарсан мэт. Өнцгийг JS (_p3dInit) хуруун байрлал, хэмжээнээс бодож
+   --p3x/--p3y-д өгнө; даралт мэдэрдэг дэлгэцэнд гүн нь даралтаар.
+   transform-ийг өөр зорилгоор (байрлал) ашигладаг элементийг JS алгасна.
+   ══════════════════════════════════════════════════════════════ */
+.p3d-on{transform:perspective(720px) rotateX(var(--p3x,0deg)) rotateY(var(--p3y,0deg))
+    scale(var(--p3s,.975))!important;
+  transition:transform .12s var(--ease),box-shadow .12s var(--ease),background .12s!important}
+.p3d-off{transition:transform .32s var(--spring),box-shadow .26s var(--ease),background .2s!important}
+/* Удаан дарж устгах карт ч хазайна. Харин "удаан дарж байна" гэсэн улаан
+   хүрээ 0.2 сек хүлээгээд аажуухан гарна — эс тэгвэл энгийн товшилт бүрд
+   улаан анивчдаг байв (lp-hold нь хуруу хүрмэгц л асдаг). */
+.lp-del.lp-hold.p3d-on{transition:transform .12s var(--ease),box-shadow .35s ease .2s!important}
+/* Дотор талын дүрс картаасаа илүү хазайж "дээш тодорно" (parallax) */
+.p3d-on :is(.folder-icon,.pill-icon,.pf-ic,.hero-icon,.sec-card-del){
+  transform:perspective(260px) rotateX(calc(var(--p3x,0deg)*-2.4)) rotateY(calc(var(--p3y,0deg)*-2.4)) scale(1.07);
+  transition:transform .14s var(--ease)}
+.p3d-on > svg,.p3d-on > .ic{transform:perspective(200px) rotateX(calc(var(--p3x,0deg)*-2)) rotateY(calc(var(--p3y,0deg)*-2));
+  transition:transform .14s var(--ease)}
+:is(.folder-icon,.pill-icon,.pf-ic,.hero-icon,.sec-card-del){transition:transform .34s var(--spring)}
+
+/* ══ ЭРГЭЛДДЭГ ДҮРС ══ */
+/* Таб сонгогдоход дүрс нь зоос шиг 3D эргэлдэнэ */
+@keyframes tabFlip3d{0%{transform:perspective(160px) rotateY(0) scale(1)}
+  45%{transform:perspective(160px) rotateY(200deg) scale(1.18)}
+  100%{transform:perspective(160px) rotateY(360deg) scale(1)}}
+.tab-b[aria-current="true"] svg{animation:tabFlip3d .62s var(--ease)}
+/* Брэндийн тэмдэг — зөөлөн 3D найгалт */
+@keyframes ic3dSway{0%,100%{transform:perspective(220px) rotateY(-14deg) rotateX(4deg)}
+  50%{transform:perspective(220px) rotateY(14deg) rotateX(-4deg)}}
+.hero-icon img{animation:ic3dSway 7s ease-in-out infinite;will-change:transform}
+/* Толгойн товч дарахад дүрс нь хагас эргэнэ */
+@keyframes ic3dTap{0%{transform:perspective(140px) rotateY(0)}
+  50%{transform:perspective(140px) rotateY(180deg) scale(1.1)}
+  100%{transform:perspective(140px) rotateY(360deg)}}
+.hero-edit.ic-spin svg,.icon-btn.ic-spin svg{animation:ic3dTap .5s var(--ease)}
+@media (prefers-reduced-motion:reduce){
+  .p3d-on{transform:scale(.98)!important}
+  .p3d-on :is(.folder-icon,.pill-icon,.pf-ic,.hero-icon,.sec-card-del),.p3d-on > svg,.p3d-on > .ic{transform:none}
+  .tab-b[aria-current="true"] svg,.hero-icon img,#loginView .lg-lock img,
+  .hero-edit.ic-spin svg,.icon-btn.ic-spin svg{animation:none!important}
+}
 </style>
 </head>
 <body>
@@ -2016,7 +2395,7 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
 <div class="view active" id="loginView">
   <div class="lg-wrap">
     <div class="lg-card">
-      <div class="lg-lock">🔒</div>
+      <div class="lg-lock"><img src="icon-192.png" alt="" width="58" height="58"></div>
       <div class="lg-title">ПУ-5</div>
       <div class="lg-sub">Дэр/дүнз шалгалтын апп</div>
 
@@ -2049,21 +2428,21 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
           </span>
           <span class="lp-actor" id="lpActor">
             <svg viewBox="0 0 18 39" fill="none" stroke-linecap="round">
-              <ellipse id="lpShadow" cx="9" cy="37" rx="5" ry="1" fill="#8a7b63" opacity=".2" stroke="none"/>
+              <ellipse id="lpShadow" cx="9" cy="37" rx="5" ry="1" fill="#8395a0" opacity=".2" stroke="none"/>
               <g id="lpCard" stroke-linejoin="round">
                 <rect x="-2.7" y="18" width="7.3" height="9.4" rx=".8" fill="#eef9fb" stroke="#4ab5c4" stroke-width="1.15"/>
                 <circle cx="-.5" cy="21" r=".8" fill="#62bccc" stroke="none"/>
                 <path d="M1 20.8H3M-1 24H2.8" stroke="#74c5d1" stroke-width=".7"/>
               </g>
-              <path id="lpArmB" stroke="#8a7b63" stroke-width="1.65"/>
-              <path id="lpLegB" stroke="#7a6c56" stroke-width="1.85"/>
-              <path id="lpTorso" stroke="#5a4e3b" stroke-width="2.1"/>
-              <path id="lpLegA" stroke="#564a38" stroke-width="2"/>
-              <path id="lpArmA" stroke="#6b5d47" stroke-width="1.8"/>
+              <path id="lpArmB" stroke="#667984" stroke-width="1.65"/>
+              <path id="lpLegB" stroke="#60717c" stroke-width="1.85"/>
+              <path id="lpTorso" stroke="#506977" stroke-width="2.1"/>
+              <path id="lpLegA" stroke="#4d6472" stroke-width="2"/>
+              <path id="lpArmA" stroke="#526f7d" stroke-width="1.8"/>
               <g id="lpHead">
-                <circle cx="9" cy="5.4" r="3.9" fill="#F07818" stroke="#FFA94D" stroke-width=".8"/>
-                <path d="M6.5 3.9Q7.1 2.7 8.5 2.8" stroke="#FFE0B8" stroke-width=".7"/>
-                <g id="lpEyes" fill="#FFF4E8" stroke="none"><circle cx="7.7" cy="5.1" r=".68"/><circle cx="10.4" cy="5.1" r=".68"/></g>
+                <circle cx="9" cy="5.4" r="3.9" fill="#23bed0" stroke="#52d3dd" stroke-width=".8"/>
+                <path d="M6.5 3.9Q7.1 2.7 8.5 2.8" stroke="#c0f7f8" stroke-width=".7"/>
+                <g id="lpEyes" fill="#edffff" stroke="none"><circle cx="7.7" cy="5.1" r=".68"/><circle cx="10.4" cy="5.1" r=".68"/></g>
               </g>
             </svg>
           </span>
@@ -2084,13 +2463,13 @@ body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
       <span class="fp-person" id="fpPerson" aria-hidden="true">
         <svg viewBox="0 0 20 38" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <g class="fp-body" id="fpBody">
-            <path id="fpLegs" d="M10 22L7 34M10 22L13 34" stroke="#7a6c56" stroke-width="2"/>
-            <path d="M10 10L10 22" stroke="#6b5d47" stroke-width="2.2"/>
-            <path d="M10 13L7 17L3 18" stroke="#8a7b63" stroke-width="1.6"/>
-            <g class="fp-wave"><path d="M10 13L13 17L15 18" stroke="#7a6c56" stroke-width="1.6"/></g>
+            <path id="fpLegs" d="M10 22L7 34M10 22L13 34" stroke="#60717c" stroke-width="2"/>
+            <path d="M10 10L10 22" stroke="#506977" stroke-width="2.2"/>
+            <path d="M10 13L7 17L3 18" stroke="#667984" stroke-width="1.6"/>
+            <g class="fp-wave"><path d="M10 13L13 17L15 18" stroke="#60717c" stroke-width="1.6"/></g>
             <rect x=".3" y="16" width="6.4" height="8.5" rx="1" fill="#eef9fb" stroke="#4ab5c4" stroke-width="1" transform="rotate(-6 3 20)"/>
             <path d="M2 19H4.7M2 21H4" stroke="#8bcbd6" stroke-width=".6"/>
-            <circle cx="10" cy="6" r="4" fill="#F07818" stroke="#FFA94D" stroke-width=".6"/>
+            <circle cx="10" cy="6" r="4" fill="#23bed0" stroke="#52d3dd" stroke-width=".6"/>
             <circle cx="8.6" cy="5.7" r=".75" fill="white"/><circle cx="11.3" cy="5.7" r=".75" fill="white"/>
           </g>
         </svg>
@@ -4178,12 +4557,15 @@ function fmtNum(v){return Number.isInteger(v)?String(Math.round(v)):(Math.round(
 const _THKEY='sg_der_theme';
 const _SUN='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const _MOON='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1111.2 3a6.6 6.6 0 009.8 9.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-function _themeIs(){try{return localStorage.getItem(_THKEY)||'dark'}catch(e){return 'dark'}}
+/* v205-аас анхдагч нь ЦАЙВАР (Uulzwar-ын неоморф) — талбай дээр нарны
+   гэрэлд илүү уншигддаг. Харанхуйг өөрөө сонгосон хэрэглэгчийн сонголт
+   утсанд хадгалагдсан тул хэвээр үлдэнэ. */
+function _themeIs(){try{return localStorage.getItem(_THKEY)||'light'}catch(e){return 'light'}}
 function applyTheme(t){
   const dark=t==='dark';
   document.documentElement.setAttribute('data-theme',dark?'dark':'light');
   const m=document.querySelector('meta[name="theme-color"]');
-  if(m)m.setAttribute('content',dark?'#1B1046':'#FF9932');
+  if(m)m.setAttribute('content',dark?'#1B1046':'#dfe5ed');
   // Товч дээр ОЧИХ горимын дүрсийг харуулна
   const b=document.getElementById('themeBtn');
   if(b){b.innerHTML=dark?_SUN:_MOON;
@@ -4200,6 +4582,57 @@ function toggleTheme(){
   showToast(next==='dark'?'Харанхуй загвар':'Гэрэлтэй загвар',1600)
 }
 applyTheme(_themeIs());
+/* ══ ДАРАЛТ МЭДРЭХ 3D ХАЗАЙЛТ ══
+   Хуруу дарсан цэг рүүгээ гадаргуу доошилж хазайна (CSS .p3d-on).
+   transform-ийг байрлалд ашигладаг элемент (joy-btn, drow, sheet,
+   add-sec-dock…) энэ жагсаалтад ОРООГҮЙ — эс тэгвэл байрлалаа алдана.
+   Гүйлгэж эхэлбэл (8px+) эсвэл хөтөч pointercancel өгвөл шууд суллана —
+   жагсаалт гүйлгэхэд карт хазайсан хэвээр үлдэхгүй. */
+const P3D_SEL='.folder-card,.track-card,.sec-card,.sw-card,.spc-card,.dash-mini-link,.log-item,'+
+  '.pf-row,.km-row,.br-tab,.icon-btn,.hero-edit,.rb-btn,.rb-chip,.round-btn,.sec-edit-btn,.sw-nav,'+
+  '.btn-ok,.btn-cancel,.btn-del-yes,.exp-btn,.add-track-btn,.add-sec-btn,.etb,.kind-btn,.mat-btn,'+
+  '.fast-btn,.adj-btn,.pb,.adm-fold,.adm-season,.cs-btn,.pill-item,.carve-btn,.tab-b,.lg-btn,'+
+  '.pwa-btn,.nav-btn,.save-badge,.dash-thr-chip,.pu5-btn,.cnt';
+function _p3dInit(){
+  let cur=null,sx=0,sy=0,offT=0;
+  const release=()=>{
+    if(!cur)return;const el=cur;cur=null;
+    el.classList.remove('p3d-on');el.classList.add('p3d-off');
+    clearTimeout(offT);offT=setTimeout(()=>el.classList.remove('p3d-off'),340)};
+  document.addEventListener('pointerdown',e=>{
+    if(e.button>0)return;
+    const el=e.target&&e.target.closest&&e.target.closest(P3D_SEL);
+    if(!el||el.disabled||el.hasAttribute('data-dim'))return;
+    release();
+    const r=el.getBoundingClientRect();if(!r.width||!r.height)return;
+    const nx=Math.max(-1,Math.min(1,(e.clientX-r.left)/r.width*2-1));
+    const ny=Math.max(-1,Math.min(1,(e.clientY-r.top)/r.height*2-1));
+    // Том карт бага, жижиг товч илүү хазайна — мэдрэмж нь адилхан
+    const amp=Math.max(2.2,Math.min(8,2600/(r.width+r.height)));
+    // Даралт мэдэрдэг дэлгэцэнд гүн нь даралтаар. Ихэнх утас 0.5 (эсвэл 0)
+    // гэж тогтмол өгдөг — тэр үед дунд зэргийн гүн.
+    const pr=(e.pressure>0&&e.pressure<1&&e.pressure!==.5)?e.pressure:.5;
+    el.style.setProperty('--p3x',(-ny*amp).toFixed(2)+'deg');
+    el.style.setProperty('--p3y',(nx*amp).toFixed(2)+'deg');
+    el.style.setProperty('--p3s',(.985-.03*pr).toFixed(3));
+    el.classList.remove('p3d-off');el.classList.add('p3d-on');
+    cur=el;sx=e.clientX;sy=e.clientY
+  },{passive:true,capture:true});
+  document.addEventListener('pointermove',e=>{
+    if(cur&&(Math.abs(e.clientX-sx)>8||Math.abs(e.clientY-sy)>8))release()
+  },{passive:true});
+  document.addEventListener('pointerup',release,{passive:true});
+  document.addEventListener('pointercancel',release,{passive:true});
+  document.addEventListener('scroll',release,{passive:true,capture:true});
+  window.addEventListener('blur',release);
+  // Толгойн жижиг товч дарахад дүрс нь 3D эргэнэ
+  document.addEventListener('click',e=>{
+    const b=e.target&&e.target.closest&&e.target.closest('.hero-edit,.icon-btn');
+    if(!b)return;
+    b.classList.remove('ic-spin');void b.offsetWidth;b.classList.add('ic-spin');
+    clearTimeout(b._icT);b._icT=setTimeout(()=>b.classList.remove('ic-spin'),560)
+  },true)
+}
 function initRipple(){
   document.addEventListener('pointerdown',function(e){
     const t=e.target.closest('.exp-btn,.btn-ok,.add-sec-btn,.round-btn,#loginBtn,.icon-btn');
@@ -15413,7 +15846,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.06·204';
+const APP_BUILD='2026.11.06·205';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
@@ -15541,7 +15974,7 @@ try{
   try{_pwaRender()}catch(e){}
 })();
 initScreenSwipe();initKmSwipe();initSwSwipe();
-initRipple();initSheetGestures();
+initRipple();_p3dInit();initSheetGestures();
 
 // ══════════════════════════════════════════════
 // SERVICE WORKER — офлайн ба хурдан нээлт
