@@ -1536,6 +1536,12 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .cs-btn:active{transform:scale(.96)}
 .cs-btn.sel{box-shadow:0 0 0 2.5px var(--ink) inset;filter:saturate(1.15)}
 .cs-4 .cs-l{font-size:8.5px}
+/* "5+ ДАРААЛСАН" шошгын урт үг 1fr баганыг агшаахгүй тул Fold (280px)
+   дээр 3 дахь нүд дэлгэцээс 4px гардаг байв. Зай, үсгийг нягтруулна. */
+@media (max-width:340px){
+  .consec-summary .cs-cell{padding:8px 4px}
+  .consec-summary .cs-l{font-size:8.5px;letter-spacing:.02em}
+}
 .rp-carve{background:var(--blue-bg);border-color:var(--blue-mid)!important}
 .rd-carve{background:var(--blue)!important;color:#fff!important}
 .mat-tag{font-size:9px;padding:2px 6px;border-radius:5px;font-weight:800;flex-shrink:0;
