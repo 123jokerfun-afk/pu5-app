@@ -18,7 +18,7 @@
 
    Сонсогч window дээр тул үзэгдлийг bubbles:true-гээр илгээнэ.
    ══════════════════════════════════════════════════════════════ */
-const B=require('./base');
+const B=require('./base'),T=require('./touch');
 const R=[];const ok=(n,c,d)=>{R.push(!!c);console.log((c?'  ✓ ':'  ✗ ')+n+(d!==undefined?'  — '+d:''))};
 const J=JSON.stringify;
 (async()=>{
@@ -30,7 +30,7 @@ const failed=[];
 page.on('requestfailed',q=>failed.push(q.url().replace(/^https?:\/\/[^/]+/,'').slice(0,60)));
 
 /* Туслах функцууд — дахин ачаалсны дараа ч дахин суулгана */
-const helpers=()=>page.evaluate(()=>{
+const helpers=(pg=page)=>pg.evaluate(()=>{
   const b=document.getElementById('__errbar');if(b)b.remove();
   const eb=document.getElementById('errBanner');if(eb)eb.remove();
   window.__w=ms=>new Promise(r=>setTimeout(r,ms));
@@ -70,6 +70,8 @@ const helpers=()=>page.evaluate(()=>{
     pickWalk(true);await __w(220);
     openSection(walkSections(activeTrack())[0].id);await __w(300);
     return activeSec()};
+  // Жинхэнэ цонхыг товшилтын хэсэгт сэргээнэ
+  if(!window.__ac0)window.__ac0=window.appConfirm;
   window.appConfirm=()=>Promise.resolve(true);
 });
 await B.login(page,'ПД-6');
@@ -303,6 +305,196 @@ ok('_migrateDB дутуу үеийг жинхэнэ дараалалд оруу�
    k2.loaded.pat==='normal,normal,bad'&&!k2.loaded.rw,J(k2.loaded));
 ok('Дахин ухарч нээхэд ЯВАХ дараалал сэргэнэ',k2.walk==='bad,normal,normal',k2.walk);
 ok('Үргэлжлүүлж бүртгээд гарахад зөв',k2.final==='normal,tbd,normal,normal,bad',k2.final);
+
+/* ── 7. ЖИНХЭНЭ ТОВЧООР — талбар дээрх бүтэн ажил ───────────────
+   Дээрх шалгалтууд функцийг шууд дууддаг. Энд ажилтны гараар хийдэг
+   бүх үйлдлийг (CDP touch) хийж, хооронд нь утсаа унтрааж асаана:
+   жойстикийн 5 чиглэл, гарын товч, буцаах, засах цонх НЭЭЛТТЭЙ үед
+   унтраах, байгаа дэрийг дарж бичих баталгаажуулах цонх НЭЭЛТТЭЙ үед
+   унтраах, "Дараагийн →", "Буцах", Android-ын буцах товч. Утасны
+   хэмжээ бүрт давтана — товч байрлал нь хэмжээнээс хамаардаг. */
+async function uiFlow(pg){
+  const st=()=>pg.evaluate(()=>{const s=activeSec();
+    return{lbl:s?s.label:'-',pat:s?__pat(s):'-',rw:!!(s&&s.rw),
+      view:(document.querySelector('.view.active')||{}).id,
+      dom:[...document.querySelectorAll('#rvLog .dr-rec')].map(r=>
+        ['normal','bad','tbd','bad-tbd'].find(t=>r.classList.contains('dr-'+t))).join(','),
+      modal:[...document.querySelectorAll('.overlay.open')].map(o=>o.id).join(',')}});
+  // Элементийг харагдах хэсэгт гүйлгэж, төвд нь хуруугаар дарна
+  // Бөмбөрөгийн мөр transform-оор байрладаг тул түүнийг гүйлгэхгүй (noScroll)
+  // Дэлгэц шилжих хөдөлгөөний дунд дарвал өөр товч дарагдана (жишээ нь
+  // Fold дээр "Дүн") — байрлал 2 удаа хэмжихэд хөдлөөгүй үед л дарна
+  const tapAt=async(js,wait,noScroll)=>{
+    const c=await pg.evaluate(async([js,ns])=>{const e=(0,eval)(js);if(!e)return null;
+      if(!ns)e.scrollIntoView({block:'center'});
+      let r=e.getBoundingClientRect(),p=null;
+      for(let k=0;k<20&&(!p||Math.abs(p.left-r.left)+Math.abs(p.top-r.top)>0.5);k++){
+        p=r;await new Promise(f=>setTimeout(f,90));r=e.getBoundingClientRect()}
+      const x=r.left+r.width/2,y=r.top+r.height/2,h=document.elementFromPoint(x,y);
+      return{x,y,hit:!!h&&(h===e||e.contains(h)),top:h?h.tagName+'#'+h.id+'.'+String(h.className).slice(0,24):'-'}},[js,!!noScroll]);
+    if(!c)throw new Error('олдсонгүй: '+js);
+    if(!c.hit){
+      // Цонх гулсаж гарч байгаа бол хөдөлгөөн дуусахыг хүлээнэ
+      if((tapAt.n=(tapAt.n||0)+1)<8){await pg.waitForTimeout(200);return tapAt(js,wait,noScroll)}
+      tapAt.n=0;throw new Error('халхлагдсан: '+js.slice(0,60)+' ← '+c.top)}
+    tapAt.n=0;
+    await T.tap(pg,c.x,c.y);await pg.waitForTimeout(wait||300)};
+  const tap=(sel,wait,ns)=>tapAt(`document.querySelector(${J(sel)})`,wait,ns);
+  /* Бөмбөрөгийг хуруугаар яг i-р мөр хүртэл чирж зогсооно (сүүлд нь
+     хуруугаа зогсоож хурдыг 0 болгоно — эс тэгвэл инерцээр цааш гүйнэ),
+     дараа нь тэр мөрийг дарж засах цонх нээнэ. Жижиг дэлгэцэд хол
+     мөр толгойн доор нуугддаг тул ажилтан ч ингэж хийдэг. */
+  const drumGo=async i=>{
+    const cdp=await T.cdp(pg);
+    for(let a=0;a<5;a++){
+      // Хуруу зөвхөн бөмбөрөгийн ХАРАГДАХ хэсэгт (толгойн доор, доод
+      // удирдлагын дээр) хөдөлнө — жижиг утсанд энэ зай богино
+      const g=await pg.evaluate(i=>{const r=DRM.vp.getBoundingClientRect();
+        return{x:r.left+r.width/2,top:r.top+70,bot:Math.min(r.bottom,innerHeight-DR_BOTTOM)-20,
+          dy:(DRM.pos-i)*DR_H,cur:drumCursor()}},i);
+      if(g.cur===i&&a)return;
+      const span=g.bot-g.top,dy=Math.max(-span,Math.min(span,g.dy)),N=14;
+      const y0=dy<0?g.bot:g.top;
+      const tp=(type,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:y===null?[]:[{x:g.x,y,id:1}]});
+      await tp('touchStart',y0);
+      for(let k=1;k<=N;k++){await tp('touchMove',y0+dy*k/N);await pg.waitForTimeout(16)}
+      await pg.waitForTimeout(160);await tp('touchMove',y0+dy+0.5);await pg.waitForTimeout(30);
+      await tp('touchEnd',null);await pg.waitForTimeout(700);
+    }
+    const cur=await pg.evaluate(()=>drumCursor());
+    if(cur!==i)throw new Error('бөмбөрөг '+i+' биш '+cur+' дээр зогсов')};
+  const row=async(i,wait)=>{await drumGo(i);await tap(`#rvLog .drow[data-i="${i}"]`,wait,true)};
+
+  const joy=async(dx,dy)=>{const c=await T.center(pg,'#joyBtn');
+    if(!c)throw new Error('жойстик харагдахгүй: '+J(await st()));
+    if(!dx&&!dy)await T.tap(pg,c.x,c.y);else await T.swipe(pg,c.x,c.y,dx,dy);
+    await pg.waitForTimeout(140)};
+  const sleep=async()=>{await pg.evaluate(()=>__vis(true));await pg.waitForTimeout(150);
+    await pg.evaluate(()=>__vis(false));await pg.waitForTimeout(250)};
+  const out={};
+  await pg.evaluate(()=>{
+    window.appConfirm=window.__ac0;                    // жинхэнэ цонх
+    const ue=n=>({id:'uv'+n,type:'normal',label:n+'-р үе',note:'',date:'2026-05-01',sleepers:[]});
+    DB.folders=[{id:'fu',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'tu',num:4,kind:'station',note:'',sections:[ue(1),ue(2),ue(3)]}]}];
+    DB.main=[];activeFolderId='fu';DB.tracks=DB.folders[0].tracks;
+    _revTrk={};_revAsked={};_revOpen=null;saveDB();goHome()});
+  await pg.waitForTimeout(400);
+  await B.gotoPass(pg);
+  await pg.evaluate(()=>{const e=document.getElementById('errBanner');if(e)e.remove()});
+  await tap('.track-card[data-tid="tu"]',450);
+  /* Fold (280px)-д толгой багтахгүй тул товч дарах мөчид ripple-ийн
+     overflow:hidden "эхнээс →" товчийг агшааж, төвд нь дарвал "Дүн"
+     нээгддэг (тусдаа алдаа). Харагдах зүүн хэсгээр нь дарна. */
+  {const b=await pg.evaluate(async()=>{const e=document.getElementById('walkBtn');
+     let r=e.getBoundingClientRect(),p=null;          // шилжих хөдөлгөөн зогсохыг хүлээнэ
+     for(let k=0;k<20&&(!p||Math.abs(p.left-r.left)>0.5);k++){p=r;await new Promise(f=>setTimeout(f,90));r=e.getBoundingClientRect()}
+     return{x:r.left+12,y:r.top+r.height/2}});
+   await T.tap(pg,b.x,b.y);await pg.waitForTimeout(350)}
+  await tapAt(`[...document.querySelectorAll('#walkModal button')].find(b=>/Ухарч/.test(b.textContent))`,400);
+  out.trk=await pg.evaluate(()=>({view:(document.querySelector('.view.active')||{}).id,rev:isRevTrack(),
+    first:(document.querySelector('#trackBody .sec-card[data-sid]')||{}).dataset.sid}));
+  await tap('#trackBody .sec-card[data-sid="uv3"] .sec-card-title',450);
+  out.open=await st();
+  // 3-р үе: дээш (тэнцэхгүй), товшилт ×2 → унтраах → гарын "3" (ТБД), товшилт
+  await joy(0,-45);await joy();await joy();
+  await sleep();
+  await pg.keyboard.press('3');await pg.waitForTimeout(150);await joy();
+  out.s1=await st();
+  await sleep();
+  await tap('#recordView .round-btn[title="Буцаах"]',300);  // буцаах
+  out.undo=await st();
+  await sleep();
+  // #1-ийг засах: бөмбөрөгийг тэр дэр хүртэл чирээд дарна
+  await row(0,400);
+  out.edOpen=(await st()).modal;
+  await sleep();                                          // засах цонх нээлттэй үед унтраах
+  await tap('#typeBtn',350);await tap('#tmB_bad_tbd',400);
+  out.edit=await st();
+  // #2 дээр очоод ТБД гэж дарж бичнэ → баталгаажуулах цонх
+  await drumGo(1);
+  await joy(45,0);await pg.waitForTimeout(250);
+  out.cfOpen=(await st()).modal;
+  await sleep();                                          // асуулт нээлттэй үед унтраах
+  await tap('#appConfirmOkBtn',400);
+  out.over=await st();
+  await drumGo(await pg.evaluate(()=>activeSec().sleepers.length));  // бүртгэх хайрцаг руу чирнэ
+  out.slot=await pg.evaluate(()=>drumCursor()+'/'+activeSec().sleepers.length);
+  await joy();
+  out.s1b=await st();
+  await sleep();
+  await tap('#navNextBtn',450);                           // "Дараагийн →"
+  out.next=await st();
+  out.u3=await pg.evaluate(()=>{const s=__find('tu','uv3');return __pat(s)+(s.rw?'[rw]':'')});
+  // 2-р үе: товшилт, баруун (ТБД) → pagehide/pageshow → зүүн (Тэнц. ТБД) → "Буцах"
+  await joy();await joy(45,0);
+  await pg.evaluate(()=>__page(false));await pg.waitForTimeout(120);
+  await pg.evaluate(()=>__page(true));await pg.waitForTimeout(250);
+  await joy(-45,0);
+  out.s2=await st();
+  await pg.evaluate(()=>{document.getElementById('toast').textContent=''});
+  await tap('#recordView .back-btn',450);
+  out.backToast=await pg.evaluate(()=>document.getElementById('toast').textContent);
+  out.u2=await pg.evaluate(()=>{const s=__find('tu','uv2');
+    return{pat:__pat(s)+(s.rw?'[rw]':''),view:(document.querySelector('.view.active')||{}).id}});
+  // 2-р үеийг дахин нээгээд үргэлжлүүлнэ → унтраах → доош (ТБД APC) → Android-ын буцах
+  await tap('#trackBody .sec-card[data-sid="uv2"] .sec-card-title',450);
+  out.re=await st();
+  out.reSub=await pg.evaluate(()=>document.getElementById('rvSub').textContent);
+  await sleep();
+  await joy(0,45);
+  out.s2b=await st();
+  await pg.goBack();await pg.waitForTimeout(500);
+  out.end=await pg.evaluate(()=>{
+    const t=getTrack('tu'),rwAny=t.sections.some(s=>s.rw);
+    const ls=__ls('tu','uv2'),ls3=__ls('tu','uv3');
+    return{view:(document.querySelector('.view.active')||{}).id,rwAny,
+      u2:__pat(__find('tu','uv2')),u3:__pat(__find('tu','uv3')),ls,ls3,
+      total:analyzeTrack(t).total}});
+  return out
+}
+const uiCheck=(nm,u)=>{
+  ok(nm+' · товчоор ← Ухарч сонгоход сүүлийн үе дээд талд',
+     u.trk.view==='trackView'&&u.trk.rev&&u.trk.first==='uv3',J(u.trk));
+  ok(nm+' · үеийн карт дарахад бүртгэлийн дэлгэц',u.open.view==='recordView'&&u.open.lbl==='3-р үе',J(u.open));
+  ok(nm+' · жойстик + гар, хооронд нь унтраасан',
+     u.s1.pat==='bad,normal,normal,tbd,normal'&&u.s1.rw&&u.s1.dom===u.s1.pat,J(u.s1));
+  ok(nm+' · унтраагаад "Буцаах" — СҮҮЛД бүртгэснийг авна',
+     u.undo.pat==='bad,normal,normal,tbd'&&u.undo.rw,u.undo.pat);
+  ok(nm+' · засах цонх нээлттэй үед унтраасан ч #1-ийг зөв засна',
+     /editSleeperModal/.test(u.edOpen)&&u.edit.pat==='bad_tbd,normal,normal,tbd'&&!u.edit.modal,
+     u.edOpen+' → '+u.edit.pat);
+  ok(nm+' · дарж бичих асуулт нээлттэй үед унтраасан ч #2-ыг зөв солино',
+     /appConfirmModal/.test(u.cfOpen)&&u.over.pat==='bad_tbd,tbd,normal,tbd',u.cfOpen+' → '+u.over.pat);
+  ok(nm+' · бөмбөрөгийг чирж бүртгэх хайрцаг руу буцаад үргэлжлүүлнэ',
+     u.slot==='4/4'&&u.s1b.pat==='bad_tbd,tbd,normal,tbd,normal',u.slot+' · '+u.s1b.pat);
+  ok(nm+' · "Дараагийн →" — 3-р үе жинхэнэ дараалалд, дараагийнх нь 2-р үе',
+     u.u3==='normal,tbd,normal,tbd,bad_tbd'&&u.next.lbl==='2-р үе',u.u3+' · '+u.next.lbl);
+  ok(nm+' · pagehide/pageshow-ийн дараа ч зөв (2-р үе)',u.s2.pat==='normal,tbd,bad_tbd'&&u.s2.rw,u.s2.pat);
+  ok(nm+' · "Буцах" товч — 2-р үе жинхэнэ дараалалд',
+     u.u2.pat==='bad_tbd,tbd,normal'&&u.u2.view==='trackView',J(u.u2));
+  ok(nm+' · жинхэнэ гарахад "дугаар эргэлээ" мэдэгдэл хэвээр гарна',/эргэлээ/.test(u.backToast),u.backToast);
+  ok(nm+' · дахин нээхэд ЯВАХ дараалал, "ухарч" харагдана',
+     u.re.pat==='normal,tbd,bad_tbd'&&u.re.rw&&u.re.dom==='normal,tbd,bad-tbd'&&/ухарч/.test(u.reSub),
+     u.re.pat+' · '+u.reSub);
+  ok(nm+' · унтраагаад доош (ТБД APC)',u.s2b.pat==='normal,tbd,bad_tbd,tbd',u.s2b.pat);
+  ok(nm+' · Android-ын буцах — паспорт, утас хоёулаа зөв',
+     u.end.view==='trackView'&&!u.end.rwAny&&u.end.u2==='tbd,bad_tbd,tbd,normal'
+     &&u.end.ls&&u.end.ls.pat===u.end.u2&&!u.end.ls.rw&&u.end.ls3&&u.end.ls3.pat===u.end.u3&&u.end.total===9,
+     J(u.end));
+};
+console.log('\nЖинхэнэ товчоор');
+try{uiCheck(B.DEVICES[1].name.split(' (')[0],await uiFlow(page))}
+catch(e){ok(B.DEVICES[1].name+' · товчоор',false,String(e.message).slice(0,120))}
+for(const di of [0,3,4,6]){
+  const dv=B.DEVICES[di];
+  const np=await B.newPage(br,dv);
+  await B.login(np.page,'ПД-6');await helpers(np.page);
+  try{uiCheck(dv.name.split(' (')[0],await uiFlow(np.page))}
+  catch(e){ok(dv.name+' · товчоор',false,String(e.message).slice(0,120))}
+  np.errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js|net::ERR/.test(e)).forEach(e=>errs.push(dv.name+': '+e));
+  await np.ctx.close();
+}
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon|sw\.js|net::ERR/.test(e));
 ok('Консолд алдаа алга',bad.length===0,
