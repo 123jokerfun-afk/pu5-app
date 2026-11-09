@@ -6697,17 +6697,39 @@ function _revEnter(sec){
   if(sec.rw){_revOpen=sec;return}
   _revSwap(sec);sec.rw=1;_revOpen=sec;saveDB()
 }
-function _revLeave(){
+/* quiet — утас унтрах үед. Ажилтан үеэс гараагүй, асахад буцааж
+   эргүүлнэ (_revResume) тул "дугаар эргэлээ" гэвэл худлаа болно. */
+function _revLeave(quiet){
   const sec=_revOpen;if(!sec)return;
   _revOpen=null;
   if(!sec.rw)return;
   _revSwap(sec);delete sec.rw;saveDB();
   const n=(sec.sleepers||[]).length;
-  if(n>1)showToast(`${sec.label}: дугаар эргэлээ (#1 ↔ #${n})`,2400)
+  if(n>1&&!quiet)showToast(`${sec.label}: дугаар эргэлээ (#1 ↔ #${n})`,2400)
+}
+/* Утас унтраад АСАХАД (эсвэл bfcache-ээс буцахад) ЯВАХ дарааллыг
+   сэргээнэ. Унтрахад _revLeave үеийг жинхэнэ дараалалд оруулж
+   хадгалдаг — апп арын дэвсгэрт алагдсан ч паспорт зөв үлдэнэ. Гэвч
+   бүртгэлийн дэлгэц нээлттэй хэвээр тул энд буцааж эргүүлэхгүй бол
+   дараагийн дэр жинхэнэ дарааллын ТӨГСГӨЛД нэмэгдэж, дараалал
+   холилддог байв. Галт тэрэг өнгөрөхөд утсаа унтраах нь түгээмэл.
+   _revLeave дутуу үеийг "бүрэн" гэж үзэж эргүүлдэг ч _revSwap нь
+   өөрийнхөө урвуу тул буцааж эргүүлэхэд яг өмнөх байдалдаа орно. */
+function _revResume(){
+  if(document.hidden)return;
+  if((document.querySelector('.view.active')||{}).id!=='recordView')return;
+  const sec=activeSec();
+  if(!sec||!isRevTrack())return;
+  const was=!!sec.rw;                 // зарим хөтөч "асах"-ыг давхар илгээдэг
+  _revEnter(sec);
+  // Нуугдаж байхад дэлгэц жинхэнэ дарааллаар зурагдсан байж болно
+  // (үүлний шинэчлэлт) — бөмбөрөгийн байрлалыг хадгалж дахин зурна
+  if(!was&&sec.rw)renderRecordView(drumCursor())
 }
 /* Апп унтрах, арын дэвсгэрт орох үед ч эргүүлж амжина */
-addEventListener('visibilitychange',()=>{if(document.hidden)_revLeave()});
-addEventListener('pagehide',()=>_revLeave());
+addEventListener('visibilitychange',()=>{if(document.hidden)_revLeave(1);else _revResume()});
+addEventListener('pagehide',()=>_revLeave(1));
+addEventListener('pageshow',()=>_revResume());
 
 /* Явах чиглэлийг ӨӨРӨӨ АСУУХГҮЙ. Зам бүрт цонх гарах нь ажил
    удаашруулдаг тул толгойн "эхнээс → / ← ухарч" товчоор хүссэн үедээ
@@ -15846,7 +15868,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.06·205';
+const APP_BUILD='2026.11.09·206';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
