@@ -23,7 +23,14 @@ for(const [nm,vp] of [['iPhone 12',{width:390,height:844}],['Galaxy Fold',{width
   }));
   ok(nm+' · скрипт задлан шинжлэгдэв',s.err&&!s.fns.length,'дутуу: '+JSON.stringify(s.fns));
   ok(nm+' · JS-ийн үхлийн алдаа алга',fatal.length===0,JSON.stringify(fatal.slice(0,2)));
-  ok(nm+' · интро өөрөө арилав',!s.intro);
+  /* Хөтөч видеог тоглуулж чадвал интро дуусах хүртэл (7.6 сек) үлдэнэ —
+     энэ нь зөв. Хуучин шалгалт 1.8 секундэд арилсан байхыг шаарддаг
+     байсан (видео тоглохгүй гэж тооцсон) тул H.264 тоглуулдаг Chromium
+     дээр худал унадаг байв. "Өөрөө арилах" гэдгийг аппын өөрийн дээд
+     хязгаар (20 сек) дотор шалгана. */
+  const introGone=!s.intro||await p.waitForFunction(()=>!document.getElementById('introOverlay'),
+    null,{timeout:21000}).then(()=>true,()=>false);
+  ok(nm+' · интро өөрөө арилав',introGone);
   ok(nm+' · нэвтрэх талбар харагдав',s.login);
   ok(nm+' · хувилбар уншигдав',/^\d{4}\.\d{2}\.\d{2}·\d+$/.test(s.build),s.build);
   await ctx.close();

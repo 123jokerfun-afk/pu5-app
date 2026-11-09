@@ -322,8 +322,8 @@ async function uiFlow(pg){
       modal:[...document.querySelectorAll('.overlay.open')].map(o=>o.id).join(',')}});
   // Элементийг харагдах хэсэгт гүйлгэж, төвд нь хуруугаар дарна
   // Бөмбөрөгийн мөр transform-оор байрладаг тул түүнийг гүйлгэхгүй (noScroll)
-  // Дэлгэц шилжих хөдөлгөөний дунд дарвал өөр товч дарагдана (жишээ нь
-  // Fold дээр "Дүн") — байрлал 2 удаа хэмжихэд хөдлөөгүй үед л дарна
+  // Дэлгэц шилжих хөдөлгөөний дунд дарвал өөр товч дарагдана — байрлал
+  // 2 удаа хэмжихэд хөдлөөгүй үед л дарна
   const tapAt=async(js,wait,noScroll)=>{
     const c=await pg.evaluate(async([js,ns])=>{const e=(0,eval)(js);if(!e)return null;
       if(!ns)e.scrollIntoView({block:'center'});
@@ -383,14 +383,7 @@ async function uiFlow(pg){
   await B.gotoPass(pg);
   await pg.evaluate(()=>{const e=document.getElementById('errBanner');if(e)e.remove()});
   await tap('.track-card[data-tid="tu"]',450);
-  /* Fold (280px)-д толгой багтахгүй тул товч дарах мөчид ripple-ийн
-     overflow:hidden "эхнээс →" товчийг агшааж, төвд нь дарвал "Дүн"
-     нээгддэг (тусдаа алдаа). Харагдах зүүн хэсгээр нь дарна. */
-  {const b=await pg.evaluate(async()=>{const e=document.getElementById('walkBtn');
-     let r=e.getBoundingClientRect(),p=null;          // шилжих хөдөлгөөн зогсохыг хүлээнэ
-     for(let k=0;k<20&&(!p||Math.abs(p.left-r.left)>0.5);k++){p=r;await new Promise(f=>setTimeout(f,90));r=e.getBoundingClientRect()}
-     return{x:r.left+12,y:r.top+r.height/2}});
-   await T.tap(pg,b.x,b.y);await pg.waitForTimeout(350)}
+  await tap('#walkBtn',350);
   await tapAt(`[...document.querySelectorAll('#walkModal button')].find(b=>/Ухарч/.test(b.textContent))`,400);
   out.trk=await pg.evaluate(()=>({view:(document.querySelector('.view.active')||{}).id,rev:isRevTrack(),
     first:(document.querySelector('#trackBody .sec-card[data-sid]')||{}).dataset.sid}));

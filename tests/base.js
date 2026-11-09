@@ -147,8 +147,14 @@ async function overflow(page){
       const r=el.getBoundingClientRect();
       if(r.width===0||r.height===0)return;
       if(r.right>vw+1.5||r.left<-1.5){
+        /* Зориуд хажуу тийш гүйлгэдэг хайрцаг дотор бол зөвшөөрнө.
+           Харин .view (overflow-y:auto) нь хөтөчид overflow-x-ийг ч auto
+           болгодог — түүнийг тоолбол дэлгэц доторх БҮХ элемент
+           алгасагдаж, Fold дээр толгойн товч дэлгэцээс гарсныг огт
+           барьдаггүй байв (v206). Хуудас хажуу тийш гүйлгэгдэх нь алдаа. */
         let p=el.parentElement,scrollable=false;
         while(p&&p!==document.body){const pc=getComputedStyle(p);
+          if(p.classList.contains('view'))break;
           if(pc.overflowX==='auto'||pc.overflowX==='scroll'){scrollable=true;break}
           p=p.parentElement}
         if(scrollable)return;
