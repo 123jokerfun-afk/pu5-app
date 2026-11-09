@@ -23,7 +23,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome herohome dashboard hometab tabnav
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto deletesync unitdel multi offlinelogout
-node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale robust swlogic uzlook  (удаан)
+node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale robust swlogic uzlook hdrtap  (удаан)
 node allE.js     # гүнзгий: e2e deep live fuzz×5  (хамгийн удаан)
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
@@ -82,6 +82,7 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `robust.js` | Найдвартай байдал — УБ-ын шөнийн цагт огноо өчигдөр болохгүй (UTC биш), утсанд бичиж чадаагүй үед мэдэгдэх, хэрэглэгчийн бичсэн нэр HTML-ээр тайлбарлагдахгүй, гарахдаа эхлээд илгээж дараа нь нэвтрэлтээс гарах, `?v=` хаягт үлдэхгүй, «Нийт дэр оруулах»-д андуурсан их тоог асуух |
 | `swlogic.js` | `sw.js`-ийн fetch логикийг Node дээр хуурамч кэш, сүлжээтэй шалгана — сүлжээгүй үед `?v=`-тэй хаяг ч кэшнээс нээгдэх. (Playwright-ийн `setOffline` service worker-ийн өөрийн fetch-ийг тасалдаггүй тул хөтөч дээр шалгах боломжгүй) |
 | `uzlook.js` | Uulzwar-ын неоморф загвар — сонголт хадгалаагүй үед цайвар загвар анхдагч (харанхуйг сонгосон бол хэвээр), #dfe5ed дэвсгэр/#eaeef4 товгор гадаргуу/хос сүүдэр, дарахад хуруу дарсан тал руугаа 3D хазайж суух (гүйлгэвэл суллагдах, удаан дарж устгахад богино товшилтод улаан анивчихгүй), байрлалдаа transform ашигладаг элемент хамаарахгүй, бичгийн тодрол ≥ 2.75:1, харанхуй загвар хөндөгдөөгүй, хөдөлгөөн багасгах тохиргоог дагах |
+| `hdrtap.js` | Толгойн товч ЗӨВ товч дарагдах уу — 7 утас бүр дээр дэлгэц бүрийн толгойн товчийг CDP touch-оор төвд нь дарж onclick-ийн зөв функц дуудагдсан, товч дэлгэц дотор, төвийг нь өөр зүйл хучаагүй, ≥28px, гарчигт ≥60px үлдсэн, дарах мөчид мөрийн товч хөдлөхгүй (ripple нь товчны `overflow`-г хөндөхгүй) эсэх. v205-д Fold дээр "эхнээс →" дарахад "Дүн" нээгддэг байсан |
 | `e2e.js` | ПД-7 хэсгийн БҮТЭН урсгал — бүртгэл, ухрах, гол/салбар зам, сум, агуулах, төлөвлөгөө, өв, тайлан, экспорт, үүл |
 | `deep.js` | Дэлгэц, цонх бүрийн товчийг ҮНЭХЭЭР дарж үзнэ — 200+ товч |
 | `live.js` | Амьдралын мөчлөг — дахин ачаалалт, унасан үеийн засвар, бүх экспорт, офлайн |
