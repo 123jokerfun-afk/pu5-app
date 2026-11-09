@@ -233,6 +233,14 @@ ok('?v=-тэй хүсэлт кэшийг алгасаж сүлжээнээс ш�
     },(m?m[2].split(',').map(x=>x.trim().replace(/'/g,'')).filter(Boolean):[]));
     await p3.reload({waitUntil:'load'});
     await p3.waitForTimeout(2500);
+    /* Апп видеог интро ДУУССАНЫ дараа кэшилдэг (сүлжээг зэрэг дүүргэхгүй).
+       Хөтөч H.264 тоглуулдаг бол интро 7.6 сек үргэлжилнэ — 2.5 сек
+       хүлээхэд кэш хоосон байж худал унадаг байв. Аппын өөрийн дээд
+       хязгаар (20 сек) хүртэл интро арилж, татаж дуусахыг хүлээнэ. */
+    await p3.waitForFunction(()=>!document.getElementById('introOverlay'),null,{timeout:21000}).catch(()=>{});
+    await p3.waitForFunction(async n=>{
+      const c=await caches.open(n);const q=await c.match('intro.mp4');return !!q
+    },m?m[1]:'',{timeout:8000,polling:250}).catch(()=>{});
     const r=await p3.evaluate(async()=>{
       const ks=(await caches.keys()).filter(k=>/^intro-/.test(k));
       const out={keys:ks};

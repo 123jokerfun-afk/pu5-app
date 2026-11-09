@@ -224,6 +224,29 @@ button{font-family:inherit}
    сүүдэртэйгээр "дотогшоо суудаг" (:active transform нь доор 1096,
    1148-р мөрийн нийтлэг дүрэмд аль хэдийн тодорхойлогдсон) */
 .icon-btn:active{box-shadow:inset 2px 2px 5px rgba(196,150,50,.18),inset -2px -2px 5px rgba(255,255,255,.75)}
+/* ── Толгойн мөр: товч хэзээ ч агшихгүй, зөвхөн гарчиг товчилно ──
+   Гарчгийн хайрцаг min-width:auto байхад урт үг (тэмдэглэл, салбар
+   замын нэр) мөрийг дэлгэцээс түлхэж, устгах товч гадуур гардаг байв.
+   Гарчиг, дэд мөр 2 мөрөөс хэтрэхгүй — үлдсэнийг "…" болгоно. */
+.pg-hdr-row>button{flex-shrink:0}
+.pg-hdr-row>div{min-width:0}
+.pg-hdr-row .pg-title,.pg-hdr-row .pg-sub{overflow-wrap:anywhere;word-break:break-word;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* Замын толгойд 4 товч бий (Буцах, явах чиглэл, Дүн, устгах) — 280px-д
+   ≈340px шаарддаг байв. Нарийн дэлгэцэнд бичгийг (.hb-tx) нууж дүрсийг
+   үлдээнэ; товч бүр ≥32px өргөн хэвээр. Бусад дэлгэцийн толгой (2 товч
+   хүртэл) 280px-д ч багтдаг тул хөндөхгүй. */
+@media (max-width:400px){
+  #trackView .pg-hdr-row{gap:8px}
+  #trackView .back-btn .hb-tx{display:none}
+  #trackView .back-btn{min-width:32px;min-height:32px;justify-content:center;padding:6px 4px}
+  #trackView .back-btn::before{margin:0 0 0 4px}
+}
+@media (max-width:340px){
+  #trackView .pg-hdr-row{gap:6px}
+  #trackView .pg-hdr-row .hb-tx{display:none}
+  #trackView .pg-hdr-row .icon-btn{min-width:34px;padding:6px 10px}
+}
 .home-body{padding:0 0 100px;flex:1;overflow-y:auto}
 /* Нэвтрэх дэлгэцтэй адилхан зөөлөн товойлгосон (neumorphic) цайвар
    өнгө — өмнөх тод наран мандах градиентын оронд. Харанхуй загварт
@@ -234,7 +257,18 @@ button{font-family:inherit}
 .hero::before{content:'';position:absolute;inset:0;
   background:url("data:image/svg+xml,%3Csvg width='400' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(196,150,50,.06)' stroke-width='1.5'%3E%3Cline x1='0' y1='100' x2='400' y2='100'/%3E%3Cline x1='0' y1='120' x2='400' y2='120'/%3E%3Cline x1='40' y1='80' x2='40' y2='140'/%3E%3Cline x1='110' y1='80' x2='110' y2='140'/%3E%3Cline x1='180' y1='80' x2='180' y2='140'/%3E%3Cline x1='250' y1='80' x2='250' y2='140'/%3E%3Cline x1='320' y1='80' x2='320' y2='140'/%3E%3Cline x1='390' y1='80' x2='390' y2='140'/%3E%3C/g%3E%3C/svg%3E") center/cover;opacity:.6}
 .hero-top{display:flex;align-items:flex-start;justify-content:space-between;position:relative}
-.hero-logo{display:flex;align-items:center;gap:12px}
+.hero-logo{display:flex;align-items:center;gap:12px;min-width:0}
+.hero-logo>div:last-child{min-width:0;overflow-wrap:anywhere}
+/* Нүүрний толгойн 4 товч (≈165px). Galaxy Fold (280px) дээр "Засах"
+   товч дэлгэцээс 16px гарч байв. Товч агшихгүй — нарийн дэлгэцэнд
+   аппын том дүрсийг нууж, товчийг нягтруулна. */
+.hero-acts{display:flex;gap:6px;flex-shrink:0}
+@media (max-width:340px){
+  #homeView .hero-icon{display:none}
+  .hero-acts{gap:4px}
+  .hero-acts .hero-edit{padding:9px}
+  [data-theme="dark"] .hero-acts .hero-edit{width:32px}
+}
 /* Гэрэлтэй загварт толгой цайвар болсон тул цагаан бичиг/шилэн товч
    харагдахаа больж, ГЭРЭЛТ ТОВОЙЛГОСОН (neumorphic) — карттай ижил
    var(--card)/var(--sh-sm) хэрэглэдэг болов. Харанхуй загварт доор
@@ -1065,6 +1099,9 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .sum-block-title{font-size:10px;font-weight:800;color:var(--ink4);
   text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
 .sum-totals{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+/* "ТЭНЦЭХГҮЙ", "ЗАМЫН ТОО" шошго 1fr баганыг агшаахгүй тул Fold (280px)
+   дээр 4 дэх нүд дэлгэцээс гардаг байв — 2×2 болгоно. */
+@media (max-width:340px){.sum-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .sum-tot{text-align:center;background:var(--bg);border-radius:var(--rs);padding:8px 4px}
 .sum-tot-n{font-size:22px;font-weight:900;line-height:1}
 .sum-tot-l{font-size:9px;color:var(--ink3);margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
@@ -1427,6 +1464,11 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 @keyframes ripple{from{opacity:.5;transform:scale(0)}to{opacity:0;transform:scale(2.6)}}
 .rip{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.85),transparent 65%);
   pointer-events:none;animation:ripple .55s ease-out forwards;z-index:5}
+/* Долгионыг тайрах давхарга. Товч өөрөө overflow:hidden болвол flex
+   мөрөнд агшдаг тул (initRipple-ийн тайлбар) тайралтыг энд хийнэ.
+   inset-ийг хуучин Safari ойлгодоггүй тул 4 талаар нь бичив. */
+.rip-box{position:absolute;top:0;right:0;bottom:0;left:0;overflow:hidden;
+  border-radius:inherit;pointer-events:none;z-index:5}
 /* Progress ring */
 .pring{transform:rotate(-90deg)}
 .pring circle{transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1),stroke .4s ease}
@@ -1494,6 +1536,12 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .cs-btn:active{transform:scale(.96)}
 .cs-btn.sel{box-shadow:0 0 0 2.5px var(--ink) inset;filter:saturate(1.15)}
 .cs-4 .cs-l{font-size:8.5px}
+/* "5+ ДАРААЛСАН" шошгын урт үг 1fr баганыг агшаахгүй тул Fold (280px)
+   дээр 3 дахь нүд дэлгэцээс 4px гардаг байв. Зай, үсгийг нягтруулна. */
+@media (max-width:340px){
+  .consec-summary .cs-cell{padding:8px 4px}
+  .consec-summary .cs-l{font-size:8.5px;letter-spacing:.02em}
+}
 .rp-carve{background:var(--blue-bg);border-color:var(--blue-mid)!important}
 .rd-carve{background:var(--blue)!important;color:#fff!important}
 .mat-tag{font-size:9px;padding:2px 6px;border-radius:5px;font-weight:800;flex-shrink:0;
@@ -2518,7 +2566,7 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
           <div class="hero-text-sub" id="heroSub">Замын 3-р анги · Дэр бүртгэл</div>
         </div>
       </div>
-      <div style="display:flex;gap:6px">
+      <div class="hero-acts">
         <button class="hero-edit" onclick="toggleTheme()" aria-label="Өнгө солих" id="themeBtn"></button>
         <button class="hero-edit" onclick="showSummaryAll()" aria-label="Дүн"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         <button class="hero-edit" onclick="openReportSettings()" aria-label="Тохиргоо"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
@@ -2641,13 +2689,13 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
 <div class="view" id="trackView">
   <div class="pg-hdr">
     <div class="pg-hdr-row">
-      <button class="back-btn" onclick="backFromTrack()">Буцах</button>
+      <button class="back-btn" onclick="backFromTrack()" aria-label="Буцах"><span class="hb-tx">Буцах</span></button>
       <div style="flex:1">
         <div class="pg-title" id="tvTitle">—</div>
         <div class="pg-sub" id="tvSub">—</div>
       </div>
       <button class="icon-btn" id="walkBtn" onclick="askWalk()" style="display:none" aria-label="Явах чиглэл"><span id="walkBtnLbl">→</span></button>
-      <button class="icon-btn" onclick="showTrackSummary()"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Дүн</button>
+      <button class="icon-btn" onclick="showTrackSummary()" aria-label="Дүн"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="hb-tx"> Дүн</span></button>
       <button class="icon-btn" onclick="deleteTrack()" style="color:var(--red)" aria-label="Устгах"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
   </div>
@@ -4633,18 +4681,33 @@ function _p3dInit(){
     clearTimeout(b._icT);b._icT=setTimeout(()=>b.classList.remove('ic-spin'),560)
   },true)
 }
+/* Долгионыг товчны ӨӨРИЙНХ нь overflow-оор биш, тусдаа .rip-box
+   давхаргаар тайрна. Өмнө нь товч дээр overflow:hidden тавьдаг байв.
+   Flex мөрөнд overflow:hidden болсон товчны min-width:auto нь 0 болж,
+   дарах ЯГ тэр мөчид товч агшиж, хөрш товч нь хуруун доор шилжин
+   ирдэг байлаа — Galaxy Fold дээр "эхнээс →" дарахад "Дүн" нээгддэг
+   байсан (v206, tests/hdrtap.js). Товчны layout-ыг энд ХӨНДӨХГҮЙ.
+   clip-path бүү ашигла — неоморф товчны гадна сүүдрийг тайрна. */
 function initRipple(){
   document.addEventListener('pointerdown',function(e){
     const t=e.target.closest('.exp-btn,.btn-ok,.add-sec-btn,.round-btn,#loginBtn,.icon-btn');
     if(!t)return;
-    const cs=getComputedStyle(t);
-    if(cs.position==='static')t.style.position='relative';
-    t.style.overflow='hidden';
+    // offset-гүй relative нь байрлалыг өөрчлөхгүй — зөвхөн .rip-box-ийн суурь
+    if(getComputedStyle(t).position==='static')t.style.position='relative';
+    let box=t.querySelector(':scope>.rip-box');
+    if(!box){
+      box=document.createElement('span');box.className='rip-box';
+      box.setAttribute('aria-hidden','true');t.appendChild(box)
+    }
     const r=t.getBoundingClientRect(),d=Math.max(r.width,r.height);
     const s=document.createElement('span');s.className='rip';
     s.style.width=s.style.height=d+'px';
-    s.style.left=(e.clientX-r.left-d/2)+'px';s.style.top=(e.clientY-r.top-d/2)+'px';
-    t.appendChild(s);setTimeout(function(){s.remove()},580)
+    // .rip-box нь хүрээний ДОТОР эхэлдэг тул хүрээний зузааныг хасна
+    s.style.left=(e.clientX-r.left-t.clientLeft-d/2)+'px';
+    s.style.top=(e.clientY-r.top-t.clientTop-d/2)+'px';
+    box.appendChild(s);
+    // Давхарга нь товчинд үүрд үлдэхгүй — DOM анхных шигээ болно
+    setTimeout(function(){s.remove();if(!box.firstChild)box.remove()},580)
   },{passive:true})
 }
 
@@ -6772,7 +6835,10 @@ function renderTrackView(){
   if(wb){
     wb.style.display=canWalk?'':'none';
     wb.style.color=rev?'var(--purple)':'';
-    if(wl)wl.textContent=rev?'← ухарч':'эхнээс →'
+    // Нарийн дэлгэцэнд үг (.hb-tx) нуугдаж сум л үлдэнэ — чиглэлийг
+    // сумны зүг, ухрахад нил ягаан өнгө, aria-label хэлж өгнө.
+    if(wl)wl.innerHTML=rev?'←<span class="hb-tx"> ухарч</span>':'<span class="hb-tx">эхнээс </span>→';
+    wb.setAttribute('aria-label','Явах чиглэл: '+(rev?'ухарч':'эхнээс'))
   }
   const ksh=document.getElementById('kmSwipeHint');
   if(ksh){
@@ -15846,7 +15912,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.06·205';
+const APP_BUILD='2026.11.09·206';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
