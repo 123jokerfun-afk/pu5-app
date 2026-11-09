@@ -23,7 +23,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
 node allB.js     # flow8 flow9 overlap notch swhome herohome dashboard hometab tabnav
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto deletesync unitdel multi offlinelogout
-node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale robust swlogic uzlook hdrtap  (удаан)
+node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk revhide inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale robust swlogic uzlook hdrtap  (удаан)
 node allE.js     # гүнзгий: e2e deep live fuzz×5  (хамгийн удаан)
 node sweepA.js   # 4 утасны байрлал
 node sweepB.js   # үлдсэн 3 утас
@@ -74,6 +74,7 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `branch2.js` | Салбар замын нүүр — Зам/Сум хоёр цонх, бүх ажил тэндээ, буцах зам |
 | `hub.js` | Өртөө ↔ салбар: паспортын заагч тусдаа, өгөгдөл холилдохгүй |
 | `walk.js` | Явах чиглэл — буцах замдаа бүртгэх; ухрах горимоос гарах бүх зам; дараалсан цэг чиглэлээс хамаарахгүй |
+| `revhide.js` | Ухарч бүртгэж байхад утас унтраад асах (`visibilitychange`, `pagehide`/`pageshow`) — асахад ЯВАХ дараалал сэргэж бүртгэл зөв үргэлжлэх, олон удаа унтраах, нуугдаж байхад ирсэн үүлний шинэчлэлт, баталгаажуулах горим, апп гэнэт хаагдсан үеийн дутуу үе (`_migrateDB`); **жинхэнэ товчоор** (CDP touch) 5 утасны хэмжээнд — жойстикийн 5 чиглэл, гарын товч, буцаах, засах цонх ба дарж бичих асуулт НЭЭЛТТЭЙ үед унтраах, бөмбөрөг чирэх, "Дараагийн →", "Буцах", Android-ын буцах |
 | `inv.js` | Дүнзний агуулах — орлого (хүрд), зарлага, үлдэгдэл, үлдэгдэлгүй уртыг сонгуулахгүй |
 | `plan.js` | Солихоор төлөвлөх (дэр, дүнз, сумын рам замын дэр), тэмдэглэгээ, "сольсноор хэдэн хувь болох", дэрийн агуулах, захын тохиолдлууд |
 | `seasonguard.js` | Ижил он+улирлын хоёр дахь паспорт (дэр, сум) үүсгэхийг хориглох — Улирал сонголтын идэвхгүй/нуугдах, нөөц хамгаалалт, трэшинд байгаа нь давхардалд тооцогдохгүй |
