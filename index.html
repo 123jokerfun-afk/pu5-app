@@ -2370,6 +2370,7 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
         <svg class="ic" viewBox="0 0 24 24" width="24" height="24"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div id="delMsg" style="font-size:15px;font-weight:600;color:var(--ink);line-height:1.5"></div>
+      <div id="delWarn" class="warn-pill" style="display:none;margin:12px 0 0"></div>
       <div class="modal-btns">
         <button class="btn-cancel" id="delNoBtn">Болих</button>
         <button class="btn-del-yes" id="delYesBtn">Устгах</button>
@@ -2422,14 +2423,14 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
   <div class="home-body" style="padding:14px 14px 40px"><div id="profBody"></div></div>
 </div>
 
-<!-- ХОГИЙН САВ: устгасан паспорт (дэр ба сум), 30 хоногийн дотор сэргээж болно -->
+<!-- ХОГИЙН САВ: устгасан паспорт (дэр ба сум) 30 хоног хадгалагдана — СЭРГЭЭДЭГГҮЙ, зөвхөн Excel татна -->
 <div class="overlay" id="trashModal">
   <div class="sheet"><div class="sheet-handle"></div><div class="sheet-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="sheet-title" style="margin:0">🗑 Хогийн сав</div>
       <button onclick="closeModal('trashModal')" class="x-btn" aria-label="Хаах">×</button>
     </div>
-    <div style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Устгасан паспорт 30 хоногийн дотор өгөгдлийн хамт нь сэргээгдэх боломжтой. Хугацаа өнгөрвөл автоматаар бүр мөсөн устна.</div>
+    <div id="trashNote" style="font-size:11px;color:var(--ink3);font-weight:600;margin-bottom:10px">Устгасан паспорт энд 30 хоног хадгалагдана. Энэ хугацаанд ПУ-5 дэвтрийг нь Excel-ээр татаж болно; буцааж сэргээх боломжгүй. Хугацаа өнгөрвөл автоматаар бүр мөсөн устна.</div>
     <div id="trashBody"></div>
     <div style="height:calc(18px + var(--sab))"></div>
   </div></div>
@@ -9560,7 +9561,7 @@ function closeFolder(){
 async function deleteFolder(fid,e){
   if(e)e.stopPropagation();
   const f=DB.folders.find(x=>x.id===fid);if(!f)return;
-  if(!await confirmDelete(f.name))return;
+  if(!await confirmDelete(f.name,f))return;
   _deleteFolderCore(fid)
 }
 /* Цонх/анимацигүй бодит устгалт (trashedAt тэмдэглэл) — doLogout/
@@ -10298,11 +10299,31 @@ const SB_DEL={
    (appConfirm бол бусад олон газар хэрэглэгддэг нийтлэг модал тул
    энд хөндөхгүй, тусдаа #delModal). Үр дүн appConfirm-тай ижил
    true/false. SB_DEL-д hold байхгүй тул үргэлж бүтнээрээ тоглоно. */
-async function confirmDelete(name){
+/* Паспортад бичигдсэн СОЛИЛТЫН бүртгэлийн тоо. Сольсон огноо шинэ
+   паспортад хуулагддаггүй, resolveReplMap/swResolveDRepl/swResolveSlRepl
+   нь өмнөх паспортоос уншдаг тул энэ паспорт хогийн саванд орсон даруйд
+   дараагийн паспортуудад харагдаж байсан огноо алга болно. Устгахаас
+   өмнө хэдэн бүртгэл алдагдахыг хэлэхэд ашиглана. */
+function _replCount(f){
+  let n=0;const c=o=>{n+=Object.keys(o||{}).length};
+  ((f&&f.tracks)||[]).forEach(t=>(t.sections||[]).forEach(x=>c(x.repl)));
+  ((f&&f.turnouts)||[]).forEach(t=>{c(t.dRepl);c(t.slRepl)});
+  return n
+}
+async function confirmDelete(name,f){
   const yesBtn=document.getElementById('delYesBtn');
   const noBtn=document.getElementById('delNoBtn');
+  /* Өмнө нь "30 хоногийн дотор сэргээж болно" гэж бичдэг байсан ч v189-өөс
+     хойш хогийн саванд сэргээх үйлдэл БАЙХГҮЙ (ижил он+улирлын шинэ
+     паспорттай давхцахаас сэргийлсэн) — зөвхөн Excel татна. Буцааж болно
+     гэж андуурч устгахаас сэргийлж үнэнийг нь бичив. */
   document.getElementById('delMsg').textContent=
-    `"${name}" паспортыг хогийн сав руу шилжүүлнэ. 30 хоногийн дотор сэргээж болно.`;
+    `"${name}" паспортыг хогийн сав руу шилжүүлнэ. 30 хоногийн дотор ПУ-5 дэвтрийг нь Excel-ээр татаж болно. Буцааж сэргээх боломжгүй.`;
+  const w=document.getElementById('delWarn'),rn=_replCount(f);
+  if(w){
+    w.style.display=rn?'':'none';
+    w.textContent=rn?`⚠ Энэ паспортад ${rn} солилтын бүртгэл бий. Устгавал дараагийн паспортуудад сольсон огноо харагдахгүй болно.`:''
+  }
   yesBtn.disabled=false;noBtn.disabled=false;
   openModal('delModal');
   const go=await new Promise(resolve=>{
@@ -12928,7 +12949,7 @@ function addSwFolder(){
 async function delSwFolderById(id,e){
   if(e)e.stopPropagation();
   const f=(DB.sw||[]).find(x=>x.id===id);if(!f)return;
-  if(!await confirmDelete(f.name))return;
+  if(!await confirmDelete(f.name,f))return;
   _delSwFolderByIdCore(id)
 }
 /* Цонх/анимацигүй бодит устгалт — _deleteFolderCore-ийн сумын хувилбар. */
@@ -15934,7 +15955,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.09·207';
+const APP_BUILD='2026.11.10·208';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
