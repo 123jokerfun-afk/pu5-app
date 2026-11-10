@@ -37,7 +37,7 @@ async function grab(call){
   return {wb,name:r.name}
 }
 
-// ── Дэр: устгах → трэш → сэргээх ──
+// ── Дэр: устгах → трэш → Excel архив (сэргээдэггүй) ──
 await page.evaluate(()=>{
   DB.folders=[{id:'f1',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-01-01',sc:'ПД-6',
     tracks:[{id:'t1',num:1,kind:'station',sections:[{id:'s1',type:'normal',label:'1-р үе',
@@ -133,6 +133,55 @@ const purgeAuto=await page.evaluate(()=>{
 ok('30+ хоногийнх автоматаар бүр мөсөн устана',!purgeAuto.folders.includes('old31')&&!purgeAuto.sw.includes('swold31'),
    JSON.stringify(purgeAuto));
 ok('29 хоногийнх хэвээр үлдэнэ',purgeAuto.folders.includes('old29'),JSON.stringify(purgeAuto));
+
+/* ── Устгах цонх үнэнийг хэлнэ (v208) ──────────────────────────
+   Өмнө нь цонх "30 хоногийн дотор сэргээж болно" гэдэг байсан ч сэргээх
+   үйлдэл байхгүй. Мөн сольсон огноо шинэ паспортад хуулагддаггүй тул
+   хуучин паспорт хогийн саванд орсон даруйд дараагийн паспортод
+   харагдаж байсан огноо алга болдог — үүнийг устгахаас ӨМНӨ хэлнэ. */
+console.log('\nУстгах цонхны бичвэр, анхааруулга');
+await page.evaluate(()=>{
+  const sec=(repl)=>({id:'s1',type:'normal',label:'1-р үе',
+    sleepers:[{type:'normal',ts:0},{type:'normal',ts:0},{type:'bad',ts:0}],repl});
+  DB.folders=[
+    {id:'fa',name:'Хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+      tracks:[{id:'ta',num:1,kind:'station',sections:[sec({0:{d:'2026-05-12',t:'normal',m:'wood'},
+                                                           1:{d:'2026-05-13',t:'normal',m:'wood'}})]}]},
+    {id:'fb',name:'Намар 2026',season:'намар',year:'2026',date:'2026-09-01',sc:'ПД-6',
+      tracks:[{id:'tb',num:1,kind:'station',sections:[sec(undefined)]}]}];
+  DB.sw=[{id:'sfa',name:'Сум хавар 2026',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
+    turnouts:[{id:'w1',num:1,mak:'Р-65',mark:'1/11',head:2,it:'nnnn',
+      dRepl:{2:{d:'2026-05-12',L:3,o:1}},slRepl:{0:{d:'2026-05-12'}}}]}];
+  saveDB();openFolder('fb')});
+const inh=()=>page.evaluate(()=>{const t=DB.tracks[0];
+  const m=resolveReplMap(t,t.sections[0]);return Object.keys(m).map(k=>k+(m[k].own?'':'*')).join(',')});
+ok('Шинэ паспортад өмнөх паспортын сольсон огноо уламжилж харагдана',await inh()==='0*,1*',await inh());
+const dlg=async call=>{
+  await page.evaluate(c=>{window.__dp=new Function('return '+c)()},call);
+  await page.waitForFunction(()=>document.getElementById('delModal').classList.contains('open'),{timeout:2000});
+  const r=await page.evaluate(()=>{const w=document.getElementById('delWarn');
+    return {msg:document.getElementById('delMsg').textContent,
+      warnOn:!!w&&getComputedStyle(w).display!=='none',warn:w?w.textContent:''}});
+  await page.click('#delNoBtn');await page.evaluate(()=>window.__dp);await page.waitForTimeout(120);
+  return r};
+const d1=await dlg("deleteFolder('fa')");
+ok('Цонх "сэргээж болно" гэж худал хэлэхгүй',!/сэргээж болно/.test(d1.msg),d1.msg);
+ok('Цонх Excel татаж болохыг, сэргээх боломжгүйг хэлнэ',/Excel/.test(d1.msg)&&/сэргээх боломжгүй/.test(d1.msg),d1.msg);
+ok('Солилтын бүртгэлтэй паспортад анхааруулга гарч, тоог нь хэлнэ',
+   d1.warnOn&&/2 солилтын бүртгэл/.test(d1.warn)&&/сольсон огноо/.test(d1.warn),d1.warn);
+ok('"Болих" дарвал устгагдаагүй, огноо хэвээр',
+   await page.evaluate(()=>!DB.folders[0].trashedAt)&&await inh()==='0*,1*');
+const d2=await dlg("deleteFolder('fb')");
+ok('Солилтын бүртгэлгүй паспортад анхааруулга гарахгүй',!d2.warnOn&&d2.warn==='',JSON.stringify(d2.warn));
+const d3=await dlg("delSwFolderById('sfa')");
+ok('Сумын паспорт: дүнз + рам дэрийн солилтыг нийлүүлж тоолно',d3.warnOn&&/2 солилтын бүртгэл/.test(d3.warn),d3.warn);
+ok('Сумын паспорт: цонхны бичвэр мөн үнэн',!/сэргээж болно/.test(d3.msg)&&/сэргээх боломжгүй/.test(d3.msg),d3.msg);
+// Анхааруулга ҮНЭН эсэх: хуучин паспорт хогийн саванд ормогц огноо алга болно
+await page.evaluate(()=>{_deleteFolderCore('fa');openFolder('fb')});
+ok('Хуучин паспортыг устгасны дараа уламжилсан огноо харагдахгүй (анхааруулга үнэн)',await inh()==='',await inh());
+const note=await page.evaluate(()=>(document.getElementById('trashNote')||{textContent:''}).textContent);
+ok('Хогийн савны тайлбар: сэргээнэ гэж хэлэхгүй, Excel татахыг заана',
+   !/сэргээгдэх боломжтой/.test(note)&&/Excel/.test(note)&&/сэргээх боломжгүй/.test(note),note.slice(0,80));
 
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('Консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
