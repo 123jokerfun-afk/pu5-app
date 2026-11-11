@@ -1,0 +1,61 @@
+// Ашигласан материалын бүртгэл. R('түлхүүр') анх иш татсан дарааллаар дугаар оноож "[n]" буцаана.
+const LIST = {
+  ubtz25: '«Улаанбаатар төмөр зам» ХНН 2025 онд 33.7 сая тонн ачаа тээвэрлэж, ачаа тээврийн шинэ дээд амжилт тогтоожээ. ikon.mn, 2026. [Онлайн]. Хаяг: https://ikon.mn/n/3kh9 [[холбоосыг нягтлах]]',
+  ubtz24: '«“УБТЗ” ХНН 2024 онд 33.4 сая тонн ачаа тээвэрлэж өмнөх онд үзүүлсэн түүхэн дээд амжилтаа ахиулжээ». ikon.mn. [Онлайн]. Хаяг: https://ikon.mn/n/3br3',
+  zu25: '«Өнгөрсөн онд Замын-Үүдийн төмөр замаар 18.3 сая тонн ачаа тээвэрлэжээ». ikon.mn, 2026. [Онлайн]. Хаяг: https://ikon.mn/n/3kmk',
+  newlines: 'Embassy of Mongolia in Türkiye, «Mongolia’s Railway Network Expands by Over 850 Kilometers». [Онлайн]. Хаяг: https://www.mongolianembassy.com.tr/hbr_922_mongolias-railway-network-expands-by-over-850-kilometers',
+  crossb: 'Construction Briefing, «Mongolia and China to build 19.5km cross-border railway by 2028». [Онлайн]. Хаяг: https://www.constructionbriefing.com/news/mongolia-and-china-to-build-195km-cross-border-railway-by-2028/8055134.article',
+  conf26: 'Төмөр замын газар, «Ухаалаг төмөр зам ба инженерчлэл – 2026» эрдэм шинжилгээний хурлын удирдамж. Улаанбаатар, 2026.',
+  po6file: 'Замын 3-р анги, «2026 оны намрын паспортын үзлэгийн нэгдсэн маягт (ПО-6 Маягт-1, Маягт-2, хавсралтууд)», Excel файл, 2026.09.25.',
+  sw: 'W3C, «Service Workers». [Онлайн]. Хаяг: https://www.w3.org/TR/service-workers/',
+  fra: 'U.S. Federal Railroad Administration, «Track safety standards», 49 CFR Part 213. [Онлайн]. Хаяг: https://www.ecfr.gov/current/title-49/subtitle-B/chapter-II/part-213',
+  assetpro: 'MaxAccel, «AssetPro Track – 49 CFR Part 213 compliance». [Онлайн]. Хаяг: https://maxaccel.com/assetpro-track-49-cfr-part-213-compliance/',
+  yakov: 'Т. Г. Яковлева, Н. И. Карпущенко, С. И. Клинов, *Железнодорожный путь*. Москва, 2001.',
+  klepp: 'M. Kleppmann, *Designing Data-Intensive Applications*. Sebastopol, CA: O’Reilly Media, 2017.',
+  article: (process.env.DIPLOM_AUTHOR_CITE || 'Зохиогч') + ', «Төмөр замын суурь бүтцийн дэр, сумын дүнзний үзлэгийг цахимаар хөтлөх нь», «Ухаалаг төмөр зам ба инженерчлэл – 2026» эрдэм шинжилгээний хурлын өгүүлэл. Улаанбаатар, 2026.',
+  pu28: '«Форма ПУ-28. Книга записи результатов проверки пути, сооружений, путевых устройств и земляного полотна». vuzlit.com. [Онлайн]. Хаяг: https://vuzlit.com/960244/forma_kniga_zapisi_rezultatov_proverki_puti_sooruzheniy_putevyh_ustroystv_zemlyanogo_polotna',
+  scbist: 'СЦБИСТ, «Учетно-отчетные формы по содержанию и ремонту пути». [Онлайн]. Хаяг: https://scbist.com/puteicy/4171-uchetno-otchetnye-formy-po-soderzhaniyu-i-remontu-puti.html',
+  mns: 'MNS 6229:2021, *1520 мм царигтай төмөр зам. Техникийн ерөнхий шаардлага*. Улаанбаатар, 2021.',
+  hist: '«Ulaanbaatar Railway», «Trans-Mongolian Railway». Wikipedia. [Онлайн]. Хаяг: https://en.wikipedia.org/wiki/Ulaanbaatar_Railway [[УБТЗ-ын түүхийн албан ёсны эх сурвалжаар солих]]',
+  pol2010: 'Монгол Улсын Их Хурал, «Төрөөс төмөр замын тээврийн талаар баримтлах бодлого», УИХ-ын 2010 оны 6 дугаар сарын 24-ний өдрийн 32 дугаар тогтоол. [Онлайн]. Хаяг: https://legalinfo.mn',
+  vision: 'Монгол Улсын Их Хурал, «Алсын хараа-2050» Монгол Улсын урт хугацааны хөгжлийн бодлого, УИХ-ын 2020 оны 52 дугаар тогтоол [[тогтоолын дугаар, огноог нягтлах]]. [Онлайн]. Хаяг: https://legalinfo.mn',
+  recovery: 'Монгол Улсын Их Хурал, «Шинэ сэргэлтийн бодлого», УИХ-ын 2021 оны 12 дугаар сарын 30-ны өдрийн 106 дугаар тогтоол. [Онлайн]. Хаяг: https://legalinfo.mn',
+  sdg: 'United Nations, «Transforming our world: the 2030 Agenda for Sustainable Development», A/RES/70/1, 2015.',
+  transit: '«“УБТЗ” ХНН дамжин өнгөрөх чингэлгийн тээвэрт үзүүлдэг хөнгөлөлтөө буурууллаа». ikon.mn. [Онлайн]. Хаяг: https://ikon.mn/n/3ixb',
+  trains3850: '«“УБТЗ” ХНН өнгөрсөн онд 3,850 транзит чингэлгийн галт тэрэг аялуулжээ». ikon.mn, 2026. [Онлайн]. Хаяг: https://ikon.mn/n/3kpt',
+  staff: '«“УБТЗ” ХНН-ийн удирдах ажилтны зөвлөгөөн боллоо». ikon.mn. [Онлайн]. Хаяг: https://ikon.mn/n/3lsj',
+  wikirail: '«Rail transport in Mongolia». Wikipedia. [Онлайн]. Хаяг: https://en.wikipedia.org/wiki/Rail_transport_in_Mongolia [[албан ёсны эх сурвалжаар солих]]',
+  mtz: '«Mongolian railway company: A Year of Transformation from Criticism to Success». «Монголын төмөр зам» ТӨХК. [Онлайн]. Хаяг: https://www.mtz.mn/en/blogs/mongolian-railway-company-a-year-of-transformation-from-criticism-to-success',
+  ekasui: 'Иркутский государственный университет путей сообщения, ЕК АСУИ ашигласан Иркутск-Сортировочная дистанция пути-ийн судалгаа. [Онлайн]. Хаяг: https://mnv.irgups.ru/sites/default/files/articles_pdf_files/katasheva_asalhanova.pdf [[зохиогч, гарчгийг нягтлах]]',
+  agu4: 'NormaCS, «Технический паспорт формы АГУ-4» (ОАО «РЖД»-ийн 2005.12.28-ны 2277р захирамж). [Онлайн]. Хаяг: https://www.normacs.info/answers/1608',
+  rtri: 'ЦНТИ ОАО «РЖД», «Использование смартфонов для инспекции компонентов пути» (RTRI, Япон). [Онлайн]. Хаяг: https://lib.rgups.ru/site/assets/files/6520/ispol_zovanie_smartfonov_dlia_inspektcii_komponentov_puti.pdf',
+  lyco: '«Award-winning app makes track inspections more efficient». Infrastructure Magazine. [Онлайн]. Хаяг: https://infrastructuremagazine.com.au/award-winning-app-makes-track-inspections-more-efficient/',
+  aurora: 'Loram / Georgetown Rail Equipment, «Case study: Crosstie inspection capabilities of the Aurora system». [Онлайн]. Хаяг: https://loram.com/wp-content/uploads/Crosstie_Inspection_Capabilities_of_the_Aurora_System.pdf',
+  zetatech: 'Zeta-Tech Associates, Railway Tie Association, «Aurora report» (вагоноос машин хараагаар ба нүдээр хийсэн үзлэгийн харьцуулалт), 2009. [Онлайн]. Хаяг: https://www.rta.org/assets/docs/RTASponsoredResearch/WoodCrosstiePerformanceandInspection/aurora%20report%20final%2010-26-2009.pdf',
+  rtands: '«Maintenance-of-Way Challenges: Automated tie inspection». Railway Track & Structures. [Онлайн]. Хаяг: https://www.rtands.com/?p=4778',
+  cetra: 'Goswami, Sañudo, Ricci, «Simplified analysis of railway track degradation by mobile applications», CETRA 2022. [Онлайн]. Хаяг: https://cetra.grad.hr/ocs/index.php/cetra7/cetra2022/paper/view/1385',
+  usdot: 'Lu, Bridgelall, Tolliver нар, ухаалаг утсаар замын гадаргуугийн гажгийг илрүүлэх судалгаа, U.S. DOT, 2019. [Онлайн]. Хаяг: https://rosap.ntl.bts.gov/view/dot/88276 [[гарчиг, холбоосыг нягтлах]]',
+  borna: 'UIC, «2016 UIC Digital Awards — Safety: Borna Tech». [Онлайн]. Хаяг: https://uic.org/events/IMG/pdf/2016-uic-digital-awards-winner-safety_borna-tech.pdf',
+  borundur: '«УБТЗ-ын Бор-Өндөр өртөө автомат системд шилжжээ». ikon.mn. [Онлайн]. Хаяг: https://ikon.mn/n/3lfb',
+  zuinsp: '«“УБТЗ” ХНН: Хил дээр галт тэргэнд хийх үзлэг шалгалтын цаг багассан». ikon.mn. [Онлайн]. Хаяг: https://ikon.mn/n/3gw5',
+  cfr2024: 'U.S. Government Publishing Office, *49 CFR Part 213 — Track Safety Standards* (2024 оны 10-р сарын 1-ний хэвлэл), §213.109 «Crossties». [Онлайн]. Хаяг: https://www.govinfo.gov/content/pkg/CFR-2024-title49-vol4/pdf/CFR-2024-title49-vol4-part213.pdf',
+  cfr2011: 'U.S. Government Publishing Office, *49 CFR §213.109 «Crossties»* (2011 оны хэвлэл). [Онлайн]. Хаяг: https://www.govinfo.gov/content/pkg/CFR-2011-title49-vol4/pdf/CFR-2011-title49-vol4-sec213-109.pdf',
+  fr2011: 'Federal Railroad Administration, «Track Safety Standards; Concrete Crossties», Federal Register, 2011.04.01. [Онлайн]. Хаяг: https://www.federalregister.gov/documents/2011/04/01/2011-7666/track-safety-standards-concrete-crossties',
+  i2288: 'ОАО «РЖД», «Инструкция по текущему содержанию железнодорожного пути», 2016.11.14-ний 2288р захирамж. [Онлайн]. Хаяг: http://fmklab.ru/wp-content/uploads/2020/03/Instruktsiya-po-tekushhemu-2288r-ot-14.11.16.pdf',
+  kust: 'ИрГУПС (Красноярск), «Неисправности пути, причины их появления и способы устранения. 2 часть», сургалтын материал. [Онлайн]. Хаяг: https://sdo-ktzht.krsk.irgups.ru/mod/resource/view.php?id=15597',
+  artc2: 'ARTC, «Track & Civil Code of Practice, Section 2 — Sleepers and Fastenings». [Онлайн]. Хаяг: https://extranet.artc.com.au/docs/eng/track-civil/procedures/sf/Section2.pdf',
+  artcetw: 'ARTC, ETW-00-01 (Track & Civil). [Онлайн]. Хаяг: https://extranet.artc.com.au/docs/eng/track-civil/procedures/track-civil/ETW-00-01.pdf',
+  artcpc: 'ARTC, ETP0301F-05 «Points and crossings» маягт. [Онлайн]. Хаяг: https://extranet.artc.com.au/docs/eng/track-civil/forms/pc/ETP0301F-05.pdf',
+  daalgavar:'«ПУ-5 дэрийн дэвтрийг PWA цахим системд шилжүүлэх төслийн даалгавар». 2026.11.11.',
+  ubtz2030:'«Улаанбаатар төмөр зам» ХНН 2030 он гэхэд 50 сая тонн ачаа тээвэрлэх зорилт (мэдээ). [[эх сурвалжийн яг холбоосыг олох]]',
+};
+const order = [];
+function R(...keys) {
+  return '[' + keys.map(k => {
+    if (!LIST[k]) throw new Error('ref ' + k);
+    let i = order.indexOf(k); if (i < 0) { order.push(k); i = order.length - 1; }
+    return i + 1;
+  }).join(', ') + ']';
+}
+function refList() { return order.map(k => LIST[k]); }
+module.exports = {R, refList};
