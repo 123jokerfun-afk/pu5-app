@@ -46,8 +46,23 @@ const LIST = {
   artc2: 'ARTC, «Track & Civil Code of Practice, Section 2 — Sleepers and Fastenings». [Онлайн]. Хаяг: https://extranet.artc.com.au/docs/eng/track-civil/procedures/sf/Section2.pdf',
   artcetw: 'ARTC, ETW-00-01 (Track & Civil). [Онлайн]. Хаяг: https://extranet.artc.com.au/docs/eng/track-civil/procedures/track-civil/ETW-00-01.pdf',
   artcpc: 'ARTC, ETP0301F-05 «Points and crossings» маягт. [Онлайн]. Хаяг: https://extranet.artc.com.au/docs/eng/track-civil/forms/pc/ETP0301F-05.pdf',
+  firestore: 'Google, «Cloud Firestore documentation». [Онлайн]. Хаяг: https://firebase.google.com/docs/firestore',
+  fbauth: 'Google, «Firebase Authentication». [Онлайн]. Хаяг: https://firebase.google.com/docs/auth',
+  exceljs: 'ExcelJS, «Excel Workbook Manager». [Онлайн]. Хаяг: https://github.com/exceljs/exceljs',
+  playwright: 'Microsoft, «Playwright — end-to-end testing». [Онлайн]. Хаяг: https://playwright.dev',
+  manifest: 'W3C, «Web Application Manifest». [Онлайн]. Хаяг: https://www.w3.org/TR/appmanifest/',
+  mdnpwa: 'MDN Web Docs, «Progressive web apps». [Онлайн]. Хаяг: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps',
+  webstorage: 'WHATWG, «HTML Standard — Web storage (localStorage)». [Онлайн]. Хаяг: https://html.spec.whatwg.org/multipage/webstorage.html',
   daalgavar:'«ПУ-5 дэрийн дэвтрийг PWA цахим системд шилжүүлэх төслийн даалгавар». 2026.11.11.',
   ubtz2030:'«Улаанбаатар төмөр зам» ХНН 2030 он гэхэд 50 сая тонн ачаа тээвэрлэх зорилт (мэдээ). [[эх сурвалжийн яг холбоосыг олох]]',
+  swproj: 'Сумын дүнзний эпюр: Р-65 марк 1/11 (төсөл № 2764, 2433), Р-65 марк 1/9 (№ 2766, 2434), Р-50 марк 1/11 (№ 2642). Замын 3-р ангийн техникийн баримт бичиг.',
+  epure: 'Министерство транспорта РФ, Пояснительная записка (эпюра шпал 1840 ба 2000 шт/км хэрэглэх нөхцөл). [Онлайн]. Хаяг: https://mintrans.gov.ru/file/394347 [[баримтын нэрийг нягтлах]]',
+  russell: 'A. Russell, «Progressive Web Apps: Escaping Tabs Without Losing Our Soul». Infrequently Noted, 2015. [Онлайн]. Хаяг: https://infrequently.org/2015/06/progressive-apps-escaping-tabs-without-losing-our-soul/',
+  localfirst: 'M. Kleppmann, A. Wiggins, P. van Hardenberg, M. McGranaghan, «Local-first software: you own your data, in spite of the cloud», Onward! 2019. [Онлайн]. Хаяг: https://www.inkandswitch.com/local-first/',
+  idb: 'W3C, «Indexed Database API». [Онлайн]. Хаяг: https://www.w3.org/TR/IndexedDB/',
+  fsquota: 'Google, «Cloud Firestore — Usage and limits». [Онлайн]. Хаяг: https://firebase.google.com/docs/firestore/quotas',
+  vibrate: 'MDN Web Docs, «Vibration API» (хөтчүүдийн дэмжлэгийн хүснэгт). [Онлайн]. Хаяг: https://developer.mozilla.org/en-US/docs/Web/API/Vibration_API',
+  fsrules: 'Google, «Cloud Firestore Security Rules». [Онлайн]. Хаяг: https://firebase.google.com/docs/firestore/security/get-started',
 };
 const order = [];
 function R(...keys) {
