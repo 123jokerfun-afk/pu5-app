@@ -123,11 +123,23 @@ blocks.forEach(b => {
     case 'table': children.push(...table(b)); break;
     case 'fig': children.push(...figure(b)); break;
     case 'refs':
-      b.items.forEach((it, i) => children.push(new Paragraph({alignment: AlignmentType.JUSTIFIED,
+      b.items.forEach((it, i) => children.push(new Paragraph({alignment: AlignmentType.LEFT,
         spacing: {line: LINE, after: 60}, indent: {left: 567, hanging: 567},
         children: runs('[' + (i + 1) + ']\t' + it)})));
       break;
     case 'pb': children.push(new Paragraph({children: [new PageBreak()]})); break;
+    // Нүүр хуудас: {t:'title', lines:[{text, size, bold, before}]}
+    case 'title':
+      b.lines.forEach(l => children.push(new Paragraph({alignment: AlignmentType.CENTER,
+        spacing: {before: l.before || 0, after: 0, line: LINE},
+        children: runs(l.text, {size: l.size || SZ, bold: l.bold || undefined})})));
+      break;
+    // Агуулга: Word нээхэд талбарыг шинэчилж хуудасны дугаар бөглөгдөнө
+    case 'toc':
+      children.push(new Paragraph({pageBreakBefore: true, alignment: AlignmentType.CENTER,
+        spacing: {after: 240, line: LINE}, children: runs(b.text || 'АГУУЛГА', {bold: true, size: 28})}));
+      children.push(new D.TableOfContents('Агуулга', {hyperlink: true, headingStyleRange: '1-3'}));
+      break;
     default: throw new Error('unknown block ' + b.t);
   }
 });
@@ -135,6 +147,7 @@ blocks.forEach(b => {
 // Жагсаалт бүр 1-ээс эхлэх тул дугаартай жагсаалтын лавлагааг тус бүрд нь үүсгэнэ
 const numIds = [...new Set(blocks.filter(b => b.t === 'ol').map(b => 'num' + (b.id || '')))];
 const doc = new Document({
+  features: {updateFields: blocks.some(b => b.t === 'toc')},
   creator: process.env.DIPLOM_AUTHOR || 'Зохиогч',
   title: 'ПУ-5 PWA систем төсөл — дипломын төсөл',
   styles: {
@@ -154,10 +167,12 @@ const doc = new Document({
       style: {paragraph: {indent: {left: IND + 360, hanging: 360}}}}]})),
   ]},
   sections: [{
-    properties: {page: {size: {width: 11906, height: 16838},
+    // Нүүр хуудастай бол түүн дээр хуудасны дугаар гаргахгүй
+    properties: {titlePage: blocks.some(b => b.t === 'title'), page: {size: {width: 11906, height: 16838},
       margin: {top: 1134, bottom: 1134, left: 1701, right: 851}}},
     footers: {default: new Footer({children: [new Paragraph({alignment: AlignmentType.CENTER,
-      children: [new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 22})]})]})},
+      children: [new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 22})]})]}),
+      first: new Footer({children: [new Paragraph({children: []})]})},
     children,
   }],
 });
