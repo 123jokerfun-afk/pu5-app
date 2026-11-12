@@ -8653,6 +8653,16 @@ function _pctBuckets(t){
   });
   return b
 }
+// Үеийг 25%+ жагсаалтаас гаргахад солих дэрийн хамгийн бага тоо.
+// ПО-6 "25 ба түүнээс дээш"-ийг жагсаадаг тул яг 25.0% нь ч жагсаалтад
+// үлддэг — зорилго нь 25%-иас ДООШ. Хуучин ceil(bad−total/4) нь яг 25%
+// үед 0 гэж гаргаж, жагсаалтад байгаа үеийг "солих шаардлагагүй" мэт
+// харуулдаг байсан. Бүхэл тоогоор бодно: 4·bad−total нь хөвөгч таслалын
+// алдаагүй. 25%-иас доош үед 0 буцна.
+function _need25(bad,total){
+  if(!total)return 0;
+  return Math.max(0,Math.floor((4*bad-total)/4)+1)
+}
 // Тухайн паспортод солигдсон дэрийн тоо — материалаар
 function _replTally(t){
   const r={wood:0,conc:0};
@@ -8859,8 +8869,9 @@ async function exportColoredExcel(){
         // 0 ч гэсэн ТОО байх ёстой — '' (текст) бол доорх I баганын
         // томьёо H-г хасахдаа #VALUE! алдаа өгдөг байсан
         P(ws,'H'+r,d.reps.length);
-        // Цаашид хэдэн дэр солибол 25%-даа орох вэ (сольсныг хассан)
-        P(ws,`I${r}`,{formula:`MAX(0,ROUNDUP(F${r}-L${r}*0.25,0)-H${r})`});
+        // Цаашид хэдэн дэр солибол 25%-иас доош орох вэ (сольсныг хассан).
+        // _need25-тай ижил: яг 25% ч жагсаалтад байгаа тул INT(..)+1
+        P(ws,`I${r}`,{formula:`MAX(0,INT((F${r}*4-L${r})/4)+1-H${r})`});
         P(ws,'J'+r,d.reps.length?d.reps.map(x=>x.pos).join(','):'');
         const ds=[...new Set(d.reps.map(x=>x.d))];
         if(ds.length===1)P(ws,'K'+r,_xlsDate(ds[0]),{fmt:'mm-dd-yy'});
@@ -11100,7 +11111,7 @@ function _admRepl(folder){
 /* 25%-аас дээш тэнцэхгүйтэй үе.
 
    Хувийг ЭХ байдлаар нь (солихоос өмнөх) бодно — маягт1-2-той ижил.
-   · need   — 25%-даа орохын тулд НИЙТ хэдэн дэр солих ёстой
+   · need   — 25%-иас доош орохын тулд НИЙТ хэдэн дэр солих ёстой (_need25)
    · reps   — аль дэр солигдсон (дугаараар)
    · after  — сольсны дараах хувь
    · left   — цаашид хэдэн дэр солих үлдсэн                           */
@@ -11116,7 +11127,7 @@ function _adm25(folder){
       const reps=Object.keys(rp).filter(k=>replWasBad(rp[k]))
         .map(k=>({pos:+k+1,d:rp[k]&&rp[k].d})).filter(x=>x.d)
         .sort((x,y)=>x.pos-y.pos);
-      const need=Math.max(0,Math.ceil(a.bad-a.total*0.25));
+      const need=_need25(a.bad,a.total);
       const after=a.total?Math.max(0,a.bad-reps.length)/a.total*100:0;
       rows.push({label:os.label,total:a.total,wood:a.wood,bad:a.bad,
         pct:a.bad/a.total*100,need,reps,after,
@@ -11318,7 +11329,7 @@ function _adm25Html(data){
       <table class="adm-tbl"><thead><tr>
         <th style="text-align:left">Үе</th><th>Нийт<br>дэр</th><th>Модон<br>эпюр</th>
         <th>Тэнцэх&shy;гүй</th><th>Хувь<br>%</th>
-        <th>25%-д орох<br>солих тоо</th><th>Сольсон<br>дэрийн №</th>
+        <th>25%-иас доош<br>солих тоо</th><th>Сольсон<br>дэрийн №</th>
         <th>Сольсны<br>дараах %</th><th>Үлдсэн<br>солих</th>
       </tr></thead><tbody>`;
     t.rows.forEach(r=>{
@@ -11548,7 +11559,7 @@ function _shTrk(t){
   const a=_trackTally(t),rb=_runBuckets(t),pb=_pctBuckets(t),rp=_replTally(t);
   let need=0;
   _origSecs(t).forEach(s=>{const x=_secTally(s,t);
-    if(x.total&&x.bad/x.total*100>=25)need+=Math.max(0,Math.ceil(x.bad-x.total*0.25))});
+    need+=_need25(x.bad,x.total)});
   return{total:a.total,wood:a.wood,conc:a.conc,bad:a.bad,badWood:a.badWood,
     badConc:a.badConc,rb,pb,rw:rp.wood,rc:rp.conc,need}
 }
@@ -11587,8 +11598,8 @@ function _sh25list(tracks){
       const p=a.bad/a.total*100;
       out.push({name:trackLabel(t),num:t.num,ue:os.label,wood:a.wood,
         bad:a.bad,total:a.total,pct:_shPct(a.bad,a.total),
-        // Цаашид хэдэн дэр солих вэ — 25%-д багтахад хүрэлцэх тоо
-        need:Math.max(0,Math.ceil(a.bad-a.total*0.25)-reps.length),
+        // Цаашид хэдэн дэр солих вэ — 25%-иас доош оруулахад хүрэлцэх тоо
+        need:Math.max(0,_need25(a.bad,a.total)-reps.length),
         b:[p<=30?1:'',p>30&&p<=40?1:'',p>40&&p<=50?1:'',p>50?1:''],
         dates:[...new Set(reps.map(x=>x.d))].map(fmtReplDate).join(', '),
         cnt:reps.length,nums:reps.map(x=>x.pos).join('.')})
@@ -15955,7 +15966,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.10·208';
+const APP_BUILD='2026.11.12·209';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
