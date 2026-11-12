@@ -65,19 +65,24 @@ function table(b) {
     margins: {top: 40, bottom: 40, left: 90, right: 90},
     children: String(txt).split('\n').map(line => new Paragraph({
       alignment: opt.left ? AlignmentType.LEFT : AlignmentType.CENTER,
-      spacing: {line: 240, after: 0},
+      spacing: {line: 240, after: 0}, keepNext: opt.keep || undefined,
       children: runs(line, {size: b.size || 22, bold: head || opt.bold || undefined})}))});
+  // Хавсралт А: хүснэгтийг хоёр хуудсанд хуваахгүй. Мөр бүрийн догол мөрөнд «дараагийнхтай хамт»
+  // тавьснаар Word, LibreOffice хоёулаа хүснэгтийг бүхэлд нь дараагийн хуудас руу шилжүүлнэ.
+  // Сүүлийн мөр тайлбартай бол тайлбартайгаа хамт үлдэнэ. Графикийн том хүснэгтэд (raw) хамаарахгүй.
+  const keep = !b.raw, last = b.rows.length - 1;
   const rows = [new TableRow({tableHeader: true, cantSplit: true,
-    children: b.header.map((h, i) => cell(h, widths[i], true, {span: b.headerSpan && b.headerSpan[i]}))
+    children: b.header.map((h, i) => cell(h, widths[i], true, {span: b.headerSpan && b.headerSpan[i], keep}))
       .filter((c, i) => !(b.headerSkip && b.headerSkip.includes(i)))})];
-  b.rows.forEach(r => {
+  b.rows.forEach((r, k) => {
+    const kp = keep && (k < last || !!b.note);
     if (r.group) {
-      rows.push(new TableRow({cantSplit: true, children: [cell('**' + r.group + '**', TEXT_W, false, {span: widths.length})]}));
+      rows.push(new TableRow({cantSplit: true, children: [cell('**' + r.group + '**', TEXT_W, false, {span: widths.length, keep: kp})]}));
       return;
     }
     rows.push(new TableRow({cantSplit: true, children: r.map((c, i) => cell(c, widths[i], false,
       {left: b.leftCols && b.leftCols.includes(i), bold: b.boldLast && r === b.rows[b.rows.length - 1],
-       fill: b.markFill && i >= 2 && c ? b.markFill : undefined}))}));
+       fill: b.markFill && i >= 2 && c ? b.markFill : undefined, keep: kp}))}));
   });
   const t = new Table({width: {size: TEXT_W, type: WidthType.DXA}, columnWidths: widths, rows});
   if (b.raw) return [t, new Paragraph({spacing: {after: 120, line: 240}, children: []})];
