@@ -130,9 +130,12 @@ blocks.forEach(b => {
     case 'pb': children.push(new Paragraph({children: [new PageBreak()]})); break;
     // Нүүр хуудас: {t:'title', lines:[{text, size, bold, before}]}
     case 'title':
-      b.lines.forEach(l => children.push(new Paragraph({alignment: AlignmentType.CENTER,
+      // l.align: 'left' — батламжийн хуудасны мөрүүд, l.indent: зүүн догол (twip)
+      b.lines.forEach(l => children.push(new Paragraph({
+        alignment: l.align === 'left' ? AlignmentType.LEFT : AlignmentType.CENTER,
+        indent: l.indent ? {left: l.indent} : undefined,
         spacing: {before: l.before || 0, after: 0, line: LINE},
-        children: runs(l.text, {size: l.size || SZ, bold: l.bold || undefined})})));
+        children: runs(l.text, {size: l.size || SZ, bold: l.bold || undefined, italics: l.italic || undefined})})));
       break;
     // Агуулга: Word нээхэд талбарыг шинэчилж хуудасны дугаар бөглөгдөнө
     case 'toc':

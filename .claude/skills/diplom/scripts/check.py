@@ -87,7 +87,7 @@ def check(path):
     refs_n = 0; cited = set()
     in_refs = False
     for i, p in enumerate(ps):
-        if p.strip() == 'АШИГЛАСАН МАТЕРИАЛ':
+        if p.strip() in ('АШИГЛАСАН МАТЕРИАЛ', 'Ашигласан материалын жагсаалт'):
             in_refs = True; continue
         if in_refs:
             if re.match(r'\[\d+\]', p): refs_n += 1
