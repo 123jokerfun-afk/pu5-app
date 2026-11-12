@@ -86,8 +86,12 @@ def check(path):
     tables, figs = [], []
     refs_n = 0; cited = set()
     in_refs = False
+    # Эх сурвалжийн жагсаалт — гарчгийн хамгийн сүүлийн тохиолдол (графикийн хүснэгтэд ч
+    # «Ашигласан материалын жагсаалт» мөр байдаг тул эхнийхээр нь таслахгүй)
+    ref_heads = [i for i, p in enumerate(ps) if p.strip() in ('АШИГЛАСАН МАТЕРИАЛ', 'Ашигласан материалын жагсаалт')]
+    ref_at = ref_heads[-1] if ref_heads else len(ps)
     for i, p in enumerate(ps):
-        if p.strip() in ('АШИГЛАСАН МАТЕРИАЛ', 'Ашигласан материалын жагсаалт'):
+        if i == ref_at:
             in_refs = True; continue
         if in_refs:
             if re.match(r'\[\d+\]', p): refs_n += 1
@@ -109,7 +113,8 @@ def check(path):
             hits[41].append((i, p[:90] + '…'))
         gekh += p.count('гэх мэт')
         pct_word += len(re.findall(r'\d хувь', p)); pct_sym += len(re.findall(r'\d%', p))
-        m = re.match(r'Хүснэгт ([\dУ.]+)$', p.strip())
+        # «Хүснэгт 1.1» (хуучин) эсвэл «Хүснэгт 1.1. Нэр» (Хавсралт А) хэлбэр
+        m = re.match(r'Хүснэгт ([\dУХ]+(?:\.\d+)*)(?:$|\.\s)', p.strip())
         if m: tables.append(m.group(1))
         # Зөвхөн зургийн гарчиг («Зураг 1.2. Нэр»); «Зураг 1.5-ын …» гэж эхэлсэн өгүүлбэрийг тоолохгүй
         m = re.match(r'Зураг (\d+(?:\.\d+)*)\.\s', p.strip())
