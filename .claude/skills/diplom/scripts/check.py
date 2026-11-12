@@ -111,7 +111,8 @@ def check(path):
         pct_word += len(re.findall(r'\d хувь', p)); pct_sym += len(re.findall(r'\d%', p))
         m = re.match(r'Хүснэгт ([\dУ.]+)$', p.strip())
         if m: tables.append(m.group(1))
-        m = re.match(r'Зураг ([\d.]+)\.', p.strip())
+        # Зөвхөн зургийн гарчиг («Зураг 1.2. Нэр»); «Зураг 1.5-ын …» гэж эхэлсэн өгүүлбэрийг тоолохгүй
+        m = re.match(r'Зураг (\d+(?:\.\d+)*)\.\s', p.strip())
         if m: figs.append(m.group(1))
         for c in re.findall(r'\[(\d+(?:, \d+)*)\]', p):
             cited.update(int(x) for x in c.split(', '))
