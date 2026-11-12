@@ -271,16 +271,21 @@ console.log('\nМаягт-1 Хавсралт-2 (25%+, солилтгүй) — #V
     const mkSec=(id,n,bad)=>({id,type:'normal',label:id+' үе',note:'',date:'2026-05-01',
       sleepers:Array.from({length:n},(_,i)=>({type:bad.includes(i)?'bad':'normal',ts:0}))});
     DB.folders=[{id:'fv',name:'25%+',season:'хавар',year:'2026',date:'2026-04-01',sc:'ПД-6',
-      tracks:[{id:'tv',num:8,kind:'station',sections:[mkSec('v1',10,[0,1,2])]}]}];  // 3/10=30%
+      // v1: 3/10=30%; v2: 3/12 = яг 25.0% — ПО-6 "25 ба түүнээс дээш" тул жагсаалтад орно
+      tracks:[{id:'tv',num:8,kind:'station',sections:[mkSec('v1',10,[0,1,2]),mkSec('v2',12,[0,1,2])]}]}];
     activeFolderId='fv';DB.tracks=DB.folders[0].tracks;DB.main=[];DB.sw=[];
     saveDB();
   });
   const {wb}=await grab('exportColoredExcel()');
   const ws=wb.getWorksheet('маягт1-2');
   ok('маягт1-2 хуудас байна',!!ws,wb.worksheets.map(w=>w.name).join(' | '));
+  // ExcelJS томьёо бодохгүй тул I баганын томьёог энд бодно (INT, MAX л хэрэглэгдэнэ)
+  const evalF=(f,rowCells)=>Function('return '+String(f)
+    .replace(/\b([A-Z])(\d+)\b/g,(m,c)=>JSON.stringify(rowCells[c]))
+    .replace(/INT\(/g,'Math.floor(').replace(/MAX\(/g,'Math.max('))();
   if(ws){
-    let row=null;
-    ws.eachRow((rw,i)=>{if(i>=7&&row===null){const v=V(rw);if(v[6]===3)row=i}});
+    const rowOf=lbl=>{let r=null;ws.eachRow((rw,i)=>{if(i>=7&&r===null&&String(V(rw)[4])===lbl)r=i});return r};
+    const row=rowOf('v1 үе'),row25=rowOf('v2 үе');
     ok('30% тэнцэхгүй мөр олдов',!!row,String(row));
     if(row){
       const h=ws.getCell('H'+row);
@@ -289,7 +294,31 @@ console.log('\nМаягт-1 Хавсралт-2 (25%+, солилтгүй) — #V
       const iF=ws.getCell('I'+row).value;
       ok('I (солих дэрийн тоо) томьёо H рүү заана',
          iF&&iF.formula&&new RegExp('H'+row).test(iF.formula),JSON.stringify(iF));
+      const cells={F:3,L:10,H:0};
+      ok('I: 3/10 үед 1 дэр солино (2/10 = 20%)',evalF(iF&&iF.formula,cells)===1,String(iF&&iF.formula));
     }
+    // Хуучин ROUNDUP(F−L·0.25) энд 0 гаргаж, жагсаалтад байгаа үеийг
+    // "солих шаардлагагүй" мэт харуулдаг байсан
+    ok('Яг 25.0% (3/12) үе жагсаалтад орсон',!!row25,String(row25));
+    if(row25){
+      const iF=ws.getCell('I'+row25).value;
+      const v=evalF(iF&&iF.formula,{F:3,L:12,H:0});
+      ok('I: яг 25.0% үед 1 дэр солино (0 биш)',v===1,`${iF&&iF.formula} → ${v}`);
+    }
+  }
+  // _need25: солиход 25%-иас доош ордог, нэгээр цөөн бол хүрэлцэхгүй
+  {
+    const r=await page.evaluate(()=>{
+      const fixed=[[15,46,4],[10,40,1],[3,12,1],[12,46,1],[11,46,0],[0,46,0],[46,46,35],[5,0,0]]
+        .map(([b,t,e])=>({b,t,e,g:_need25(b,t)})).filter(x=>x.g!==x.e);
+      const bad=[];
+      for(let t=1;t<=60;t++)for(let b=0;b<=t;b++){
+        const n=_need25(b,t),listed=4*b>=t;
+        if(listed&&!(4*(b-n)<t&&4*(b-n+1)>=t))bad.push(b+'/'+t+'→'+n);
+        if(!listed&&n!==0)bad.push(b+'/'+t+'→'+n)}
+      return {fixed,bad:bad.slice(0,5)}});
+    ok('_need25: жишээ утгууд (15/46→4, 10/40→1, 3/12→1 …)',!r.fixed.length,JSON.stringify(r.fixed));
+    ok('_need25: 1–60 дэртэй бүх тохиолдолд хамгийн бага тоо',!r.bad.length,r.bad.join(', '));
   }
   await seedMain();
 }
