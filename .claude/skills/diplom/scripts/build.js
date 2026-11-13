@@ -80,9 +80,13 @@ function table(b) {
       rows.push(new TableRow({cantSplit: true, children: [cell('**' + r.group + '**', TEXT_W, false, {span: widths.length, keep: kp})]}));
       return;
     }
-    rows.push(new TableRow({cantSplit: true, children: r.map((c, i) => cell(c, widths[i], false,
-      {left: b.leftCols && b.leftCols.includes(i), bold: b.boldLast && r === b.rows[b.rows.length - 1],
-       fill: b.markFill && i >= 2 && c ? b.markFill : undefined, keep: kp}))}));
+    // Нүд {text, fill} хэлбэртэй байж болно: графикт үзлэг бүрийг өөр өнгөөр, бичиггүй будна
+    rows.push(new TableRow({cantSplit: true, children: r.map((c, i) => {
+      const o = c && typeof c === 'object' ? c : {text: c};
+      return cell(o.text == null ? '' : o.text, widths[i], false,
+        {left: b.leftCols && b.leftCols.includes(i), bold: b.boldLast && r === b.rows[b.rows.length - 1],
+         fill: o.fill || (b.markFill && i >= 2 && o.text ? b.markFill : undefined), keep: kp});
+    })}));
   });
   const t = new Table({width: {size: TEXT_W, type: WidthType.DXA}, columnWidths: widths, rows});
   if (b.raw) return [t, new Paragraph({spacing: {after: 120, line: 240}, children: []})];
