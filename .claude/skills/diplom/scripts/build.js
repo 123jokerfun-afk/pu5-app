@@ -138,8 +138,9 @@ function logoHead(b) {
 const sections = [{header: null, children: []}];
 const cur = () => sections[sections.length - 1];
 const newSection = header => sections.push({header, children: []});
-const listTitle = t => new Paragraph({heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER,
-  spacing: {after: 240, line: LINE}, children: runs(t)});
+// self=true: агуулгын гарчиг өөрөө агуулгад орохгүй (бүлгийн түвшнийг «энгийн бичвэр» болгоно)
+const listTitle = (t, self) => new Paragraph({heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER,
+  outlineLevel: self ? 9 : undefined, spacing: {after: 240, line: LINE}, children: runs(t)});
 
 blocks.forEach(b => {
   const ch = cur().children;
@@ -191,14 +192,15 @@ blocks.forEach(b => {
     // Агуулга ба жагсаалтууд: Word нээхэд талбарыг шинэчилж хуудасны дугаар бөглөгдөнө
     case 'toc':
       newSection(b.text || 'Агуулга');
-      cur().children.push(listTitle(b.text || 'Агуулга'),
+      cur().children.push(listTitle(b.text || 'Агуулга', true),
         new D.TableOfContents('Агуулга', {hyperlink: true, headingStyleRange: '1-3'}));
       break;
     case 'figlist': case 'tablist': {
       const t = b.t === 'figlist' ? 'Зургийн жагсаалт' : 'Хүснэгтийн жагсаалт';
       newSection(t);
+      // Word «\t» шилжүүлэгт загварыг ID-аар биш НЭРЭЭР нь хайдаг (FigCap гэвэл жагсаалт хоосон гарна)
       cur().children.push(listTitle(t), new D.TableOfContents(t, {hyperlink: true,
-        stylesWithLevels: [new StyleLevel(b.t === 'figlist' ? 'FigCap' : 'TblCap', 1)]}));
+        stylesWithLevels: [new StyleLevel(b.t === 'figlist' ? 'Зургийн гарчиг' : 'Хүснэгтийн гарчиг', 1)]}));
       break;
     }
     default: throw new Error('unknown block ' + b.t);
