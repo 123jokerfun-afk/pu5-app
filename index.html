@@ -335,10 +335,6 @@ button{font-family:inherit}
   font-variant-numeric:tabular-nums}
 .dash-mini-l{font-size:9.5px;color:var(--ink3);font-weight:700;text-transform:uppercase;
   letter-spacing:.04em;margin-top:1px}
-.dash-trend{font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
-.dash-trend.up{background:var(--red-bg);color:var(--red)}
-.dash-trend.down{background:var(--g50);color:var(--g700)}
-.dash-trend.flat{background:var(--bg2);color:var(--ink3)}
 /* Карт — бүх блокийн нийтлэг товойлгосон хайрцаг */
 .dash-card{background:var(--card);border-radius:var(--rm);padding:14px;margin-top:10px;
   box-shadow:var(--sh-sm)}
@@ -371,15 +367,6 @@ button{font-family:inherit}
 .dash-tbl tr.tot td{font-weight:900;color:var(--ink);border-bottom:0;background:var(--bg2)}
 .dash-tbl tr.tot td:first-child{border-radius:10px 0 0 10px}
 .dash-tbl tr.tot td:last-child{border-radius:0 10px 10px 0}
-/* Анхаарах үе — хамгийн өндөр хувьтай үеүүд, дарахад тэр үе рүү */
-.dash-wr{display:grid;grid-template-columns:1fr 46px;align-items:center;gap:8px;padding:8px 2px;
-  cursor:pointer;border-bottom:1px solid var(--border)}
-.dash-wr:last-child{border-bottom:0}
-.dash-wr:active{opacity:.6}
-.dash-wr-n{font-size:12.5px;font-weight:700;color:var(--ink)}
-.dash-wr-tr{height:6px;border-radius:4px;background:var(--bg2);margin-top:5px;overflow:hidden}
-.dash-wr-tr i{display:block;height:100%;border-radius:0 4px 4px 0}
-.dash-wr-p{text-align:right;font-size:13px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
 /* Төлөвлөгөө + агуулах — хоёр багана */
 .dash-two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .dash-two .dash-card{margin-top:0}
@@ -956,6 +943,76 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
   border-radius:7px;background:var(--bg);color:var(--ink3)}
 .br-tab.sel .br-tab-n{background:rgba(255,255,255,.22);color:inherit}
 .br-tab-l{font-size:14px;font-weight:900;letter-spacing:.02em}
+/* ── ПУ-5 дэвтэр (pu5View) — сүүлийн паспортын бүртгэлээр бөглөгдсөн
+   маягт. Дээр Дэр/Дүнз хоёр цонх, доор нь паспорт сонгох жижиг товч.
+   Доош гүйлгэхэд толгой ба доод таб нуугдана (маягт дэлгэцийг бүтэн
+   эзэлнэ), хурдан 2 товшвол буцаж гарна. ── */
+#pu5View .home-body{padding-bottom:0}
+.p5-hdr{padding-bottom:10px;transition:transform .26s cubic-bezier(.4,0,.2,1)}
+body.p5-imm #pu5View .p5-hdr{transform:translateY(-110%);pointer-events:none}
+body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
+.p5-tabs{display:flex;gap:8px}
+.p5-tab{flex:1;min-height:44px;border-radius:var(--rm);border:1.5px solid var(--border);
+  background:var(--card);color:var(--ink3);font-family:inherit;font-size:14px;font-weight:900;
+  letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.p5-tab svg{width:18px;height:18px;flex-shrink:0}
+.p5-tab[aria-pressed="true"]{border-color:var(--g500);background:var(--g50);color:var(--g700)}
+.p5-pick-b{display:flex;align-items:center;gap:6px;margin:8px auto 0;padding:5px 12px;
+  min-height:30px;border-radius:99px;border:1px solid var(--border);background:var(--card);
+  color:var(--ink2);font-family:inherit;font-size:12px;font-weight:800;max-width:100%;cursor:pointer}
+.p5-pick-b svg{width:14px;height:14px;flex-shrink:0;transition:transform .2s}
+.p5-pick-b[aria-expanded="true"] svg{transform:rotate(180deg)}
+.p5-pick-b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p5-pick{position:relative;margin-top:8px;display:none}
+.p5-pick.open{display:block}
+.p5-pick-list{height:220px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent);
+  mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent)}
+.p5-pick-list::-webkit-scrollbar{display:none}
+.p5-pick-pad{height:88px}
+.p5-pick-it{height:44px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;
+  padding:0 16px;font-size:14px;font-weight:700;color:var(--ink3);cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p5-pick-it.on{color:var(--ink);font-size:16px;font-weight:900}
+.p5-pick-frame{position:absolute;left:10px;right:10px;top:88px;height:44px;border-radius:14px;
+  pointer-events:none;border:2.5px solid #FF8A17;
+  background:linear-gradient(180deg,rgba(255,206,100,.32),rgba(255,150,48,.16))}
+.p5-body{padding:10px 8px 40px;touch-action:manipulation}
+.p5-leg{font-size:10.5px;color:var(--ink3);font-weight:600;line-height:1.5;margin:0 4px 8px}
+.p5-trk{margin:16px 2px 6px;font-size:15px;font-weight:900;color:var(--ink)}
+.p5-trk:first-of-type{margin-top:4px}
+.p5-blk{margin-bottom:12px}
+.p5-cap{font-size:11.5px;font-weight:800;color:var(--ink2);margin:0 2px 4px}
+.p5-empty{text-align:center;padding:50px 16px;color:var(--ink3);font-size:13px;font-weight:600}
+/* Маягт өөрөө цаасан дэвтэр шиг цагаан — харанхуй загварт ч өнгө нь
+   Excel-ийн ПУ-5 дэвтэртэй ижил (тэмдэглэгээ нь хоёуланд нэг утгатай) */
+.p5-tb{width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;color:#1d2330;
+  font-size:10px;font-variant-numeric:tabular-nums}
+.p5-tb th,.p5-tb td{border:1px solid #cfd4dc;text-align:center;padding:1px 0;height:20px;
+  line-height:1.05;overflow:hidden;font-weight:800}
+.p5-tb thead th{background:#2D6E52;color:#fff;font-size:9px;height:24px;
+  white-space:normal;overflow-wrap:anywhere}
+.p5-tb thead th:first-child,.p5-tb .p5-n{background:#1E4D3B;color:#fff;font-size:9px;width:24px}
+.p5-tb td.x{background:#DADEE4}
+.p5-tb td.b{background:#FDEAEA;color:#C00000;font-size:13px}
+.p5-tb td.t{background:#FDEAEA;color:#C00000;font-size:8px}
+.p5-tb td.tt{background:#D6E4FF;color:#1A4BC4;font-size:8px}
+.p5-tb td.hi{background:#FFFF99;color:#7A5000;box-shadow:inset 0 0 0 2px #FF9800}
+.p5-tb td.cr{background:#FFFF99;color:#7A5000;box-shadow:inset 0 0 0 2px #9C27B0}
+.p5-tb i{display:block;font-style:normal;font-size:7px;line-height:1.1}
+.p5-tb i.p5-u{color:#1A4BC4}
+.p5-tb i.p5-q{color:#1A73E8;font-size:10px}
+.p5-tb i.s{color:#0D6E46;font-size:8px}
+.p5-tb i.u{color:#1A4BC4;font-size:8px}
+.p5-tb tr.p5-sum td{font-size:8.5px;background:#E8F8F1;color:#0D5E44}
+.p5-tb tr.p5-sum td.bad{background:#FEE2E2;color:#C00000}
+.p5-tb tr.p5-sum td.run{background:#FFFF99;color:#7A5000}
+.p5-tb tr.p5-sum td.tot{background:#EEF2FF;color:#1A3A6E}
+.p5-tot{background:#1A3A6E;color:#fff;font-size:11px;font-weight:800;padding:6px 8px;
+  border-radius:0 0 8px 8px;text-align:center}
+.p5-tot.trk{background:#1E4D3B;border-radius:8px;margin-top:6px}
+.p5-tot.conn{background:#5B2FA8}
 /* Бүртгэсэн дүнгийн нүднүүд — гурав гурваар эвхэгдэнэ */
 .br-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .br-st{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rs);
@@ -1747,6 +1804,19 @@ body.deep-view #tabbar{transform:translateY(100%);pointer-events:none}
 .tab-dot{position:absolute;top:6px;right:calc(50% - 18px);width:7px;height:7px;
   border-radius:50%;background:#FF5C86;border:1.5px solid rgba(10,10,24,.9);display:none}
 .tab-b.has-dot{position:relative}
+/* «ПУ-5 дэвтэр» — нарийн утсанд эсвэл 7 табтай үед (салбар замтай хэсэг)
+   «дэвтэр» нь нуугдаж «ПУ-5» үлдэнэ; бусад нэр тайрагдахгүй байхаар
+   280–340px-д бичгийг бага зэрэг жижигрүүлнэ */
+.tab-b .tab-x{font-weight:inherit}
+#tabP5 span{letter-spacing:0}
+#tabbar.tb7 .tab-x{display:none}
+#tabbar.tb7{padding-left:4px;padding-right:4px}
+#tabbar.tb7 .tab-b{padding-left:1px;padding-right:1px}
+#tabbar.tb7 .tab-b span{font-size:8.5px;letter-spacing:0}
+@media (max-width:399px){.tab-b .tab-x{display:none}}
+@media (max-width:340px){.tab-b span{font-size:8.5px;letter-spacing:0}
+  #tabbar{padding-left:4px;padding-right:4px}.tab-b{padding-left:1px;padding-right:1px}}
+@media (max-width:300px){.tab-b span,#tabbar.tb7 .tab-b span{font-size:7.8px}}
 .tab-b.has-dot .tab-dot{display:block}
 body.has-tabbar .home-body{padding-bottom:calc(112px + var(--sab))}
 body.has-tabbar #toast{bottom:calc(104px + var(--sab))}
@@ -2043,7 +2113,7 @@ html:not([data-theme="dark"]) :is(.dash-kv div,.dash-stk div,.sw-st-c,.sum-tot,.
   background-color:var(--surface);border-color:transparent;box-shadow:var(--sunk-sm)}
 html:not([data-theme="dark"]) .consec-row{background-color:var(--surface);box-shadow:var(--sunk-sm)}
 html:not([data-theme="dark"]) .dash-ring{box-shadow:var(--sunk)}
-html:not([data-theme="dark"]) :is(.track-pbar,.sec-pbar,.dash-wr-tr,.sy-bar){
+html:not([data-theme="dark"]) :is(.track-pbar,.sec-pbar,.sy-bar){
   background:var(--surface);box-shadow:inset 2px 2px 4px var(--sh-d),inset -2px -2px 4px var(--sh-l)}
 html:not([data-theme="dark"]) .dash-tbl tr.tot td{background:rgba(75,86,214,.08)}
 html:not([data-theme="dark"]) .consec-nums span{background:var(--surface);border-color:transparent;
@@ -2397,6 +2467,10 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3"/></svg>
     <span>Сумууд</span>
   </button>
+  <button class="tab-b" id="tabP5" onclick="goTab('p5')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v16H7.5A2.5 2.5 0 0 0 5 20.5zM5 20.5A1.5 1.5 0 0 0 6.5 22H20M9 7h7M9 11h7"/></svg>
+    <span>ПУ-5<b class="tab-x"> дэвтэр</b></span>
+  </button>
   <button class="tab-b has-dot" id="tabSync" onclick="goTab('sync')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"/></svg>
     <span>Мэдэгдэл</span><span class="tab-dot" id="tabSyncDot"></span>
@@ -2410,6 +2484,30 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
 <!-- ══ МЭДЭГДЭЛ ба ПРОФАЙЛ — доороос гулсаж гарах цонх байсныг энгийн
      дэлгэц болгосон (хэрэглэгчийн хүсэлт): доод табын бусад хуудастай
      адил нээгдэж, хажуу тийш шудраад шилжиж болно. ══ -->
+<!-- ══ ПУ-5 ДЭВТЭР — паспортын бүртгэлээр бөглөгдсөн маягтыг апп дотор
+     харах. Толгой нь гүйлгэх хэсгийн ДОТОР (sticky) байрлана: нуухад
+     дээр нь хоосон зай үлдэхгүй. ══ -->
+<div class="view" id="pu5View">
+  <div class="home-body" id="p5Scroll">
+    <div class="pg-hdr p5-hdr" id="p5Hdr">
+      <div class="p5-tabs" role="group" aria-label="Маягт">
+        <button class="p5-tab" id="p5TabDer" aria-pressed="true" onclick="p5SetMode('der')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h18M3 16h18M7 5v14M17 5v14"/></svg>Дэр</button>
+        <button class="p5-tab" id="p5TabSw" aria-pressed="false" onclick="p5SetMode('sw')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h5c5 0 6-12 11-12h4M17 3l3 3-3 3"/></svg>Дүнз</button>
+      </div>
+      <button class="p5-pick-b" id="p5PickBtn" aria-expanded="false" aria-controls="p5Pick" onclick="p5TogglePick()">
+        <span id="p5PickName">—</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="p5-pick" id="p5Pick">
+        <div class="p5-pick-frame"></div>
+        <div class="p5-pick-list" id="p5PickList" role="listbox" aria-label="Паспорт сонгох"></div>
+      </div>
+    </div>
+    <div class="p5-body" id="p5Body"></div>
+  </div>
+</div>
 <div class="view" id="syncView">
   <div class="pg-hdr"><div class="pg-hdr-row"><div style="flex:1;min-width:0">
     <div class="pg-title">Мэдэгдэл</div>
@@ -4726,7 +4824,7 @@ function ring(pct,size,color){
 // ══════════════════════════════════════════════
 // Гол замын км жагсаалт нь нүүр (1) ба замын (2) хооронд байрлана
 const _VDEPTH={loginView:0,homeView:1,adminView:1,mainKmView:1.5,trackView:2,recordView:3,summaryView:4,
-  swHomeView:1,swRecView:2,brHomeView:1,syncView:1,profView:1};
+  swHomeView:1,swRecView:2,brHomeView:1,syncView:1,profView:1,pu5View:1};
 let _curDepth=0;
 function showView(id,back){
   const el=document.getElementById(id);if(!el)return;
@@ -4750,6 +4848,8 @@ function showView(id,back){
   document.body.classList.toggle('deep-view',
     id==='trackView'||id==='recordView'||id==='swRecView'||id==='summaryView');
   document.body.classList.toggle('track-mode',id==='trackView');
+  // ПУ-5 дэвтрээс гарахад нуусан толгой/доод таб буцаж гарна
+  if(id!=='pu5View')document.body.classList.remove('p5-imm');
   const d=_VDEPTH[id]!==undefined?_VDEPTH[id]:1;
   const isBack=back!==undefined?back:(d<_curDepth);
   _curDepth=d;
@@ -4892,8 +4992,9 @@ function initSheetGestures(){
 // ══════════════════════════════════════════════
 // НҮҮРНИЙ ДАШБОАРД — тухайн паспортоо нээлгүйгээр шууд харагдах
 // ерөнхий тойм: тэнцэхгүй хувь, материал, Маягт 1-3-ийн 25%+ ба
-// дараалан муудсан хүснэгт, хувиар шүүх, анхаарах үе, төлөвлөгөө,
-// агуулах. Чиг хандлагын графикийг хэрэглэгчийн хүсэлтээр хассан.
+// дараалан муудсан хүснэгт, хувиар шүүх, төлөвлөгөө, агуулах.
+// Чиг хандлагын график, «өмнөхөөс» харьцуулалт, «Анхаарах үе»,
+// «15–25% анхаарах» түвшинг хэрэглэгчийн хүсэлтээр хассан.
 // ══════════════════════════════════════════════
 // Хуучнаас шинэ рүү биш, ШИНЭЭС ХУУЧИН руу (огноогоор буурахаар)
 // эрэмбэлсэн эхний N паспорт. Хогийн саванд хаягдсан/салбарын
@@ -4905,7 +5006,7 @@ function _latestFolders(list,n){
 }
 // Нэг дэрийн паспортын (folder) ерөнхий тойм: гол замыг оролцуулахгүй
 // (паспортын дэр ЗӨВХӨН өртөөний зам, renderHome-ийн gTotal-тай адил
-// зарчим). sections нь хувь-шүүлтэд ашиглагдана (dashSetThreshold).
+// зарчим).
 function _derFolderStats(f){
   const r={total:0,bad:0,wood:0,conc:0,repl:0,sections:[]};
   (f.tracks||[]).filter(t=>!isMainTrack(t)).forEach(t=>{
@@ -4929,30 +5030,24 @@ function _swFolderStats(f){
   r.pct=r.total>0?(r.bad/r.total*100):0;
   return r
 }
-let _dashThreshold=15;
+// Хувь сонгож шалгах — ПО-6 маягтын 25%-иас дээш үеийн дөрвөн ангилал
+// (Маягт 1-3-ийн хүснэгт, _pctBuckets-тэй ЯГ ижил хил).
+const _DASH_BK=['25–30%','31–40%','41–50%','50%-иас их'];
+let _dashBucket=0;
 let _homeSubTab='home';
-function dashSetThreshold(p){_dashThreshold=p;renderDashboard()}
-// Анхаарах үе дээр дарахад: тэр паспортыг нээж → зам → үе рүү
-function dashJump(fid,tid,sid){
-  hap(8);
-  if(activeFolderId!==fid)openFolder(fid);
-  const t=getTrack(tid);if(!t){showToast('Зам олдсонгүй');return}
-  openTrack(tid,1);
-  if(!(t.sections||[]).some(s=>s.id===sid)){showToast('Тухайн үе олдсонгүй');return}
-  openSection(sid,0)
-}
+function dashSetBucket(i){_dashBucket=i;renderDashboard()}
 function renderDashboard(){
   const sec=document.getElementById('dashSection'),body=document.getElementById('dashBody');
   if(!body)return;
-  const der=_latestFolders(DB.folders,2);
+  const der=_latestFolders(DB.folders,1);
   const nm=document.getElementById('dashFolderName');
   if(!der.length){
     if(nm)nm.textContent='—';
     body.innerHTML='<div class="dash-empty">Паспорт нэмэгдэхэд энд ерөнхий тойм гарч ирнэ</div>';
     return
   }
-  const latest=der[0],prev=der[1]||null;
-  const dLS=_derFolderStats(latest),dPS=prev?_derFolderStats(prev):null;
+  const latest=der[0];
+  const dLS=_derFolderStats(latest);
   if(nm)nm.textContent=latest.name||`${latest.season||''} ${latest.year||''}`;
 
   // Сум/дүнзний сүүлийн паспорт (бэлэн бол)
@@ -4965,20 +5060,15 @@ function renderDashboard(){
   let h='';
 
   // ── 1. Гол үзүүлэлт: тэнцэхгүй дэрийн хувь (цагираг) ──
-  // Өнгө нь замын картын босготой ижил (15% / 25%), өнгө дангаараа
-  // биш — тэмдэг ба бичвэр хамт явна.
-  const pct=dLS.pct, lvl=pct>=25?2:pct>=15?1:0;
-  const lvCol=['var(--g600)','var(--orange)','var(--red)'][lvl];
-  const lvTxt=['15%-иас доош','15–25% — анхаарах','25%-иас дээш'][lvl];
+  // Журмын хил нь 25% тул хоёр л түвшин: 25%-иас доош ба дээш. Өнгө
+  // дангаараа биш — тэмдэг ба бичвэр хамт явна.
+  const pct=dLS.pct, lvl=pct>=25?1:0;
+  const lvCol=['var(--g600)','var(--red)'][lvl];
+  const lvTxt=['25%-иас доош','25%-иас дээш'][lvl];
   const C=2*Math.PI*46, arc=Math.max(0,Math.min(100,pct))/100*C;
-  let pill='';
-  if(dPS){
-    const d=pct-dPS.pct, cls=d>0.05?'up':d<-0.05?'down':'flat';
-    pill=`<span class="dash-trend ${cls}">${cls==='up'?'▲':cls==='down'?'▼':'—'} ${Math.abs(d).toFixed(1)}% өмнөхөөс</span>`
-  }
   h+=`<div class="dash-card" id="dashHero">
     <div class="dash-hd"><div><div class="dash-t">${esc(latest.name||'Сүүлийн паспорт')}</div>
-      <div class="dash-s">Өртөөний зам · ${trs.length} зам · ${nSec} үе</div></div>${pill}</div>
+      <div class="dash-s">Өртөөний зам · ${trs.length} зам · ${nSec} үе</div></div></div>
     <div class="dash-hero">
       <div class="dash-ring"><svg viewBox="0 0 112 112" aria-hidden="true">
         <circle cx="56" cy="56" r="46" fill="none" stroke="var(--bg2)" stroke-width="9"/>
@@ -5020,35 +5110,18 @@ function renderDashboard(){
     ['25-30','31-40','41-50','50 их'],_pctBuckets);
   h+=tbl('dashRunTbl','Дараалан муудсан',['3','4','5 ба<'],_runBuckets);
 
-  // ── 5. Хувь сонгож шүүх: сүүлийн паспортаас X%-иас дээш үеийн тоо ──
-  const atOrAbove=dLS.sections.filter(s=>s.pct>=_dashThreshold).length;
+  // ── 5. Хувь сонгож шалгах: сүүлийн паспортын 25%-иас дээш үеийг
+  //    маягтын дөрвөн ангиллаар. Тоо нь дээрх хүснэгттэй (_pctBuckets) ижил. ──
+  const bk=[0,0,0,0];
+  trs.forEach(t=>_pctBuckets(t).forEach((n,i)=>{bk[i]+=n}));
   h+=`<div class="dash-thr">
     <div class="dash-thr-hd">Хувь сонгож шалгах (${esc(latest.name||'сүүлийн паспорт')})</div>
-    <div class="dash-thr-chips">${[5,10,15,20,25].map(p=>
-      `<button class="dash-thr-chip${p===_dashThreshold?' active':''}" onclick="hap();dashSetThreshold(${p})">${p}%+</button>`).join('')}</div>
-    <div class="dash-thr-result"><b>${atOrAbove}</b> үе ${_dashThreshold}%-иас дээш тэнцэхгүйтэй (${nSec} үеэс)</div>
+    <div class="dash-thr-chips">${_DASH_BK.map((l,i)=>
+      `<button class="dash-thr-chip${i===_dashBucket?' active':''}" onclick="hap();dashSetBucket(${i})">${l}</button>`).join('')}</div>
+    <div class="dash-thr-result">Тэнцэхгүй дэрийн эзлэх хувь ${_DASH_BK[_dashBucket]} байгаа <b>${bk[_dashBucket]}</b> ш үе байна</div>
   </div>`;
 
-  // ── 6. Анхаарах үе — хамгийн өндөр хувьтай 4 үе (хүснэгттэй ижил
-  //    тооцоо), дарахад тэр паспорт → зам → үе рүү шууд очно ──
-  const worst=[];
-  trs.forEach(t=>_origSecs(t).forEach(s=>{
-    const a=_secTally(s,t);if(!a.total||!a.bad)return;
-    worst.push({t,s,p:a.bad/a.total*100})}));
-  worst.sort((x,y)=>y.p-x.p);
-  if(worst.length){
-    h+=`<div class="dash-card" id="dashWorst">
-      <div class="dash-hd"><div><div class="dash-t">Анхаарах үе</div>
-        <div class="dash-s">Хамгийн өндөр хувьтай ${Math.min(4,worst.length)} үе · дарахад тэр үе рүү орно</div></div></div>
-      ${worst.slice(0,4).map(w=>{const c=w.p>=25?'var(--red)':w.p>=15?'var(--orange)':'var(--g600)';
-        return `<div class="dash-wr" onclick="dashJump('${latest.id}','${w.t.id}','${w.s.id}')">
-          <div><div class="dash-wr-n">${w.t.num}-р зам · ${esc(w.s.label||'үе')}</div>
-            <div class="dash-wr-tr"><i style="width:${Math.min(100,w.p).toFixed(0)}%;background:${c}"></i></div></div>
-          <div class="dash-wr-p">${w.p.toFixed(0)}%</div></div>`}).join('')}
-    </div>`
-  }
-
-  // ── 7. Солих төлөвлөгөө (энэ паспортын) ба агуулахын үлдэгдэл ──
+  // ── 6. Солих төлөвлөгөө (энэ паспортын) ба агуулахын үлдэгдэл ──
   const pt=planGrandTotalFor(latest.id),pr=planReplacedCountFor(latest.id);
   const pp=pt?Math.round(pr/pt*100):0, PC=2*Math.PI*26;
   const dz=swLatest?Object.values(swStock(swLatest)).reduce((a,n)=>a+(+n||0),0):0;
@@ -5068,7 +5141,7 @@ function renderDashboard(){
     </div>
   </div>`;
 
-  // ── 8. Үүлтэй холбоо — дарахад Мэдэгдэл ──
+  // ── 7. Үүлтэй холбоо — дарахад Мэдэгдэл ──
   const dt=_dirtyAt();
   h+=`<div class="dash-sync" id="dashSync" onclick="hap();goTab('sync')">
     <i style="background:${dt?'var(--orange)':'var(--g500)'}"></i>${dt?'Илгээгээгүй өөрчлөлт байна':'Үүлэнд хадгалсан'}</div>`;
@@ -12846,7 +12919,7 @@ function initSwSwipe(){
     if(i>0)r['1']={go:()=>goTab(o[i-1]),lbl:'← '+_TAB_NM[o[i-1]]};
     return r
   };
-  ['homeView','swHomeView','brHomeView','syncView','profView'].forEach(id=>bind(id,dirsNow))
+  ['homeView','swHomeView','brHomeView','pu5View','syncView','profView'].forEach(id=>bind(id,dirsNow))
 }
 
 // ── Нүүр: паспортын жагсаалт ──
@@ -15518,6 +15591,7 @@ function goTab(t){
   if(t==='sync'){openSyncSheet();return}
   if(t==='prof'){openProfSheet();return}
   if(t==='br'){goBrHome();return}
+  if(t==='p5'){openPu5();return}
   if(t==='sw'){goSwHome();_syncTabs();return}
   // Админд нүүр гэдэг нь удирдлагын дэлгэц — дэрийн паспорт байдаггүй
   if(_isAdmin){
@@ -15534,33 +15608,294 @@ function goTab(t){
    үүнийг ашиглана. */
 function _curTab(){
   const av=(document.querySelector('.view.active')||{}).id;
-  const m={swHomeView:'sw',brHomeView:'br',syncView:'sync',profView:'prof'};
+  const m={swHomeView:'sw',brHomeView:'br',pu5View:'p5',syncView:'sync',profView:'prof'};
   if(m[av])return m[av];
   return (!_isAdmin&&_homeSubTab==='pass')?'pass':'home'
 }
 // Табын дараалал — шудрахад яг энэ дарааллаар шилжинэ
 function _tabOrder(){
   if(_isAdmin)return ['home','sync','prof'];
-  return (hasBranch()?['br']:[]).concat(['home','pass','sw','sync','prof'])
+  return (hasBranch()?['br']:[]).concat(['home','pass','sw','p5','sync','prof'])
 }
-const _TAB_NM={br:'Салбар зам',home:'Нүүр',pass:'Паспорт',sw:'Сумууд',sync:'Мэдэгдэл',prof:'Профайл'};
+const _TAB_NM={br:'Салбар зам',home:'Нүүр',pass:'Паспорт',sw:'Сумууд',p5:'ПУ-5 дэвтэр',sync:'Мэдэгдэл',prof:'Профайл'};
 function _syncTabs(force){
   const bar=document.getElementById('tabbar');if(!bar)return;
   const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active');
   document.body.classList.toggle('has-tabbar',on);
   if(!on)return;
   const cur=force||_curTab();
-  // Админд Паспорт / Сумууд / Салбар гэсэн таб утгагүй тул нуугдана
-  ['tabPass','tabSw'].forEach(id=>{
+  // Админд Паспорт / Сумууд / ПУ-5 / Салбар гэсэн таб утгагүй тул нуугдана
+  ['tabPass','tabSw','tabP5'].forEach(id=>{
     const b=document.getElementById(id);if(b)b.style.display=_isAdmin?'none':''});
   const tb=document.getElementById('tabBr');
   if(tb)tb.style.display=(!_isAdmin&&hasBranch())?'':'none';
-  [['br','tabBr'],['home','tabHome'],['pass','tabPass'],['sw','tabSw'],
+  bar.classList.toggle('tb7',!_isAdmin&&hasBranch());
+  [['br','tabBr'],['home','tabHome'],['pass','tabPass'],['sw','tabSw'],['p5','tabP5'],
    ['sync','tabSync'],['prof','tabProf']].forEach(([k,id])=>{
     const b=document.getElementById(id);
     if(b)b.setAttribute('aria-current',k===cur?'true':'false')});
   const dot=document.getElementById('tabSync');
   if(dot)dot.classList.toggle('has-dot',!!_dirtyAt())
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ПУ-5 ДЭВТЭР — апп дотор, паспортын бүртгэлээр бөглөгдсөн маягт
+   · Анхдагчаар СҮҮЛИЙН паспорт; жижиг сум товчоор паспортын жагсаалт
+     гарч, дээш доош гулсуулж тааруулсан паспортоор маягт бөглөгдөнө.
+   · Дэр: зам бүрийг 10 үеэр доош цувуулна — Excel-ийн ПУ-5 дэвтэртэй
+     (_exportPu5BookCore) ЯГ ижил тэмдэглэгээ, ижил эх (солихоос өмнөх)
+     төлөв. Дүнз: сум бүр уртаар бүлэглэсэн нэг маягт (_exportSwPu5BookCore).
+   · Доош гүйлгэхэд толгой ба доод таб нуугдана, хурдан 2 товшвол гарна.
+   ══════════════════════════════════════════════════════════════ */
+let _p5Mode='der',_p5Gen=0,_p5Queue=[],_p5Bound=false;
+const _p5Fid={der:null,sw:null};
+// Шинээс хуучин руу (огноогоор) — хогийн сав, салбарын хуулбар орохгүй
+function _p5List(mode){
+  const src=mode==='sw'?swFolders():(DB.folders||[]).filter(f=>f&&!f.trashedAt&&!f.br);
+  return src.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))
+}
+function _p5Folder(){
+  const L=_p5List(_p5Mode);
+  return L.find(f=>f.id===_p5Fid[_p5Mode])||L[0]||null
+}
+function _p5Name(f){
+  if(!f)return 'Паспорт алга';
+  const nm=f.name||'',ys=[f.year,f.season].filter(Boolean).join(' ');
+  return nm&&ys&&nm.indexOf(ys)<0?nm+' · '+ys:(nm||ys||'Паспорт')
+}
+function openPu5(){
+  _p5Bind();_p5SetImm(false);_p5ClosePick();
+  showView('pu5View');renderPu5();_syncTabs('p5')
+}
+function p5SetMode(m){
+  if(m===_p5Mode)return;
+  hap(8);_p5Mode=m;_p5ClosePick();renderPu5();
+  const sc=document.getElementById('p5Scroll');if(sc)sc.scrollTop=0
+}
+function renderPu5(){
+  ['der','sw'].forEach(k=>{const b=document.getElementById(k==='der'?'p5TabDer':'p5TabSw');
+    if(b)b.setAttribute('aria-pressed',k===_p5Mode?'true':'false')});
+  const f=_p5Folder();
+  const nm=document.getElementById('p5PickName');if(nm)nm.textContent=_p5Name(f);
+  _p5RenderBody(f)
+}
+/* Маягт их дэртэй паспортод мянга мянган нүдтэй болох тул эхний хэдэн
+   блокийг шууд, үлдсэнийг дараагийн агшнуудад нэмж зурна (дэлгэц гацахгүй).
+   Паспорт солигдвол хуучин дараалал _p5Gen-ээр зогсоно. */
+function _p5RenderBody(f){
+  const body=document.getElementById('p5Body');if(!body)return;
+  const gen=++_p5Gen;
+  _p5Queue=f?(_p5Mode==='sw'?_p5SwBlocks(f):_p5DerBlocks(f)):[];
+  if(!_p5Queue.length){
+    body.innerHTML=`<div class="p5-empty">${!f?(_p5Mode==='sw'?'Сумын паспорт алга':'Дэрийн паспорт алга')
+      :(_p5Mode==='sw'?'Энэ паспортад бүртгэсэн сум алга':'Энэ паспортад өртөөний зам алга')}</div>`;
+    return
+  }
+  body.innerHTML=_p5Mode==='sw'
+    ?'<div class="p5-leg">Хоосон = хэвийн · — = тэнцэхгүй · шар = 3 ба түүнээс дээш дараалсан · сольсон: дээр он/сар, доор С = дараалсан, У = ганц · ? = солихоор төлөвлөсөн</div>'
+    :'<div class="p5-leg">Хоосон = хэвийн модон · — = тэнцэхгүй модон · ТБД = бетон · ТТБД = тэнцэхгүй бетон · шар = 3 ба түүнээс дээш дараалсан (ягаан хүрээ = үе дамнасан) · сольсон: дээр он/сар, доор С = сийрэгжилт, У = бусад · ? = солихоор төлөвлөсөн</div>';
+  const step=()=>{
+    if(gen!==_p5Gen)return;
+    const t0=Date.now();let h='';
+    while(_p5Queue.length&&(h===''||Date.now()-t0<12))h+=_p5Queue.shift()();
+    body.insertAdjacentHTML('beforeend',h);
+    if(_p5Queue.length)setTimeout(step,0)
+  };
+  step()
+}
+// Шалгалт, хэвлэх зэрэгт: үлдсэн блокийг нэг дор зурна
+function _p5Flush(){
+  const body=document.getElementById('p5Body');if(!body)return;
+  let h='';while(_p5Queue.length)h+=_p5Queue.shift()();
+  if(h)body.insertAdjacentHTML('beforeend',h)
+}
+const _p5Ym=d=>{const m=String(d||'').match(/^(\d{2})(\d{2})-(\d{2})/);return m?`${m[2]}/${+m[3]}`:''};
+const _p5Pct=(b,n)=>n?` (${(b/n*100).toFixed(1)}%)`:'';
+/* Нэг нүд — Excel-ийн fillCell-тэй ижил: хэвийн хоосон, тэнцэхгүй "—",
+   ТБД/ТТБД, сольсон бол дээр он/сар, доор С (сийрэгжилт) / У (бусад),
+   төлөвлөсөн бол дээр "?". */
+function _p5Cell(mark,cls,top,planned,bot,hi){
+  return `<td class="${cls}${hi?' '+hi:''}">`+
+    (top?`<i class="${planned?'p5-q':'p5-u'}">${top}</i>`:'')+mark+
+    (bot?`<i class="${bot==='С'?'s':'u'}">${bot}</i>`:'')+'</td>'
+}
+// ── Дэр: паспортын өртөөний зам бүр → 10 үеийн блокууд ──
+function _p5DerBlocks(f){
+  const out=[];
+  const trs=(f.tracks||[]).filter(t=>!isMainTrack(t)).slice().sort((a,b)=>a.num-b.num);
+  trs.forEach(t=>{
+    const oSecs=origSections(t).filter(x=>!isTurnout(x));
+    if(!oSecs.length)return;
+    const realById={};(t.sections||[]).forEach(x=>{realById[x.id]=x});
+    const replAt=(id,i)=>{const rs=realById[id],e=rs&&rs.repl&&rs.repl[i];return (e&&e.d&&replWasBad(e))?e:null};
+    const normal=oSecs.filter(s=>s.type!=='connecting'),conn=oSecs.filter(s=>s.type==='connecting');
+    // Үе дамнасан дараалал — замын хэмжээнд (10 үеийн хуваарилалтаас үл хамаарна)
+    const cross=new Map();
+    for(let i=0;i<normal.length-1;i++){
+      const A=normal[i].sleepers,B=normal[i+1].sleepers;
+      let ta=0;for(let k=A.length-1;k>=0&&isBadSleeper(A[k].type);k--)ta++;
+      let hb=0;for(let k=0;k<B.length&&isBadSleeper(B[k].type);k++)hb++;
+      if(ta+hb>=3){
+        const sa=cross.get(normal[i].id)||new Set(),sb=cross.get(normal[i+1].id)||new Set();
+        for(let k=A.length-ta;k<A.length;k++)sa.add(k);for(let k=0;k<hb;k++)sb.add(k);
+        cross.set(normal[i].id,sa);cross.set(normal[i+1].id,sb)
+      }
+    }
+    const tot=oSecs.reduce((r,s)=>{const a=analyzeSection(s);r.b+=a.totalBad;r.n+=a.total;return r},{b:0,n:0});
+    const lbl=trackLabel(t);
+    const table=(sg,cap,isConn,totLbl)=>()=>{
+      const mx=sg.reduce((m,s)=>Math.max(m,s.sleepers.length),0);
+      const runs=sg.map(s=>{const set=new Set();let run=[];
+        s.sleepers.forEach((sl,i)=>{if(isBadSleeper(sl.type))run.push(i);else{if(run.length>=3)run.forEach(x=>set.add(x));run=[]}});
+        if(run.length>=3)run.forEach(x=>set.add(x));return set});
+      const crs=sg.map(s=>isConn?new Set():(cross.get(s.id)||new Set()));
+      let h=`<div class="p5-blk"><div class="p5-cap">${esc(cap)}</div><table class="p5-tb"><thead><tr><th>Дэр №</th>`+
+        sg.map(s=>`<th>${esc(s.label)}</th>`).join('')+'</tr></thead><tbody>';
+      for(let p=0;p<mx;p++){
+        h+=`<tr><td class="p5-n">${p+1}</td>`;
+        sg.forEach((s,si)=>{
+          const sl=s.sleepers[p];
+          if(!sl){h+='<td class="x"></td>';return}
+          if(sl.type==='normal'){h+='<td></td>';return}
+          let mark='ТБД',cls='t';
+          if(sl.type==='bad'){mark='—';cls='b'}else if(sl.type==='bad_tbd'){mark='ТТБД';cls='tt'}
+          const bad=isBadSleeper(sl.type),rp=bad?replAt(s.id,p):null,planned=!rp&&bad&&!!planAt(s,p);
+          h+=_p5Cell(mark,cls,rp?_p5Ym(rp.d):(planned?'?':''),planned,rp?(rp.s?'С':'У'):'',
+            runs[si].has(p)?'hi':crs[si].has(p)?'cr':'')
+        });
+        h+='</tr>'
+      }
+      // Дүн мөр: тэнцэхгүй/нийт, дараалсан цэгийн тоо
+      let pb=0,pn=0;
+      h+='<tr class="p5-sum"><td class="p5-n">Дүн</td>'+sg.map(s=>{
+        const a=analyzeSection(s),g=findConsecutiveBad(s).length;pb+=a.totalBad;pn+=a.total;
+        return `<td class="${g?'run':a.totalBad?'bad':''}">${a.total?a.totalBad+'/'+a.total:''}${g?`<i>дар: ${g}</i>`:''}</td>`
+      }).join('')+'</tr></tbody></table>';
+      h+=`<div class="p5-tot${isConn?' conn':''}">${esc(totLbl)} нийт тэнцэхгүй: ${pb}/${pn}${_p5Pct(pb,pn)}</div></div>`;
+      return h
+    };
+    out.push(()=>`<div class="p5-trk">${esc(lbl)}</div>`);
+    for(let g=0;g<normal.length;g+=10){
+      const sg=normal.slice(g,g+10),rng=sg.length>1?`${g+1}–${g+sg.length}`:`${g+1}`;
+      out.push(table(sg,`${lbl} · ${rng}-р үе`,false,`${rng}-р үеийн`))
+    }
+    for(let g=0;g<conn.length;g+=10)out.push(table(conn.slice(g,g+10),`${lbl} · Холбох хэсэг`,true,'Холбох хэсгийн'));
+    out.push(()=>`<div class="p5-tot trk">${esc(lbl)} нийт тэнцэхгүй дэр: ${tot.b}/${tot.n}${_p5Pct(tot.b,tot.n)}</div>`)
+  });
+  return out
+}
+// ── Дүнз: сум бүр — уртаар бүлэглэсэн нэг маягт (Excel-ийн сумын хуудас) ──
+function _p5SwBlocks(f){
+  return swAllTurnouts(f).filter(t=>(t.it||'').length).map(to=>()=>{
+    const map={},groups=[];
+    for(let i=0;i<to.it.length;i++){
+      const sl=swSlot(to,i),key=sl.kind==='дэр'?'head':sl.len;
+      if(!map[key]){map[key]={kind:sl.kind,len:sl.len,idx:[]};groups.push(map[key])}
+      map[key].idx.push(i)
+    }
+    groups.sort((a,b)=>a.kind==='дэр'?-1:b.kind==='дэр'?1:a.len-b.len);
+    const head=to.head||0,orig=swFullOrigIt(to),live=to.it||'';
+    const runSet=(lo,hi)=>{const set=new Set();let run=[];
+      for(let i=lo;i<hi;i++){if(isBadCh(orig[i]))run.push(i);else{if(run.length>=3)run.forEach(x=>set.add(x));run=[]}}
+      if(run.length>=3)run.forEach(x=>set.add(x));return set};
+    const hR=runSet(0,head),dR=runSet(head,orig.length);
+    const mx=groups.reduce((m,g)=>Math.max(m,g.idx.length),0);
+    let h=`<div class="p5-blk"><div class="p5-trk">${to.num}-р сум · ${esc((to.mak||'')+' '+(to.mark||''))}</div>`+
+      '<table class="p5-tb"><thead><tr><th>№</th>'+
+      groups.map(g=>`<th>${g.kind==='дэр'?'Дэр '+swLen(SW_HEAD_LEN):swLen(g.len)}</th>`).join('')+'<th>НИЙТ</th></tr></thead><tbody>';
+    for(let p=0;p<mx;p++){
+      h+=`<tr><td class="p5-n">${p+1}</td>`;
+      groups.forEach(g=>{
+        if(p>=g.idx.length){h+='<td class="x"></td>';return}
+        const i=g.idx[p];
+        if(!isBadCh(orig[i])){h+='<td></td>';return}
+        const isH=i<head,rp=isH?(to.slRepl&&to.slRepl[i]):swDzRepl(to,i);
+        const planned=!rp&&!!(isH?swSlPlan(to,i):swDzPlan(to,i)),hi=isH?hR.has(i):dR.has(i);
+        h+=_p5Cell('—','b',rp?_p5Ym(rp.d):(planned?'?':''),planned,rp?(hi?'С':'У'):'',hi?'hi':'')
+      });
+      h+='<td class="x"></td></tr>'
+    }
+    // Багана бүрийн дүн — Excel-тэй ижил: тэнцэхгүй тоо АМЬД (to.it) төлөвөөр,
+    // НИЙТ баганад зөвхөн ДҮНЗ (рам замын дэр тусдаа)
+    let cum=0,tN=0,tM=0,tB=0,tBM=0;
+    const per=groups.map(g=>{
+      const n=g.idx.length,bad=g.idx.filter(i=>isBadCh(live[i])).length,isH=g.kind==='дэр';
+      let dd='';
+      if(isH)dd=n?(n===1?'1':`1-${n}`):'';
+      else if(n){const a=cum+1;cum+=n;dd=n===1?String(a):`${a}-${cum}`}
+      if(!isH){tN+=n;tM+=n*g.len;tB+=bad;tBM+=bad*g.len}
+      return{n,bad,isH,len:g.len,dd}
+    });
+    const row=(lbl,fn,tv)=>`<tr class="p5-sum"><td class="p5-n">${lbl}</td>`+
+      per.map(pg=>`<td class="${pg.bad?'bad':''}">${fn(pg)}</td>`).join('')+`<td class="tot">${tv}</td></tr>`;
+    h+=row('Д/Д',pg=>pg.dd,tN?(tN===1?'1':`1-${tN}`):'')+
+       row('Пог/м',pg=>(!pg.isH&&pg.n)?swM(pg.n*pg.len):'',tM?swM(tM):'')+
+       row('Тэнц. ш',pg=>pg.bad||'',tB||'')+
+       row('Тэнц. пог/м',pg=>(!pg.isH&&pg.bad)?swM(pg.bad*pg.len):'',tBM?swM(tBM):'');
+    return h+'</tbody></table></div>'
+  })
+}
+// ── Паспорт сонгогч: дээш доош гулсуулж тааруулна (scroll-snap) ──
+const _P5_IT=44;
+function _p5PickOpen(){const p=document.getElementById('p5Pick');return !!p&&p.classList.contains('open')}
+function _p5ClosePick(){
+  const p=document.getElementById('p5Pick'),b=document.getElementById('p5PickBtn');
+  if(p)p.classList.remove('open');if(b)b.setAttribute('aria-expanded','false')
+}
+function p5TogglePick(){
+  hap(8);
+  if(_p5PickOpen()){_p5ClosePick();return}
+  const L=_p5List(_p5Mode),cur=_p5Folder();
+  const list=document.getElementById('p5PickList');if(!list)return;
+  if(!L.length){showToast(_p5Mode==='sw'?'Сумын паспорт алга':'Дэрийн паспорт алга');return}
+  list.innerHTML='<div class="p5-pick-pad"></div>'+L.map((f,i)=>
+    `<div class="p5-pick-it${cur&&f.id===cur.id?' on':''}" role="option" data-i="${i}" onclick="p5PickTap(${i})">${esc(_p5Name(f))}</div>`).join('')+
+    '<div class="p5-pick-pad"></div>';
+  document.getElementById('p5Pick').classList.add('open');
+  document.getElementById('p5PickBtn').setAttribute('aria-expanded','true');
+  list.scrollTop=Math.max(0,L.indexOf(cur))*_P5_IT
+}
+function p5PickTap(i){
+  const list=document.getElementById('p5PickList');if(!list)return;
+  // Таарсан мөрийг дахин товшвол жагсаалт хаагдана
+  if(Math.round(list.scrollTop/_P5_IT)===i){_p5ClosePick();return}
+  list.scrollTo({top:i*_P5_IT,behavior:'smooth'})
+}
+function _p5PickSettle(){
+  const list=document.getElementById('p5PickList');if(!list||!_p5PickOpen())return;
+  const L=_p5List(_p5Mode),i=Math.max(0,Math.min(L.length-1,Math.round(list.scrollTop/_P5_IT))),f=L[i];
+  list.querySelectorAll('.p5-pick-it').forEach(e=>e.classList.toggle('on',+e.dataset.i===i));
+  if(f&&(!_p5Folder()||f.id!==_p5Folder().id)){
+    _p5Fid[_p5Mode]=f.id;hap(6);
+    const nm=document.getElementById('p5PickName');if(nm)nm.textContent=_p5Name(f);
+    _p5RenderBody(f)
+  }
+}
+// ── Гүйлгэхэд нуух, хурдан 2 товшиж буцааж гаргах ──
+function _p5SetImm(on){document.body.classList.toggle('p5-imm',!!on)}
+function _p5Bind(){
+  if(_p5Bound)return;_p5Bound=true;
+  const sc=document.getElementById('p5Scroll'),list=document.getElementById('p5PickList');
+  if(list){let tm=0;list.addEventListener('scroll',()=>{clearTimeout(tm);tm=setTimeout(_p5PickSettle,130)},{passive:true})}
+  if(!sc)return;
+  let last=0;
+  sc.addEventListener('scroll',()=>{
+    const y=sc.scrollTop;
+    if(y>last+6&&y>80&&!_p5PickOpen()&&!document.body.classList.contains('p5-imm'))_p5SetImm(true);
+    last=y
+  },{passive:true});
+  // Хурдан 2 товшилт: хуруу бараг хөдлөөгүй, хоорондоо 320 мс-ээс бага
+  let st=null,lastTap=0,lx=0,ly=0;
+  sc.addEventListener('touchstart',e=>{const t=e.touches[0];st=e.touches.length===1?{x:t.clientX,y:t.clientY,at:Date.now()}:null},{passive:true});
+  sc.addEventListener('touchend',e=>{
+    if(!st)return;const t=e.changedTouches[0],s=st;st=null;
+    if(Math.abs(t.clientX-s.x)>12||Math.abs(t.clientY-s.y)>12||Date.now()-s.at>300){lastTap=0;return}
+    const now=Date.now();
+    if(now-lastTap<320&&Math.abs(t.clientX-lx)<36&&Math.abs(t.clientY-ly)<36){
+      lastTap=0;if(document.body.classList.contains('p5-imm')){_p5SetImm(false);hap(8)}
+    }else{lastTap=now;lx=t.clientX;ly=t.clientY}
+  },{passive:true});
+  sc.addEventListener('dblclick',()=>{if(document.body.classList.contains('p5-imm'))_p5SetImm(false)})
 }
 
 /* ── Мэдэгдэл: үүлтэй холбоо ─────────────────────────────── */
@@ -15948,6 +16283,9 @@ function _appBack(){
     case 'trackView':backFromTrack();return true;
     case 'mainKmView':goHome();return true;
     case 'summaryView':backFromSummary();return true;
+    case 'pu5View':
+      if(_p5PickOpen()){_p5ClosePick();return true}
+      goTab('home');return true;
     case 'syncView':case 'profView':goTab('home');return true;
     case 'adminView':return false;
     case 'homeView':
@@ -15966,7 +16304,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.12·209';
+const APP_BUILD='2026.11.20·210';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

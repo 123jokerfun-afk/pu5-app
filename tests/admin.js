@@ -58,12 +58,12 @@ const tab=await page.evaluate(async()=>{
   const t=id=>{const b=document.getElementById(id);return b?getComputedStyle(b).display:'?'};
   return {view:(document.querySelector('.view.active')||{}).id,
     home:document.getElementById('tabHome').getAttribute('aria-current'),
-    pass:t('tabPass'),sw:t('tabSw'),sync:t('tabSync'),prof:t('tabProf'),
+    pass:t('tabPass'),sw:t('tabSw'),p5:t('tabP5'),sync:t('tabSync'),prof:t('tabProf'),
     n:_adminData.length}});
 ok('Нүүр таб → удирдлагын дэлгэц',tab.view==='adminView',tab.view);
 ok('Нүүр таб идэвхтэй',tab.home==='true',tab.home);
-ok('Админд Паспорт / Сумууд таб нуугдана',tab.pass==='none'&&tab.sw==='none',
-   JSON.stringify([tab.pass,tab.sw]));
+ok('Админд Паспорт / Сумууд / ПУ-5 дэвтэр таб нуугдана',tab.pass==='none'&&tab.sw==='none'&&tab.p5==='none',
+   JSON.stringify([tab.pass,tab.sw,tab.p5]));
 ok('Мэдэгдэл / Профайл хэвээр',tab.sync!=='none'&&tab.prof!=='none');
 ok('Хоёр хэсгийн өгөгдөл ачаалагдав',tab.n===2,tab.n+' хэсэг');
 

@@ -1,8 +1,9 @@
 /* НҮҮРНИЙ ДАШБОАРД — тухайн паспортоо нээлгүйгээр шууд харагдах
    ерөнхий тойм (`renderDashboard`): тэнцэхгүй хувийн цагираг, материал,
-   Маягт 1-3-ийн 25%+ ба дараалан муудсан хүснэгт, анхаарах үе,
-   хувиар шүүсэн үеийн тоолуур. Тоо бүрийг нарийн
-   тооцоолсон эх өгөгдөлтэй тулган баталгаажуулна. */
+   Маягт 1-3-ийн 25%+ ба дараалан муудсан хүснэгт, 25%-иас дээш
+   үеийг маягтын дөрвөн ангиллаар (25–30 … 50-иас их) шүүх хэсэг.
+   «Анхаарах үе», «өмнөхөөс» харьцуулалт, «15–25% анхаарах» түвшин
+   хэрэглэгчийн хүсэлтээр хасагдсан. Тоо бүрийг эх өгөгдөлтэй тулгана. */
 const B=require('./base');
 const R=[];const ok=(n,c,d)=>{R.push(!!c);console.log((c?'  ✓ ':'  ✗ ')+n+(d!==undefined?'  — '+d:''))};
 
@@ -67,14 +68,16 @@ const dash=await page.evaluate(()=>{
     name:document.getElementById('dashFolderName').textContent,
     minis:g,
     pct:(document.getElementById('dashPct')||{}).textContent,
-    trend:(document.querySelector('#dashHero .dash-trend')||{}).className||'',
+    trend:document.querySelectorAll('#dashHero .dash-trend').length,
+    heroSt:(document.querySelector('#dashHero .dash-st')||{}).textContent||'',
+    bodyTxt:document.getElementById('dashBody').textContent,
     hasChart:document.querySelectorAll('.dash-cmp,.dash-bars,.dash-band-wrap').length,
     speedTxt:/Хурд хязгаар/.test(document.getElementById('dashBody').textContent),
     pctTbl:tb('dashPctTbl'),runTbl:tb('dashRunTbl'),
     expPct:trs.map(_pctBuckets),expRun:trs.map(_runBuckets),
-    worst:[...document.querySelectorAll('#dashWorst .dash-wr-n')].map(e=>e.textContent.trim()),
-    worstP:[...document.querySelectorAll('#dashWorst .dash-wr-p')].map(e=>e.textContent.trim()),
-    thrResult:document.querySelector('.dash-thr-result').textContent,
+    worst:document.querySelectorAll('#dashWorst,.dash-wr').length,
+    chips:[...document.querySelectorAll('.dash-thr-chip')].map(e=>e.textContent.trim()),
+    thrResult:document.querySelector('.dash-thr-result').textContent.replace(/\s+/g,' ').trim(),
     activeChip:(document.querySelector('.dash-thr-chip.active')||{}).textContent
   }
 });
@@ -84,7 +87,11 @@ ok('Модон/ТБД/Сум-дүнз mini-карт зөв (60/0/10)',
 ok('Гол зам дашбоардын тооцоонд ОРООГҮЙ (50 тэнцэхгүй нэмэгдээгүй)',
    dash.minis[0]==='60',dash.minis[0]);
 ok('Цагираг: тэнцэхгүй хувь 10/60 = 16.7%',dash.pct==='16.7%',dash.pct);
-ok('Өмнөх паспортоос (4/20=20%) буурсан тул "down"',/down/.test(dash.trend),dash.trend);
+ok('"өмнөхөөс" харьцуулалт ХАСАГДСАН (өмнөх паспорт байгаа ч)',
+   dash.trend===0&&!/өмнөхөөс/.test(dash.bodyTxt),dash.trend);
+ok('Цагирагийн доор 25%-ийн хоёр түвшин: 16.7% → "25%-иас доош"',
+   dash.heroSt.trim()==='✓25%-иас доош',JSON.stringify(dash.heroSt));
+ok('"15–25% анхаарах" түвшин ХАСАГДСАН',!/15–25|анхаарах/i.test(dash.bodyTxt));
 ok('Чиг хандлагын график, "Хурд хязгаарлах" гарчиг ХАСАГДСАН',
    dash.hasChart===0&&!dash.speedTxt,dash.hasChart+' / '+dash.speedTxt);
 // Хүснэгт 1: толгой + зам бүр + Нийт
@@ -106,20 +113,21 @@ ok('Дараалан муудсан Excel-ийн _runBuckets-тэй ижил',
    JSON.stringify(dash.runTbl)+' vs '+JSON.stringify(dash.expRun));
 ok('Дараалан муудсан: 6 дараалсан (3-р үе) "5 ба<" баганад',
    dash.expRun[0][2]===1&&dash.runTbl[dash.runTbl.length-1][3]==='1',JSON.stringify(dash.runTbl));
-ok('Анхаарах үе: хамгийн өндөр нь 3-р үе (30%)',
-   /2-р зам · 3-р үе/.test(dash.worst[0]||'')&&dash.worstP[0]==='30%',JSON.stringify(dash.worst)+' '+JSON.stringify(dash.worstP));
-ok('Анхдагч 15% босго идэвхтэй',/15%/.test(dash.activeChip),dash.activeChip);
-ok('15% босгод 2 үе орно (15% ба 30%, 3-аас)',
-   /^2\s/.test(dash.thrResult.trim())||/>\s*2\s*</.test(dash.thrResult),dash.thrResult);
+ok('"Анхаарах үе" карт ХАСАГДСАН',dash.worst===0,dash.worst);
+ok('Хувь сонгох товч нь маягтын 4 ангилал',
+   JSON.stringify(dash.chips)===JSON.stringify(['25–30%','31–40%','41–50%','50%-иас их']),JSON.stringify(dash.chips));
+ok('Анхдагч 25–30% ангилал идэвхтэй',dash.activeChip==='25–30%',dash.activeChip);
+ok('25–30%: "Тэнцэхгүй дэрийн эзлэх хувь 25–30% байгаа 1 ш үе байна"',
+   dash.thrResult==='Тэнцэхгүй дэрийн эзлэх хувь 25–30% байгаа 1 ш үе байна',dash.thrResult);
 
-// ── 3. Босго товч солиход дахин тооцоологдоно ──
-const thr5=await page.evaluate(()=>{dashSetThreshold(5);
-  return document.querySelector('.dash-thr-result').textContent});
-ok('5% босгод бүх 3 үе орно',/^3\s/.test(thr5.trim()),thr5);
-const thr25=await page.evaluate(()=>{dashSetThreshold(25);
-  return document.querySelector('.dash-thr-result').textContent});
-ok('25% босгод зөвхөн 1 үе (30%) орно',/^1\s/.test(thr25.trim()),thr25);
-await page.evaluate(()=>dashSetThreshold(15));   // дараагийн тестэд нөлөөлөхгүй
+// ── 3. Ангилал солиход дахин тооцоологдоно (тоо нь 25%+ хүснэгттэй ижил) ──
+const bk=await page.evaluate(()=>[0,1,2,3].map(i=>{dashSetBucket(i);
+  return [document.querySelector('.dash-thr-chip.active').textContent,
+    document.querySelector('.dash-thr-result').textContent.replace(/\s+/g,' ').trim()]}));
+ok('31–40%: 0 ш үе',/31–40% байгаа 0 ш үе байна$/.test(bk[1][1]),bk[1][1]);
+ok('50%-иас их: "… 50%-иас их байгаа 0 ш үе байна"',
+   bk[3][0]==='50%-иас их'&&/50%-иас их байгаа 0 ш үе байна$/.test(bk[3][1]),JSON.stringify(bk[3]));
+await page.evaluate(()=>dashSetBucket(0));   // дараагийн тестэд нөлөөлөхгүй
 
 // ── 4. "Сум/дүнз" mini-карт дээр дарахад swHomeView руу шууд орно ──
 await page.click('.dash-mini-link');
