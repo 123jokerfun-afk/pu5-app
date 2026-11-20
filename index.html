@@ -948,9 +948,30 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
    Доош гүйлгэхэд толгой ба доод таб нуугдана (маягт дэлгэцийг бүтэн
    эзэлнэ), хурдан 2 товшвол буцаж гарна. ── */
 #pu5View .home-body{padding-bottom:0}
-.p5-hdr{padding-bottom:10px;transition:transform .26s cubic-bezier(.4,0,.2,1)}
-body.p5-imm #pu5View .p5-hdr{transform:translateY(-110%);pointer-events:none}
+/* Толгой = дээд хэсэг (Дэр/Дүнз, паспорт) + замын товчнууд. Толгой
+   sticky боловч top нь сөрөг (−дээд хэсгийн өндөр, --p5-T): гүйлгэхэд
+   дээд хэсэг энгийнээр дээш гарч, замын товчнууд тааз руу тулж үлдэнэ.
+   «Зөвхөн маягт» горимд (body.p5-imm, хурдан 2 товшилтоор асч/унтарна)
+   дээд хэсэг ба доод таб бүр нуугдана. --p5-T, --p5-H-ийг _p5Measure() бодно. */
+#pu5View{--p5-T:0px;--p5-H:0px}
+#pu5View .p5-hdr{top:calc(-1 * var(--p5-T));padding-bottom:8px;
+  /* Тулсан толгойн ард маягт гүйнэ — тунгалаг дэвсгэрээр бичиг нэвт харагддаг */
+  background:var(--bg)}
+.p5-top{transition:opacity .2s}
+#pu5View.p5-up .p5-top{opacity:0;pointer-events:none}
+body.p5-imm #pu5View .p5-hdr{top:0}
+body.p5-imm #pu5View .p5-top{display:none}
+body.p5-imm #pu5View .p5-trks{margin-top:0}
 body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
+/* Замын (сумын) товчнууд — багтахгүй бол хажуу тийш гүйнэ */
+.p5-trks{position:relative;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;
+  margin:10px -16px 0;padding:4px 16px 6px;scroll-padding:0 16px;-webkit-overflow-scrolling:touch}
+.p5-trks::-webkit-scrollbar{display:none}
+.p5-trks:empty{display:none}
+.p5-trk-c{flex-shrink:0;min-height:34px;padding:0 14px;border-radius:99px;border:0;
+  background:var(--bg);box-shadow:var(--sh-sm-in);color:var(--ink3);font-family:inherit;
+  font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer;transition:background .18s,box-shadow .18s,color .18s}
+.p5-trk-c[aria-selected="true"]{background:var(--card);box-shadow:var(--sh-sm);color:var(--gold-deep);font-weight:900}
 /* Дэр/Дүнз — хонхойсон суурин дээр сонгогдсон нь товойж гарна
    (Uulzwar-ын сегмент товчтой ижил мэдрэмж) */
 .p5-tabs{display:flex;gap:6px;padding:5px;border-radius:18px;background:var(--bg);box-shadow:var(--sh-sm-in)}
@@ -983,8 +1004,10 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
 .p5-pick-frame{position:absolute;z-index:0;left:10px;right:10px;top:88px;height:44px;border-radius:14px;
   pointer-events:none;background:var(--bg);box-shadow:var(--sh-sm-in)}
 .p5-body{--p5-hi-bg:rgba(255,186,0,.30);--p5-hi-ring:#d99a00;--p5-hi-ink:#7a4600;
+  --p5-hl:rgba(75,86,214,.22);--p5-hl-bg:var(--gold-deep);--p5-hl-ink:#fff;
   padding:12px 10px 40px;touch-action:manipulation}
-[data-theme="dark"] .p5-body{--p5-hi-bg:rgba(255,196,40,.20);--p5-hi-ring:#FFC83D;--p5-hi-ink:#FFD866}
+[data-theme="dark"] .p5-body{--p5-hi-bg:rgba(255,196,40,.20);--p5-hi-ring:#FFC83D;--p5-hi-ink:#FFD866;
+  --p5-hl:rgba(255,179,71,.24);--p5-hl-ink:#231500}
 /* Тайлбар — өнгөт чип бүр маягтын нүдтэй ЯГ ижил загвартай (доорх .p5-tb) */
 .p5-leg{display:flex;flex-wrap:wrap;gap:6px 10px;margin:0 2px 14px;padding:10px 12px;border-radius:16px;
   background:var(--bg);box-shadow:var(--sh-sm-in);font-size:10.5px;color:var(--ink3);font-weight:700;line-height:1.3}
@@ -998,6 +1021,7 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
 .p5-sw.tt{background:var(--dred-bg);color:var(--dred)}
 .p5-sw.hi,.p5-sw.cr{background:var(--p5-hi-bg);color:var(--p5-hi-ink);box-shadow:inset 0 0 0 2px var(--p5-hi-ring)}
 .p5-sw.cr{box-shadow:inset 0 0 0 2px var(--purple)}
+.p5-sw.x{background:transparent;box-shadow:inset 0 0 0 2px var(--red)}
 .p5-sw i.p5-u,.p5-sw i.p5-q{color:var(--blue)}
 .p5-sw i.p5-q{font-size:9px}
 .p5-sw i.s{color:var(--g700)}
@@ -1007,7 +1031,22 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
 .p5-trk:first-of-type{margin-top:4px}
 .p5-blk{margin:0 0 16px;padding:10px 6px 8px;border-radius:18px;background:var(--card);box-shadow:var(--sh)}
 .p5-blk>.p5-trk{margin:2px 4px 10px}
+.p5-caprow{display:flex;align-items:center;gap:6px;margin:0 2px 8px}
+.p5-caprow>.p5-cap,.p5-caprow>.p5-trk{flex:1;min-width:0;margin:0}
+.p5-caprow>.p5-trk::before{display:none}
 .p5-cap{font-size:12px;font-weight:900;color:var(--ink2);margin:2px 6px 8px}
+.p5-pgn{font-size:11px;font-weight:800;color:var(--ink4);white-space:nowrap}
+.p5-nav{flex-shrink:0;width:32px;height:32px;border-radius:50%;border:0;background:var(--card);
+  box-shadow:var(--sh-sm);color:var(--gold-deep);font-family:inherit;font-size:18px;font-weight:900;
+  line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.p5-nav:active{box-shadow:var(--sh-sm-in)}
+.p5-nav:disabled{opacity:.35;box-shadow:none;cursor:default}
+/* Хуудас солигдоход шудралтын чиглэлээр зөөлөн орж ирнэ */
+.p5-page.in-l{animation:p5InL .22s var(--ease)}
+.p5-page.in-r{animation:p5InR .22s var(--ease)}
+@keyframes p5InL{from{opacity:.3;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes p5InR{from{opacity:.3;transform:translateX(-28px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.p5-page.in-l,.p5-page.in-r{animation:none}}
 .p5-empty{text-align:center;padding:50px 16px;color:var(--ink3);font-size:13px;font-weight:600}
 /* Маягт: хонхойсон суурин дээр зөөлөн хавтангууд. Нүд бүрд сүүдэр
    өгөхгүй — 30 000+ нүдтэй паспорт гүйлгэхэд гацна. Өнгөний утга
@@ -1018,11 +1057,23 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
   font-size:10px;font-variant-numeric:tabular-nums}
 .p5-tb th,.p5-tb td{border:0;border-radius:5px;text-align:center;padding:1px 0;height:20px;
   line-height:1.05;overflow:hidden;font-weight:800;background:var(--card)}
-.p5-tb thead th{background:transparent;color:var(--gold-deep);font-size:9.5px;font-weight:900;height:22px;
+/* «Дэр № | 1-р үе …» мөр замын товчны доор тулж үлдэнэ: тулсан толгойн
+   харагдах өндөр = бүтэн өндөр − дээд хэсэг (хоёр горимд ижил) */
+.p5-tb thead th{position:sticky;top:calc(var(--p5-H) - var(--p5-T) - 1px);z-index:2;
+  background:var(--bg);color:var(--gold-deep);font-size:9.5px;font-weight:900;height:22px;
   white-space:normal;overflow-wrap:anywhere}
 .p5-tb thead th.tot{font-size:8.5px;letter-spacing:-.02em;overflow-wrap:normal}
-.p5-tb thead th:first-child,.p5-tb .p5-n{background:transparent;color:var(--ink4);font-size:9px;width:24px}
-.p5-tb td.x{background:transparent}
+.p5-tb thead th:first-child,.p5-tb .p5-n{color:var(--ink4);font-size:9px;width:24px}
+.p5-tb .p5-n{background:transparent}
+/* Үеийн эпюр: дэр дууссан хоосон хэсэг — нэг өндөр нүд (rowspan) улаан
+   хүрээтэй, хэрэглэгч гараар зурсан шиг нэг тасралтгүй хүрээ болно */
+.p5-tb td.x{background:transparent;box-shadow:inset 0 0 0 2px var(--red);border-radius:8px}
+.p5-tb td.xn{background:transparent}
+/* Дэрийн дугаар / үеийн дугаар дарахад мөр, багана тодорно. Суурь
+   өнгийг (тэнцэхгүй, ТБД …) дарахгүйн тулд дээр нь өнгөт давхарга */
+.p5-tb tbody .p5-n,.p5-tb thead th:not(:first-child):not(.tot){cursor:pointer}
+.p5-tb tr.hl>td:not(.x):not(.xn):not(.p5-n),.p5-tb td.hc{background-image:linear-gradient(var(--p5-hl),var(--p5-hl))}
+.p5-tb tr.hl>td.p5-n,.p5-tb thead th.hc{background:var(--p5-hl-bg);color:var(--p5-hl-ink)}
 .p5-tb td.b{background:var(--orange-bg);color:var(--orange);font-size:13px}
 .p5-tb td.t{background:var(--red-bg);color:var(--red);font-size:8px}
 .p5-tb td.tt{background:var(--dred-bg);color:var(--dred);font-size:8px}
@@ -1057,6 +1108,7 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
   .p5-tb thead th:first-child,.p5-tb .p5-n{width:18px;font-size:8px}
   /* Дүнзний доод мөрийн нэр («Тэнц. пог/м») 18px-д багтахгүй */
   .p5-tb.sw thead th:first-child,.p5-tb.sw .p5-n{width:24px}
+  .p5-tb.sw thead th{font-size:7.5px;letter-spacing:-.03em}
   .p5-tb thead th{font-size:8.5px}
   .p5-tb thead th.tot{font-size:7.5px}
   .p5-tb td.t,.p5-tb td.tt{font-size:6.5px;letter-spacing:-.02em}
@@ -2536,6 +2588,7 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
 <div class="view" id="pu5View">
   <div class="home-body" id="p5Scroll">
     <div class="pg-hdr p5-hdr" id="p5Hdr">
+      <div class="p5-top" id="p5Top">
       <div class="p5-tabs" role="group" aria-label="Маягт">
         <button class="p5-tab" id="p5TabDer" aria-pressed="true" onclick="p5SetMode('der')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h18M3 16h18M7 5v14M17 5v14"/></svg>Дэр</button>
@@ -2548,8 +2601,10 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
       </button>
       <div class="p5-pick" id="p5Pick">
         <div class="p5-pick-frame"></div>
-        <div class="p5-pick-list" id="p5PickList" role="listbox" aria-label="Паспорт сонгох"></div>
+        <div class="p5-pick-list" id="p5PickList" role="listbox" aria-label="Паспорт сонгох" data-noswipe></div>
       </div>
+      </div>
+      <div class="p5-trks" id="p5Trks" role="tablist" aria-label="Зам сонгох" data-noswipe></div>
     </div>
     <div class="p5-body" id="p5Body"></div>
   </div>
@@ -12936,7 +12991,9 @@ function initSwSwipe(){
     const ready=()=>!document.querySelector('.overlay.open');
     const pick=dx=>(typeof dirs==='function'?dirs():dirs)[String(Math.sign(dx))]||null;
     v.addEventListener('touchstart',e=>{
-      if(!ready()){st=null;return}
+      // Хажуу тийш гүйдэг жагсаалт (ПУ-5-ын замын товч, паспорт сонгогч)
+      // дотор эхэлсэн шудралт тэр жагсаалтынх — таб солихгүй
+      if(!ready()||(e.target.closest&&e.target.closest('[data-noswipe]'))){st=null;return}
       const t=e.touches[0];st={x:t.clientX,y:t.clientY,time:Date.now()}
     },{passive:true});
     v.addEventListener('touchmove',e=>{
@@ -12959,6 +13016,9 @@ function initSwSwipe(){
   // талын) таб, БАРУУН тийш → өмнөх таб. Чиглэлийг шудралт бүрд ШИНЭЭР
   // тооцно — Нүүр/Паспорт нэг дэлгэц тул дэд таб нь өөрчлөгддөг.
   const dirsNow=()=>{
+    // ПУ-5-ын «зөвхөн маягт» горимд (толгой, доод таб нуугдсан) шудралт
+    // таб биш, маягтын хуудас (1–10, 11–20 …) солино
+    if(_curTab()==='p5'&&document.body.classList.contains('p5-imm'))return _p5SwipeDirs();
     const o=_tabOrder(),i=o.indexOf(_curTab()),r={};
     if(i<0)return r;
     if(i<o.length-1)r['-1']={go:()=>goTab(o[i+1]),lbl:_TAB_NM[o[i+1]]+' →'};
@@ -15691,10 +15751,15 @@ function _syncTabs(force){
    · Дэр: зам бүрийг 10 үеэр доош цувуулна — Excel-ийн ПУ-5 дэвтэртэй
      (_exportPu5BookCore) ЯГ ижил тэмдэглэгээ, ижил эх (солихоос өмнөх)
      төлөв. Дүнз: сум бүр уртаар бүлэглэсэн нэг маягт (_exportSwPu5BookCore).
-   · Доош гүйлгэхэд толгой ба доод таб нуугдана, хурдан 2 товшвол гарна.
+   · Дээр нь зам (сум) бүрийн товч; нэг удаад нэг хуудас (10 үе / нэг сум).
+   · Доош гүйлгэх эсвэл хурдан 2 товшиход «зөвхөн маягт» горим асна —
+     хажуу тийш шудрахад хуудас солигдоно.
    ══════════════════════════════════════════════════════════════ */
-let _p5Mode='der',_p5Gen=0,_p5Queue=[],_p5Bound=false;
+let _p5Mode='der',_p5Bound=false,_p5Cur=null,_p5HlRow=-1,_p5HT={H:0,T:0};
 const _p5Fid={der:null,sw:null};
+// Сонгосон хуудас (паспортын хуудасны жагсаалт дахь индекс). Паспорт
+// солигдвол эхний хуудас руу буцна (_p5Last-ээр илрүүлнэ).
+const _p5Pg={der:0,sw:0},_p5Last={der:undefined,sw:undefined};
 // Шинээс хуучин руу (огноогоор) — хогийн сав, салбарын хуулбар орохгүй
 function _p5List(mode){
   const src=mode==='sw'?swFolders():(DB.folders||[]).filter(f=>f&&!f.trashedAt&&!f.br);
@@ -15725,33 +15790,117 @@ function renderPu5(){
   const nm=document.getElementById('p5PickName');if(nm)nm.textContent=_p5Name(f);
   _p5RenderBody(f)
 }
-/* Маягт их дэртэй паспортод мянга мянган нүдтэй болох тул эхний хэдэн
-   блокийг шууд, үлдсэнийг дараагийн агшнуудад нэмж зурна (дэлгэц гацахгүй).
-   Паспорт солигдвол хуучин дараалал _p5Gen-ээр зогсоно. */
+/* Нэг удаад ЗӨВХӨН сонгосон хуудсыг (≤10 үе эсвэл нэг сум) зурна —
+   өмнө нь бүх паспортыг доош цувуулж зурдаг байсан тул 30 000+ нүдтэй
+   паспортод хэсэг хэсгээр зурах шаардлагатай байв. Хуудасны жагсаалт
+   өөрөө (closure) хөнгөн, нүдийг зөвхөн build() дуудагдахад үүсгэнэ. */
 function _p5RenderBody(f){
   const body=document.getElementById('p5Body');if(!body)return;
-  const gen=++_p5Gen;
-  _p5Queue=f?(_p5Mode==='sw'?_p5SwBlocks(f):_p5DerBlocks(f)):[];
-  if(!_p5Queue.length){
+  _p5Cur=f?(_p5Mode==='sw'?_p5SwPages(f):_p5DerPages(f)):{pages:[],trks:[]};
+  const fid=f?f.id:null;
+  if(_p5Last[_p5Mode]!==fid){_p5Last[_p5Mode]=fid;_p5Pg[_p5Mode]=0;_p5HlRow=-1}
+  const tw=document.getElementById('p5Trks');
+  if(tw)tw.innerHTML=_p5Cur.trks.map((t,j)=>
+    `<button class="p5-trk-c" role="tab" aria-selected="false" data-j="${j}" onclick="p5Trk(${j})">${esc(t.lbl)}</button>`).join('');
+  if(!_p5Cur.pages.length){
     body.innerHTML=`<div class="p5-empty">${!f?(_p5Mode==='sw'?'Сумын паспорт алга':'Дэрийн паспорт алга')
       :(_p5Mode==='sw'?'Энэ паспортад бүртгэсэн сум алга':'Энэ паспортад өртөөний зам алга')}</div>`;
-    return
+    _p5Measure();return
   }
-  body.innerHTML=_p5Leg(_p5Mode);
-  const step=()=>{
-    if(gen!==_p5Gen)return;
-    const t0=Date.now();let h='';
-    while(_p5Queue.length&&(h===''||Date.now()-t0<12))h+=_p5Queue.shift()();
-    body.insertAdjacentHTML('beforeend',h);
-    if(_p5Queue.length)setTimeout(step,0)
-  };
-  step()
+  body.innerHTML=_p5Leg(_p5Mode)+'<div class="p5-page" id="p5Page"></div>';
+  _p5Show(_p5Pg[_p5Mode],0)
 }
-// Шалгалт, хэвлэх зэрэгт: үлдсэн блокийг нэг дор зурна
-function _p5Flush(){
-  const body=document.getElementById('p5Body');if(!body)return;
-  let h='';while(_p5Queue.length)h+=_p5Queue.shift()();
-  if(h)body.insertAdjacentHTML('beforeend',h)
+function _p5Show(i,dir){
+  const pg=document.getElementById('p5Page'),C=_p5Cur;if(!pg||!C||!C.pages.length)return;
+  const P=C.pages;i=Math.max(0,Math.min(P.length-1,i));_p5Pg[_p5Mode]=i;
+  pg.className='p5-page';pg.innerHTML=P[i].build(i,P.length);
+  if(dir){void pg.offsetWidth;pg.classList.add(dir>0?'in-l':'in-r')}
+  _p5ReHl();
+  // Сонгосон замын товч идэвхтэй, харагдах хэсэгт гүйж орно
+  const tw=document.getElementById('p5Trks');
+  if(tw){let on=null;
+    tw.querySelectorAll('.p5-trk-c').forEach(b=>{const s=+b.dataset.j===P[i].t;b.setAttribute('aria-selected',s?'true':'false');if(s)on=b});
+    if(on){const l=on.offsetLeft,r=l+on.offsetWidth;
+      if(l<tw.scrollLeft+16)tw.scrollLeft=l-16;else if(r>tw.scrollLeft+tw.clientWidth-16)tw.scrollLeft=r-tw.clientWidth+16}}
+  _p5Measure();
+  // Доош гүйлгэсэн байхад хуудас солигдвол шинэ хуудасны эхлэл харагдана
+  const sc=document.getElementById('p5Scroll');
+  if(sc&&dir){
+    const top=pg.getBoundingClientRect().top-sc.getBoundingClientRect().top+sc.scrollTop-(_p5HT.H-_p5HT.T)-6;
+    if(sc.scrollTop>top)sc.scrollTop=Math.max(0,top)
+  }
+}
+function p5Page(d){
+  const C=_p5Cur,i=_p5Pg[_p5Mode]+d;
+  if(!C||i<0||i>=C.pages.length)return false;
+  hap(6);_p5Show(i,d);return true
+}
+function p5Trk(j){
+  const T=_p5Cur&&_p5Cur.trks[j];if(!T)return;
+  const cur=_p5Pg[_p5Mode];if(_p5Cur.pages[cur]&&_p5Cur.pages[cur].t===j)return;
+  hap(6);_p5Show(T.first,T.first>cur?1:-1)
+}
+// «Зөвхөн маягт» горимын шудралт: хуруу зүүн тийш → дараагийн хуудас
+function _p5SwipeDirs(){
+  const r={},P=_p5Cur&&_p5Cur.pages,i=_p5Pg[_p5Mode];if(!P||!P.length)return r;
+  if(i<P.length-1)r['-1']={go:()=>p5Page(1),lbl:P[i+1].nm+' →'};
+  if(i>0)r['1']={go:()=>p5Page(-1),lbl:'← '+P[i-1].nm};
+  return r
+}
+// Толгойн өндөр: H — бүтэн, T — гулсаж нуугдах дээд хэсэг (Дэр/Дүнз,
+// паспорт). Харагдахгүй (display:none) үед 0 гардаг тул алгасна.
+function _p5Measure(){
+  const v=document.getElementById('pu5View'),hd=document.getElementById('p5Hdr'),
+    tp=document.getElementById('p5Top'),tr=document.getElementById('p5Trks');
+  if(!v||!hd||!tp||!tr)return;
+  // Маягт горимд дээд хэсэг display:none тул хэмжихгүй — өмнөх утга хэвээр
+  if(document.body.classList.contains('p5-imm')&&_p5HT.H)return;
+  const H=hd.offsetHeight;if(!H)return;
+  const T=tr.offsetHeight?tr.offsetTop-tp.offsetTop:tp.offsetHeight;
+  _p5HT={H,T};v.style.setProperty('--p5-H',H+'px');v.style.setProperty('--p5-T',T+'px')
+}
+function _p5CapRow(i,N,pgn,inner){
+  return `<div class="p5-caprow"><button class="p5-nav" aria-label="Өмнөх хуудас" onclick="p5Page(-1)"${i<=0?' disabled':''}>‹</button>`+
+    inner+`<span class="p5-pgn">${pgn}</span>`+
+    `<button class="p5-nav" aria-label="Дараагийн хуудас" onclick="p5Page(1)"${i>=N-1?' disabled':''}>›</button></div>`
+}
+// ── Мөр (дэрийн дугаар) ба багана (үеийн дугаар) тодруулах ──
+// Мөр нь хуудас солигдоход хэвээр (ижил дугаартай дэрийг харьцуулна)
+function _p5ReHl(){
+  const pg=document.getElementById('p5Page');if(!pg)return;
+  pg.querySelectorAll('tr.hl').forEach(r=>r.classList.remove('hl'));
+  const tb=pg.querySelector('.p5-tb');if(!tb||_p5HlRow<0)return;
+  const tr=tb.tBodies[0].rows[_p5HlRow];
+  if(tr&&!tr.classList.contains('p5-sum'))tr.classList.add('hl')
+}
+/* Эпюрийн хоосон хэсэг нэг өндөр нүд (rowspan) тул доод мөрүүдэд нүдний
+   дугаар багана бүрээр өөр. Үе бүрийн дэрийн тоо (data-l)-гоор мөр бүрд
+   тухайн үеийн нүдийг олно: мөр p-д үе j нүдтэй ⇔ урт(j) ≥ p. */
+function _p5HlCol(tb,si){
+  const was=tb.querySelector('thead th.hc'),same=!!was&&was.cellIndex===si+1;
+  tb.querySelectorAll('.hc').forEach(x=>x.classList.remove('hc'));
+  if(same)return;
+  const L=String(tb.dataset.l||'').split(',').map(Number);
+  const th=tb.tHead.rows[0].cells[si+1];if(th)th.classList.add('hc');
+  [...tb.tBodies[0].rows].forEach((tr,p)=>{
+    let k=si+1;
+    if(!tr.classList.contains('p5-sum')){
+      if(!(L[si]>p))return;
+      k=1;for(let j=0;j<si;j++)if(L[j]>=p)k++
+    }
+    const c=tr.cells[k];if(c)c.classList.add('hc')
+  })
+}
+function _p5HlTap(e){
+  const c=e.target.closest&&e.target.closest('.p5-tb tbody td.p5-n,.p5-tb thead th');if(!c)return;
+  const tb=c.closest('.p5-tb');if(!tb)return;
+  if(c.tagName==='TH'){
+    if(c.cellIndex===0){tb.querySelectorAll('.hc').forEach(x=>x.classList.remove('hc'));_p5HlRow=-1;_p5ReHl();return}
+    if(c.classList.contains('tot'))return;
+    hap(6);_p5HlCol(tb,c.cellIndex-1);return
+  }
+  const tr=c.parentNode;if(tr.classList.contains('p5-sum'))return;
+  hap(6);_p5HlRow=_p5HlRow===tr.sectionRowIndex?-1:tr.sectionRowIndex;_p5ReHl()
 }
 // Тайлбар — чип бүр маягтын нүдтэй ижил өнгө, хэлбэртэй тул уншихад
 // тайлбар ба маягтыг хооронд нь тулгах шаардлагагүй
@@ -15760,28 +15909,29 @@ function _p5Leg(mode){
   const rp='<i class="p5-u">26/5</i>—<i class="s">С</i>';
   return '<div class="p5-leg">'+(mode==='sw'
     ?c('','','Хэвийн')+c('b','—','Тэнцэхгүй')+c('b hi','—','3+ дараалсан')+
-     c('b rp',rp,'Сольсон (С = дараалсан, У = ганц)')+c('b','<i class="p5-q">?</i>—','Солихоор төлөвлөсөн')
+     c('b rp',rp,'Сольсон (С = дараалсан, У = ганц)')+c('b','<i class="p5-q">?</i>—','Солихоор төлөвлөсөн')+
+     c('x','','Тухайн урттай дүнз дууссан')
     :c('','','Хэвийн мод')+c('b','—','Тэнцэхгүй мод')+c('t','ТБД','Бетон')+c('tt','ТТБД','Тэнцэхгүй бетон')+
      c('b hi','—','3+ дараалсан')+c('b cr','—','Үе дамнасан')+
-     c('b rp',rp,'Сольсон (С = сийрэгжилт, У = бусад)')+c('b','<i class="p5-q">?</i>—','Солихоор төлөвлөсөн'))+'</div>'
+     c('b rp',rp,'Сольсон (С = сийрэгжилт, У = бусад)')+c('b','<i class="p5-q">?</i>—','Солихоор төлөвлөсөн')+
+     c('x','','Үеийн дэр дууссан (эпюр)'))+'</div>'
 }
 const _p5Ym=d=>{const m=String(d||'').match(/^(\d{2})(\d{2})-(\d{2})/);return m?`${m[2]}/${+m[3]}`:''};
 const _p5Pct=(b,n)=>n?` (${(b/n*100).toFixed(1)}%)`:'';
-/* Нэг нүд — Excel-ийн fillCell-тэй ижил: хэвийн хоосон, тэнцэхгүй "—",
-   ТБД/ТТБД, сольсон бол дээр он/сар, доор С (сийрэгжилт) / У (бусад),
-   төлөвлөсөн бол дээр "?". */
 function _p5Cell(mark,cls,top,planned,bot,hi){
   return `<td class="${cls}${hi?' '+hi:''}">`+
     (top?`<i class="${planned?'p5-q':'p5-u'}">${top}</i>`:'')+mark+
     (bot?`<i class="${bot==='С'?'s':'u'}">${bot}</i>`:'')+'</td>'
 }
-// ── Дэр: паспортын өртөөний зам бүр → 10 үеийн блокууд ──
-function _p5DerBlocks(f){
-  const out=[];
+// ── Дэр: паспортын өртөөний зам бүр → 10 үеийн хуудаснууд ──
+function _p5DerPages(f){
+  const pages=[],trks=[];
   const trs=(f.tracks||[]).filter(t=>!isMainTrack(t)).slice().sort((a,b)=>a.num-b.num);
   trs.forEach(t=>{
     const oSecs=origSections(t).filter(x=>!isTurnout(x));
     if(!oSecs.length)return;
+    const tj=trks.length,lbl=trackLabel(t);
+    trks.push({lbl,first:pages.length});
     const realById={};(t.sections||[]).forEach(x=>{realById[x.id]=x});
     const replAt=(id,i)=>{const rs=realById[id],e=rs&&rs.repl&&rs.repl[i];return (e&&e.d&&replWasBad(e))?e:null};
     const normal=oSecs.filter(s=>s.type!=='connecting'),conn=oSecs.filter(s=>s.type==='connecting');
@@ -15798,23 +15948,27 @@ function _p5DerBlocks(f){
       }
     }
     const tot=oSecs.reduce((r,s)=>{const a=analyzeSection(s);r.b+=a.totalBad;r.n+=a.total;return r},{b:0,n:0});
-    const lbl=trackLabel(t);
-    const table=(sg,cap,isConn,totLbl)=>()=>{
+    const trkTot=`<div class="p5-tot trk">${esc(lbl)} нийт тэнцэхгүй дэр: ${tot.b}/${tot.n}${_p5Pct(tot.b,tot.n)}</div>`;
+    const table=(sg,cap,isConn,totLbl,k,n)=>(i,N)=>{
       const mx=sg.reduce((m,s)=>Math.max(m,s.sleepers.length),0);
       const runs=sg.map(s=>{const set=new Set();let run=[];
         s.sleepers.forEach((sl,i)=>{if(isBadSleeper(sl.type))run.push(i);else{if(run.length>=3)run.forEach(x=>set.add(x));run=[]}});
         if(run.length>=3)run.forEach(x=>set.add(x));return set});
       const crs=sg.map(s=>isConn?new Set():(cross.get(s.id)||new Set()));
-      // Дутуу блок (10-аас цөөн үе) бүтэн блокийн баганатай ижил өргөнтэй —
+      // Дутуу хуудас (10-аас цөөн үе) бүтэн хуудасны баганатай ижил өргөнтэй —
       // 2 үе дэлгэц дүүрэн сунаж, тэмдэглэгээ нь өөр хэмжээтэй харагдахгүй
       const wd=sg.length<10?` style="width:calc(26px + (100% - 26px)*${sg.length}/10)"`:'';
-      let h=`<div class="p5-blk"><div class="p5-cap">${esc(cap)}</div><table class="p5-tb"${wd}><thead><tr><th>Дэр №</th>`+
+      let h=`<div class="p5-blk">`+_p5CapRow(i,N,`${k+1}/${n}`,`<div class="p5-cap">${esc(cap)}</div>`)+
+        `<table class="p5-tb" data-l="${sg.map(s=>s.sleepers.length).join(',')}"${wd}><thead><tr><th>Дэр №</th>`+
         sg.map(s=>`<th>${esc(s.label)}</th>`).join('')+'</tr></thead><tbody>';
       for(let p=0;p<mx;p++){
         h+=`<tr><td class="p5-n">${p+1}</td>`;
         sg.forEach((s,si)=>{
+          const L=s.sleepers.length;
+          if(p>L)return;
+          // Үеийн эпюр дууссан — үлдсэн мөрүүдийг нэг улаан хүрээтэй нүд эзэлнэ
+          if(p===L){h+=`<td class="x" rowspan="${mx-L}"></td>`;return}
           const sl=s.sleepers[p];
-          if(!sl){h+='<td class="x"></td>';return}
           if(sl.type==='normal'){h+='<td></td>';return}
           let mark='ТБД',cls='t';
           if(sl.type==='bad'){mark='—';cls='b'}else if(sl.type==='bad_tbd'){mark='ТТБД';cls='tt'}
@@ -15831,75 +15985,83 @@ function _p5DerBlocks(f){
         return `<td class="${g?'run':a.totalBad?'bad':''}">${a.total?a.totalBad+'/'+a.total:''}${g?`<i>дар: ${g}</i>`:''}</td>`
       }).join('')+'</tr></tbody></table>';
       h+=`<div class="p5-tot${isConn?' conn':''}">${esc(totLbl)} нийт тэнцэхгүй: ${pb}/${pn}${_p5Pct(pb,pn)}</div></div>`;
-      return h
+      return h+trkTot
     };
-    out.push(()=>`<div class="p5-trk">${esc(lbl)}</div>`);
+    const own=[];
     for(let g=0;g<normal.length;g+=10){
       const sg=normal.slice(g,g+10),rng=sg.length>1?`${g+1}–${g+sg.length}`:`${g+1}`;
-      out.push(table(sg,`${lbl} · ${rng}-р үе`,false,`${rng}-р үеийн`))
+      own.push({sg,cap:`${lbl} · ${rng}-р үе`,isConn:false,totLbl:`${rng}-р үеийн`,nm:`${lbl} ${rng}`})
     }
-    for(let g=0;g<conn.length;g+=10)out.push(table(conn.slice(g,g+10),`${lbl} · Холбох хэсэг`,true,'Холбох хэсгийн'));
-    out.push(()=>`<div class="p5-tot trk">${esc(lbl)} нийт тэнцэхгүй дэр: ${tot.b}/${tot.n}${_p5Pct(tot.b,tot.n)}</div>`)
+    for(let g=0;g<conn.length;g+=10)
+      own.push({sg:conn.slice(g,g+10),cap:`${lbl} · Холбох хэсэг`,isConn:true,totLbl:'Холбох хэсгийн',nm:`${lbl} холбох`});
+    own.forEach((o,k)=>pages.push({t:tj,nm:o.nm,build:table(o.sg,o.cap,o.isConn,o.totLbl,k,own.length)}))
   });
-  return out
+  return {pages,trks}
 }
-// ── Дүнз: сум бүр — уртаар бүлэглэсэн нэг маягт (Excel-ийн сумын хуудас) ──
-function _p5SwBlocks(f){
-  return swAllTurnouts(f).filter(t=>(t.it||'').length).map(to=>()=>{
-    const map={},groups=[];
-    for(let i=0;i<to.it.length;i++){
-      const sl=swSlot(to,i),key=sl.kind==='дэр'?'head':sl.len;
-      if(!map[key]){map[key]={kind:sl.kind,len:sl.len,idx:[]};groups.push(map[key])}
-      map[key].idx.push(i)
-    }
-    groups.sort((a,b)=>a.kind==='дэр'?-1:b.kind==='дэр'?1:a.len-b.len);
-    const head=to.head||0,orig=swFullOrigIt(to),live=to.it||'';
-    const runSet=(lo,hi)=>{const set=new Set();let run=[];
-      for(let i=lo;i<hi;i++){if(isBadCh(orig[i]))run.push(i);else{if(run.length>=3)run.forEach(x=>set.add(x));run=[]}}
-      if(run.length>=3)run.forEach(x=>set.add(x));return set};
-    const hR=runSet(0,head),dR=runSet(head,orig.length);
-    const mx=groups.reduce((m,g)=>Math.max(m,g.idx.length),0);
-    let h=`<div class="p5-blk"><div class="p5-trk">${to.num}-р сум · ${esc((to.mak||'')+' '+(to.mark||''))}</div>`+
-      '<table class="p5-tb sw"><thead><tr><th>№</th>'+
-      groups.map(g=>`<th>${g.kind==='дэр'?'Дэр '+swLen(SW_HEAD_LEN):swLen(g.len)}</th>`).join('')+'<th class="tot">Нийт</th></tr></thead><tbody>';
-    for(let p=0;p<mx;p++){
-      h+=`<tr><td class="p5-n">${p+1}</td>`;
-      groups.forEach(g=>{
-        if(p>=g.idx.length){h+='<td class="x"></td>';return}
-        const i=g.idx[p];
-        if(!isBadCh(orig[i])){h+='<td></td>';return}
-        const isH=i<head,rp=isH?(to.slRepl&&to.slRepl[i]):swDzRepl(to,i);
-        const planned=!rp&&!!(isH?swSlPlan(to,i):swDzPlan(to,i)),hi=isH?hR.has(i):dR.has(i);
-        h+=_p5Cell('—','b',rp?_p5Ym(rp.d):(planned?'?':''),planned,rp?(hi?'С':'У'):'',hi?'hi':'')
-      });
-      h+='<td class="x"></td></tr>'
-    }
-    // Багана бүрийн дүн — Excel-тэй ижил: тэнцэхгүй тоо АМЬД (to.it) төлөвөөр,
-    // НИЙТ баганад зөвхөн ДҮНЗ (рам замын дэр тусдаа)
-    let cum=0,tN=0,tM=0,tB=0,tBM=0;
-    const per=groups.map(g=>{
-      const n=g.idx.length,bad=g.idx.filter(i=>isBadCh(live[i])).length,isH=g.kind==='дэр';
-      let dd='';
-      if(isH)dd=n?(n===1?'1':`1-${n}`):'';
-      else if(n){const a=cum+1;cum+=n;dd=n===1?String(a):`${a}-${cum}`}
-      if(!isH){tN+=n;tM+=n*g.len;tB+=bad;tBM+=bad*g.len}
-      return{n,bad,isH,len:g.len,dd}
+// ── Дүнз: сум бүр нэг хуудас — уртаар бүлэглэсэн маягт (Excel-ийн сумын хуудас) ──
+function _p5SwPages(f){
+  const tos=swAllTurnouts(f).filter(t=>(t.it||'').length);
+  return {trks:tos.map((to,j)=>({lbl:`${to.num}-р сум`,first:j})),
+    pages:tos.map((to,j)=>({t:j,nm:`${to.num}-р сум`,build:(i,N)=>_p5SwTable(to,i,N)}))}
+}
+function _p5SwTable(to,i,N){
+  const map={},groups=[];
+  for(let k=0;k<to.it.length;k++){
+    const sl=swSlot(to,k),key=sl.kind==='дэр'?'head':sl.len;
+    if(!map[key]){map[key]={kind:sl.kind,len:sl.len,idx:[]};groups.push(map[key])}
+    map[key].idx.push(k)
+  }
+  groups.sort((a,b)=>a.kind==='дэр'?-1:b.kind==='дэр'?1:a.len-b.len);
+  const head=to.head||0,orig=swFullOrigIt(to),live=to.it||'';
+  const runSet=(lo,hi)=>{const set=new Set();let run=[];
+    for(let k=lo;k<hi;k++){if(isBadCh(orig[k]))run.push(k);else{if(run.length>=3)run.forEach(x=>set.add(x));run=[]}}
+    if(run.length>=3)run.forEach(x=>set.add(x));return set};
+  const hR=runSet(0,head),dR=runSet(head,orig.length);
+  const mx=groups.reduce((m,g)=>Math.max(m,g.idx.length),0);
+  let h=`<div class="p5-blk">`+_p5CapRow(i,N,`${i+1}/${N}`,`<div class="p5-trk">${to.num}-р сум · ${esc((to.mak||'')+' '+(to.mark||''))}</div>`)+
+    `<table class="p5-tb sw" data-l="${groups.map(g=>g.idx.length).join(',')}"><thead><tr><th>№</th>`+
+    groups.map(g=>`<th>${g.kind==='дэр'?'Дэр '+swLen(SW_HEAD_LEN):swLen(g.len)}</th>`).join('')+'<th class="tot">Нийт</th></tr></thead><tbody>';
+  for(let p=0;p<mx;p++){
+    h+=`<tr><td class="p5-n">${p+1}</td>`;
+    groups.forEach(g=>{
+      const L=g.idx.length;
+      if(p>L)return;
+      if(p===L){h+=`<td class="x" rowspan="${mx-L}"></td>`;return}
+      const k=g.idx[p];
+      if(!isBadCh(orig[k])){h+='<td></td>';return}
+      const isH=k<head,rp=isH?(to.slRepl&&to.slRepl[k]):swDzRepl(to,k);
+      const planned=!rp&&!!(isH?swSlPlan(to,k):swDzPlan(to,k)),hi=isH?hR.has(k):dR.has(k);
+      h+=_p5Cell('—','b',rp?_p5Ym(rp.d):(planned?'?':''),planned,rp?(hi?'С':'У'):'',hi?'hi':'')
     });
-    const row=(lbl,fn,tv)=>`<tr class="p5-sum"><td class="p5-n">${lbl}</td>`+
-      per.map(pg=>`<td class="${pg.bad?'bad':''}">${fn(pg)}</td>`).join('')+`<td class="tot">${tv}</td></tr>`;
-    h+=row('Д/Д',pg=>pg.dd,tN?(tN===1?'1':`1-${tN}`):'')+
-       row('Пог/м',pg=>(!pg.isH&&pg.n)?swM(pg.n*pg.len):'',tM?swM(tM):'')+
-       row('Тэнц. ш',pg=>pg.bad||'',tB||'')+
-       row('Тэнц. пог/м',pg=>(!pg.isH&&pg.bad)?swM(pg.bad*pg.len):'',tBM?swM(tBM):'');
-    return h+'</tbody></table></div>'
-  })
+    h+=(p===0?`<td class="xn" rowspan="${mx}"></td>`:'')+'</tr>'
+  }
+  // Багана бүрийн дүн — Excel-тэй ижил: тэнцэхгүй тоо АМЬД (to.it) төлөвөөр,
+  // НИЙТ баганад зөвхөн ДҮНЗ (рам замын дэр тусдаа)
+  let cum=0,tN=0,tM=0,tB=0,tBM=0;
+  const per=groups.map(g=>{
+    const n=g.idx.length,bad=g.idx.filter(k=>isBadCh(live[k])).length,isH=g.kind==='дэр';
+    let dd='';
+    if(isH)dd=n?(n===1?'1':`1-${n}`):'';
+    else if(n){const a=cum+1;cum+=n;dd=n===1?String(a):`${a}-${cum}`}
+    if(!isH){tN+=n;tM+=n*g.len;tB+=bad;tBM+=bad*g.len}
+    return{n,bad,isH,len:g.len,dd}
+  });
+  const row=(lbl,fn,tv)=>`<tr class="p5-sum"><td class="p5-n">${lbl}</td>`+
+    per.map(pg=>`<td class="${pg.bad?'bad':''}">${fn(pg)}</td>`).join('')+`<td class="tot">${tv}</td></tr>`;
+  h+=row('Д/Д',pg=>pg.dd,tN?(tN===1?'1':`1-${tN}`):'')+
+     row('Пог/м',pg=>(!pg.isH&&pg.n)?swM(pg.n*pg.len):'',tM?swM(tM):'')+
+     row('Тэнц. ш',pg=>pg.bad||'',tB||'')+
+     row('Тэнц. пог/м',pg=>(!pg.isH&&pg.bad)?swM(pg.bad*pg.len):'',tBM?swM(tBM):'');
+  return h+'</tbody></table></div>'
 }
 // ── Паспорт сонгогч: дээш доош гулсуулж тааруулна (scroll-snap) ──
 const _P5_IT=44;
 function _p5PickOpen(){const p=document.getElementById('p5Pick');return !!p&&p.classList.contains('open')}
 function _p5ClosePick(){
   const p=document.getElementById('p5Pick'),b=document.getElementById('p5PickBtn');
-  if(p)p.classList.remove('open');if(b)b.setAttribute('aria-expanded','false')
+  const was=!!p&&p.classList.contains('open');
+  if(p)p.classList.remove('open');if(b)b.setAttribute('aria-expanded','false');
+  if(was)_p5Measure()
 }
 function p5TogglePick(){
   hap(8);
@@ -15912,7 +16074,8 @@ function p5TogglePick(){
     '<div class="p5-pick-pad"></div>';
   document.getElementById('p5Pick').classList.add('open');
   document.getElementById('p5PickBtn').setAttribute('aria-expanded','true');
-  list.scrollTop=Math.max(0,L.indexOf(cur))*_P5_IT
+  list.scrollTop=Math.max(0,L.indexOf(cur))*_P5_IT;
+  _p5Measure()
 }
 function p5PickTap(i){
   const list=document.getElementById('p5PickList');if(!list)return;
@@ -15930,33 +16093,51 @@ function _p5PickSettle(){
     _p5RenderBody(f)
   }
 }
-// ── Гүйлгэхэд нуух, хурдан 2 товшиж буцааж гаргах ──
-function _p5SetImm(on){document.body.classList.toggle('p5-imm',!!on)}
+/* ── «Зөвхөн маягт» горим (body.p5-imm) ──
+   Хурдан 2 товшиход асна, дахин 2 товшиход унтарна (гүйлгэлтээр өөрөө
+   асдаггүй — хэрэглэгч горимоо өөрөө удирдана). Энэ горимд Дэр/Дүнз,
+   паспорт, доод таб нуугдаж, замын товч ба «Дэр № | үе» мөр дээр тулж
+   үлдэнэ; хажуу тийш шудрахад таб биш хуудас солигдоно. */
+function _p5SetImm(on){
+  const b=document.body,was=b.classList.contains('p5-imm');on=!!on;
+  if(on===was)return;
+  if(on){_p5ClosePick();_p5Measure()}
+  const sc=document.getElementById('p5Scroll'),T=_p5HT.T,y=sc?sc.scrollTop:0;
+  b.classList.toggle('p5-imm',on);
+  // Дээд хэсэг (T өндөр) нуугдах/гарахад харж байсан мөр үсрэхгүйн тулд
+  // гүйлгэлтийг тэр хэмжээгээр нөхнө
+  if(sc&&T){if(on)sc.scrollTop=Math.max(0,y-T);else if(y>0)sc.scrollTop=y+T}
+  _p5UpCls()
+}
+// Дээд хэсэг тааз давж гарсан үед түүний үлдэгдэл төлөвийн мөрийн ард
+// харагдахгүйн тулд бүдгэрүүлнэ
+function _p5UpCls(){
+  const v=document.getElementById('pu5View'),sc=document.getElementById('p5Scroll');if(!v||!sc)return;
+  v.classList.toggle('p5-up',!document.body.classList.contains('p5-imm')&&!!_p5HT.T&&sc.scrollTop>=_p5HT.T-2)
+}
 function _p5Bind(){
   if(_p5Bound)return;_p5Bound=true;
-  const sc=document.getElementById('p5Scroll'),list=document.getElementById('p5PickList');
+  const sc=document.getElementById('p5Scroll'),list=document.getElementById('p5PickList'),body=document.getElementById('p5Body');
   if(list){let tm=0;list.addEventListener('scroll',()=>{clearTimeout(tm);tm=setTimeout(_p5PickSettle,130)},{passive:true})}
+  if(body)body.addEventListener('click',_p5HlTap);
+  window.addEventListener('resize',()=>{if(_curTab()==='p5')_p5Measure()});
   if(!sc)return;
-  let last=0;
-  sc.addEventListener('scroll',()=>{
-    const y=sc.scrollTop;
-    if(y>last+6&&y>80&&!_p5PickOpen()&&!document.body.classList.contains('p5-imm'))_p5SetImm(true);
-    // Хамгийн дээр буцаж ирэхэд толгойн байр хоосон харагддаг тул өөрөө гаргана
-    else if(y<=8&&document.body.classList.contains('p5-imm'))_p5SetImm(false);
-    last=y
-  },{passive:true});
-  // Хурдан 2 товшилт: хуруу бараг хөдлөөгүй, хоорондоо 320 мс-ээс бага
+  sc.addEventListener('scroll',_p5UpCls,{passive:true});
+  // Хурдан 2 товшилт: хуруу бараг хөдлөөгүй, хоорондоо 320 мс-ээс бага.
+  // Товч, дэр/үеийн дугаар дээрх товшилтыг тооцохгүй — тэдгээр өөрийн үүрэгтэй.
+  const skip=el=>!!(el&&el.closest&&el.closest('button,.p5-top,.p5-trks,.p5-tb thead th,.p5-tb td.p5-n'));
+  const toggle=()=>{const on=!document.body.classList.contains('p5-imm');_p5SetImm(on);hap(8)};
   let st=null,lastTap=0,lx=0,ly=0;
-  sc.addEventListener('touchstart',e=>{const t=e.touches[0];st=e.touches.length===1?{x:t.clientX,y:t.clientY,at:Date.now()}:null},{passive:true});
+  sc.addEventListener('touchstart',e=>{const t=e.touches[0];
+    st=e.touches.length===1&&!skip(e.target)?{x:t.clientX,y:t.clientY,at:Date.now()}:null},{passive:true});
   sc.addEventListener('touchend',e=>{
     if(!st)return;const t=e.changedTouches[0],s=st;st=null;
     if(Math.abs(t.clientX-s.x)>12||Math.abs(t.clientY-s.y)>12||Date.now()-s.at>300){lastTap=0;return}
     const now=Date.now();
-    if(now-lastTap<320&&Math.abs(t.clientX-lx)<36&&Math.abs(t.clientY-ly)<36){
-      lastTap=0;if(document.body.classList.contains('p5-imm')){_p5SetImm(false);hap(8)}
-    }else{lastTap=now;lx=t.clientX;ly=t.clientY}
+    if(now-lastTap<320&&Math.abs(t.clientX-lx)<36&&Math.abs(t.clientY-ly)<36){lastTap=0;toggle()}
+    else{lastTap=now;lx=t.clientX;ly=t.clientY}
   },{passive:true});
-  sc.addEventListener('dblclick',()=>{if(document.body.classList.contains('p5-imm'))_p5SetImm(false)})
+  sc.addEventListener('dblclick',e=>{if(!skip(e.target))toggle()})
 }
 
 /* ── Мэдэгдэл: үүлтэй холбоо ─────────────────────────────── */
@@ -16346,6 +16527,8 @@ function _appBack(){
     case 'summaryView':backFromSummary();return true;
     case 'pu5View':
       if(_p5PickOpen()){_p5ClosePick();return true}
+      // «Зөвхөн маягт» горимд буцах товч эхлээд горимоос гаргана
+      if(document.body.classList.contains('p5-imm')){_p5SetImm(false);return true}
       goTab('home');return true;
     case 'syncView':case 'profView':goTab('home');return true;
     case 'adminView':return false;
@@ -16365,7 +16548,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.20·210';
+const APP_BUILD='2026.11.20·211';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){

@@ -18,8 +18,9 @@ const SCREENS=[
   ['СШ нүүр',         ()=>{goSwHome()}],
   ['СШ паспорт нээсэн',()=>{goSwHome();openSwFolderView('sf1')}],
   ['СШ бүртгэл',      ()=>{goSwHome();openSwFolderView('sf1');openSwRec('sw1')}],
-  ['ПУ-5 дэвтэр — дэр', ()=>{openPu5();if(_p5Mode!=='der')p5SetMode('der');_p5Flush()}],
-  ['ПУ-5 дэвтэр — дүнз', ()=>{openPu5();p5SetMode('sw');_p5Flush()}],
+  ['ПУ-5 дэвтэр — дэр', ()=>{openPu5();if(_p5Mode!=='der')p5SetMode('der')}],
+  ['ПУ-5 дэвтэр — дүнз', ()=>{openPu5();p5SetMode('sw')}],
+  ['ПУ-5 дэвтэр — маягт горим', ()=>{openPu5();if(_p5Mode!=='der')p5SetMode('der');_p5SetImm(true)}],
   ['Нэвтрэх',         ()=>{showView('loginView')}],
 ];
 const MODALS=[
