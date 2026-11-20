@@ -1055,6 +1055,8 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
   .p5-blk{padding:8px 3px 6px;border-radius:16px}
   .p5-tb{border-spacing:1.5px;padding:1px}
   .p5-tb thead th:first-child,.p5-tb .p5-n{width:18px;font-size:8px}
+  /* Дүнзний доод мөрийн нэр («Тэнц. пог/м») 18px-д багтахгүй */
+  .p5-tb.sw thead th:first-child,.p5-tb.sw .p5-n{width:24px}
   .p5-tb thead th{font-size:8.5px}
   .p5-tb thead th.tot{font-size:7.5px}
   .p5-tb td.t,.p5-tb td.tt{font-size:6.5px;letter-spacing:-.02em}
@@ -15858,7 +15860,7 @@ function _p5SwBlocks(f){
     const hR=runSet(0,head),dR=runSet(head,orig.length);
     const mx=groups.reduce((m,g)=>Math.max(m,g.idx.length),0);
     let h=`<div class="p5-blk"><div class="p5-trk">${to.num}-р сум · ${esc((to.mak||'')+' '+(to.mark||''))}</div>`+
-      '<table class="p5-tb"><thead><tr><th>№</th>'+
+      '<table class="p5-tb sw"><thead><tr><th>№</th>'+
       groups.map(g=>`<th>${g.kind==='дэр'?'Дэр '+swLen(SW_HEAD_LEN):swLen(g.len)}</th>`).join('')+'<th class="tot">Нийт</th></tr></thead><tbody>';
     for(let p=0;p<mx;p++){
       h+=`<tr><td class="p5-n">${p+1}</td>`;
