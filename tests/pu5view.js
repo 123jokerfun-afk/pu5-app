@@ -129,6 +129,13 @@ const im=await page.evaluate(async()=>{
 ok('Доош гүйлгэхэд толгой ба доод таб нуугдана',im.imm&&im.bar!=='none'&&im.hd<=1,JSON.stringify(im));
 ok('Нэг товшилт нуусан хэвээр үлдээнэ',im.afterOne===true);
 ok('Хурдан 2 товшвол толгой, доод таб буцаж гарна',im.afterTwo===false&&(im.bar2==='none'||/, 0\)$/.test(im.bar2)),JSON.stringify([im.afterTwo,im.bar2]));
+const top=await page.evaluate(async()=>{
+  const sc=document.getElementById('p5Scroll');sc.scrollTop=0;await new Promise(r=>setTimeout(r,60));
+  sc.scrollTop=500;await new Promise(r=>setTimeout(r,200));
+  const was=document.body.classList.contains('p5-imm');
+  sc.scrollTop=0;await new Promise(r=>setTimeout(r,200));
+  return {was,now:document.body.classList.contains('p5-imm')}});
+ok('Хамгийн дээр буцаж гүйлгэхэд толгой өөрөө гарна (хоосон зай үлдэхгүй)',top.was&&!top.now,JSON.stringify(top));
 const leave=await page.evaluate(async()=>{
   const sc=document.getElementById('p5Scroll');sc.scrollTop=0;await new Promise(r=>setTimeout(r,60));
   sc.scrollTop=500;await new Promise(r=>setTimeout(r,200));

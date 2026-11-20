@@ -39,7 +39,7 @@ const tb=await page.evaluate(()=>{
       return sp.length?sp[sp.length-1].textContent:''})}});
 ok('Таб харагдав',tb.shown&&tb.n===6,'мөр='+tb.n);
 ok('6 таб зөв нэртэй',
-  JSON.stringify(tb.labels.slice(0,6))==='["Нүүр","Паспорт","Сумууд","ПУ-5 дэвтэр","Мэдэгдэл","Профайл"]',
+  JSON.stringify(tb.labels.slice(0,6))==='["Нүүр","Паспорт","Сумууд","ПУ-5","Мэдэгдэл","Профайл"]',
   JSON.stringify(tb.labels));
 
 const nav=await page.evaluate(async()=>{

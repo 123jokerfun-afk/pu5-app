@@ -951,21 +951,25 @@ body.track-mode #dlFly{bottom:calc(var(--sab) + 82px)}
 .p5-hdr{padding-bottom:10px;transition:transform .26s cubic-bezier(.4,0,.2,1)}
 body.p5-imm #pu5View .p5-hdr{transform:translateY(-110%);pointer-events:none}
 body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
-.p5-tabs{display:flex;gap:8px}
-.p5-tab{flex:1;min-height:44px;border-radius:var(--rm);border:1.5px solid var(--border);
-  background:var(--card);color:var(--ink3);font-family:inherit;font-size:14px;font-weight:900;
-  letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+/* Дэр/Дүнз — хонхойсон суурин дээр сонгогдсон нь товойж гарна
+   (Uulzwar-ын сегмент товчтой ижил мэдрэмж) */
+.p5-tabs{display:flex;gap:6px;padding:5px;border-radius:18px;background:var(--bg);box-shadow:var(--sh-sm-in)}
+.p5-tab{flex:1;min-height:42px;border-radius:14px;border:0;background:transparent;
+  color:var(--ink3);font-family:inherit;font-size:14px;font-weight:900;
+  letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .18s,box-shadow .18s,color .18s}
 .p5-tab svg{width:18px;height:18px;flex-shrink:0}
-.p5-tab[aria-pressed="true"]{border-color:var(--g500);background:var(--g50);color:var(--g700)}
-.p5-pick-b{display:flex;align-items:center;gap:6px;margin:8px auto 0;padding:5px 12px;
-  min-height:30px;border-radius:99px;border:1px solid var(--border);background:var(--card);
+.p5-tab[aria-pressed="true"]{background:var(--card);box-shadow:var(--sh-sm);color:var(--gold-deep)}
+.p5-pick-b{display:flex;align-items:center;gap:6px;margin:10px auto 0;padding:6px 14px;
+  min-height:32px;border-radius:99px;border:0;background:var(--card);box-shadow:var(--sh-sm);
   color:var(--ink2);font-family:inherit;font-size:12px;font-weight:800;max-width:100%;cursor:pointer}
-.p5-pick-b svg{width:14px;height:14px;flex-shrink:0;transition:transform .2s}
+.p5-pick-b:active,.p5-pick-b[aria-expanded="true"]{box-shadow:var(--sh-sm-in)}
+.p5-pick-b svg{width:14px;height:14px;flex-shrink:0;transition:transform .2s;color:var(--gold-deep)}
 .p5-pick-b[aria-expanded="true"] svg{transform:rotate(180deg)}
 .p5-pick-b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.p5-pick{position:relative;margin-top:8px;display:none}
+.p5-pick{position:relative;margin-top:10px;display:none}
 .p5-pick.open{display:block}
-.p5-pick-list{height:220px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;
+.p5-pick-list{position:relative;z-index:1;height:220px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;
   scrollbar-width:none;-webkit-overflow-scrolling:touch;
   -webkit-mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent);
   mask-image:linear-gradient(180deg,transparent,#000 32%,#000 68%,transparent)}
@@ -974,45 +978,88 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
 .p5-pick-it{height:44px;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;
   padding:0 16px;font-size:14px;font-weight:700;color:var(--ink3);cursor:pointer;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.p5-pick-it.on{color:var(--ink);font-size:16px;font-weight:900}
-.p5-pick-frame{position:absolute;left:10px;right:10px;top:88px;height:44px;border-radius:14px;
-  pointer-events:none;border:2.5px solid #FF8A17;
-  background:linear-gradient(180deg,rgba(255,206,100,.32),rgba(255,150,48,.16))}
-.p5-body{padding:10px 8px 40px;touch-action:manipulation}
-.p5-leg{font-size:10.5px;color:var(--ink3);font-weight:600;line-height:1.5;margin:0 4px 8px}
-.p5-trk{margin:16px 2px 6px;font-size:15px;font-weight:900;color:var(--ink)}
+.p5-pick-it.on{color:var(--gold-deep);font-size:16px;font-weight:900}
+/* Тааруулах цонх жагсаалтын АРД хонхойж харагдана — бичгийг дарахгүй */
+.p5-pick-frame{position:absolute;z-index:0;left:10px;right:10px;top:88px;height:44px;border-radius:14px;
+  pointer-events:none;background:var(--bg);box-shadow:var(--sh-sm-in)}
+.p5-body{--p5-hi-bg:rgba(255,186,0,.30);--p5-hi-ring:#d99a00;--p5-hi-ink:#7a4600;
+  padding:12px 10px 40px;touch-action:manipulation}
+[data-theme="dark"] .p5-body{--p5-hi-bg:rgba(255,196,40,.20);--p5-hi-ring:#FFC83D;--p5-hi-ink:#FFD866}
+/* Тайлбар — өнгөт чип бүр маягтын нүдтэй ЯГ ижил загвартай (доорх .p5-tb) */
+.p5-leg{display:flex;flex-wrap:wrap;gap:6px 10px;margin:0 2px 14px;padding:10px 12px;border-radius:16px;
+  background:var(--bg);box-shadow:var(--sh-sm-in);font-size:10.5px;color:var(--ink3);font-weight:700;line-height:1.3}
+.p5-leg>span{display:inline-flex;align-items:center;gap:5px}
+.p5-sw{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:26px;height:22px;
+  padding:0 4px;border-radius:5px;background:var(--card);color:var(--ink);font-size:9px;font-weight:900;line-height:1}
+.p5-sw.rp{height:30px}
+.p5-sw i{display:block;font-style:normal;font-size:7px;line-height:1.1}
+.p5-sw.b{background:var(--orange-bg);color:var(--orange);font-size:12px}
+.p5-sw.t{background:var(--red-bg);color:var(--red)}
+.p5-sw.tt{background:var(--dred-bg);color:var(--dred)}
+.p5-sw.hi,.p5-sw.cr{background:var(--p5-hi-bg);color:var(--p5-hi-ink);box-shadow:inset 0 0 0 2px var(--p5-hi-ring)}
+.p5-sw.cr{box-shadow:inset 0 0 0 2px var(--purple)}
+.p5-sw i.p5-u,.p5-sw i.p5-q{color:var(--blue)}
+.p5-sw i.p5-q{font-size:9px}
+.p5-sw i.s{color:var(--g700)}
+[data-theme="dark"] .p5-sw i.s{color:var(--g400)}
+.p5-trk{display:flex;align-items:center;gap:8px;margin:20px 4px 10px;font-size:15px;font-weight:900;color:var(--ink)}
+.p5-trk::before{content:'';width:4px;height:16px;border-radius:2px;background:var(--gold-deep);flex-shrink:0}
 .p5-trk:first-of-type{margin-top:4px}
-.p5-blk{margin-bottom:12px}
-.p5-cap{font-size:11.5px;font-weight:800;color:var(--ink2);margin:0 2px 4px}
+.p5-blk{margin:0 0 16px;padding:10px 6px 8px;border-radius:18px;background:var(--card);box-shadow:var(--sh)}
+.p5-blk>.p5-trk{margin:2px 4px 10px}
+.p5-cap{font-size:12px;font-weight:900;color:var(--ink2);margin:2px 6px 8px}
 .p5-empty{text-align:center;padding:50px 16px;color:var(--ink3);font-size:13px;font-weight:600}
-/* Маягт өөрөө цаасан дэвтэр шиг цагаан — харанхуй загварт ч өнгө нь
-   Excel-ийн ПУ-5 дэвтэртэй ижил (тэмдэглэгээ нь хоёуланд нэг утгатай) */
-.p5-tb{width:100%;table-layout:fixed;border-collapse:collapse;background:#fff;color:#1d2330;
+/* Маягт: хонхойсон суурин дээр зөөлөн хавтангууд. Нүд бүрд сүүдэр
+   өгөхгүй — 30 000+ нүдтэй паспорт гүйлгэхэд гацна. Өнгөний утга
+   аппын бусад хэсэгтэй нэг: улбар = тэнцэхгүй мод, улаан = ТБД,
+   бараан улаан = тэнцэхгүй ТБД, шар = дараалсан, ягаан = үе дамнасан. */
+.p5-tb{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:2px;padding:2px;
+  background:var(--bg);border-radius:12px;box-shadow:var(--sh-sm-in);color:var(--ink);
   font-size:10px;font-variant-numeric:tabular-nums}
-.p5-tb th,.p5-tb td{border:1px solid #cfd4dc;text-align:center;padding:1px 0;height:20px;
-  line-height:1.05;overflow:hidden;font-weight:800}
-.p5-tb thead th{background:#2D6E52;color:#fff;font-size:9px;height:24px;
+.p5-tb th,.p5-tb td{border:0;border-radius:5px;text-align:center;padding:1px 0;height:20px;
+  line-height:1.05;overflow:hidden;font-weight:800;background:var(--card)}
+.p5-tb thead th{background:transparent;color:var(--gold-deep);font-size:9.5px;font-weight:900;height:22px;
   white-space:normal;overflow-wrap:anywhere}
-.p5-tb thead th:first-child,.p5-tb .p5-n{background:#1E4D3B;color:#fff;font-size:9px;width:24px}
-.p5-tb td.x{background:#DADEE4}
-.p5-tb td.b{background:#FDEAEA;color:#C00000;font-size:13px}
-.p5-tb td.t{background:#FDEAEA;color:#C00000;font-size:8px}
-.p5-tb td.tt{background:#D6E4FF;color:#1A4BC4;font-size:8px}
-.p5-tb td.hi{background:#FFFF99;color:#7A5000;box-shadow:inset 0 0 0 2px #FF9800}
-.p5-tb td.cr{background:#FFFF99;color:#7A5000;box-shadow:inset 0 0 0 2px #9C27B0}
+.p5-tb thead th.tot{font-size:8.5px;letter-spacing:-.02em;overflow-wrap:normal}
+.p5-tb thead th:first-child,.p5-tb .p5-n{background:transparent;color:var(--ink4);font-size:9px;width:24px}
+.p5-tb td.x{background:transparent}
+.p5-tb td.b{background:var(--orange-bg);color:var(--orange);font-size:13px}
+.p5-tb td.t{background:var(--red-bg);color:var(--red);font-size:8px}
+.p5-tb td.tt{background:var(--dred-bg);color:var(--dred);font-size:8px}
+.p5-tb td.hi{background:var(--p5-hi-bg);color:var(--p5-hi-ink);box-shadow:inset 0 0 0 2px var(--p5-hi-ring)}
+.p5-tb td.cr{background:var(--p5-hi-bg);color:var(--p5-hi-ink);box-shadow:inset 0 0 0 2px var(--purple)}
 .p5-tb i{display:block;font-style:normal;font-size:7px;line-height:1.1}
-.p5-tb i.p5-u{color:#1A4BC4}
-.p5-tb i.p5-q{color:#1A73E8;font-size:10px}
-.p5-tb i.s{color:#0D6E46;font-size:8px}
-.p5-tb i.u{color:#1A4BC4;font-size:8px}
-.p5-tb tr.p5-sum td{font-size:8.5px;background:#E8F8F1;color:#0D5E44}
-.p5-tb tr.p5-sum td.bad{background:#FEE2E2;color:#C00000}
-.p5-tb tr.p5-sum td.run{background:#FFFF99;color:#7A5000}
-.p5-tb tr.p5-sum td.tot{background:#EEF2FF;color:#1A3A6E}
-.p5-tot{background:#1A3A6E;color:#fff;font-size:11px;font-weight:800;padding:6px 8px;
-  border-radius:0 0 8px 8px;text-align:center}
-.p5-tot.trk{background:#1E4D3B;border-radius:8px;margin-top:6px}
-.p5-tot.conn{background:#5B2FA8}
+.p5-tb i.p5-u,.p5-tb i.u{color:var(--blue)}
+.p5-tb i.p5-q{color:var(--blue);font-size:10px}
+.p5-tb i.s{color:var(--g700);font-size:8px}
+.p5-tb i.u{font-size:8px}
+.p5-tb tr.p5-sum td{font-size:8.5px;background:var(--g50);color:var(--g700)}
+.p5-tb tr.p5-sum td.p5-n{background:transparent;color:var(--ink4)}
+.p5-tb tr.p5-sum td.bad{background:var(--orange-bg);color:var(--orange)}
+.p5-tb tr.p5-sum td.run{background:var(--p5-hi-bg);color:var(--p5-hi-ink)}
+.p5-tb tr.p5-sum td.tot{background:var(--gold-bg);color:var(--gold-deep)}
+[data-theme="dark"] .p5-tb i.s,[data-theme="dark"] .p5-tb tr.p5-sum td{color:var(--g400)}
+[data-theme="dark"] .p5-tb tr.p5-sum td.p5-n{color:var(--ink4)}
+[data-theme="dark"] .p5-tb tr.p5-sum td.bad{color:var(--orange)}
+[data-theme="dark"] .p5-tb tr.p5-sum td.run{color:var(--p5-hi-ink)}
+[data-theme="dark"] .p5-tb tr.p5-sum td.tot{color:var(--gold-deep)}
+.p5-tot{margin:8px 2px 0;padding:8px 10px;border-radius:12px;background:var(--gold-bg);color:var(--gold-deep);
+  font-size:11.5px;font-weight:900;text-align:center}
+.p5-tot.conn{background:var(--purple-bg);color:var(--purple)}
+.p5-tot.trk{margin:2px 2px 24px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--sh);
+  color:var(--ink);font-size:12.5px}
+/* Нарийн утас (Galaxy Fold 280px): 10 багана + дугаар багтахын тулд
+   зай, үсгийг шахна — эс тэгвэл «ТТБД», «26/10» тасарна */
+@media (max-width:340px){
+  .p5-body{padding:10px 6px 40px}
+  .p5-blk{padding:8px 3px 6px;border-radius:16px}
+  .p5-tb{border-spacing:1.5px;padding:1px}
+  .p5-tb thead th:first-child,.p5-tb .p5-n{width:18px;font-size:8px}
+  .p5-tb thead th{font-size:8.5px}
+  .p5-tb thead th.tot{font-size:7.5px}
+  .p5-tb td.t,.p5-tb td.tt{font-size:6.5px;letter-spacing:-.02em}
+  .p5-tb i{font-size:6.5px}
+}
 /* Бүртгэсэн дүнгийн нүднүүд — гурав гурваар эвхэгдэнэ */
 .br-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .br-st{background:var(--card);border:1.5px solid var(--border);border-radius:var(--rs);
@@ -1807,13 +1854,10 @@ body.deep-view #tabbar{transform:translateY(100%);pointer-events:none}
 /* «ПУ-5 дэвтэр» — нарийн утсанд эсвэл 7 табтай үед (салбар замтай хэсэг)
    «дэвтэр» нь нуугдаж «ПУ-5» үлдэнэ; бусад нэр тайрагдахгүй байхаар
    280–340px-д бичгийг бага зэрэг жижигрүүлнэ */
-.tab-b .tab-x{font-weight:inherit}
 #tabP5 span{letter-spacing:0}
-#tabbar.tb7 .tab-x{display:none}
 #tabbar.tb7{padding-left:4px;padding-right:4px}
 #tabbar.tb7 .tab-b{padding-left:1px;padding-right:1px}
 #tabbar.tb7 .tab-b span{font-size:8.5px;letter-spacing:0}
-@media (max-width:399px){.tab-b .tab-x{display:none}}
 @media (max-width:340px){.tab-b span{font-size:8.5px;letter-spacing:0}
   #tabbar{padding-left:4px;padding-right:4px}.tab-b{padding-left:1px;padding-right:1px}}
 @media (max-width:300px){.tab-b span,#tabbar.tb7 .tab-b span{font-size:7.8px}}
@@ -2469,7 +2513,7 @@ html:not([data-theme="dark"]) .pill-indicator{box-shadow:var(--sunk)}
   </button>
   <button class="tab-b" id="tabP5" onclick="goTab('p5')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v16H7.5A2.5 2.5 0 0 0 5 20.5zM5 20.5A1.5 1.5 0 0 0 6.5 22H20M9 7h7M9 11h7"/></svg>
-    <span>ПУ-5<b class="tab-x"> дэвтэр</b></span>
+    <span>ПУ-5</span>
   </button>
   <button class="tab-b has-dot" id="tabSync" onclick="goTab('sync')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"/></svg>
@@ -15617,7 +15661,7 @@ function _tabOrder(){
   if(_isAdmin)return ['home','sync','prof'];
   return (hasBranch()?['br']:[]).concat(['home','pass','sw','p5','sync','prof'])
 }
-const _TAB_NM={br:'Салбар зам',home:'Нүүр',pass:'Паспорт',sw:'Сумууд',p5:'ПУ-5 дэвтэр',sync:'Мэдэгдэл',prof:'Профайл'};
+const _TAB_NM={br:'Салбар зам',home:'Нүүр',pass:'Паспорт',sw:'Сумууд',p5:'ПУ-5',sync:'Мэдэгдэл',prof:'Профайл'};
 function _syncTabs(force){
   const bar=document.getElementById('tabbar');if(!bar)return;
   const on=!!_sectionCode&&!document.getElementById('loginView').classList.contains('active');
@@ -15691,9 +15735,7 @@ function _p5RenderBody(f){
       :(_p5Mode==='sw'?'Энэ паспортад бүртгэсэн сум алга':'Энэ паспортад өртөөний зам алга')}</div>`;
     return
   }
-  body.innerHTML=_p5Mode==='sw'
-    ?'<div class="p5-leg">Хоосон = хэвийн · — = тэнцэхгүй · шар = 3 ба түүнээс дээш дараалсан · сольсон: дээр он/сар, доор С = дараалсан, У = ганц · ? = солихоор төлөвлөсөн</div>'
-    :'<div class="p5-leg">Хоосон = хэвийн модон · — = тэнцэхгүй модон · ТБД = бетон · ТТБД = тэнцэхгүй бетон · шар = 3 ба түүнээс дээш дараалсан (ягаан хүрээ = үе дамнасан) · сольсон: дээр он/сар, доор С = сийрэгжилт, У = бусад · ? = солихоор төлөвлөсөн</div>';
+  body.innerHTML=_p5Leg(_p5Mode);
   const step=()=>{
     if(gen!==_p5Gen)return;
     const t0=Date.now();let h='';
@@ -15708,6 +15750,18 @@ function _p5Flush(){
   const body=document.getElementById('p5Body');if(!body)return;
   let h='';while(_p5Queue.length)h+=_p5Queue.shift()();
   if(h)body.insertAdjacentHTML('beforeend',h)
+}
+// Тайлбар — чип бүр маягтын нүдтэй ижил өнгө, хэлбэртэй тул уншихад
+// тайлбар ба маягтыг хооронд нь тулгах шаардлагагүй
+function _p5Leg(mode){
+  const c=(cls,txt,lbl)=>`<span><b class="p5-sw${cls?' '+cls:''}">${txt}</b>${lbl}</span>`;
+  const rp='<i class="p5-u">26/5</i>—<i class="s">С</i>';
+  return '<div class="p5-leg">'+(mode==='sw'
+    ?c('','','Хэвийн')+c('b','—','Тэнцэхгүй')+c('b hi','—','3+ дараалсан')+
+     c('b rp',rp,'Сольсон (С = дараалсан, У = ганц)')+c('b','<i class="p5-q">?</i>—','Солихоор төлөвлөсөн')
+    :c('','','Хэвийн мод')+c('b','—','Тэнцэхгүй мод')+c('t','ТБД','Бетон')+c('tt','ТТБД','Тэнцэхгүй бетон')+
+     c('b hi','—','3+ дараалсан')+c('b cr','—','Үе дамнасан')+
+     c('b rp',rp,'Сольсон (С = сийрэгжилт, У = бусад)')+c('b','<i class="p5-q">?</i>—','Солихоор төлөвлөсөн'))+'</div>'
 }
 const _p5Ym=d=>{const m=String(d||'').match(/^(\d{2})(\d{2})-(\d{2})/);return m?`${m[2]}/${+m[3]}`:''};
 const _p5Pct=(b,n)=>n?` (${(b/n*100).toFixed(1)}%)`:'';
@@ -15749,7 +15803,10 @@ function _p5DerBlocks(f){
         s.sleepers.forEach((sl,i)=>{if(isBadSleeper(sl.type))run.push(i);else{if(run.length>=3)run.forEach(x=>set.add(x));run=[]}});
         if(run.length>=3)run.forEach(x=>set.add(x));return set});
       const crs=sg.map(s=>isConn?new Set():(cross.get(s.id)||new Set()));
-      let h=`<div class="p5-blk"><div class="p5-cap">${esc(cap)}</div><table class="p5-tb"><thead><tr><th>Дэр №</th>`+
+      // Дутуу блок (10-аас цөөн үе) бүтэн блокийн баганатай ижил өргөнтэй —
+      // 2 үе дэлгэц дүүрэн сунаж, тэмдэглэгээ нь өөр хэмжээтэй харагдахгүй
+      const wd=sg.length<10?` style="width:calc(26px + (100% - 26px)*${sg.length}/10)"`:'';
+      let h=`<div class="p5-blk"><div class="p5-cap">${esc(cap)}</div><table class="p5-tb"${wd}><thead><tr><th>Дэр №</th>`+
         sg.map(s=>`<th>${esc(s.label)}</th>`).join('')+'</tr></thead><tbody>';
       for(let p=0;p<mx;p++){
         h+=`<tr><td class="p5-n">${p+1}</td>`;
@@ -15802,7 +15859,7 @@ function _p5SwBlocks(f){
     const mx=groups.reduce((m,g)=>Math.max(m,g.idx.length),0);
     let h=`<div class="p5-blk"><div class="p5-trk">${to.num}-р сум · ${esc((to.mak||'')+' '+(to.mark||''))}</div>`+
       '<table class="p5-tb"><thead><tr><th>№</th>'+
-      groups.map(g=>`<th>${g.kind==='дэр'?'Дэр '+swLen(SW_HEAD_LEN):swLen(g.len)}</th>`).join('')+'<th>НИЙТ</th></tr></thead><tbody>';
+      groups.map(g=>`<th>${g.kind==='дэр'?'Дэр '+swLen(SW_HEAD_LEN):swLen(g.len)}</th>`).join('')+'<th class="tot">Нийт</th></tr></thead><tbody>';
     for(let p=0;p<mx;p++){
       h+=`<tr><td class="p5-n">${p+1}</td>`;
       groups.forEach(g=>{
@@ -15882,6 +15939,8 @@ function _p5Bind(){
   sc.addEventListener('scroll',()=>{
     const y=sc.scrollTop;
     if(y>last+6&&y>80&&!_p5PickOpen()&&!document.body.classList.contains('p5-imm'))_p5SetImm(true);
+    // Хамгийн дээр буцаж ирэхэд толгойн байр хоосон харагддаг тул өөрөө гаргана
+    else if(y<=8&&document.body.classList.contains('p5-imm'))_p5SetImm(false);
     last=y
   },{passive:true});
   // Хурдан 2 товшилт: хуруу бараг хөдлөөгүй, хоорондоо 320 мс-ээс бага

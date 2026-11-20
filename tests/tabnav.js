@@ -43,7 +43,7 @@ await B.login(page,'ПД-6');
 let s=await state(page);
 ok('Нэвтэрмэгц Нүүр таб сонгогдсон',s.view==='homeView'&&s.tab==='home'&&s.cur.join()==='tabHome',JSON.stringify(s));
 ok('ПД-6-д Салбар зам таб харагдахгүй (салбар замгүй хэсэг)',
-   JSON.stringify(await visTabs(page))===JSON.stringify(['Нүүр','Паспорт','Сумууд','ПУ-5 дэвтэр','Мэдэгдэл','Профайл']),
+   JSON.stringify(await visTabs(page))===JSON.stringify(['Нүүр','Паспорт','Сумууд','ПУ-5','Мэдэгдэл','Профайл']),
    JSON.stringify(await visTabs(page)));
 
 await page.click('#tabSync');await page.waitForTimeout(350);
@@ -100,7 +100,7 @@ const {page,errs}=await B.newPage(br,B.DEVICES[1]);
 await B.login(page,'ПД-7');
 const tabs=await visTabs(page);
 ok('ПД-7-д Салбар зам таб Нүүрийн зүүн талд',
-   JSON.stringify(tabs)===JSON.stringify(['Салбар зам','Нүүр','Паспорт','Сумууд','ПУ-5 дэвтэр','Мэдэгдэл','Профайл']),JSON.stringify(tabs));
+   JSON.stringify(tabs)===JSON.stringify(['Салбар зам','Нүүр','Паспорт','Сумууд','ПУ-5','Мэдэгдэл','Профайл']),JSON.stringify(tabs));
 ok('ПД-7 нэвтрэхэд ч Нүүр сонгогдсон',(await state(page)).cur.join()==='tabHome');
 let w=await swipe(page,1);
 ok('Нүүр → (баруун) → Салбар зам',w.view==='brHomeView'&&w.cur.join()==='tabBr',JSON.stringify(w));
