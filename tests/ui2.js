@@ -37,9 +37,9 @@ const tb=await page.evaluate(()=>{
     labels:[...bar.querySelectorAll('.tab-b')].filter(b=>getComputedStyle(b).display!=='none').map(b=>{
       const sp=[...b.querySelectorAll('span')].filter(x=>!x.classList.contains('tab-dot'));
       return sp.length?sp[sp.length-1].textContent:''})}});
-ok('Таб харагдав',tb.shown&&tb.n===5,'мөр='+tb.n);
-ok('5 таб зөв нэртэй',
-  JSON.stringify(tb.labels.slice(0,5))==='["Нүүр","Паспорт","Сумууд","Мэдэгдэл","Профайл"]',
+ok('Таб харагдав',tb.shown&&tb.n===6,'мөр='+tb.n);
+ok('6 таб зөв нэртэй',
+  JSON.stringify(tb.labels.slice(0,6))==='["Нүүр","Паспорт","Сумууд","ПУ-5","Мэдэгдэл","Профайл"]',
   JSON.stringify(tb.labels));
 
 const nav=await page.evaluate(async()=>{

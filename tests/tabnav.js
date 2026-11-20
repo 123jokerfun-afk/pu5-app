@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   ДООД ТАБ — Салбар зам | Нүүр | Паспорт | Сумууд | Мэдэгдэл | Профайл
+   ДООД ТАБ — Салбар зам | Нүүр | Паспорт | Сумууд | ПУ-5 дэвтэр | Мэдэгдэл | Профайл
 
    · Апп руу ороход Нүүр анхдагчаар сонгогдоно
    · Салбар зам таб Нүүрийн ЗҮҮН талд, зөвхөн салбар замтай хэсэгт
@@ -43,7 +43,7 @@ await B.login(page,'ПД-6');
 let s=await state(page);
 ok('Нэвтэрмэгц Нүүр таб сонгогдсон',s.view==='homeView'&&s.tab==='home'&&s.cur.join()==='tabHome',JSON.stringify(s));
 ok('ПД-6-д Салбар зам таб харагдахгүй (салбар замгүй хэсэг)',
-   JSON.stringify(await visTabs(page))===JSON.stringify(['Нүүр','Паспорт','Сумууд','Мэдэгдэл','Профайл']),
+   JSON.stringify(await visTabs(page))===JSON.stringify(['Нүүр','Паспорт','Сумууд','ПУ-5','Мэдэгдэл','Профайл']),
    JSON.stringify(await visTabs(page)));
 
 await page.click('#tabSync');await page.waitForTimeout(350);
@@ -72,7 +72,9 @@ ok('Нүүр → (зүүн) → Паспорт',w.tab==='pass'&&w.cur.join()==='
 w=await swipe(page,-1);
 ok('Паспорт → (зүүн) → Сумууд',w.view==='swHomeView'&&w.cur.join()==='tabSw',JSON.stringify(w));
 w=await swipe(page,-1);
-ok('Сумууд → (зүүн) → Мэдэгдэл',w.view==='syncView'&&w.cur.join()==='tabSync',JSON.stringify(w));
+ok('Сумууд → (зүүн) → ПУ-5 дэвтэр',w.view==='pu5View'&&w.cur.join()==='tabP5',JSON.stringify(w));
+w=await swipe(page,-1);
+ok('ПУ-5 дэвтэр → (зүүн) → Мэдэгдэл',w.view==='syncView'&&w.cur.join()==='tabSync',JSON.stringify(w));
 w=await swipe(page,-1);
 ok('Мэдэгдэл → (зүүн) → Профайл',w.view==='profView'&&w.cur.join()==='tabProf',JSON.stringify(w));
 w=await swipe(page,-1);
@@ -98,7 +100,7 @@ const {page,errs}=await B.newPage(br,B.DEVICES[1]);
 await B.login(page,'ПД-7');
 const tabs=await visTabs(page);
 ok('ПД-7-д Салбар зам таб Нүүрийн зүүн талд',
-   JSON.stringify(tabs)===JSON.stringify(['Салбар зам','Нүүр','Паспорт','Сумууд','Мэдэгдэл','Профайл']),JSON.stringify(tabs));
+   JSON.stringify(tabs)===JSON.stringify(['Салбар зам','Нүүр','Паспорт','Сумууд','ПУ-5','Мэдэгдэл','Профайл']),JSON.stringify(tabs));
 ok('ПД-7 нэвтрэхэд ч Нүүр сонгогдсон',(await state(page)).cur.join()==='tabHome');
 let w=await swipe(page,1);
 ok('Нүүр → (баруун) → Салбар зам',w.view==='brHomeView'&&w.cur.join()==='tabBr',JSON.stringify(w));
@@ -109,15 +111,15 @@ ok('Салбар зам → (зүүн) → Нүүр',w.view==='homeView'&&w.tab=
 await page.click('#tabBr');await page.waitForTimeout(350);
 ok('Салбар зам табыг дарахад салбарын дэлгэц',(await state(page)).view==='brHomeView');
 
-// Нарийн утсанд 6 таб багтана (хэвтээ гүйлгээ гарахгүй)
+// Нарийн утсанд 7 таб багтана (хэвтээ гүйлгээ гарахгүй)
 const fit=await page.evaluate(()=>{const b=document.getElementById('tabbar');return b.scrollWidth<=b.clientWidth+1});
-ok('6 таб самбарт багтана',fit);
+ok('7 таб самбарт багтана',fit);
 const bad=errs.filter(e=>!/ERR_REQUEST_RANGE|favicon/.test(e));
 ok('ПД-7: консолд алдаа алга',bad.length===0,JSON.stringify(bad.slice(0,3)));
 await page.close();
 }
 
-/* ── Galaxy Fold (280px): 6 таб багтах ёстой ── */
+/* ── Galaxy Fold (280px): 7 таб багтах ёстой ── */
 {
 const fold=B.DEVICES.find(d=>/Fold/.test(d.name))||B.DEVICES[4];
 const {page}=await B.newPage(br,fold);
@@ -125,7 +127,7 @@ await B.login(page,'ПД-7');
 const r=await page.evaluate(()=>{const b=document.getElementById('tabbar');
   return {sw:b.scrollWidth,cw:b.clientWidth,
     w:[...b.querySelectorAll('.tab-b')].filter(x=>getComputedStyle(x).display!=='none').map(x=>Math.round(x.getBoundingClientRect().width))}});
-ok('Galaxy Fold дээр ч 6 таб хэвтээ гүйлгээгүй багтана',r.sw<=r.cw+1,JSON.stringify(r));
+ok('Galaxy Fold дээр ч 7 таб хэвтээ гүйлгээгүй багтана',r.sw<=r.cw+1,JSON.stringify(r));
 await page.close();
 }
 

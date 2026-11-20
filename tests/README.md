@@ -21,7 +21,7 @@ Chromium-ыг гараар зааж өгөх: `PU5_CHROME=/зам/chrome node al
 
 ```bash
 node allA.js     # boot zero theme flow1 flow2 flow4 flow5 flow6 flow7
-node allB.js     # flow8 flow9 overlap notch swhome herohome dashboard hometab tabnav
+node allB.js     # flow8 flow9 overlap notch swhome herohome dashboard hometab tabnav pu5view
 node allC.js     # үүлний бүтэц: sizeguard docid parts auto deletesync unitdel multi offlinelogout
 node allD.js     # экспорт ба интерфэйс: ui2 raw tap swipe perf pack swrec swhead admin pwa dbl edge exp xls sheet branch branchtr branch2 hub walk revhide inv plan warehouse2 yearfilter swpu5 replxls seasonguard swpair drumscale robust swlogic uzlook hdrtap  (удаан)
 node allE.js     # гүнзгий: e2e deep live fuzz×5  (хамгийн удаан)
@@ -59,7 +59,8 @@ node sweepC.js   # 7 утас ХЭВТЭЭ + 3 утас ГЭРЭЛТЭЙ заг�
 | `raw.js` | Түүхий код дэлгэцэнд гарах — эх код + хоосон төлөв бүр |
 | `tap.js` | Товч үнэхээр дарагдах уу — тогтмол давхарга товч дарж байгаа эсэх |
 | `swipe.js` | Шудралт — заалт анивчих, табын дарааллаар шилжих |
-| `tabnav.js` | Доод таб: Салбар зам \| Нүүр \| Паспорт \| Сумууд \| Мэдэгдэл \| Профайл, шудралт, Нүүр анхдагч |
+| `tabnav.js` | Доод таб: Салбар зам \| Нүүр \| Паспорт \| Сумууд \| ПУ-5 дэвтэр \| Мэдэгдэл \| Профайл, шудралт, Нүүр анхдагч |
+| `pu5view.js` | ПУ-5 дэвтэр (апп дотор): сүүлийн паспорт анхдагч, 10 үеийн блок, Excel-тэй ижил тэмдэглэгээ (эх төлөв, дараалсан, үе дамнасан, сольсон, төлөвлөсөн), паспорт сонгогч, Дүнз маягт, гүйлгэхэд нуугдах, 2 товшиж гаргах, өгөгдөл хөндөхгүй |
 | `perf.js` | Service worker, офлайн, ExcelJS-ийн хойшлуулсан ачаалалт, гарах товч |
 | `pack.js` | `_packDB` гаралт хуучинтай ижил эсэх (тоо бүртгэлийн бичиг баримтын эх өгөгдөл) |
 | `swrec.js` | Дүнз бүртгэх нь дэртэй ижил зарчимтай эсэх |
