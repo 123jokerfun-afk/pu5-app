@@ -126,6 +126,35 @@ ok('Үеийн дугаар дарахад тэр багана тодорно (�
 ok('Өөр үе дарахад багана шилжинэ, дахин дарахад арилна',hl.col1===22&&hl.col1off===0,JSON.stringify([hl.col1,hl.col1off]));
 ok('Тодруулсан мөр хуудас солигдоход хэвээр, дахин дарахад арилна',JSON.stringify(hl.keep)==='["5"]'&&hl.off===0,JSON.stringify([hl.keep,hl.off]));
 ok('Тодруулга өнгөт давхаргаар (суурь өнгө хэвээр)',/gradient/.test(hl.bg),hl.bg);
+const cx=await page.evaluate(()=>{
+  _p5HlRow=-1;_p5Show(1,0); // 11–12-р үе, L=[20,18]
+  let tb=document.querySelector('#p5Page .p5-tb');const o={};
+  // 19-р мөр (p=18): 11-р үеийн нүд, 12-р үе энд эпюрийн улаан нүдээр эхэлнэ
+  const tr=tb.tBodies[0].rows[18];tr.cells[1].click();
+  o.row=[...tb.querySelectorAll('tr.hl')].map(r=>r.cells[0].textContent);
+  o.hc=tb.querySelectorAll('.hc').length;o.th=(tb.querySelector('thead th.hc')||{}).textContent;
+  o.hx=tb.querySelectorAll('.hx').length;o.hxIs=tr.cells[1].classList.contains('hx');
+  o.out=getComputedStyle(tr.cells[1]).outlineStyle;
+  tr.cells[2].click();o.xNoop=tb.querySelectorAll('.hx').length===1&&tr.cells[1].classList.contains('hx');
+  tr.cells[1].click();o.off=[tb.querySelectorAll('.hx').length,tb.querySelectorAll('.hc').length,tb.querySelectorAll('tr.hl').length];
+  // 1–10-р үе: 3-р мөр, 5-р үе → өөр нүд дарахад загалмай шилжинэ
+  _p5Show(0,0);tb=document.querySelector('#p5Page .p5-tb');
+  tb.tBodies[0].rows[2].cells[5].click();tb.tBodies[0].rows[7].cells[9].click();
+  o.mv={row:[...tb.querySelectorAll('tr.hl')].map(r=>r.cells[0].textContent),
+    th:(tb.querySelector('thead th.hc')||{}).textContent,hx:tb.querySelectorAll('.hx').length,hc:tb.querySelectorAll('.hc').length};
+  tb.tHead.rows[0].cells[0].click();
+  o.clr=[tb.querySelectorAll('.hx').length,tb.querySelectorAll('.hc').length,tb.querySelectorAll('tr.hl').length];
+  // Хэвийн нүд суурингаас ялгарна: цайвар дэвсгэр + хүрээ
+  const n=tb.tBodies[0].rows[0].cells[1],cs=getComputedStyle(n);
+  o.cell={bg:cs.backgroundColor,sh:cs.boxShadow};
+  return o});
+ok('Дэрийн нүд дарахад тэр мөр ба үе хоёулаа тодорно (загалмай)',JSON.stringify(cx.row)==='["19"]'&&cx.hc===22&&/^11/.test(cx.th||''),JSON.stringify(cx));
+ok('Дарсан нүд өөрөө хүрээтэй (outline)',cx.hx===1&&cx.hxIs&&cx.out==='solid',JSON.stringify([cx.hx,cx.hxIs,cx.out]));
+ok('Эпюрийн улаан нүд дарахад юу ч өөрчлөгдөхгүй',cx.xNoop);
+ok('Ижил нүдийг дахин дарахад загалмай арилна',JSON.stringify(cx.off)==='[0,0,0]',JSON.stringify(cx.off));
+ok('Өөр нүд дарахад загалмай шилжинэ (8-р мөр, 9-р үе)',JSON.stringify(cx.mv.row)==='["8"]'&&/^9/.test(cx.mv.th||'')&&cx.mv.hx===1&&cx.mv.hc===22,JSON.stringify(cx.mv));
+ok('«Дэр №» дарахад бүх тодруулга арилна',JSON.stringify(cx.clr)==='[0,0,0]',JSON.stringify(cx.clr));
+ok('Хэвийн дэрийн нүд тод: цайвар хавтан + нимгэн хүрээ',/rgb\(248, 250, 253\)/.test(cx.cell.bg)&&/1px/.test(cx.cell.sh),JSON.stringify(cx.cell));
 
 /* ── 5. Паспорт сонгогч ── */
 const pk=await page.evaluate(async()=>{
@@ -242,6 +271,30 @@ ok('Баруун тийш шудрахад өмнөх хуудас',im.pgBack===
 ok('Замын товчны мөрөн дээр шудрахад хуудас солигдохгүй',im.pgChip===0,im.pgChip);
 ok('Дахин хурдан 2 товшвол горимоос гарна, доод таб буцна',im.off===false&&(im.bar2==='none'||/, 0\)$/.test(im.bar2)),JSON.stringify([im.off,im.bar2]));
 ok('Дэрийн дугаар дээр 2 товшвол горим солигдохгүй',im.numTap===false);
+/* Утасны хөтөч (user-scalable=no) 2 товшилтын дараа өөрөө dblclick
+   илгээдэг — v211-д тэр нь асаасан горимыг шууд унтрааж байв */
+const dc=await page.evaluate(async()=>{
+  const tgt=document.querySelector('#p5Page tbody tr:nth-child(6) td:nth-child(4)');
+  const imm=()=>document.body.classList.contains('p5-imm');
+  const dbl=async(id)=>{for(const x of [180,181]){const t=new Touch({identifier:id,target:tgt,clientX:x,clientY:400});
+      tgt.dispatchEvent(new TouchEvent('touchstart',{touches:[t],changedTouches:[t],bubbles:true}));
+      tgt.dispatchEvent(new TouchEvent('touchend',{touches:[],changedTouches:[t],bubbles:true}));
+      await new Promise(r=>setTimeout(r,90))}
+    tgt.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))};
+  const o={};
+  await new Promise(r=>setTimeout(r,800));
+  await dbl(11);await new Promise(r=>setTimeout(r,300));o.on=imm();
+  await new Promise(r=>setTimeout(r,800));
+  await dbl(12);await new Promise(r=>setTimeout(r,300));o.off=imm();
+  // Хулганы (компьютер) dblclick ганцаараа ч ажиллана
+  await new Promise(r=>setTimeout(r,800));
+  tgt.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));o.mouse=imm();
+  await new Promise(r=>setTimeout(r,800));
+  tgt.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));o.mouseOff=imm();
+  return o});
+ok('2 товшилтын араас хөтчийн dblclick ирсэн ч горим асна',dc.on===true,JSON.stringify(dc));
+ok('Дахин 2 товшилт (+dblclick) горимоос гаргана',dc.off===false,JSON.stringify(dc));
+ok('Компьютерт хулганы dblclick горимыг асааж/унтраана',dc.mouse===true&&dc.mouseOff===false,JSON.stringify(dc));
 const leave=await page.evaluate(async()=>{
   _p5SetImm(true);const was=document.body.classList.contains('p5-imm');
   goTab('home');await new Promise(r=>setTimeout(r,300));

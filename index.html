@@ -1004,16 +1004,18 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
 .p5-pick-frame{position:absolute;z-index:0;left:10px;right:10px;top:88px;height:44px;border-radius:14px;
   pointer-events:none;background:var(--bg);box-shadow:var(--sh-sm-in)}
 .p5-body{--p5-hi-bg:rgba(255,186,0,.30);--p5-hi-ring:#d99a00;--p5-hi-ink:#7a4600;
-  --p5-hl:rgba(75,86,214,.22);--p5-hl-bg:var(--gold-deep);--p5-hl-ink:#fff;
+  --p5-hl:rgba(75,86,214,.30);--p5-hl-bg:var(--gold-deep);--p5-hl-ink:#fff;
+  --p5-cell:#f8fafd;--p5-ln:rgba(100,118,150,.32);
   padding:12px 10px 40px;touch-action:manipulation}
 [data-theme="dark"] .p5-body{--p5-hi-bg:rgba(255,196,40,.20);--p5-hi-ring:#FFC83D;--p5-hi-ink:#FFD866;
-  --p5-hl:rgba(255,179,71,.24);--p5-hl-ink:#231500}
+  --p5-hl:rgba(255,179,71,.30);--p5-hl-ink:#231500;--p5-cell:#252c58;--p5-ln:rgba(150,180,255,.20)}
 /* Тайлбар — өнгөт чип бүр маягтын нүдтэй ЯГ ижил загвартай (доорх .p5-tb) */
 .p5-leg{display:flex;flex-wrap:wrap;gap:6px 10px;margin:0 2px 14px;padding:10px 12px;border-radius:16px;
   background:var(--bg);box-shadow:var(--sh-sm-in);font-size:10.5px;color:var(--ink3);font-weight:700;line-height:1.3}
 .p5-leg>span{display:inline-flex;align-items:center;gap:5px}
 .p5-sw{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:26px;height:22px;
-  padding:0 4px;border-radius:5px;background:var(--card);color:var(--ink);font-size:9px;font-weight:900;line-height:1}
+  padding:0 4px;border-radius:5px;background:var(--p5-cell);box-shadow:inset 0 0 0 1px var(--p5-ln);
+  color:var(--ink);font-size:9px;font-weight:900;line-height:1}
 .p5-sw.rp{height:30px}
 .p5-sw i{display:block;font-style:normal;font-size:7px;line-height:1.1}
 .p5-sw.b{background:var(--orange-bg);color:var(--orange);font-size:12px}
@@ -1056,7 +1058,13 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
   background:var(--bg);border-radius:12px;box-shadow:var(--sh-sm-in);color:var(--ink);
   font-size:10px;font-variant-numeric:tabular-nums}
 .p5-tb th,.p5-tb td{border:0;border-radius:5px;text-align:center;padding:1px 0;height:20px;
-  line-height:1.05;overflow:hidden;font-weight:800;background:var(--card)}
+  line-height:1.05;overflow:hidden;font-weight:800;background:var(--p5-cell)}
+/* Хэвийн дэрийн нүд суурингаасаа тод ялгарна: цайвар хавтан + нимгэн
+   хүрээ (нарны гэрэлд ч нүд бүр харагдана). Нэг хуудас л зурдаг тул
+   нүд бүрийн 1px хүрээ хурдад нөлөөлөхгүй. */
+.p5-tb tbody td{box-shadow:inset 0 0 0 1px var(--p5-ln);cursor:pointer}
+.p5-tb tbody td.p5-n,.p5-tb tbody td.xn{box-shadow:none}
+.p5-tb tbody td.x,.p5-tb tbody td.xn{cursor:default}
 /* «Дэр № | 1-р үе …» мөр замын товчны доор тулж үлдэнэ: тулсан толгойн
    харагдах өндөр = бүтэн өндөр − дээд хэсэг (хоёр горимд ижил) */
 .p5-tb thead th{position:sticky;top:calc(var(--p5-H) - var(--p5-T) - 1px);z-index:2;
@@ -1074,6 +1082,9 @@ body.p5-imm #tabbar{transform:translateY(100%);pointer-events:none}
 .p5-tb tbody .p5-n,.p5-tb thead th:not(:first-child):not(.tot){cursor:pointer}
 .p5-tb tr.hl>td:not(.x):not(.xn):not(.p5-n),.p5-tb td.hc{background-image:linear-gradient(var(--p5-hl),var(--p5-hl))}
 .p5-tb tr.hl>td.p5-n,.p5-tb thead th.hc{background:var(--p5-hl-bg);color:var(--p5-hl-ink)}
+/* Дарсан дэрийн нүд — загалмайн төв. outline нь сүүдрийг (шар, ягаан
+   хүрээ) дарахгүй тул тэмдэглэгээ хэвээр харагдана */
+.p5-tb td.hx{outline:2.5px solid var(--p5-hl-bg);outline-offset:1px}
 .p5-tb td.b{background:var(--orange-bg);color:var(--orange);font-size:13px}
 .p5-tb td.t{background:var(--red-bg);color:var(--red);font-size:8px}
 .p5-tb td.tt{background:var(--dred-bg);color:var(--dred);font-size:8px}
@@ -15891,16 +15902,35 @@ function _p5HlCol(tb,si){
     const c=tr.cells[k];if(c)c.classList.add('hc')
   })
 }
+// Нүдний DOM дугаараас (cellIndex) үеийн дугаарыг олно: мөр p-д зөвхөн
+// урт(j) ≥ p үеүүд нүдтэй (бусад нь дээрх эпюрийн rowspan-д багтсан)
+function _p5ColOf(tb,tr,c){
+  const L=String(tb.dataset.l||'').split(',').map(Number),p=tr.sectionRowIndex;
+  let k=c.cellIndex;
+  for(let j=0;j<L.length;j++)if(L[j]>=p&&--k===0)return j;
+  return -1
+}
 function _p5HlTap(e){
-  const c=e.target.closest&&e.target.closest('.p5-tb tbody td.p5-n,.p5-tb thead th');if(!c)return;
+  const c=e.target.closest&&e.target.closest('.p5-tb tbody td,.p5-tb thead th');if(!c)return;
   const tb=c.closest('.p5-tb');if(!tb)return;
+  const clrX=()=>tb.querySelectorAll('.hx').forEach(x=>x.classList.remove('hx'));
   if(c.tagName==='TH'){
-    if(c.cellIndex===0){tb.querySelectorAll('.hc').forEach(x=>x.classList.remove('hc'));_p5HlRow=-1;_p5ReHl();return}
+    if(c.cellIndex===0){tb.querySelectorAll('.hc').forEach(x=>x.classList.remove('hc'));clrX();_p5HlRow=-1;_p5ReHl();return}
     if(c.classList.contains('tot'))return;
-    hap(6);_p5HlCol(tb,c.cellIndex-1);return
+    hap(6);clrX();_p5HlCol(tb,c.cellIndex-1);return
   }
   const tr=c.parentNode;if(tr.classList.contains('p5-sum'))return;
-  hap(6);_p5HlRow=_p5HlRow===tr.sectionRowIndex?-1:tr.sectionRowIndex;_p5ReHl()
+  const p=tr.sectionRowIndex;
+  if(c.classList.contains('p5-n')){hap(6);clrX();_p5HlRow=_p5HlRow===p?-1:p;_p5ReHl();return}
+  if(c.classList.contains('x')||c.classList.contains('xn'))return;
+  // Дэрийн нүд: тэр мөр ба тэр үе хоёулаа тодорч (загалмай), нүд өөрөө
+  // хүрээтэй. Дахин дарахад арилна.
+  const si=_p5ColOf(tb,tr,c);if(si<0)return;
+  const same=c.classList.contains('hx');
+  clrX();tb.querySelectorAll('.hc').forEach(x=>x.classList.remove('hc'));
+  hap(6);
+  if(same){_p5HlRow=-1;_p5ReHl();return}
+  _p5HlRow=p;_p5ReHl();_p5HlCol(tb,si);c.classList.add('hx')
 }
 // Тайлбар — чип бүр маягтын нүдтэй ижил өнгө, хэлбэртэй тул уншихад
 // тайлбар ба маягтыг хооронд нь тулгах шаардлагагүй
@@ -16123,10 +16153,16 @@ function _p5Bind(){
   window.addEventListener('resize',()=>{if(_curTab()==='p5')_p5Measure()});
   if(!sc)return;
   sc.addEventListener('scroll',_p5UpCls,{passive:true});
-  // Хурдан 2 товшилт: хуруу бараг хөдлөөгүй, хоорондоо 320 мс-ээс бага.
+  // Хурдан 2 товшилт: хуруу бараг хөдлөөгүй, хоорондоо 400 мс-ээс бага.
   // Товч, дэр/үеийн дугаар дээрх товшилтыг тооцохгүй — тэдгээр өөрийн үүрэгтэй.
   const skip=el=>!!(el&&el.closest&&el.closest('button,.p5-top,.p5-trks,.p5-tb thead th,.p5-tb td.p5-n'));
-  const toggle=()=>{const on=!document.body.classList.contains('p5-imm');_p5SetImm(on);hap(8)};
+  /* Апп томруулалтыг хаасан (user-scalable=no) тул утасны хөтөч 2 товшилтын
+     дараа ӨӨРӨӨ dblclick илгээдэг. Хүрэлтээр асаасан горимыг тэр dblclick
+     шууд буцааж унтрааж, «горим асахгүй» мэт харагдаж байв (v211). Нэг
+     2 товшилтын хоёр мэдээллийг (touch + dblclick) нэг л удаа тоолно. */
+  let lastTgl=0;
+  const toggle=()=>{const now=Date.now();if(now-lastTgl<700)return;lastTgl=now;
+    const on=!document.body.classList.contains('p5-imm');_p5SetImm(on);hap(8)};
   let st=null,lastTap=0,lx=0,ly=0;
   sc.addEventListener('touchstart',e=>{const t=e.touches[0];
     st=e.touches.length===1&&!skip(e.target)?{x:t.clientX,y:t.clientY,at:Date.now()}:null},{passive:true});
@@ -16134,7 +16170,7 @@ function _p5Bind(){
     if(!st)return;const t=e.changedTouches[0],s=st;st=null;
     if(Math.abs(t.clientX-s.x)>12||Math.abs(t.clientY-s.y)>12||Date.now()-s.at>300){lastTap=0;return}
     const now=Date.now();
-    if(now-lastTap<320&&Math.abs(t.clientX-lx)<36&&Math.abs(t.clientY-ly)<36){lastTap=0;toggle()}
+    if(now-lastTap<400&&Math.abs(t.clientX-lx)<36&&Math.abs(t.clientY-ly)<36){lastTap=0;toggle()}
     else{lastTap=now;lx=t.clientX;ly=t.clientY}
   },{passive:true});
   sc.addEventListener('dblclick',e=>{if(!skip(e.target))toggle()})
@@ -16548,7 +16584,7 @@ function _appBack(){
 // Шийдэл: түүхийн бүртгэлийг зөвхөн ХЭРЭГЛЭГЧИЙН ДАРАЛТЫН ДОТОР нэмнэ —
 // дэлгэц гүнзгийрэх бүрд яг нэг. Ийм бүртгэл алгасагдахгүй. Түүхийн гүн
 // нь дэлгэцийн гүнтэй тэнцүү болж, буцах товч байгалиасаа зөв ажиллана.
-const APP_BUILD='2026.11.20·211';
+const APP_BUILD='2026.11.21·212';
 /* Хэрэглэгчид зөвхөн дугаарыг харуулна: '2026.08.29·102' → 'v102'.
    APP_BUILD өөрөө хэвээр — CI түүнийг version.txt-тэй тулгадаг. */
 function appVer(){
