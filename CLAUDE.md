@@ -167,3 +167,13 @@ Firestore-ын дүрэмд `match /parts/{partId}` байх ёстой. Хэс�
   13 хэсгийн хэмжээнд 12 мс болдог байсныг 0.5 мс болгосон.
   `tests/pack.js` гаралтыг хуучин алгоритмтай тулгаж хамгаална.
 
+
+## Ирээдүйд авч үзэх хэрэгсэл
+
+- **Graphify** — https://github.com/Graphify-Labs/graphify — кодоос
+  мэдлэгийн граф (`graph.json`, `GRAPH_REPORT.md`, `graph.html`) гаргаж,
+  AI туслахад «юу юутай холбоотой» гэдгийг асуулгаар хариулах Claude
+  Code-ын skill. Одоо апп бараг ганц `index.html` тул хэрэггүй (шууд
+  хайх хангалттай). Апп олон файл/модульд хуваагдвал эргэж үз.
+  Python 3.11+ шаардана (`uv tool install graphifyy`); `graphify-out/`-ыг
+  репод commit хийхгүй.
